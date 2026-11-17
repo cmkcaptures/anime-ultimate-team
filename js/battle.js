@@ -1,13 +1,23 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Ki, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, thumbURL } from './cardkit.js'
-import { sfx } from './sfx.js'
+import { TIER, TYPE, thumbURL } from './cardkit.js'
+import { sfx, sfxOn } from './sfx.js'
 import { createArena } from './arena3d.js'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
 
+// ---------------- type matchups: each type beats the next one in the ring ----------------
+const RING = ['ki', 'curse', 'chak', 'haki', 'mana', 'quirk', 'ego', 'breath', 'nen', 'magic', 'devil', 'stand', 'ghoul', 'reiatsu', 'kaiju', 'psychic', 'flame', 'hero']
+const tOf = c => c.t || 'ki'
+export const beats = (a, b) => RING[(RING.indexOf(a) + 1) % RING.length] === b
+const matchup = (att, def) => beats(tOf(att.card), tOf(def.card)) ? 1.3 : beats(tOf(def.card), tOf(att.card)) ? .8 : 1
+const tcol = c => (TYPE[tOf(c)] || TYPE.ki).c[0]
+const tname = c => (TYPE[tOf(c)] || TYPE.ki).en
+const weakTo = t => RING[(RING.indexOf(t) - 1 + RING.length) % RING.length]
+
 // ---------------- rules ----------------
+const ICON = {"strike":"<svg viewBox=\"0 0 64 64\"><path d=\"M14 30c0-4 3-7 7-7h2v-5a5 5 0 0 1 10 0v2a5 5 0 0 1 10 0v3a5 5 0 0 1 9 3v12c0 9-7 16-16 16h-6c-9 0-16-7-16-16z\" fill=\"currentColor\"/><path d=\"M4 16l10 6M2 28h10M6 40l9-4\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\"/></svg>","blast":"<svg viewBox=\"0 0 64 64\"><circle cx=\"32\" cy=\"32\" r=\"13\" fill=\"currentColor\"/><circle cx=\"32\" cy=\"32\" r=\"21\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" opacity=\".55\"/><circle cx=\"32\" cy=\"32\" r=\"28\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" opacity=\".3\"/></svg>","guard":"<svg viewBox=\"0 0 64 64\"><path d=\"M32 4l22 8v16c0 15-10 26-22 32C20 54 10 43 10 28V12z\" fill=\"currentColor\"/><path d=\"M22 32l7 7 13-14\" stroke=\"#0b0d12\" stroke-width=\"5\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>","special":"<svg viewBox=\"0 0 64 64\"><path d=\"M32 2l6 20 20-6-14 16 14 16-20-6-6 20-6-20-20 6 14-16L6 16l20 6z\" fill=\"currentColor\"/></svg>"}
 const KI_PER_TURN = 3, KI_MAX = 10, HAND = 4, GAUGE_MAX = 100
 const ARTS = {
   strike: { name: 'STRIKE', cost: 1, col: '#ff4a5a', desc: 'Fast hit · PWR' },
@@ -36,11 +46,12 @@ const alive = s => s.team.filter(f => !f.ko)
 function refill(s) { while (s.hand.length < HAND) s.hand.push(drawArt(act(s))) }
 function hit(att, def, base, stat) {
   const crit = Math.random() < .08 + att.tec / 1200
-  let dmg = base * (stat / 80) * (100 / (60 + def.def * .5)) * (0.92 + Math.random() * .16) * (crit ? 1.5 : 1)
+  const mu = matchup(att, def)
+  let dmg = base * (stat / 80) * (100 / (60 + def.def * .5)) * (0.92 + Math.random() * .16) * (crit ? 1.5 : 1) * mu
   if (def.guard) { dmg *= .5; def.guard = 0 }
   dmg = Math.max(1, Math.round(dmg))
   def.hp = Math.max(0, def.hp - dmg); if (def.hp === 0) def.ko = true
-  return { dmg, crit }
+  return { dmg, crit, mu }
 }
 // returns a list of events for the UI to animate
 function playArt(B, who, idx) {
@@ -154,11 +165,11 @@ export function startBattle(stage) {
 
   const ov = h('div', ''); ov.id = 'arena'
   ov.innerHTML = `<div class="ar-3d"></div><div class="ar-bg"></div>
-    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><span class="ar-stage">STAGE ${stage.n} · ${stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
+    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><span class="ar-stage">STAGE ${stage.n} · ${stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
     <div class="ar-plate ai"><span class="pn">ENEMY · ${stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div><div class="ar-plate you"><span class="pn">YOU</span><span class="pk"></span></div>
-    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-ult">ULTIMATE</button><button class="ar-end">END TURN</button></div></footer>`
+    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
   document.body.append(ov)
   const $a = s => ov.querySelector(s)
   let ST3 = null
@@ -180,59 +191,114 @@ export function startBattle(stage) {
     a.style.setProperty('--rc', X.tierCol(f.card.r))
     let hb = a.querySelector('.hpb'); if (!hb) { hb = document.createElement('div'); hb.className = 'hpb'; a.append(hb) }
     hb.innerHTML = `<b>${f.hp.toLocaleString()}</b><i><s style="width:${f.hp / f.max * 100}%"></s></i>`
+    const foeF = act(side === 'you' ? B.ai : B.you), mu = foeF ? matchup(f, foeF) : 1
+    let tg = a.querySelector('.mtag'); if (!tg) { tg = document.createElement('div'); a.append(tg) } tg.className = 'mtag ' + (mu > 1 ? 'adv' : mu < 1 ? 'weak' : 'none'); tg.textContent = mu > 1 ? 'ADVANTAGE' : mu < 1 ? 'WEAKNESS' : ''
+    a.onclick = () => inspect(f, side)
     ov.querySelector('.ar-plate.' + side + ' .pk').innerHTML = s.team.map(g => `<i class="${g.ko ? 'ko' : ''}"></i>`).join('')
     const bn = $a(`.ar-side.${side} .ar-bench`); bn.innerHTML = ''
     s.team.forEach((g, i) => {
       if (i === s.active) return
       const b = document.createElement('button'); b.className = 'bslot' + (g.ko ? ' ko' : ''); b.append(img(g, 160))
       b.append(Object.assign(document.createElement('i'), { style: `width:${g.hp / g.max * 100}%` }))
-      if (side === 'you' && !g.ko) b.onclick = () => doSwitch(i)
+      b.onclick = () => inspect(g, side, side === 'you' && !g.ko && !B.you.switched && !B.busy && !B.over ? () => doSwitch(i) : null)
       bn.append(b)
     })
   }
   function controls() {
     const s = B.you, my = !B.busy && !B.over
-    $a('.ar-ki').innerHTML = `<span>KI</span>` + Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('') + `<b>${s.ki}</b>`
+    $a('.ar-ki').innerHTML = `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>KI</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`
     const hand = $a('.ar-hand'); hand.innerHTML = ''
     s.hand.forEach((a, i) => {
-      const d = ARTS[a], b = document.createElement('button'); b.className = 'art ' + a; b.style.setProperty('--ac', d.col)
-      b.innerHTML = `<em>${d.cost}</em><b>${a === 'special' ? act(s).card.mv : d.name}</b><small>${a === 'special' ? (isAoe(act(s).card) ? 'Hits all enemies' : 'Big single hit') : d.desc}</small>`
+      const d = ARTS[a], f = act(s), sp = a === 'special', b = document.createElement('button'); b.className = 'art ' + a; b.style.setProperty('--ac', sp ? tcol(f.card) : d.col)
+      b.innerHTML = `<span class="gem">${d.cost}</span><span class="hd">${sp ? 'SPECIAL' : d.name}</span><span class="ic">${ICON[a]}</span><b>${sp ? f.card.mv : d.name}</b><small>${sp ? (isAoe(f.card) ? 'Hits all enemies' : 'Massive single hit') : d.desc}</small>`
       b.disabled = !my || s.ki < d.cost
+      b.style.setProperty('--i', i - (s.hand.length - 1) / 2)
       b.onclick = () => doArt(i)
       hand.append(b)
     })
     const u = $a('.ar-ult'); u.disabled = !my || s.gauge < GAUGE_MAX; u.classList.toggle('ready', s.gauge >= GAUGE_MAX)
+    u.style.setProperty('--g', s.gauge / GAUGE_MAX); u.querySelector('small').textContent = Math.floor(s.gauge) + '%'
     $a('.ar-end').disabled = !my
     $a('.ar-turn').textContent = 'TURN ' + B.turn
   }
   function draw() { hud('ai', B.ai); hud('you', B.you); field('ai', B.ai); field('you', B.you); controls() }
 
+  function inspect(f, side, onSwitch) {
+    if (B.busy && !onSwitch) { }
+    const o = document.createElement('div'); o.className = 'insp'
+    const foe = act(side === 'you' ? B.ai : B.you), mu = matchup(f, foe), t = tOf(f.card)
+    o.innerHTML = `<div class="insp-card"></div><div class="insp-info"><span class="tp" style="--tc:${tcol(f.card)}">${tname(f.card)}</span><h3>${f.card.name}</h3><small>${f.card.ver}</small>
+      <div class="ihp"><i style="width:${f.hp / f.max * 100}%"></i><span>${f.hp.toLocaleString()} / ${f.max.toLocaleString()} HP</span></div>
+      <div class="ist">${['PWR', 'SPD', 'KI', 'TEC', 'DEF', 'IQ'].map((k, i) => `<div><span>${k}</span><b>${[f.pwr, f.spd, f.ki, f.tec, f.def, f.iq][i]}</b></div>`).join('')}</div>
+      <div class="imv"><b>${f.card.mv}</b><p>${(f.card.tx || []).join(' ')}</p></div>
+      <div class="imu"><span>STRONG VS <b>${(TYPE[RING[(RING.indexOf(t) + 1) % RING.length]] || {}).en || ''}</b></span><span>WEAK TO <b>${(TYPE[weakTo(t)] || {}).en || ''}</b></span>${foe && f !== foe ? `<em class="${mu > 1 ? 'adv' : mu < 1 ? 'weak' : ''}">${mu > 1 ? 'Advantage vs ' + foe.card.name : mu < 1 ? 'Weak vs ' + foe.card.name : 'Neutral vs ' + foe.card.name}</em>` : ''}</div>
+      <div class="ibtn"></div></div>`
+    o.querySelector('.insp-card').append(img(f, 520))
+    const bb = o.querySelector('.ibtn')
+    if (onSwitch) { const s2 = document.createElement('button'); s2.className = 'btn gold'; s2.textContent = 'SWITCH IN'; s2.onclick = () => { o.remove(); onSwitch() }; bb.append(s2) }
+    const c = document.createElement('button'); c.className = 'btn dark'; c.textContent = 'CLOSE'; c.onclick = () => o.remove(); bb.append(c)
+    o.onclick = e => { if (e.target === o) o.remove() }
+    ov.append(o)
+  }
+  const FX = () => ov.querySelector('.fxl')
+  const ctr = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }
+  function shake(level) { ov.classList.remove('shk1', 'shk2', 'shk3'); void ov.offsetWidth; ov.classList.add('shk' + level); setTimeout(() => ov.classList.remove('shk' + level), 600) }
+  function wash(col, strong) { const w = document.createElement('div'); w.className = 'wash' + (strong ? ' strong' : ''); w.style.setProperty('--wc', col); FX().append(w); setTimeout(() => w.remove(), 900) }
+  function sparks(el, col, n = 16) {
+    const [x, y] = ctr(el)
+    for (let i = 0; i < n; i++) { const p = document.createElement('i'); p.className = 'spk'; const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 120; p.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px;--sc:${col};animation-delay:${Math.random() * .06}s`; FX().append(p); setTimeout(() => p.remove(), 800) }
+    const ring = document.createElement('i'); ring.className = 'impact'; ring.style.cssText = `left:${x}px;top:${y}px;--sc:${col}`; FX().append(ring); setTimeout(() => ring.remove(), 600)
+  }
+  function slashes(el, col) {
+    const [x, y] = ctr(el)
+    for (let i = 0; i < 3; i++) { const sl = document.createElement('i'); sl.className = 'slash'; sl.style.cssText = `left:${x}px;top:${y + (i - 1) * 26}px;--sc:${col};--rot:${-28 + i * 14}deg;animation-delay:${i * .06}s`; FX().append(sl); setTimeout(() => sl.remove(), 700) }
+  }
+  function beam(from, to, col, wide) {
+    const [x1, y1] = ctr(from), [x2, y2] = ctr(to), len = Math.hypot(x2 - x1, y2 - y1), ang = Math.atan2(y2 - y1, x2 - x1)
+    const b = document.createElement('i'); b.className = 'beam' + (wide ? ' wide' : ''); b.style.cssText = `left:${x1}px;top:${y1}px;width:${len}px;transform:rotate(${ang}rad);--sc:${col}`; FX().append(b); setTimeout(() => b.remove(), 650)
+  }
+  function banner(text, sub, col) { const b = document.createElement('div'); b.className = 'mvban'; b.style.setProperty('--bc', col); b.innerHTML = `<small>${sub}</small><b>${text}</b>`; FX().append(b); setTimeout(() => b.remove(), 1300) }
+  function floatTag(el, text, cls) { const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'ftag ' + cls; t.textContent = text; t.style.left = x + 'px'; t.style.top = (y - 70) + 'px'; FX().append(t); setTimeout(() => t.remove(), 1200) }
+
   async function show(ev) {
-    if (ev.swap) { log('Enemy switched fighters'); sfx('swipe'); draw(); await wait(500); return }
+    if (ev.swap) { log('Enemy switched fighters'); sfx('bswitch'); draw(); await wait(500); return }
     const side = ev.who, other = side === 'you' ? 'ai' : 'you'
     const atk = $a(`.ar-side.${side} .ar-active`)
-    if (ev.guard) { log(`${act(B[side]).card.name} braces · GUARD`); sfx('soft'); atk.classList.add('guarding'); await wait(450); atk.classList.remove('guarding'); draw(); return }
-    const big = ev.art === 'special' || ev.art === 'ultimate'
-    log(big ? `${ev.art === 'ultimate' ? 'ULTIMATE · ' : ''}${ev.move}` : `${act(B[side]).card.name} · ${ARTS[ev.art].name}`)
-    if (ev.art === 'ultimate') { ov.classList.add('ult'); ST3 && ST3.ult(side); sfx('charge', 5); await wait(900) } else if (big) { sfx('charge', 3); await wait(380) }
-    atk.classList.remove('lunge'); void atk.offsetWidth; atk.classList.add('lunge')
-    await wait(160)
-    sfx(ev.art === 'strike' ? 'click' : ev.art === 'blast' ? 'deal' : 'reveal', ev.art === 'ultimate' ? 6 : 3)
+    if (ev.guard) { log(`${act(B[side]).card.name} braces · GUARD`); sfx('bguard'); atk.classList.add('guarding'); await wait(450); atk.classList.remove('guarding'); draw(); return }
+    const big = ev.art === 'special' || ev.art === 'ultimate', A = act(B[side]), col = tcol(A.card)
+    const tgtEl = $a(`.ar-side.${other} .ar-active`)
+    log(big ? `${ev.art === 'ultimate' ? 'ULTIMATE · ' : ''}${ev.move}` : `${A.card.name} · ${ARTS[ev.art].name}`)
+    // 1) the attacker card pops up and spins
+    atk.classList.remove('pop', 'popbig', 'lunge'); void atk.offsetWidth; atk.classList.add(big ? 'popbig' : 'pop')
+    atk.style.setProperty('--ac', col)
+    if (ev.art === 'ultimate') { ov.classList.add('ult'); ST3 && ST3.ult(side); sfx('bcharge'); wash(col, true); banner(ev.move, 'ULTIMATE', col); shake(2); await wait(1000) }
+    else if (big) { sfx('bcharge'); wash(col); banner(ev.move, 'SPECIAL', col); await wait(620) }
+    else await wait(300)
+    // 2) the attack lands
+    sfx(ev.art === 'strike' ? 'bhit' : ev.art === 'blast' ? 'bblast' : 'bimpact', ev.art === 'ultimate')
+    if (ev.art === 'strike') slashes(tgtEl, '#fff')
+    if (ev.art === 'blast') beam(atk, tgtEl, col)
+    if (big) beam(atk, tgtEl, col, true)
     ST3 && ST3.hit(other, big)
+    shake(ev.art === 'ultimate' ? 3 : big ? 2 : 1)
     for (const x of ev.hits) {
       const isActive = x.t === act(B[other])
-      const tgt = isActive ? $a(`.ar-side.${other} .ar-active`) : $a(`.ar-side.${other} .ar-bench`)
+      const tgt = isActive ? tgtEl : $a(`.ar-side.${other} .ar-bench`)
       tgt.classList.remove('hurt'); void tgt.offsetWidth; tgt.classList.add('hurt')
-      const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : ''); n.textContent = (x.crit ? 'CRIT ' : '') + x.dmg.toLocaleString()
+      sparks(tgt, x.crit ? '#ff5a6a' : big ? '#ffd23a' : col, big ? 24 : 14)
+      const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : ''); n.textContent = x.dmg.toLocaleString()
       const r = tgt.getBoundingClientRect(); n.style.left = (r.left + r.width / 2) + 'px'; n.style.top = (r.top + r.height * .35) + 'px'
       ov.append(n); setTimeout(() => n.remove(), 1100)
+      if (isActive && x.crit) floatTag(tgt, 'CRITICAL!', 'crit')
+      else if (isActive && x.mu > 1) floatTag(tgt, 'SUPER EFFECTIVE', 'adv')
+      else if (isActive && x.mu < 1) floatTag(tgt, 'RESISTED', 'weak')
     }
     ov.classList.remove('ult')
     draw(); await wait(big ? 650 : 420)
     // knockouts
     const foe = B[other]
     if (act(foe).ko) {
-      sfx('error'); ST3 && ST3.ko(other); log(`${act(foe).card.name} is knocked out!`)
+      sfx('bko'); shake(3); wash('#ff3d4a', true); ST3 && ST3.ko(other); log(`${act(foe).card.name} is knocked out!`)
       $a(`.ar-side.${other} .ar-active`).classList.add('kod'); await wait(700); $a(`.ar-side.${other} .ar-active`).classList.remove('kod')
       if (!nextAlive(foe)) return end(other === 'ai')
       if (other === 'you') { await pickReplacement() } else { log(`Enemy sends out ${act(foe).card.name}`); sfx('nav') }
@@ -256,9 +322,11 @@ export function startBattle(stage) {
   }
   async function doSwitch(i) {
     if (B.busy || B.over || B.you.switched || B.you.team[i].ko) return
-    B.you.active = i; B.you.switched = true; sfx('swipe'); log(`Go, ${act(B.you).card.name}!`); draw()
+    B.you.active = i; B.you.switched = true; sfx('bswitch'); log(`Go, ${act(B.you).card.name}!`); draw()
   }
   $a('.ar-ult').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); const e = ultimate(B, 'you'); if (e) await show(e); B.busy = false; if (!B.over) controls() }
+  const mb = $a('.ar-mute'), mdraw = () => { mb.textContent = sfxOn() ? '🔊 SOUND' : '🔇 MUTED'; mb.classList.toggle('off', !sfxOn()) }
+  mb.onclick = () => { sfxOn(!sfxOn()); mdraw() }; mdraw()
   $a('.ar-end').onclick = () => endTurn()
   $a('.ar-quit').onclick = () => { if (B.over || confirm('Quit this battle? It counts as a loss.')) close() }
   function close() { B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
@@ -270,7 +338,7 @@ export function startBattle(stage) {
     for (const ev of aiTurn(B, stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
     B.turn++
     const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false
-    B.busy = false; log('Your turn'); sfx('soft'); draw()
+    B.busy = false; log('Your turn'); sfx('bturn'); draw()
   }
   async function endTurn() { if (B.busy || B.over) return; await aiPhase() }
 

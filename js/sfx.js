@@ -59,6 +59,15 @@ const S = {
   deal() { const t = A.currentTime, b = bus(.08); noise(t, .14, .16, b, { type: 'bandpass', f: 1400, to: 3500, q: 1.1, a: .02 }) },
   swipe() { const t = A.currentTime, b = bus(.1); noise(t, .2, .15, b, { type: 'bandpass', f: 2800, to: 700, q: 1.2, a: .02 }) },
   charge(rank) { const t = A.currentTime, b = bus(.35), d = rank >= 5 ? 1.6 : rank >= 4 ? 1.1 : .5; riser(t, d, rank >= 4 ? .22 : .14, b); return d },
+  // ---- battle: short, punchy, low (no chimes) ----
+  bhit() { const t = A.currentTime, b = bus(.06); tone('sine', 150, t, .16, .32, b, { to: 55, glide: .14 }); noise(t, .07, .22, b, { type: 'bandpass', f: 1800, q: .9 }); noise(t + .01, .12, .12, b, { type: 'lowpass', f: 500 }) },
+  bblast() { const t = A.currentTime, b = bus(.1); noise(t, .22, .14, b, { type: 'bandpass', f: 500, to: 2600, q: 1.2, a: .12 }); tone('sine', 120, t + .2, .3, .32, b, { to: 40, glide: .25 }); noise(t + .2, .25, .16, b, { type: 'lowpass', f: 900, to: 150 }) },
+  bcharge() { const t = A.currentTime, b = bus(.12); noise(t, .45, .1, b, { type: 'bandpass', f: 300, to: 2400, q: 2, a: .4 }); tone('sawtooth', 70, t, .45, .05, b, { to: 220, glide: .45, a: .35, lp: 600 }) },
+  bimpact(big) { const t = A.currentTime, b = bus(.16); tone('sine', 95, t, big ? .7 : .45, big ? .5 : .38, b, { to: 32, glide: .5 }); noise(t, big ? .5 : .3, big ? .3 : .2, b, { type: 'lowpass', f: 1400, to: 120 }); noise(t, .05, .2, b, { type: 'highpass', f: 2500 }) },
+  bguard() { const t = A.currentTime, b = bus(.08); tone('triangle', 330, t, .18, .08, b, { lp: 1200 }); noise(t, .12, .06, b, { type: 'bandpass', f: 900, q: 3 }) },
+  bswitch() { const t = A.currentTime, b = bus(.06); noise(t, .18, .1, b, { type: 'bandpass', f: 900, to: 2000, q: 1, a: .05 }) },
+  bko() { const t = A.currentTime, b = bus(.2); tone('sine', 70, t, 1, .45, b, { to: 28, glide: .8 }); noise(t, .6, .22, b, { type: 'lowpass', f: 700, to: 80 }) },
+  bturn() { const t = A.currentTime, b = bus(.04); tone('sine', 520, t, .06, .04, b) },
   reveal(rank) {
     const t = A.currentTime, b = bus(.45)
     if (rank <= 1) { bell(rank ? 81 : 76, t, .1, b, .6); return }
