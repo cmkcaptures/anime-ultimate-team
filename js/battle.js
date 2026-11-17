@@ -208,11 +208,17 @@ export function startBattle(stage) {
     const s = B.you, my = !B.busy && !B.over
     $a('.ar-ki').innerHTML = `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>KI</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`
     const hand = $a('.ar-hand'); hand.innerHTML = ''
+    const f = act(s), rc = X.tierCol(f.card.r), fx = Math.round((f.card.fx ?? .5) * 100), fy = Math.round((f.card.fy ?? .22) * 100)
+    const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['KI BLAST', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'] }
     s.hand.forEach((a, i) => {
-      const d = ARTS[a], f = act(s), sp = a === 'special', b = document.createElement('button'); b.className = 'art ' + a; b.style.setProperty('--ac', sp ? tcol(f.card) : d.col)
-      b.innerHTML = `<span class="gem">${d.cost}</span><span class="hd">${sp ? 'SPECIAL' : d.name}</span><span class="ic">${ICON[a]}</span><b>${sp ? f.card.mv : d.name}</b><small>${sp ? (isAoe(f.card) ? 'Hits all enemies' : 'Massive single hit') : d.desc}</small>`
+      const d = ARTS[a], sp = a === 'special', [kind, c1, c2] = KIND[a], b = document.createElement('button')
+      b.className = 'art2 ' + a
+      b.style.cssText = `--c1:${c1};--c2:${c2};--rc:${rc};--i:${i - (s.hand.length - 1) / 2};--art:url("${f.card.url}");--fx:${fx}%;--fy:${fy}%`
+      b.innerHTML = `<span class="fr"></span><span class="pic"></span><span class="holo"></span><span class="glints"><i></i><i></i><i></i><i></i></span>
+        <span class="gem"><b>${d.cost}</b></span><span class="kind">${kind}</span>
+        <span class="sym">${ICON[a]}</span>
+        <span class="plate"><b>${sp ? f.card.mv : d.name}</b><small>${sp ? (isAoe(f.card) ? 'HITS ALL ENEMIES' : 'MASSIVE SINGLE HIT') : d.desc.toUpperCase()}</small></span>`
       b.disabled = !my || s.ki < d.cost
-      b.style.setProperty('--i', i - (s.hand.length - 1) / 2)
       b.onclick = () => doArt(i)
       hand.append(b)
     })
