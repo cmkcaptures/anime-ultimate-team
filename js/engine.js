@@ -319,7 +319,15 @@ function market() {
 }
 
 // ---------------- boot ----------------
-const ready = (async () => {
+function bootError(e) {
+  const o = document.createElement('div'); o.style.cssText = 'position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:20px;background:#0b0a12;color:#fff;font:700 15px Nunito,sans-serif;text-align:center'
+  o.innerHTML = '<div style="max-width:460px"><div style="font:italic 900 34px Sofia Sans Extra Condensed,sans-serif;color:#ff7a85">COULD NOT LOAD YOUR CLUB</div><p style="opacity:.75">Screenshot this and send it to Claude.</p><pre style="white-space:pre-wrap;text-align:left;background:#1a1726;padding:12px;border-radius:10px;font-size:12px"></pre><button style="margin-top:10px;padding:12px 22px;border:0;border-radius:10px;font:900 16px Nunito;cursor:pointer">RETRY</button></div>'
+  o.querySelector('pre').textContent = (e && (e.code ? e.code + ': ' : '') + (e.message || e)) + ''
+  o.querySelector('button').onclick = () => location.reload()
+  document.body.append(o)
+}
+const ready = (async () => { try { await boot() } catch (e) { console.error(e); bootError(e); throw e } })()
+async function boot() {
   CARDS = await (await fetch('cards-list.json', { cache: 'no-cache' })).json()
   const who = await initAccount(CFG); LS_SAVE = 'aut-save-v3-' + who.uid
   let local = null; try { local = JSON.parse(localStorage.getItem(LS_SAVE)) } catch { }
@@ -338,7 +346,7 @@ const ready = (async () => {
     if (document.visibilityState !== 'visible' || !SB) return
     try { const row = await cloudLoad(); if (row && row.data && (row.data.savedAt || 0) > (S.savedAt || 0)) { S = row.data; location.reload() } } catch { }
   })
-})()
+}
 
 // ---------------- answer the app's /api calls ----------------
 const realFetch = window.fetch.bind(window)
