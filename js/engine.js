@@ -9,13 +9,14 @@ const qs = new URLSearchParams(location.search)
 if (qs.get('key')) { try { localStorage.setItem(LS_KEY, qs.get('key')) } catch { } history.replaceState(null, '', location.pathname + location.hash) }
 let KEY = null; try { KEY = localStorage.getItem(LS_KEY) } catch { }
 
-// ---- supabase (plain REST, no library needed) ----
-const SB = CFG.url && CFG.anon && KEY ? { url: CFG.url.replace(/\/$/, '') + '/rest/v1/aut_saves', h: { apikey: CFG.anon, Authorization: 'Bearer ' + CFG.anon, 'x-aut-key': KEY, 'Content-Type': 'application/json' } } : null
+// ---- Firebase Firestore (plain REST, no library). Doc id = your private key; rules block listing, so it can't be found without it. ----
+const SB = CFG.projectId && CFG.apiKey && KEY ? { url: 'https://firestore.googleapis.com/v1/projects/' + CFG.projectId + '/databases/(default)/documents/aut_saves/' + encodeURIComponent(KEY) + '?key=' + CFG.apiKey } : null
 async function cloudLoad() {
   if (!SB) return null
-  const r = await fetch(SB.url + '?id=eq.' + encodeURIComponent(KEY) + '&select=data,updated_at', { headers: SB.h })
+  const r = await fetch(SB.url)
+  if (r.status === 404) return null
   if (!r.ok) throw new Error('cloud ' + r.status)
-  const rows = await r.json(); return rows[0] || null
+  const d = await r.json(); return { data: JSON.parse(d.fields.data.stringValue) }
 }
 let cloudBusy = false, cloudAgain = false
 async function cloudSave() {
@@ -23,7 +24,7 @@ async function cloudSave() {
   if (cloudBusy) { cloudAgain = true; return }
   cloudBusy = true
   try {
-    const r = await fetch(SB.url + '?on_conflict=id', { method: 'POST', headers: { ...SB.h, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: KEY, data: S, updated_at: new Date().toISOString() }) })
+    const r = await fetch(SB.url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { data: { stringValue: JSON.stringify(S) }, savedAt: { integerValue: String(S.savedAt || Date.now()) } } }) })
     setSync(r.ok ? 'ok' : 'err')
   } catch { setSync('err') }
   cloudBusy = false
