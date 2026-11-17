@@ -2,7 +2,7 @@
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
 import { TIER, TYPE, thumbURL } from './cardkit.js'
 import { sfx, sfxOn } from './sfx.js'
-import { createArena } from './arena3d.js'
+import { createFX } from './fx2d.js'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -164,7 +164,7 @@ export function startBattle(stage) {
   const youFirst = act(B.you).spd >= act(B.ai).spd
 
   const ov = h('div', ''); ov.id = 'arena'
-  ov.innerHTML = `<div class="ar-3d"></div><div class="ar-bg"></div>
+  ov.innerHTML = `<div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
     <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><span class="ar-stage">STAGE ${stage.n} · ${stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
     <div class="ar-plate ai"><span class="pn">ENEMY · ${stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
@@ -173,7 +173,8 @@ export function startBattle(stage) {
   document.body.append(ov); document.body.classList.add('in-battle')
   const $a = s => ov.querySelector(s)
   let ST3 = null
-  createArena(ov.querySelector('.ar-3d')).then(st => { if (B.closed) return st.dispose(); ST3 = st; ov.classList.add('has3d') }).catch(() => { })
+  const FXC = createFX(ov)
+  // 3D engine removed for performance; the stage is a static CSS scene
   const log = t => { const l = $a('.ar-log'); l.textContent = t; l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop') }
   const wait = ms => new Promise(r => setTimeout(r, ms))
   const IMG = new Map()
@@ -263,6 +264,14 @@ export function startBattle(stage) {
     const [x1, y1] = ctr(from), [x2, y2] = ctr(to), len = Math.hypot(x2 - x1, y2 - y1), ang = Math.atan2(y2 - y1, x2 - x1)
     const b = document.createElement('i'); b.className = 'beam' + (wide ? ' wide' : ''); b.style.cssText = `left:${x1}px;top:${y1}px;width:${len}px;transform:rotate(${ang}rad);--sc:${col}`; FX().append(b); setTimeout(() => b.remove(), 650)
   }
+  function cutin(card, move, sub, col, ult) {
+    const c = document.createElement('div'); c.className = 'cutin' + (ult ? ' ult' : '') + (sub === 'ENEMY' ? ' foe' : '')
+    c.style.cssText = `--cc:${col};--art:url("${card.url}");--fx:${Math.round((card.fx ?? .5) * 100)}%;--fy:${Math.round((card.fy ?? .22) * 100)}%`
+    c.innerHTML = `<div class="ci-dim"></div><div class="ci-bar b1"></div><div class="ci-strip"><i></i></div><div class="ci-bar b2"></div>
+      <div class="ci-txt"><small>${ult ? 'ULTIMATE ART' : 'SPECIAL ART'}</small><b>${move}</b><span>${card.name} · ${card.ver}</span></div>`
+    FX().append(c); FXC.lines(innerWidth / 2, innerHeight / 2, col, ult ? 1.2 : .9)
+    setTimeout(() => c.classList.add('out'), ult ? 1150 : 850); setTimeout(() => c.remove(), ult ? 1500 : 1200)
+  }
   function banner(text, sub, col) { const b = document.createElement('div'); b.className = 'mvban'; b.style.setProperty('--bc', col); b.innerHTML = `<small>${sub}</small><b>${text}</b>`; FX().append(b); setTimeout(() => b.remove(), 1300) }
   function floatTag(el, text, cls) { const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'ftag ' + cls; t.textContent = text; t.style.left = x + 'px'; t.style.top = (y - 70) + 'px'; FX().append(t); setTimeout(() => t.remove(), 1200) }
 
@@ -277,21 +286,23 @@ export function startBattle(stage) {
     // 1) the attacker card pops up and spins
     atk.classList.remove('pop', 'popbig', 'lunge'); void atk.offsetWidth; atk.classList.add(big ? 'popbig' : 'pop')
     atk.style.setProperty('--ac', col)
-    if (ev.art === 'ultimate') { ov.classList.add('ult'); ST3 && ST3.ult(side); sfx('bcharge'); wash(col, true); banner(ev.move, 'ULTIMATE', col); shake(2); await wait(1000) }
-    else if (big) { sfx('bcharge'); wash(col); banner(ev.move, 'SPECIAL', col); await wait(620) }
+    if (ev.art === 'ultimate') { ov.classList.add('ult'); ST3 && ST3.ult(side); sfx('bcharge'); FXC.screen(col, .35, .5); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'ULTIMATE', col, true); shake(2); await wait(1350) }
+    else if (big) { sfx('bcharge'); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'SPECIAL', col); await wait(1000) }
     else await wait(300)
     // 2) the attack lands
     sfx(ev.art === 'strike' ? 'bhit' : ev.art === 'blast' ? 'bblast' : 'bimpact', ev.art === 'ultimate')
-    if (ev.art === 'strike') slashes(tgtEl, '#fff')
-    if (ev.art === 'blast') beam(atk, tgtEl, col)
-    if (big) beam(atk, tgtEl, col, true)
+    const [tx, ty] = ctr(tgtEl), [ax, ay] = ctr(atk)
+    if (ev.art === 'strike') FXC.slash(tx, ty, col)
+    if (ev.art === 'blast') FXC.beam(ax, ay, tx, ty, col, 22)
+    if (big) { FXC.beam(ax, ay, tx, ty, col, ev.art === 'ultimate' ? 90 : 56); FXC.screen('#ffffff', .25, .2) }
+    if (big) await wait(140) // hit-stop: the beam connects, then everything detonates
     ST3 && ST3.hit(other, big)
     shake(ev.art === 'ultimate' ? 3 : big ? 2 : 1)
     for (const x of ev.hits) {
       const isActive = x.t === act(B[other])
       const tgt = isActive ? tgtEl : $a(`.ar-side.${other} .ar-bench`)
       tgt.classList.remove('hurt'); void tgt.offsetWidth; tgt.classList.add('hurt')
-      sparks(tgt, x.crit ? '#ff5a6a' : big ? '#ffd23a' : col, big ? 24 : 14)
+      { const [hx, hy] = ctr(tgt); FXC.hit(hx, hy, x.crit ? '#ff5a6a' : big ? '#ffc840' : col, !isActive ? .7 : ev.art === 'ultimate' ? 2.3 : big ? 1.6 : ev.art === 'blast' ? 1.15 : .9) }
       const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : ''); n.textContent = x.dmg.toLocaleString()
       const r = tgt.getBoundingClientRect(); n.style.left = (r.left + r.width / 2) + 'px'; n.style.top = (r.top + r.height * .35) + 'px'
       ov.append(n); setTimeout(() => n.remove(), 1100)
@@ -304,7 +315,7 @@ export function startBattle(stage) {
     // knockouts
     const foe = B[other]
     if (act(foe).ko) {
-      sfx('bko'); shake(3); wash('#ff3d4a', true); ST3 && ST3.ko(other); log(`${act(foe).card.name} is knocked out!`)
+      sfx('bko'); shake(3); { const [kx, ky] = ctr(tgtEl); FXC.ko(kx, ky) } ST3 && ST3.ko(other); log(`${act(foe).card.name} is knocked out!`)
       $a(`.ar-side.${other} .ar-active`).classList.add('kod'); await wait(700); $a(`.ar-side.${other} .ar-active`).classList.remove('kod')
       if (!nextAlive(foe)) return end(other === 'ai')
       if (other === 'you') { await pickReplacement() } else { log(`Enemy sends out ${act(foe).card.name}`); sfx('nav') }
@@ -335,7 +346,7 @@ export function startBattle(stage) {
   mb.onclick = () => { sfxOn(!sfxOn()); mdraw() }; mdraw()
   $a('.ar-end').onclick = () => endTurn()
   $a('.ar-quit').onclick = () => { if (B.over || confirm('Quit this battle? It counts as a loss.')) close() }
-  function close() { document.body.classList.remove('in-battle'); B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
+  function close() { FXC.dispose(); document.body.classList.remove('in-battle'); B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
 
   async function aiPhase() {
     B.busy = true; controls()
