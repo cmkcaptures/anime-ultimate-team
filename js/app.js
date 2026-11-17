@@ -692,7 +692,8 @@ async function openPack(type) {
   function finish() { ov.classList.add('out'); setTimeout(() => ov.remove(), 350); go('results') }
 
   // ---- stage 1: tear the pack ----
-  const pc = await packCanvas(type, 360), url = pc.toDataURL()
+  const pre = cards.map(c => thumbURL(c, 420)) // render all 5 cards while the player is still tearing
+  const pc = await packCanvas(type, 360), url = pc.toDataURL('image/jpeg', .85)
   const pk = h('div', 'op-pack', `<div class="top" style="background-image:url(${url})"></div><div class="body" style="background-image:url(${url})"></div><div class="cut"><i></i></div>`)
   stage.append(pk); hint.textContent = 'SWIPE ACROSS THE TOP TO OPEN'
   await new Promise(res => {
@@ -709,13 +710,14 @@ async function openPack(type) {
   await wait(650); pk.remove(); ov.classList.remove('flash')
 
   // ---- stage 2: cards one by one ----
+  const urls = await Promise.all(pre)
   const stack = h('div', 'op-stack'); stage.append(stack)
   const els = cards.map((c, i) => {
     const big = TIER[c.r].rank >= 3
     const e = h('div', 'op-card' + (big ? ' facedown' : ''), `<div class="in"><div class="f"></div><div class="b"><span>AUT</span></div></div>`)
     e.style.setProperty('--rc', tierCol(c.r)); e.style.zIndex = 10 - i
     e.style.transform = `translateY(${i * -4}px) rotate(${(i - 2) * 1.2}deg)`
-    e.querySelector('.f').append(cardImg(c, 420))
+    { const im = new Image(); im.src = urls[i]; im.alt = c.name + ' ' + c.ver; im.decoding = 'sync'; e.querySelector('.f').append(im) }
     if (isNew(c.key) && !seenNew.has(c.key) && seenNew.add(c.key)) e.querySelector('.f').append(h('span', 'op-new', 'NEW'))
     e.dataset.tier = c.r
     stack.append(e); return e

@@ -695,3 +695,14 @@ body[data-page=missions]{ --a1: #19e3c8; --a2: #8a5cff; --a3: #39c6ff }
 /* card images keep their shape whatever size the box is */
 img { height: auto }
 .detail .big { width: min(300px, 74vw, 44vh) !important }
+/* pack opener: GPU-cheap version (no blur filters, no giant animated shadows) */
+.op-glow { filter: none !important; background: radial-gradient(circle, color-mix(in srgb, var(--bc) 45%, transparent), transparent 62%) !important; will-change: opacity, transform }
+.op-pack { filter: none !important }
+.op-pack > div:not(.cut) { box-shadow: 0 24px 40px rgba(0,0,0,.5) }
+.op-card { will-change: transform, opacity }
+.op-card .in { will-change: transform }
+.op-card.reveal .f { box-shadow: 0 0 0 2px var(--rc), 0 18px 40px rgba(0,0,0,.55) !important }
+.op-card .b { box-shadow: inset 0 0 0 5px rgba(255,255,255,.22), 0 18px 40px rgba(0,0,0,.5) !important }
+#opener.burst::after, #opener.flash::after { background: color-mix(in srgb, var(--bc) 55%, #fff) !important; animation-duration: .35s !important }
+#opener.big.charging .op-stage { animation-duration: .12s }
+.op-label small { text-shadow: none }
