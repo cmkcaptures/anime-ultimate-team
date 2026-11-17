@@ -965,3 +965,25 @@ body[data-page=battle] { --a1: #ff4a5a; --a2: #ff9d3a; --a3: #ffd23a }
 .art { min-height: 92px !important }
 @media (max-width: 760px) { .ar-mid { justify-content: center; top: calc(50% + 0px) } .ar-log { font-size: 14px !important; padding: 6px 22px !important } }
 #arena { grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 1fr) auto auto !important }
+
+/* ===== 3D arena: tilted floor, depth, standing cards ===== */
+#arena { perspective: 1100px; perspective-origin: 50% 35% }
+.ar-bg { transform-origin: 50% 55%; transform: rotateX(52deg) scale(2.1, 1.7) translateY(-6%) }
+.ar-bg::before { inset: 14% 18% !important }
+#arena::before { content: ""; position: absolute; inset: 0; z-index: -2; background: radial-gradient(80% 50% at 50% 0%, #2a1a12, #0a0a0e 60%), #07070a }
+#arena::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 32%; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(4,4,7,.95), transparent) }
+.ar-side { transform-style: preserve-3d }
+.ar-side.ai { transform: translateZ(-160px) translateY(18px) }
+.ar-side.you { transform: translateZ(40px) }
+.ar-active, .bslot { transform-style: preserve-3d }
+.ar-active::after { content: ""; position: absolute; left: 6%; right: 6%; bottom: -16px; height: 26px; border-radius: 50%; z-index: -1; background: radial-gradient(closest-side, rgba(0,0,0,.75), transparent); filter: blur(2px) }
+.ar-side.ai .ar-active::before, .ar-side.you .ar-active::before { content: ""; position: absolute; left: -14%; right: -14%; bottom: -26px; height: 44px; border-radius: 50%; z-index: -2; pointer-events: none }
+.ar-side.ai .ar-active::before { background: radial-gradient(closest-side, rgba(255,122,26,.45), transparent) }
+.ar-side.you .ar-active::before { background: radial-gradient(closest-side, rgba(0,229,255,.45), transparent) }
+.ar-side .ar-active img { transform: rotateX(-6deg) }
+.ar-side.you .ar-active img { transform: rotateX(8deg) }
+.bslot { box-shadow: 0 10px 14px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.12) !important }
+.ar-side.you .ar-bench { transform: rotateX(28deg); transform-origin: 50% 0 }
+.ar-side.ai .ar-bench { transform: rotateX(-14deg) }
+.ar-hand { perspective: 700px } .art { transform-style: preserve-3d }
+@media (max-width: 520px) { .ar-side.ai { transform: translateZ(-90px) translateY(10px) } }
