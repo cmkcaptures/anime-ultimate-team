@@ -1289,3 +1289,22 @@ body.in-battle #app * { animation-play-state: paused !important }
 #arena .ar-active img { box-shadow: 0 0 0 2px var(--sc2, #fff), 0 0 28px color-mix(in srgb, var(--sc2, #fff) 35%, transparent), 0 26px 30px rgba(0,0,0,.75) !important }
 #arena .ar-side.ai .ar-active { --sc2: #ff8a2a } #arena .ar-side.you .ar-active { --sc2: #22d8ff }
 @media (max-width: 760px) { .st-plat { top: 30%; transform: rotateX(58deg) } .st-pillars i { width: 18px } }
+
+/* ================= PLAYERS ================= */
+body[data-page=players] { --a1: #8a5cff; --a2: #22d8ff; --a3: #ff5ac8 }
+.phead { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 20px; background: linear-gradient(120deg, rgba(138,92,255,.3), rgba(34,216,255,.12)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1) }
+.pav { width: 54px; height: 54px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 14px; font: italic 900 30px var(--disp); color: #fff; background: linear-gradient(135deg, var(--a1), var(--a2)); box-shadow: inset 0 2px 0 rgba(255,255,255,.3) }
+.pav.sm { width: 40px; height: 40px; font-size: 22px; border-radius: 10px } .pav.lg { width: 84px; height: 84px; font-size: 48px; border-radius: 20px; margin: 0 auto 8px }
+.pme { flex: 1 } .pme b { display: block; font: italic 900 30px/1 var(--disp) }
+.plist { display: flex; flex-direction: column; gap: 8px; margin-top: 14px }
+.plist .chips { margin-bottom: 4px }
+.prow { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; border: 0; border-radius: 14px; cursor: pointer; text-align: left; color: #fff; background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.07); transition: transform .15s, box-shadow .15s }
+.prow:hover { transform: translateX(4px); box-shadow: inset 0 0 0 1px var(--a1) }
+.prow.me { box-shadow: inset 0 0 0 2px var(--a2) }
+.prow .rk { width: 30px; font: italic 900 24px var(--disp); color: rgba(255,255,255,.4); text-align: center }
+.prow:nth-child(2) .rk { color: #ffd23a } .prow:nth-child(3) .rk { color: #d0d8e8 } .prow:nth-child(4) .rk { color: #e09a5a }
+.prow .pi { flex: 1; min-width: 0 } .prow .pi b { display: block; font: italic 900 22px/1 var(--disp) } .prow .pi small { font: 700 11px var(--ui); color: rgba(255,255,255,.55) }
+.prow .pr { text-align: center; font: italic 900 26px/1 var(--disp); color: var(--a2) } .prow .pr small { display: block; font: 900 8px var(--ui); letter-spacing: .14em; color: rgba(255,255,255,.45) }
+.psheet { text-align: center } .psheet h2 { margin: 0; font: italic 900 40px/1 var(--disp) }
+.pst { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 14px 0 4px } .pst div { padding: 8px 0; border-radius: 10px; background: rgba(255,255,255,.06) } .pst b { display: block; font: italic 900 22px var(--disp) } .pst span { font: 900 8px var(--ui); letter-spacing: .14em; color: rgba(255,255,255,.5) }
+.t-players { cursor: pointer; text-align: left; border: 0; color: #fff; background: linear-gradient(120deg, #4a2bd0, #1a6ab8) !important }

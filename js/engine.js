@@ -2,33 +2,28 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-const LS_SAVE = 'aut-save-v2', LS_KEY = 'aut-key'
-
-// ---- player key: arrives once as ?key=..., then kept on this device ----
-const qs = new URLSearchParams(location.search)
-if (qs.get('key')) { try { localStorage.setItem(LS_KEY, qs.get('key')) } catch { } history.replaceState(null, '', location.pathname + location.hash) }
-let KEY = null; try { KEY = localStorage.getItem(LS_KEY) } catch { }
-
-// ---- Firebase Firestore (plain REST, no library). Doc id = your private key; rules block listing, so it can't be found without it. ----
-const SB = CFG.projectId && CFG.apiKey && KEY ? { url: 'https://firestore.googleapis.com/v1/projects/' + CFG.projectId + '/databases/(default)/documents/aut_saves/' + encodeURIComponent(KEY) + '?key=' + CFG.apiKey } : null
-async function cloudLoad() {
-  if (!SB) return null
-  const r = await fetch(SB.url)
-  if (r.status === 404) return null
-  if (!r.ok) throw new Error('cloud ' + r.status)
-  const d = await r.json(); return { data: JSON.parse(d.fields.data.stringValue) }
+import { initAccount, loadSave, storeSave, publish, me } from './account.js'
+let LS_SAVE = 'aut-save-v3'
+// the old single-player key (from the ?key= link era), used once to move that save onto your account
+let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
+async function legacySave() {
+  if (!OLDKEY || !CFG.apiKey) return null
+  try { const r = await fetch('https://firestore.googleapis.com/v1/projects/' + CFG.projectId + '/databases/(default)/documents/aut_saves/' + encodeURIComponent(OLDKEY) + '?key=' + CFG.apiKey); if (!r.ok) return null; const d = await r.json(); return JSON.parse(d.fields.data.stringValue) } catch { return null }
 }
+const SB = true
+async function cloudLoad() { const d = await loadSave(); return d ? { data: d } : null }
 let cloudBusy = false, cloudAgain = false
 async function cloudSave() {
-  if (!SB) return
   if (cloudBusy) { cloudAgain = true; return }
   cloudBusy = true
-  try {
-    const r = await fetch(SB.url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { data: { stringValue: JSON.stringify(S) }, savedAt: { integerValue: String(S.savedAt || Date.now()) } } }) })
-    setSync(r.ok ? 'ok' : 'err')
-  } catch { setSync('err') }
+  try { await storeSave(S); setSync('ok'); publish(summary()) } catch { setSync('err') }
   cloudBusy = false
   if (cloudAgain) { cloudAgain = false; cloudSave() }
+}
+function summary() {
+  const P = S.profile, own = Object.keys(P.club.cards).filter(k => byKey(k)), team = P.team.filter(k => k && byKey(k))
+  return { level: levelOf(P.xp || 0).lv, cards: own.length, packs: P.club.packs || 0, cleared: (P.battle && P.battle.cleared) || 0, wins: (P.battle && P.battle.wins) || 0, losses: (P.battle && P.battle.losses) || 0,
+    pvpWins: (P.battle && P.battle.pvpW) || 0, rating: team.length ? Math.round(team.reduce((n, k) => n + byKey(k).ovr, 0) / team.length) : 0, team, showcase: (P.showcase || []).filter(k => byKey(k)) }
 }
 function setSync(s) { document.documentElement.dataset.sync = s }
 
@@ -278,6 +273,12 @@ function act(a) {
       settle(l, 'bin', 'YOU')
       return { msg: `Bought ${cardName(l.key)} for ${l.bin.toLocaleString()} coins.` }
     }
+    case 'pvp': {
+      P.battle = P.battle || { cleared: 0, wins: 0, losses: 0 }
+      if (!a.won) { P.battle.pvpL = (P.battle.pvpL || 0) + 1; addXP(10); return {} }
+      P.battle.pvpW = (P.battle.pvpW || 0) + 1; P.coins += 2500; addXP(50)
+      return { msg: `You beat ${a.name || 'that player'}'s team! +2,500 coins.` }
+    }
     case 'battle': {
       const STG = [0, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7500, 10000, 15000], PK = { 5: 'standard', 8: 'premium', 10: 'premium' }
       const n = +a.stage; if (!(n >= 1 && n <= 10)) return { error: 'Unknown stage.' }
@@ -320,14 +321,17 @@ function market() {
 // ---------------- boot ----------------
 const ready = (async () => {
   CARDS = await (await fetch('cards-list.json', { cache: 'no-cache' })).json()
+  const who = await initAccount(CFG); LS_SAVE = 'aut-save-v3-' + who.uid
   let local = null; try { local = JSON.parse(localStorage.getItem(LS_SAVE)) } catch { }
   let cloud = null
-  try { const row = await cloudLoad(); cloud = row && row.data; setSync(SB ? 'ok' : 'local') } catch { setSync('err') }
+  try { const row = await cloudLoad(); cloud = row && row.data; setSync('ok') } catch { setSync('err') }
+  // first login: bring over the old save from before accounts existed (only if this account has nothing yet)
+  if (!cloud && !local) { const old = await legacySave(); if (old) { cloud = old; try { localStorage.removeItem('aut-key') } catch { } } }
   // newest save wins (cloud vs this device)
   S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
   const f = fresh(); S.profile = { ...f.profile, ...S.profile }; S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
   if (!S.market.listings.length) { for (let i = 0; i < 15; i++) tick(true) } else tick(true)
-  save()
+  save(); publish(summary(), true)
   setInterval(() => tick(), 10000)
   // pull fresh cloud data when coming back to the tab (e.g. played on the other device)
   document.addEventListener('visibilitychange', async () => {

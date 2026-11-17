@@ -1,4 +1,5 @@
-import { initBattle, battlePage } from './battle.js'
+import { initBattle, battlePage, startBattle } from './battle.js'
+import * as ACC from './account.js'
 import { sfx, sfxOn } from './sfx.js'
 // ANIME ULTIMATE TEAM — app shell + pages
 import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js'
@@ -225,6 +226,7 @@ PAGES.home = (el) => {
   )
   el.append(tiles)
   const bt = h('button', 'tile t-battle', `<b style="font-size:26px">BATTLE</b><small>Story mode · ${(P.battle && P.battle.cleared) || 0}/10 stages cleared</small>`); bt.style.minHeight = '84px'; bt.style.marginTop = '12px'; bt.style.width = '100%'; bt.onclick = () => go('battle'); el.append(bt)
+  const pl = h('button', 'tile t-players', `<b style="font-size:26px">PLAYERS</b><small>Leaderboard · friends · battle real teams</small>`); pl.style.minHeight = '84px'; pl.style.marginTop = '12px'; pl.style.width = '100%'; pl.onclick = () => go('players'); el.append(pl)
   // showcase
   el.append(showcaseBlock())
   // last pulls
@@ -894,3 +896,62 @@ document.addEventListener('click', e => { const b = e.target.closest('button'); 
 PAGES.battle = el => battlePage(el)
 TITLES.battle = 'BATTLE'
 initBattle({ h, $, cardImg, eff, get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
+
+// ================= PLAYERS (accounts, leaderboard, friends, PvP) =================
+const PS = { tab: 0, sort: 'level' }
+TITLES.players = 'PLAYERS'
+PAGES.players = async el => {
+  const meP = ACC.me()
+  const head = h('div', 'phead')
+  head.innerHTML = `<div class="pav">${(meP.profile?.name || '?')[0].toUpperCase()}</div><div class="pme"><span class="eyebrow">SIGNED IN AS</span><b>${meP.profile?.name || ''}</b></div>`
+  const so = h('button', 'btn dark sm', 'SIGN OUT'); so.onclick = () => { if (confirm('Sign out of this device?')) ACC.signOut() }; head.append(so)
+  el.append(head)
+  const seg = segmented(['LEADERBOARD', 'FRIENDS', 'FIND PLAYER'], PS.tab, i => { PS.tab = i; rerender() }); seg.style.marginTop = '14px'; el.append(seg)
+  const body = h('div', 'plist'); el.append(body)
+  const row = (p, i) => {
+    const r = h('button', 'prow' + (p.uid === meP.uid ? ' me' : ''))
+    r.innerHTML = `${i != null ? `<span class="rk">${i + 1}</span>` : ''}<div class="pav sm">${(p.name || '?')[0].toUpperCase()}</div><div class="pi"><b>${p.name}</b><small>LV ${p.level || 1} · ${p.cards || 0} cards · ${p.cleared || 0}/10 story · ${p.pvpWins || 0} PvP wins</small></div><span class="pr">${p.rating || '–'}<small>TEAM</small></span>`
+    r.onclick = () => playerSheet(p); return r
+  }
+  body.innerHTML = '<div class="muted" style="padding:20px;text-align:center;font-weight:800">Loading…</div>'
+  try {
+    if (PS.tab === 0) {
+      const sorts = h('div', 'chips'); for (const [k, l] of [['level', 'Level'], ['cards', 'Collection'], ['pvpWins', 'PvP wins'], ['rating', 'Team rating']]) { const c = h('button', 'chip' + (PS.sort === k ? ' on' : ''), l); c.onclick = () => { PS.sort = k; rerender() }; sorts.append(c) }
+      const list = await ACC.leaderboard(PS.sort); body.innerHTML = ''; body.append(sorts)
+      list.forEach((p, i) => body.append(row(p, i)))
+      if (!list.length) body.append(h('div', 'empty', '<b>No players yet</b>Share the link with your mates.'))
+    } else if (PS.tab === 1) {
+      const list = await ACC.friends(); body.innerHTML = ''
+      list.forEach(p => body.append(row(p)))
+      if (!list.length) body.append(h('div', 'empty', '<b>No friends yet</b>Find a player by name and add them.'))
+    } else {
+      body.innerHTML = ''
+      const f = h('div', 'panel pad'), q = h('input', 'field'); q.placeholder = 'Exact username'; const go2 = h('button', 'btn gold block', 'SEARCH'); go2.style.marginTop = '10px'
+      const out = h('div', ''); out.style.marginTop = '12px'
+      go2.onclick = async () => { out.innerHTML = ''; const p = await ACC.findByName(q.value); out.append(p ? row(p) : h('div', 'empty', '<b>No player with that name</b>Names are not case sensitive.')) }
+      q.onkeydown = e => { if (e.key === 'Enter') go2.click() }
+      f.append(q, go2); body.append(f, out)
+    }
+  } catch (e) { body.innerHTML = `<div class="empty"><b>Could not load players</b>${e.message || ''}</div>` }
+}
+function playerSheet(p) {
+  const meP = ACC.me(), mine = p.uid === meP.uid, isF = (meP.profile.friends || []).includes(p.uid)
+  openModal(sh => {
+    sh.append(h('div', 'psheet', `<div class="pav lg">${p.name[0].toUpperCase()}</div><h2>${p.name}</h2><span class="muted" style="font-weight:800">LEVEL ${p.level || 1}</span>
+      <div class="pst"><div><b>${p.cards || 0}</b><span>CARDS</span></div><div><b>${p.packs || 0}</b><span>PACKS</span></div><div><b>${p.cleared || 0}/10</b><span>STORY</span></div><div><b>${p.pvpWins || 0}</b><span>PVP WINS</span></div><div><b>${p.rating || '–'}</b><span>TEAM</span></div></div>`))
+    const sc = (p.showcase || []).map(k => BYKEY[k]).filter(Boolean), tm = (p.team || []).map(k => BYKEY[k]).filter(Boolean)
+    if (sc.length) { sh.append(h('div', 'sec', '<h3>SHOWCASE</h3>')); const g = h('div', 'cardgrid'); sc.forEach(c => { const b = h('div', 'cg'); b.append(cardImg(c, 240)); g.append(b) }); sh.append(g) }
+    if (tm.length) { sh.append(h('div', 'sec', '<h3>TEAM</h3>')); const g = h('div', 'cardgrid'); tm.forEach(c => { const b = h('div', 'cg'); b.append(cardImg(c, 240)); g.append(b) }); sh.append(g) }
+    const acts = h('div', 'grid2'); acts.style.marginTop = '16px'
+    if (!mine) {
+      const fb = h('button', 'btn ' + (isF ? 'dark' : 'violet'), isF ? 'REMOVE FRIEND' : 'ADD FRIEND')
+      fb.onclick = async () => { isF ? await ACC.removeFriend(p.uid) : await ACC.addFriend(p.uid); toast(isF ? 'Removed from friends.' : p.name + ' added to friends.'); closeModal(); rerender() }
+      const bb = h('button', 'btn gold', 'BATTLE THEIR TEAM'); bb.disabled = tm.length < 6 || P.team.filter(Boolean).length < 6
+      bb.title = tm.length < 6 ? 'They need a full team of 6.' : 'Your team needs 6 fighters.'
+      bb.onclick = () => { closeModal(); startBattle({ n: 0, pvp: true, name: p.name, rating: p.rating || 85, level: 4, team: p.team }) }
+      acts.append(fb, bb)
+      if (tm.length < 6) sh.append(h('p', 'muted', '<small style="font-weight:700">They need a full team of 6 before you can battle them.</small>'))
+    }
+    sh.append(acts)
+  })
+}
