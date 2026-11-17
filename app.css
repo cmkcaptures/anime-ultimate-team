@@ -692,3 +692,6 @@ body[data-page=missions]{ --a1: #19e3c8; --a2: #8a5cff; --a3: #39c6ff }
 .cardgrid > *, .ppgrid > *, .pocket, .hot { content-visibility: auto; contain-intrinsic-size: 150px 230px }
 #modal { backdrop-filter: none !important; background: rgba(5,4,12,.78) !important }
 .op-skip, .chips2 .cur { backdrop-filter: none !important }
+/* card images keep their shape whatever size the box is */
+img { height: auto }
+.detail .big { width: min(300px, 74vw, 44vh) !important }
