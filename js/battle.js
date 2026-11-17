@@ -2,6 +2,7 @@
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
 import { TIER, thumbURL } from './cardkit.js'
 import { sfx } from './sfx.js'
+import { createArena } from './arena3d.js'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -152,7 +153,7 @@ export function startBattle(stage) {
   const youFirst = act(B.you).spd >= act(B.ai).spd
 
   const ov = h('div', ''); ov.id = 'arena'
-  ov.innerHTML = `<div class="ar-bg"></div>
+  ov.innerHTML = `<div class="ar-3d"></div><div class="ar-bg"></div>
     <header class="ar-top"><button class="ar-quit">✕ QUIT</button><span class="ar-stage">STAGE ${stage.n} · ${stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
     <div class="ar-plate ai"><span class="pn">ENEMY · ${stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
@@ -160,6 +161,8 @@ export function startBattle(stage) {
     <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-ult">ULTIMATE</button><button class="ar-end">END TURN</button></div></footer>`
   document.body.append(ov)
   const $a = s => ov.querySelector(s)
+  let ST3 = null
+  createArena(ov.querySelector('.ar-3d')).then(st => { if (B.closed) return st.dispose(); ST3 = st; ov.classList.add('has3d') }).catch(() => { })
   const log = t => { const l = $a('.ar-log'); l.textContent = t; l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop') }
   const wait = ms => new Promise(r => setTimeout(r, ms))
   const IMG = new Map()
@@ -211,10 +214,11 @@ export function startBattle(stage) {
     if (ev.guard) { log(`${act(B[side]).card.name} braces · GUARD`); sfx('soft'); atk.classList.add('guarding'); await wait(450); atk.classList.remove('guarding'); draw(); return }
     const big = ev.art === 'special' || ev.art === 'ultimate'
     log(big ? `${ev.art === 'ultimate' ? 'ULTIMATE · ' : ''}${ev.move}` : `${act(B[side]).card.name} · ${ARTS[ev.art].name}`)
-    if (ev.art === 'ultimate') { ov.classList.add('ult'); sfx('charge', 5); await wait(900) } else if (big) { sfx('charge', 3); await wait(380) }
+    if (ev.art === 'ultimate') { ov.classList.add('ult'); ST3 && ST3.ult(side); sfx('charge', 5); await wait(900) } else if (big) { sfx('charge', 3); await wait(380) }
     atk.classList.remove('lunge'); void atk.offsetWidth; atk.classList.add('lunge')
     await wait(160)
     sfx(ev.art === 'strike' ? 'click' : ev.art === 'blast' ? 'deal' : 'reveal', ev.art === 'ultimate' ? 6 : 3)
+    ST3 && ST3.hit(other, big)
     for (const x of ev.hits) {
       const isActive = x.t === act(B[other])
       const tgt = isActive ? $a(`.ar-side.${other} .ar-active`) : $a(`.ar-side.${other} .ar-bench`)
@@ -228,7 +232,7 @@ export function startBattle(stage) {
     // knockouts
     const foe = B[other]
     if (act(foe).ko) {
-      sfx('error'); log(`${act(foe).card.name} is knocked out!`)
+      sfx('error'); ST3 && ST3.ko(other); log(`${act(foe).card.name} is knocked out!`)
       $a(`.ar-side.${other} .ar-active`).classList.add('kod'); await wait(700); $a(`.ar-side.${other} .ar-active`).classList.remove('kod')
       if (!nextAlive(foe)) return end(other === 'ai')
       if (other === 'you') { await pickReplacement() } else { log(`Enemy sends out ${act(foe).card.name}`); sfx('nav') }
@@ -257,7 +261,7 @@ export function startBattle(stage) {
   $a('.ar-ult').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); const e = ultimate(B, 'you'); if (e) await show(e); B.busy = false; if (!B.over) controls() }
   $a('.ar-end').onclick = () => endTurn()
   $a('.ar-quit').onclick = () => { if (B.over || confirm('Quit this battle? It counts as a loss.')) close() }
-  function close() { ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
+  function close() { B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
 
   async function aiPhase() {
     B.busy = true; controls()

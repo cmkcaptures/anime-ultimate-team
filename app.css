@@ -987,3 +987,16 @@ body[data-page=battle] { --a1: #ff4a5a; --a2: #ff9d3a; --a3: #ffd23a }
 .ar-side.ai .ar-bench { transform: rotateX(-14deg) }
 .ar-hand { perspective: 700px } .art { transform-style: preserve-3d }
 @media (max-width: 520px) { .ar-side.ai { transform: translateZ(-90px) translateY(10px) } }
+
+/* ===== real 3D stage underneath the board ===== */
+.ar-3d { position: absolute; inset: 0; z-index: -1 }
+.ar-3d canvas { width: 100% !important; height: 100% !important; display: block }
+#arena.has3d .ar-bg, #arena.has3d::before, #arena.has3d::after { display: none }
+#arena.has3d { background: #07070a; perspective: none }
+#arena.has3d .ar-side.ai, #arena.has3d .ar-side.you { transform: none }
+#arena.has3d .ar-side.you .ar-bench, #arena.has3d .ar-side.ai .ar-bench { transform: none }
+#arena.has3d .ar-active::before, #arena.has3d .ar-active::after { display: none }
+#arena.has3d .ar-side .ar-active img { transform: none }
+#arena.has3d .ar-plate { background: linear-gradient(90deg, rgba(0,0,0,.82), rgba(14,14,20,.55)) !important; backdrop-filter: none }
+#arena.has3d .ar-ctrl { background: linear-gradient(180deg, transparent, rgba(4,4,8,.85) 35%) !important }
+#arena.has3d .ar-top { background: linear-gradient(180deg, rgba(4,4,8,.8), transparent) }
