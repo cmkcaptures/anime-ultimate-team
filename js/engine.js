@@ -278,6 +278,19 @@ function act(a) {
       settle(l, 'bin', 'YOU')
       return { msg: `Bought ${cardName(l.key)} for ${l.bin.toLocaleString()} coins.` }
     }
+    case 'battle': {
+      const STG = [0, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7500, 10000, 15000], PK = { 5: 'standard', 8: 'premium', 10: 'premium' }
+      const n = +a.stage; if (!(n >= 1 && n <= 10)) return { error: 'Unknown stage.' }
+      P.battle = P.battle || { cleared: 0, wins: 0, losses: 0 }
+      if (!a.won) { P.battle.losses++; addXP(10); return {} }
+      if (n > P.battle.cleared + 1) return { error: 'Stage is locked.' }
+      P.battle.wins++
+      const first = n > P.battle.cleared, coins = first ? STG[n] : Math.round(STG[n] / 3 / 50) * 50
+      P.coins += coins; addXP(first ? 60 : 30)
+      let extra = ''
+      if (first) { P.battle.cleared = n; if (PK[n]) { P.pending[PK[n]] = (P.pending[PK[n]] || 0) + 1; extra = ` and a ${PK[n] === 'premium' ? 'Premium' : 'Legends'} pack` } }
+      return { msg: `Stage ${n} ${first ? 'cleared' : 'won'}! +${coins.toLocaleString()} coins${extra}.` }
+    }
     case 'claim': {
       const r = rewards().find(r => r.id === a.id); if (!r) return { error: 'Reward not found.' }
       if (!r.done) return { error: 'Not finished yet.' }; if (r.claimed) return { error: 'Already claimed.' }

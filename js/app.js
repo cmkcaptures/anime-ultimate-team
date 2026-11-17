@@ -1,3 +1,4 @@
+import { initBattle, battlePage } from './battle.js'
 import { sfx, sfxOn } from './sfx.js'
 // ANIME ULTIMATE TEAM — app shell + pages
 import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js'
@@ -221,7 +222,7 @@ PAGES.home = (el) => {
     tile('t-team', 'MY TEAM', teamSub(), `<svg class="ico" viewBox="0 0 64 64"><g fill="#ff9ecb" stroke="#6a1d4a" stroke-width="2.5"><circle cx="32" cy="20" r="9"/><path d="M16 54a16 16 0 0 1 32 0Z"/></g></svg>`, () => go('team')),
   )
   el.append(tiles)
-  const bt = h('div', 'tile t-battle', '<b style="font-size:24px">BATTLE · COMING SOON</b><small>Take your team into 5v5 fights.</small>'); bt.style.minHeight = '84px'; bt.style.marginTop = '12px'; el.append(bt)
+  const bt = h('button', 'tile t-battle', `<b style="font-size:26px">BATTLE</b><small>Story mode · ${(P.battle && P.battle.cleared) || 0}/10 stages cleared</small>`); bt.style.minHeight = '84px'; bt.style.marginTop = '12px'; bt.style.width = '100%'; bt.onclick = () => go('battle'); el.append(bt)
   // showcase
   el.append(showcaseBlock())
   // last pulls
@@ -886,3 +887,8 @@ document.addEventListener('click', e => { const b = e.target.closest('button'); 
   t.onclick = () => { sfxOn(!sfxOn()); draw(); sfx('click') }; draw()
   document.querySelector('.chips2')?.prepend(t)
 }
+
+// ================= BATTLE =================
+PAGES.battle = el => battlePage(el)
+TITLES.battle = 'BATTLE'
+initBattle({ h, $, cardImg, eff, get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
