@@ -667,3 +667,28 @@ body[data-page=missions]{ --a1: #19e3c8; --a2: #8a5cff; --a3: #39c6ff }
 .sec h3 { position: relative; padding-left: 14px; font-size: 22px !important }
 .sec h3::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 5px; transform: skewX(-14deg); background: linear-gradient(var(--a1), var(--a2)); box-shadow: 0 0 10px var(--a1) }
 .crumbs { letter-spacing: .14em }
+
+/* ================= PRO PASS: no spinning rays, calmer motion, cheaper paints ================= */
+.rays, .sh-rays, .ah-rays, .op-rays, #backdrop::before, #backdrop::after, #app::after { display: none !important; animation: none !important }
+#app::before { animation: none !important; opacity: .8 !important }
+/* clean studio lighting instead of sunbursts */
+.packstage, .ahero, .shero { background-image: radial-gradient(70% 55% at 50% 0%, rgba(255,255,255,.07), transparent 70%), linear-gradient(180deg, rgba(255,255,255,.03), transparent 40%) , var(--stage-bg, none) }
+.packstage::after, .ahero::after { content: ""; position: absolute; left: 8%; right: 8%; top: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); pointer-events: none }
+.packstage { background: radial-gradient(50% 70% at 50% 45%, color-mix(in srgb, var(--a1) 28%, transparent), transparent 75%), linear-gradient(180deg, #1c1830, #110f1c) !important }
+.ahero { background: radial-gradient(50% 60% at 50% 45%, color-mix(in srgb, var(--rc) 26%, transparent), transparent 75%), linear-gradient(180deg, #1a1726, #0e0c16) !important }
+#opener { background: radial-gradient(45% 45% at 50% 45%, color-mix(in srgb, var(--bc) 22%, #0f0d18), #07060c 80%) !important }
+/* no idle bobbing / floating */
+.pk3.c, .scslot.on, .op-pack, .sh-tilt canvas, .ah-card img, .op-card.facedown.top, .mh-l .sh-tag, .op-hint { animation: none !important }
+.op-hint { opacity: .75 }
+/* card back: clean foil instead of a burst */
+.op-card .b::before { background: repeating-linear-gradient(135deg, rgba(255,255,255,.06) 0 2px, transparent 2px 9px) !important; animation: none !important }
+.op-card[data-tier=X] .b { background: linear-gradient(135deg, #ff6aa8, #ffd36a 25%, #6affc0 50%, #6ac8ff 75%, #b88cff) !important }
+/* calmer glows */
+#opener.charging .op-glow { animation: none !important; transform: scale(1.15) }
+.hot img { filter: none !important; box-shadow: 0 10px 22px rgba(0,0,0,.45) }
+.scslot.on { filter: none !important; box-shadow: 0 0 0 2px var(--rc), 0 12px 24px rgba(0,0,0,.45); border-radius: 10px }
+/* performance: isolate scrolling pages, skip off-screen work */
+.page { contain: layout paint; will-change: auto }
+.cardgrid > *, .ppgrid > *, .pocket, .hot { content-visibility: auto; contain-intrinsic-size: 150px 230px }
+#modal { backdrop-filter: none !important; background: rgba(5,4,12,.78) !important }
+.op-skip, .chips2 .cur { backdrop-filter: none !important }

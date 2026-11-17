@@ -49,7 +49,15 @@ function toast(text, kind = 'ok') {
 }
 
 // ================= card images =================
-function cardImg(c, w = 340) { const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, rated ${c.ovr}`; im.decoding = 'async'; im.draggable = false; thumbURL(c, w).then(u => im.src = u); return im }
+// cards are drawn only when they scroll near the screen (big win on My Cards / binders / shop)
+const LAZY = 'IntersectionObserver' in window ? new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) { LAZY.unobserve(e.target); e.target._draw() } }, { rootMargin: '300px' }) : null
+function cardImg(c, w = 340) {
+  const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, rated ${c.ovr}`; im.decoding = 'async'; im.draggable = false
+  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'
+  im._draw = () => thumbURL(c, w).then(u => im.src = u)
+  if (LAZY) { LAZY.observe(im); setTimeout(() => { if (!im.src && im.isConnected && im.getBoundingClientRect().top < innerHeight + 300) { LAZY.unobserve(im); im._draw() } }, 50) } else im._draw()
+  return im
+}
 const BACK = (() => {
   const c = document.createElement('canvas'); c.width = 340; c.height = 476; const x = c.getContext('2d')
   const g = x.createLinearGradient(0, 0, 340, 476); g.addColorStop(0, '#3a2470'); g.addColorStop(.5, '#120a26'); g.addColorStop(1, '#2db4ff')
@@ -169,7 +177,7 @@ setInterval(() => {
 let homeIdx = 0
 PAGES.home = (el) => {
   const types = Object.keys(ST.packs).filter(t => packPool(t).length)
-  const stage = h('div', 'packstage'); stage.append(h('div', 'rays'))
+  const stage = h('div', 'packstage'); void 0
   const car = h('div', 'carousel3'); stage.append(car)
   const place = () => {
     const n = types.length
@@ -476,7 +484,7 @@ function marketResults(el) {
     const l = items[MS.sel], c = BYKEY[l.key], d = l.value / l.bin
     const col = tierCol(c.r), dl = d > 1.05 ? ['win', 'GOOD DEAL'] : d < .95 ? ['lose', 'PRICEY'] : ['active', 'FAIR PRICE']
     deck.style.setProperty('--rc', col)
-    hero.innerHTML = ''; const hc = h('div', 'ah-card'); hc.append(cardImg(effL(c, l.lvl), 520)); hero.append(h('div', 'ah-rays'), hc)
+    hero.innerHTML = ''; const hc = h('div', 'ah-card'); hc.append(cardImg(effL(c, l.lvl), 520)); hero.append(hc)
     hero.onpointermove = e => { const r = hero.getBoundingClientRect(); hc.style.transform = `rotateY(${((e.clientX - r.left) / r.width - .5) * 22}deg) rotateX(${-((e.clientY - r.top) / r.height - .5) * 16}deg)` }
     hero.onpointerleave = () => hc.style.transform = ''
     info.innerHTML = `<div class="a-head"><div><span class="a-rar">${RARITY_MARK[c.r]} ${TIER[c.r].name}</span><h3>${c.name}</h3><small>${c.ver}${l.lvl ? ' · ★' + l.lvl : ''}</small></div><b class="a-ovr">${c.ovr}</b></div>
@@ -676,7 +684,7 @@ async function openPack(type) {
   const ov = h('div', ''); ov.id = 'opener'
   const best = cards[cards.length - 1], bcol = tierCol(best.r)
   ov.style.setProperty('--bc', bcol)
-  ov.innerHTML = `<div class="op-rays"></div><div class="op-glow"></div><div class="op-stage"></div><div class="op-hint"></div><button class="op-skip">SKIP ›</button>`
+  ov.innerHTML = `<div class="op-glow"></div><div class="op-stage"></div><div class="op-hint"></div><button class="op-skip">SKIP ›</button>`
   document.body.append(ov)
   const stage = ov.querySelector('.op-stage'), hint = ov.querySelector('.op-hint')
   let skipping = false
@@ -801,7 +809,7 @@ function shopHero(el) {
   if (!types.includes(SHOPSEL)) SHOPSEL = types[0]
   const t = SHOPSEL, pk = ST.packs[t], L = PACKLOOK[t] || PACKLOOK.standard, pend = P.pending[t] || 0, odds = packOdds(t)
   const hero = h('section', 'shero'); hero.style.setProperty('--p1', L.c[0]); hero.style.setProperty('--p2', L.c[1]); hero.style.setProperty('--p3', L.c[2])
-  hero.innerHTML = `<div class="sh-bg"></div><div class="sh-rays"></div><div class="sh-stripe"></div>
+  hero.innerHTML = `<div class="sh-bg"></div><div class="sh-stripe"></div>
     <div class="sh-pack"><div class="sh-tilt"></div><div class="sh-floor"></div></div>
     <div class="sh-info">
       <span class="sh-tag">${t === 'premium' ? '★ FEATURED' : pk.anime ? 'SERIES PACK' : 'CORE PACK'}</span>
