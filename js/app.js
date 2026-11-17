@@ -1,3 +1,4 @@
+import { sfx, sfxOn } from './sfx.js'
 // ANIME ULTIMATE TEAM — app shell + pages
 import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js'
 
@@ -21,9 +22,9 @@ async function api(path) { const r = await fetch(path, { cache: 'no-store' }); r
 async function act(type, data = {}) {
   let r
   try { r = await (await fetch('/api/act', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, ...data }) })).json() }
-  catch { toast('The game server is not responding. Is the start.bat window still open?', 'err'); return { error: 'offline' } }
+  catch { sfx('error'); toast('Could not reach the game. Check your connection.', 'err'); return { error: 'offline' } }
   if (r.state) applyState(r.state)
-  if (r.error) toast(r.error, 'err'); else if (r.msg) toast(r.msg, 'ok')
+  if (r.error) { sfx('error'); toast(r.error, 'err') } else { if (type === 'claim') sfx('claim'); if (r.msg) toast(r.msg, 'ok') }
   return r
 }
 let lastCoins = null
@@ -31,6 +32,7 @@ function applyState(s) {
   ST = s; P = s.profile
   for (const n of s.notices || []) toast(n.text, n.kind === 'sold' ? 'gold' : 'ok')
   $('#coinVal').textContent = fmt(P.coins); $('#ppVal').textContent = fmt(P.pp || 0)
+  if (lastCoins !== null && lastCoins !== P.coins) sfx(P.coins > lastCoins ? 'coin' : 'buy')
   if (lastCoins !== null && lastCoins !== P.coins) { const c = $('#coinChip'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump') }
   lastCoins = P.coins
   const L = s.level; $('#lvlNum').textContent = L.lv; $('#lvlTag').textContent = 'LV ' + L.lv
@@ -131,6 +133,7 @@ const TITLES = { home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFER
 let CUR = null, CURARG = null, curEl = null
 const PAGES = {}
 function go(name, arg, opts = {}) {
+  if (!opts.silent && name !== CUR) sfx('nav')
   document.body.dataset.page = name;
   if (!PAGES[name]) name = 'home'
   const from = CUR, fi = TABS.indexOf(from), ti = TABS.indexOf(name)
@@ -616,7 +619,7 @@ function wonderPick(w) {
       const r = await act('wonder', { id: w.id }); if (r.error) { closeModal(); return }
       const pc = BYKEY[r.picked], others = r.keys.filter((k, i) => i !== r.keys.indexOf(r.picked))
       const f = b.querySelector('.f'); f.innerHTML = ''; f.append(cardImg(pc, 300))
-      b.classList.add('chosen'); b.classList.remove('down'); b.classList.add('up'); b.style.transform = ''
+      sfx('reveal', TIER[pc.r].rank); b.classList.add('chosen'); b.classList.remove('down'); b.classList.add('up'); b.style.transform = ''
       els.filter(x => x !== b).forEach((x, i) => { const ff = x.querySelector('.f'); ff.innerHTML = ''; if (BYKEY[others[i]]) ff.append(cardImg(BYKEY[others[i]], 200)); setTimeout(() => { x.classList.remove('down'); x.classList.add('dim') }, 700 + i * 120) })
       msg.innerHTML = `You got <b style="color:${tierCol(pc.r)}">${pc.name} · ${pc.ver}</b>!`
       const ok = h('button', 'btn block', 'NICE'); ok.onclick = () => { closeModal(); rerender() }; sh.append(ok)
@@ -706,12 +709,12 @@ async function openPack(type) {
   })
   if (skipping) return
   hint.textContent = ''
-  pk.classList.add('torn'); ov.classList.add('flash')
+  sfx('tear'); pk.classList.add('torn'); ov.classList.add('flash')
   await wait(650); pk.remove(); ov.classList.remove('flash')
 
   // ---- stage 2: cards one by one ----
   const urls = await Promise.all(pre)
-  const stack = h('div', 'op-stack'); stage.append(stack)
+  const stack = h('div', 'op-stack'); stage.append(stack); sfx('deal')
   const els = cards.map((c, i) => {
     const big = TIER[c.r].rank >= 3
     const e = h('div', 'op-card' + (big ? ' facedown' : ''), `<div class="in"><div class="f"></div><div class="b"><span>AUT</span></div></div>`)
@@ -731,17 +734,18 @@ async function openPack(type) {
     if (e.classList.contains('facedown')) {
       await new Promise(res => e.onclick = res); e.onclick = null; hint.textContent = ''
       ov.style.setProperty('--bc', tierCol(c.r))
-      e.classList.add('charge'); ov.classList.add('charging')
+      sfx('charge', rk); e.classList.add('charge'); ov.classList.add('charging')
       if (rk >= 4) { ov.classList.add('big'); await wait(rk >= 5 ? 1700 : 1200) } else await wait(550)
-      e.classList.remove('charge', 'facedown'); e.classList.add('reveal'); ov.classList.remove('charging'); ov.classList.add('burst')
+      sfx('reveal', rk); e.classList.remove('charge', 'facedown'); e.classList.add('reveal'); ov.classList.remove('charging'); ov.classList.add('burst')
       const lab = h('div', 'op-label', `<small>${TIER[c.r].name}</small><b>${c.name}</b><span>${c.ver}</span>`); lab.style.setProperty('--rc', tierCol(c.r)); stage.append(lab)
       await wait(700); ov.classList.remove('burst', 'big')
       hint.textContent = 'TAP FOR NEXT'
       await new Promise(res => e.onclick = res); lab.remove()
     } else {
+      if (i) sfx('reveal', rk)
       await new Promise(res => e.onclick = res)
     }
-    e.onclick = null; e.classList.add('gone')
+    sfx('swipe'); e.onclick = null; e.classList.add('gone')
     await wait(220)
   }
   if (!skipping) finish()
@@ -872,4 +876,13 @@ function marketHub(el) {
   }
   if (!hot.length) strip.append(h('div', 'empty', '<b>Quiet market</b>Traders list new cards every few seconds.'))
   el.append(strip)
+}
+
+// ================= UI sounds + mute toggle =================
+document.addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.closest('#nav') && !b.closest('#opener')) sfx(b.classList.contains('btn') ? 'click' : 'soft') }, true)
+{
+  const t = document.createElement('button'); t.className = 'cur sndbtn'; t.setAttribute('aria-label', 'Sound on or off')
+  const draw = () => { t.innerHTML = sfxOn() ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>'; t.title = sfxOn() ? 'Sound on' : 'Sound off' }
+  t.onclick = () => { sfxOn(!sfxOn()); draw(); sfx('click') }; draw()
+  document.querySelector('.chips2')?.prepend(t)
 }
