@@ -170,7 +170,7 @@ export function startBattle(stage) {
     <div class="ar-mid"><div class="ar-log"></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div><div class="ar-plate you"><span class="pn">YOU</span><span class="pk"></span></div>
     <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
-  document.body.append(ov)
+  document.body.append(ov); document.body.classList.add('in-battle')
   const $a = s => ov.querySelector(s)
   let ST3 = null
   createArena(ov.querySelector('.ar-3d')).then(st => { if (B.closed) return st.dispose(); ST3 = st; ov.classList.add('has3d') }).catch(() => { })
@@ -335,7 +335,7 @@ export function startBattle(stage) {
   mb.onclick = () => { sfxOn(!sfxOn()); mdraw() }; mdraw()
   $a('.ar-end').onclick = () => endTurn()
   $a('.ar-quit').onclick = () => { if (B.over || confirm('Quit this battle? It counts as a loss.')) close() }
-  function close() { B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
+  function close() { document.body.classList.remove('in-battle'); B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
 
   async function aiPhase() {
     B.busy = true; controls()

@@ -36,7 +36,7 @@ export async function createArena(el) {
   const THREE = await import(THREE_URL)
   const W = () => el.clientWidth, H = () => el.clientHeight
   const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'low-power' })
-  renderer.setPixelRatio(Math.min(1, devicePixelRatio)); renderer.setSize(W(), H()); renderer.outputColorSpace = THREE.SRGBColorSpace
+  renderer.setPixelRatio(Math.min(.75, devicePixelRatio)); renderer.setSize(W(), H()); renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.7
   el.append(renderer.domElement)
   const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x1a1018, .016)
@@ -96,7 +96,7 @@ export async function createArena(el) {
   const rocks = []
   for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(.3 + Math.random() * .9, 0), rockMat); const a = Math.random() * Math.PI * 2, r = 16 + Math.random() * 14; m.position.set(Math.cos(a) * r, 2 + Math.random() * 8, Math.sin(a) * r); m.userData = { s: .2 + Math.random() * .5, y: m.position.y, p: Math.random() * 6 }; scene.add(m); rocks.push(m) }
   // embers
-  const N = 260, pos = new Float32Array(N * 3), vel = new Float32Array(N)
+  const N = 110, pos = new Float32Array(N * 3), vel = new Float32Array(N)
   for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - .5) * 34; pos[i * 3 + 1] = Math.random() * 12; pos[i * 3 + 2] = (Math.random() - .5) * 34; vel[i] = .2 + Math.random() * .6 }
   const eg = new THREE.BufferGeometry(); eg.setAttribute('position', new THREE.BufferAttribute(pos, 3))
   const embers = new THREE.Points(eg, new THREE.PointsMaterial({ map: glow, color: 0xffa060, size: .28, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false }))
@@ -120,8 +120,9 @@ export async function createArena(el) {
   function loop() {
     if (!alive || hidden) return
     raf = requestAnimationFrame(loop)
-    const now = performance.now(), dt = Math.min(.05, (now - last) / 1000); last = now
-    if (dt > .04) { slow++; if (slow > 40 && renderer.getPixelRatio() > .6) { renderer.setPixelRatio(.6); slow = 0 } } // weak GPU: drop resolution
+    const now0 = performance.now(); if (now0 - last < 31 && !shake) return // ~30fps when calm, full speed during hits
+    const now = now0, dt = Math.min(.05, (now - last) / 1000); last = now
+    if (dt > .045) { slow++; if (slow > 30 && renderer.getPixelRatio() > .5) { renderer.setPixelRatio(.5); slow = 0 } } // weak GPU: drop resolution
     const t = (now - t0) / 1000
     r1.rotation.z = t * .15; r2.rotation.z = -t * .1
     for (const k of ['ai', 'you']) { const p = P[k]; p.ring.material.opacity = .75 + Math.sin(t * 2.4 + (k === 'ai' ? 1 : 0)) * .2 }
@@ -131,7 +132,7 @@ export async function createArena(el) {
     for (let i = waves.length - 1; i >= 0; i--) { const w = waves[i]; w.t += dt; const s = 1 + w.t * 14 * w.size; w.m.scale.set(s, s, s); w.m.material.opacity = Math.max(0, 1 - w.t * 1.6); if (w.t > .65) { scene.remove(w.m); w.m.geometry.dispose(); w.m.material.dispose(); waves.splice(i, 1) } }
     flash.intensity *= .86
     // very slow camera sway + shake
-    shake *= .88
+    shake = shake > .02 ? shake * .88 : 0
     cam.position.set(CAM.x + Math.sin(t * .13) * .6 + (Math.random() - .5) * shake, CAM.y + (Math.random() - .5) * shake, CAM.z + Math.cos(t * .11) * .3)
     cam.lookAt(0, .4, 0)
     renderer.render(scene, cam)

@@ -95,7 +95,9 @@ const PACKLOOK = {
 const packPool = type => { const a = ST.packs[type] && ST.packs[type].anime; return a ? POOL.filter(c => c.anime === a) : POOL }
 const featured = type => packPool(type).slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)[type === 'premium' ? 1 : 0] || POOL[0]
 const PACKCANVAS = {}
-async function packCanvas(type, w = 300) {
+const PACKC = {}
+function packCanvas(type, w = 300) { const k = type + '|' + w; return PACKC[k] || (PACKC[k] = packCanvas0(type, w)) }
+async function packCanvas0(type, w = 300) {
   const k = type + w; if (PACKCANVAS[k]) return PACKCANVAS[k]
   await fontsReady
   const L = PACKLOOK[type] || PACKLOOK.standard, H = Math.round(w * 1.54), c = document.createElement('canvas'); c.width = w; c.height = H

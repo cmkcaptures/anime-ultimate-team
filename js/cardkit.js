@@ -190,13 +190,25 @@ export function drawCard(x, d) {
 
 // ---- small card images for menus, cached per card + awakening level ----
 const THUMBS = {}
+const bucket = w => w <= 260 ? 260 : w <= 440 ? 440 : 560
+const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.mv, c.total].join('|')
+// one render at a time, yielding to the browser between cards so scrolling stays smooth
+let QUEUE = Promise.resolve()
+const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340) {
-  const k = c.key + '|' + (c.lvl || 0) + '|' + w
+  const bw = bucket(w), k = 't3|' + sig(c) + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
-    await getArt(c)
-    const can = document.createElement('canvas'); can.width = w; can.height = Math.round(w * 952 / 680)
-    const x = can.getContext('2d'); x.scale(w / 680, w / 680); drawCard(x, c)
-    return can.toDataURL('image/webp', .9)
+    const hit = await idbGet(k)
+    if (hit) return URL.createObjectURL(hit)
+    const job = QUEUE.then(async () => {
+      await getArt(c); await idle()
+      const can = document.createElement('canvas'); can.width = bw; can.height = Math.round(bw * 952 / 680)
+      const x = can.getContext('2d'); x.scale(bw / 680, bw / 680); drawCard(x, c)
+      const blob = await new Promise(r => can.toBlob(r, 'image/webp', .86))
+      idbPut(k, blob); return URL.createObjectURL(blob)
+    })
+    QUEUE = job.catch(() => { })
+    return job
   })())
 }
 export const RARITY_MARK = { C: '◆', U: '◆◆', R: '◆◆◆', E: '◆◆◆◆', L: '★', M: '★★', X: '♛' }

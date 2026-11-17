@@ -1184,3 +1184,32 @@ body[data-page=battle] { --a1: #ff4a5a; --a2: #ff9d3a; --a3: #ffd23a }
   .ar-side.you .hpb { right: auto !important; left: -100px !important; align-items: flex-end !important }
   .ar-side { gap: 120px !important }
 }
+
+/* ================= PERFORMANCE PASS ================= */
+/* nothing behind the battle keeps painting */
+body.in-battle #app, body.in-battle #backdrop { visibility: hidden; contain: strict }
+body.in-battle #app * { animation-play-state: paused !important }
+/* battle effects without expensive blend modes / animated shadows */
+.art2 .holo { mix-blend-mode: normal !important; opacity: .22 !important; animation: none !important; background-position: 150% 0 }
+.art2:hover:not(:disabled) .holo { animation: holo 1.4s linear infinite !important; opacity: .35 !important }
+.art2.special .holo { opacity: .3 !important }
+.art2 .pic { filter: none !important }
+.art2 .sym { filter: drop-shadow(0 0 8px var(--c1)) !important; animation: none !important; will-change: auto }
+.art2:hover:not(:disabled) .sym { animation: symPulse 1.2s ease-in-out infinite !important }
+.art2 .sym::before { animation-duration: 8s !important }
+.art2 { will-change: transform; contain: layout paint }
+.wash { mix-blend-mode: normal !important; opacity: .7 }
+#arena .ar-ult.ready { animation: none !important; box-shadow: 0 0 0 3px #fff, 0 0 30px rgba(255,170,40,.8) !important }
+#arena .ar-ult.ready::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid rgba(255,190,60,.8); animation: ultRing 1.2s ease-out infinite; pointer-events: none }
+@keyframes ultRing { from { transform: scale(.92); opacity: 1 } to { transform: scale(1.25); opacity: 0 } }
+.dmg { will-change: transform, opacity }
+.spk, .impact, .slash, .beam { will-change: transform, opacity }
+.ar-active img { will-change: transform }
+.bslot { contain: layout paint }
+/* menus: cheaper scrolling */
+.cg img, .pocket img, .ritem img, .hot img, .scslot img { content-visibility: auto }
+.cardgrid, .ppgrid, .binders, .hotstrip, .rtrack { contain: layout style }
+.carousel3 .pk3 { will-change: transform; backface-visibility: hidden }
+.pk3 canvas, .pt-art canvas, .sh-tilt canvas { box-shadow: 0 16px 26px rgba(0,0,0,.5) !important }
+#app::before { will-change: auto }
+@media (prefers-reduced-motion: reduce) { .art2 *, #arena * { animation-duration: .01ms !important } }
