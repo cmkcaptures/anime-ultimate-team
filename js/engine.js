@@ -338,6 +338,14 @@ async function boot() {
   // newest save wins (cloud vs this device)
   S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
   const f = fresh(); S.profile = { ...f.profile, ...S.profile }; S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
+  // cards moved between rarity folders get a new key (folder/file); re-link everything by file name
+  { const byFile = {}; for (const c of CARDS) byFile[c.key.split('/').pop()] = c.key
+    const fix = k => (k && !byKey(k) && byFile[k.split('/').pop()]) || k, P = S.profile, cc = {}
+    for (const [k, e] of Object.entries(P.club.cards)) { const nk = fix(k); if (cc[nk]) { cc[nk].n += e.n; cc[nk].lvl = Math.max(cc[nk].lvl || 0, e.lvl || 0) } else cc[nk] = e }
+    P.club.cards = cc; P.team = P.team.map(fix); P.showcase = (P.showcase || []).map(fix); P.last = (P.last || []).map(fix)
+    for (const l of S.market.listings) l.key = fix(l.key)
+    for (const w of S.wonder) w.keys = w.keys.map(fix)
+    S.market.won = (S.market.won || []).map(w => ({ ...w, key: fix(w.key) })) }
   if (!S.market.listings.length) { for (let i = 0; i < 15; i++) tick(true) } else tick(true)
   save(); publish(summary(), true)
   setInterval(() => tick(), 10000)

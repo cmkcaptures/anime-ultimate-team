@@ -1365,3 +1365,28 @@ body[data-page=players] { --a1: #8a5cff; --a2: #22d8ff; --a3: #ff5ac8 }
 .rs-stats div { padding: 12px; border-radius: 12px; text-align: left; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08) }
 .rs-stats b { display: block; font: italic 900 30px/1 var(--disp) } .rs-stats span { font: 900 9px var(--ui); letter-spacing: .16em; color: rgba(255,255,255,.55) }
 @media (max-width: 760px) { .chainpop b { font-size: 48px } .tban b { font-size: 36px } .ar-plate .pp { display: none } .rs-card { width: 110px } }
+
+/* ================= FX v2: card dash & slam ================= */
+.ar-active.dash, .ar-active.dashbig, .ar-active.charging { z-index: 20 }
+.ar-active.dash img { animation: dashA .62s cubic-bezier(.5,0,.2,1) both !important }
+.ar-active.dashbig img { animation: dashB .8s cubic-bezier(.5,0,.2,1) both !important }
+@keyframes dashA {
+  0% { transform: none }
+  18% { transform: translate(calc(var(--dx) * -.08), calc(var(--dy) * -.08)) scale(1.04) rotate(-2deg) }
+  34% { transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(3deg); filter: brightness(1.5) }
+  44% { transform: translate(calc(var(--dx) * .94), calc(var(--dy) * .94)) scale(1.06) }
+  100% { transform: none }
+}
+@keyframes dashB {
+  0% { transform: scale(1.12) }
+  22% { transform: translate(calc(var(--dx) * -.1), calc(var(--dy) * -.1)) scale(1.18) rotate(-3deg) }
+  34% { transform: translate(var(--dx), var(--dy)) scale(1.26) rotate(4deg); filter: brightness(1.8) }
+  50% { transform: translate(calc(var(--dx) * .92), calc(var(--dy) * .92)) scale(1.18) }
+  100% { transform: none }
+}
+.ar-active.charging img { animation: chargeA .9s ease-in-out infinite alternate !important; box-shadow: 0 0 0 3px #fff, 0 0 36px var(--ac), 0 0 80px color-mix(in srgb, var(--ac) 60%, transparent) !important }
+@keyframes chargeA { from { transform: translateY(-10px) scale(1.1) } to { transform: translateY(-16px) scale(1.14) } }
+/* retire the old cartoon effects */
+.ar-active.pop img, .ar-active.popbig img { animation: none !important }
+#arena.iframe .stage3, #arena.iframe .ar-side { filter: brightness(2.2) contrast(1.3) saturate(.3) !important }
+.ftag { font-size: 16px !important; letter-spacing: .1em !important }

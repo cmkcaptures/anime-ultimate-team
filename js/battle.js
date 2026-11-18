@@ -353,18 +353,20 @@ export function startBattle(stage) {
     log(big ? `${ev.art === 'ultimate' ? ev.ult + ' · ' : ''}${ev.move}` : `${A.card.name} · ${ARTS[ev.art].name}`)
     if (ev.chain > 1 || ev.combo) chainPop(side, ev.chain, ev.combo)
     // 1) the attacker card pops up and spins
-    atk.classList.remove('pop', 'popbig', 'lunge'); void atk.offsetWidth; atk.classList.add(big ? 'popbig' : 'pop')
     atk.style.setProperty('--ac', col)
-    if (ev.art === 'ultimate') { ov.classList.add('ult'); ST3 && ST3.ult(side); sfx('bcharge'); FXC.screen(col, .35, .5); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'ULTIMATE', col, true, ev.ult); shake(2); await wait(1350) }
-    else if (big) { sfx('bcharge'); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'SPECIAL', col); await wait(1000) }
-    else await wait(300)
-    // 2) the attack lands
-    sfx(ev.art === 'strike' ? 'bhit' : ev.art === 'blast' ? 'bblast' : 'bimpact', ev.art === 'ultimate')
     const [tx, ty] = ctr(tgtEl), [ax, ay] = ctr(atk)
-    if (ev.art === 'strike') FXC.slash(tx, ty, col)
-    if (ev.art === 'blast') FXC.beam(ax, ay, tx, ty, col, 22)
-    if (big) { FXC.beam(ax, ay, tx, ty, col, ev.art === 'ultimate' ? 90 : 56); FXC.screen('#ffffff', .25, .2) }
-    if (big) { await wait(140); ov.classList.remove('iframe', 'punch'); void ov.offsetWidth; ov.classList.add('iframe', 'punch'); setTimeout(() => ov.classList.remove('iframe'), 110); setTimeout(() => ov.classList.remove('punch'), 420) }
+    // 1) wind-up: specials/ultimates gather energy into the card first
+    if (ev.art === 'ultimate') { ov.classList.add('ult'); sfx('bcharge'); atk.classList.add('charging'); FXC.gather(ax, ay, col, .7, 34); FXC.screen(col, .22, .6); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'ULTIMATE', col, true, ev.ult); await wait(1350) }
+    else if (big) { sfx('bcharge'); atk.classList.add('charging'); FXC.gather(ax, ay, col, .55, 24); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'SPECIAL', col); await wait(1000) }
+    // 2) the card itself dashes into the target and slams it
+    const reach = ev.art === 'blast' ? .42 : .82
+    atk.style.setProperty('--dx', ((tx - ax) * reach) + 'px'); atk.style.setProperty('--dy', ((ty - ay) * reach) + 'px')
+    atk.classList.remove('dash', 'dashbig', 'charging'); void atk.offsetWidth; atk.classList.add(big ? 'dashbig' : 'dash')
+    await wait(big ? 260 : 200)
+    sfx(ev.art === 'strike' ? 'bhit' : ev.art === 'blast' ? 'bblast' : 'bimpact', ev.art === 'ultimate')
+    if (ev.art === 'ultimate') { ov.classList.remove('iframe'); void ov.offsetWidth; ov.classList.add('iframe'); setTimeout(() => ov.classList.remove('iframe'), 90) }
+    if (big) { ov.classList.remove('punch'); void ov.offsetWidth; ov.classList.add('punch'); setTimeout(() => ov.classList.remove('punch'), 420); FXC.screen('#ffffff', ev.art === 'ultimate' ? .35 : .18, .25) }
+    setTimeout(() => atk.classList.remove('dash', 'dashbig'), 700)
     ST3 && ST3.hit(other, big)
     shake(ev.art === 'ultimate' ? 3 : big ? 2 : 1)
     for (const x of ev.hits) {
