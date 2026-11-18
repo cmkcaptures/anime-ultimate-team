@@ -479,6 +479,8 @@ export function startBattle(stage) {
     if (list.length) {
       const pick = stage.pvp || !stage.n ? list[Math.floor(Math.random() * list.length)] : list[(stage.n - 1) % list.length]
       ov.classList.add('has-img'); ov.style.setProperty('--bgimg', `url("${pick.url}")`); name = pick.name; sub = stage.pvp ? 'Ranked Arena' : 'Stage ' + stage.n
+      // measure how bright the art is and pick a light or dark UI theme to match
+      const im = new Image(); im.onload = () => { try { const c = document.createElement('canvas'); c.width = 32; c.height = 18; const x = c.getContext('2d'); x.drawImage(im, 0, 0, 32, 18); const d = x.getImageData(0, 0, 32, 18).data; let L = 0; for (let i = 0; i < d.length; i += 4) L += (.2126 * d[i] + .7152 * d[i + 1] + .0722 * d[i + 2]) / 255; L /= d.length / 4; ov.classList.toggle('lite', L > .42); ov.style.setProperty('--lum', L.toFixed(2)) } catch { } }; im.src = pick.url
     }
     const t = document.createElement('div'); t.className = 'arena-title'; t.innerHTML = `<small>ARENA</small><b>${name}</b><span>${sub}</span>`; ov.append(t); setTimeout(() => t.remove(), 2300)
   })
