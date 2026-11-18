@@ -1422,3 +1422,70 @@ body[data-page=players] { --a1: #8a5cff; --a2: #22d8ff; --a3: #ff5ac8 }
   .c2-txt, .cut2.foe .c2-txt, .cut2.ult .c2-txt, .cut2.ult.foe .c2-txt { left: 6% !important; right: 6% !important; top: 72%; text-align: center }
   .c2-txt b { font-size: 40px !important } .c2-txt span { font-size: 18px }
 }
+
+/* ================= ARENA v6: real play mat ================= */
+#arena { display: grid !important; grid-template-rows: auto minmax(0, 1fr) auto !important; grid-template-columns: 100% }
+#arena > .ar-top { grid-row: 1 } #arena > .ar-ctrl { grid-row: 3 }
+#arena > .mat { grid-row: 2 }
+.st-floor, .st-pillars { display: none !important }
+.st-sky { background: radial-gradient(70% 55% at 50% 45%, #1b1828, #0a0910 70%), #07070b !important }
+.st-sky::after { opacity: .18 !important }
+/* the board */
+.mat { position: relative; min-height: 0; display: grid; place-items: center; perspective: 1400px; perspective-origin: 50% 20%; padding: 6px 0 0 }
+.mat-in { position: relative; width: min(1180px, 94vw); height: 100%; display: grid; grid-template-rows: 1fr 1fr; gap: 0;
+  transform: rotateX(22deg); transform-origin: 50% 60%; transform-style: preserve-3d; border-radius: 26px;
+  background:
+    radial-gradient(60% 40% at 50% 50%, rgba(255,255,255,.06), transparent 70%),
+    linear-gradient(180deg, rgba(255,138,42,.10), transparent 30%, transparent 70%, rgba(34,216,255,.10)),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 10px),
+    linear-gradient(180deg, #1c1a26, #14131c 50%, #181a24);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 0 0 7px #0d0c13, 0 0 0 8px rgba(255,255,255,.07), 0 40px 80px rgba(0,0,0,.7), inset 0 0 120px rgba(0,0,0,.55) }
+.mat-in::before { content: ""; position: absolute; inset: 14px; border-radius: 18px; border: 1px solid rgba(255,255,255,.06); pointer-events: none }
+.mat-line { position: absolute; left: 4%; right: 4%; top: 50%; height: 2px; margin-top: -1px; background: linear-gradient(90deg, transparent, rgba(255,138,42,.6) 20%, rgba(255,255,255,.55) 50%, rgba(34,216,255,.6) 80%, transparent) }
+.mat-line::after { content: ""; position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: #14131c; box-shadow: 0 0 20px rgba(0,0,0,.6) }
+.mat-tag { position: absolute; left: 50%; transform: translateX(-50%); font: 900 9px var(--ui); letter-spacing: .3em; color: rgba(255,255,255,.28); pointer-events: none; z-index: 0 }
+.mat-tag.t-ai { top: calc(50% - 22px) } .mat-tag.t-you { top: calc(50% + 12px) }
+/* each half of the board */
+#arena .mat .ar-side { position: relative; display: grid !important; grid-template-columns: 1fr auto 1fr !important; grid-template-rows: none !important; grid-template-areas: none !important; align-items: center !important; justify-items: center; gap: 18px !important; padding: 2% 3% !important; transform: none !important; height: 100%; min-height: 0 }
+#arena .mat .ar-side .ar-hud { display: none !important }
+#arena .mat .ar-side .ar-active { grid-column: 2; grid-row: 1; order: 0 !important; margin: 0 !important; height: min(92%, 250px) !important }
+#arena .mat .ar-side .ar-bench { display: grid !important; grid-template-columns: repeat(5, auto) !important; gap: 10px !important; width: auto !important; transform: none !important; align-self: center }
+#arena .mat .ar-side.ai .ar-bench { grid-column: 1; grid-row: 1; justify-self: end }
+#arena .mat .ar-side.you .ar-bench { grid-column: 3; grid-row: 1; justify-self: start }
+/* active slot frame (sits under the card) */
+#arena .mat .ar-active::before { content: "" !important; display: block !important; position: absolute; inset: -10px; border-radius: 14px; z-index: -1; border: 2px solid var(--slot); box-shadow: 0 0 24px color-mix(in srgb, var(--slot) 45%, transparent), inset 0 0 30px color-mix(in srgb, var(--slot) 25%, transparent); background: color-mix(in srgb, var(--slot) 8%, transparent) }
+#arena .mat .ar-active::after { display: none !important }
+#arena .mat .ar-side.ai { --slot: #ff8a2a } #arena .mat .ar-side.you { --slot: #22d8ff }
+/* bench slots */
+#arena .mat .bslot { width: clamp(46px, 7vh, 78px) !important; border-radius: 6px !important; overflow: visible; box-shadow: 0 0 0 1px rgba(255,255,255,.15), 0 8px 14px rgba(0,0,0,.55) !important }
+#arena .mat .bslot img { border-radius: 6px }
+#arena .mat .bslot::after { content: ""; position: absolute; inset: -5px; border-radius: 9px; border: 1px dashed color-mix(in srgb, var(--slot) 55%, transparent); z-index: -1 }
+#arena .mat .bslot > i { bottom: -7px; left: 8%; right: 8%; width: auto !important; max-width: 84%; height: 3px; border-radius: 2px }
+/* HP + matchup tags float clear of the card */
+#arena .mat .hpb { top: 50% !important; transform: translateY(-50%); }
+#arena .mat .ar-side.ai .hpb { left: calc(100% + 18px) !important; right: auto !important; align-items: flex-start !important }
+#arena .mat .ar-side.you .hpb { right: calc(100% + 18px) !important; left: auto !important; align-items: flex-end !important }
+#arena .mat .hpb b { font-size: 36px !important }
+#arena .mat .hpb i { width: 110px !important; height: 8px !important }
+/* log sits on the centre line, right side */
+#arena .mat .ar-mid { position: absolute !important; z-index: 5; left: auto !important; right: 3% !important; top: 50% !important; transform: translateY(-50%) !important; padding: 0 !important; pointer-events: none }
+/* plates move to the board's corners */
+#arena .ar-plate.ai { top: 54px !important; left: 20px !important } #arena .ar-plate.you { top: auto !important; bottom: calc(var(--ctrlH, 200px) + 6px) !important; left: 20px !important; right: auto !important }
+@media (max-width: 760px) {
+  .mat-in { width: 98vw; transform: rotateX(14deg); border-radius: 16px }
+  #arena .mat .ar-side { grid-template-columns: 1fr !important; grid-template-rows: auto auto !important; gap: 8px !important; padding: 3% !important }
+  #arena .mat .ar-side .ar-active { grid-column: 1; height: min(86%, 150px) !important }
+  #arena .mat .ar-side.ai .ar-bench { grid-column: 1; grid-row: 1; justify-self: center } #arena .mat .ar-side.ai .ar-active { grid-row: 2 }
+  #arena .mat .ar-side.you .ar-bench { grid-column: 1; grid-row: 2; justify-self: center } #arena .mat .ar-side.you .ar-active { grid-row: 1 }
+  #arena .mat .bslot { width: 42px !important } #arena .mat .ar-mid { display: none }
+  #arena .mat .ar-side.ai .hpb, #arena .mat .ar-side.you .hpb { left: calc(100% + 8px) !important; right: auto !important } #arena .mat .hpb b { font-size: 22px !important } #arena .mat .hpb i { width: 60px !important }
+}
+.mat { display: block !important; overflow: visible }
+.mat-in { position: absolute !important; top: 6px; bottom: 6px; left: 50%; height: auto !important; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) !important; transform: translateX(-50%) rotateX(20deg) !important }
+#arena .mat .ar-side { height: auto !important; min-height: 0 !important; overflow: visible }
+#arena .mat .ar-side .ar-active { height: min(88%, 250px) !important; max-height: none !important }
+@media (max-width: 760px) { .mat-in { transform: translateX(-50%) rotateX(12deg) !important } }
+#arena .mat .ar-side { align-self: stretch !important; height: 100% !important; max-height: 100%; padding: 0 3% !important; overflow: visible; box-sizing: border-box }
+#arena .mat .ar-side .ar-active { height: clamp(110px, calc((100vh - 300px) / 2 - 36px), 250px) !important; align-self: center !important }
+#arena .mat .ar-side .ar-bench { max-height: 100%; align-self: center !important }
+#arena .mat .ar-side .ar-bench > * { align-self: center }
