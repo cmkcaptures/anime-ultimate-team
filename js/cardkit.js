@@ -34,6 +34,7 @@ export const ANIME = {
   OPM: { name: 'ONE PUNCH MAN', tag: 'OPM', type: 'hero' },
   KGB: { name: 'KAGURABACHI', tag: 'KGB', type: 'flame' },
   YGO: { name: 'YU-GI-OH!', tag: 'YGO', type: 'psychic' },
+  DAN: { name: 'DANDADAN', tag: 'DAN', type: 'psychic' },
 }
 export const TYPE = {
   ki: { c: ['#ff7a00', '#b80018', '#ffd400'], en: 'AURA' },

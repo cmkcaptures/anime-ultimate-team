@@ -90,7 +90,7 @@ const giveCard = (k, lvl = 0) => { const now = Date.now(), e = S.profile.club.ca
 const addXP = n => { S.profile.xp = (S.profile.xp || 0) + n }
 
 // ---------------- rewards / missions ----------------
-const NAMES = { DBZ: 'Dragon Ball', NAR: 'Naruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'My Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', HXH: 'Hunter x Hunter', FT: 'Fairy Tail', CSM: 'Chainsaw Man', JJBA: 'JoJo', TG: 'Tokyo Ghoul', BLE: 'Bleach', K8: 'Kaiju No. 8', MOB: 'Mob Psycho 100', FF: 'Fire Force', OPM: 'One Punch Man', KGB: 'Kagurabachi', YGO: 'Yu-Gi-Oh!' }
+const NAMES = { DBZ: 'Dragon Ball', NAR: 'Naruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'My Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', HXH: 'Hunter x Hunter', FT: 'Fairy Tail', CSM: 'Chainsaw Man', JJBA: 'JoJo', TG: 'Tokyo Ghoul', BLE: 'Bleach', K8: 'Kaiju No. 8', MOB: 'Mob Psycho 100', FF: 'Fire Force', OPM: 'One Punch Man', KGB: 'Kagurabachi', YGO: 'Yu-Gi-Oh!', DAN: 'Dandadan' }
 function rewards() {
   rollDay()
   const P = S.profile, all = cards(), own = all.filter(c => P.club.cards[c.key]), d = P.day.date
