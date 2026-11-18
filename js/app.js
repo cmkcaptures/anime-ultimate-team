@@ -1,3 +1,4 @@
+import { createFX } from './fx2d.js'
 import { initBattle, battlePage, startBattle } from './battle.js'
 import * as ACC from './account.js'
 import { sfx, sfxOn } from './sfx.js'
@@ -689,71 +690,105 @@ async function openPack(type) {
   const r = await act('openPack', { pack: type, keys: cards.map(c => c.key) })
   if (r.error) return
   const cnt = {}; cards.forEach(c => cnt[c.key] = (cnt[c.key] || 0) + 1); const isNew = k => (club()[k]?.n || 0) <= cnt[k]; const seenNew = new Set()
-  const ov = h('div', ''); ov.id = 'opener'
-  const best = cards[cards.length - 1], bcol = tierCol(best.r)
-  ov.style.setProperty('--bc', bcol)
-  ov.innerHTML = `<div class="op-glow"></div><div class="op-stage"></div><div class="op-hint"></div><button class="op-skip">SKIP ›</button>`
-  document.body.append(ov)
-  const stage = ov.querySelector('.op-stage'), hint = ov.querySelector('.op-hint')
+  const best = cards[cards.length - 1], bestRk = TIER[best.r].rank, bcol = tierCol(best.r)
+  const pre = cards.map(c => thumbURL(c, 440)) // render every card while the player is still tearing
+  const ov = h('div', 'op2'); ov.id = 'opener'; ov.style.setProperty('--bc', bcol); ov.dataset.best = best.r
+  ov.innerHTML = `<div class="o2-bg"></div><div class="o2-art a1"></div><div class="o2-art a2"></div><div class="o2-grade"></div><div class="o2-spot"></div><div class="o2-floor"></div><div class="o2-beam"></div>
+    <div class="o2-stage"></div><div class="o2-label"></div><div class="o2-tray"></div><div class="o2-hint"></div>
+    <div class="o2-top"><span class="o2-pk"></span><span class="o2-count"></span><button class="o2-skip">SKIP ›</button></div>`
+  document.body.append(ov); document.body.classList.add('in-opener')
+  const FXC = createFX(ov), $o = q => ov.querySelector(q), stage = $o('.o2-stage'), hint = $o('.o2-hint'), tray = $o('.o2-tray')
+  $o('.o2-pk').textContent = (ST.packs[type] && ST.packs[type].name || 'PACK').toUpperCase()
+  const C = () => { const r = stage.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height * .45] }
+  let artFlip = false
+  const setArt = u => { const a = $o(artFlip ? '.o2-art.a1' : '.o2-art.a2'), b = $o(artFlip ? '.o2-art.a2' : '.o2-art.a1'); artFlip = !artFlip; a.style.backgroundImage = `url("${u}")`; a.classList.add('on'); b.classList.remove('on') }
+  const shake = n => { ov.classList.remove('shk1', 'shk2', 'shk3'); void ov.offsetWidth; ov.classList.add('shk' + n); setTimeout(() => ov.classList.remove('shk' + n), 600) }
   let skipping = false
-  ov.querySelector('.op-skip').onclick = () => { skipping = true; finish() }
-  function finish() { ov.classList.add('out'); setTimeout(() => ov.remove(), 350); go('results') }
+  $o('.o2-skip').onclick = () => { skipping = true; finish() }
+  function finish() { FXC.dispose(); document.body.classList.remove('in-opener'); ov.classList.add('out'); setTimeout(() => ov.remove(), 350); go('results') }
 
-  // ---- stage 1: tear the pack ----
-  const pre = cards.map(c => thumbURL(c, 420)) // render all 5 cards while the player is still tearing
-  const pc = await packCanvas(type, 360), url = pc.toDataURL('image/jpeg', .85)
-  const pk = h('div', 'op-pack', `<div class="top" style="background-image:url(${url})"></div><div class="body" style="background-image:url(${url})"></div><div class="cut"><i></i></div>`)
-  stage.append(pk); hint.textContent = 'SWIPE ACROSS THE TOP TO OPEN'
+  // ---- 1) the pack ----
+  const pc = await packCanvas(type, 400), purl = pc.toDataURL('image/jpeg', .9)
+  const pk = h('div', 'o2-pack', `<div class="pk-shine"></div><div class="top" style="background-image:url(${purl})"></div><div class="body" style="background-image:url(${purl})"></div><div class="cut"><i></i></div>`)
+  stage.append(pk); setArt(purl); hint.innerHTML = '<b>SWIPE</b> ACROSS THE TOP TO OPEN'
   await new Promise(res => {
-    let x0 = null, done = false
-    const cut = pk.querySelector('.cut i')
-    const tear = () => { if (done) return; done = true; res() }
-    pk.onpointerdown = e => { x0 = e.clientX; pk.setPointerCapture(e.pointerId) }
-    pk.onpointermove = e => { if (x0 == null) return; const p = Math.min(1, Math.abs(e.clientX - x0) / pk.offsetWidth); cut.style.width = p * 100 + '%'; if (p > .6) tear() }
-    pk.onpointerup = () => { if (x0 != null && !done) { x0 = null; cut.style.width = '100%'; tear() } }
+    let x0 = null, done = false, lastP = 0
+    const cut = pk.querySelector('.cut i'), tear = () => { if (done) return; done = true; res() }
+    pk.onpointerdown = e => { x0 = e.clientX; pk.setPointerCapture(e.pointerId); pk.classList.add('grab') }
+    pk.onpointermove = e => { if (x0 == null) return; const p = Math.min(1, Math.abs(e.clientX - x0) / pk.offsetWidth); cut.style.transform = `scaleX(${p})`; if (p - lastP > .08) { lastP = p; const rr = pk.getBoundingClientRect(); FXC.hit(rr.left + rr.width * p, rr.top + rr.height * .16, '#ffffff', .35); sfx('soft') } if (p > .65) tear() }
+    pk.onpointerup = () => { if (x0 != null && !done) { x0 = null; cut.style.transform = 'scaleX(1)'; tear() } }
   })
   if (skipping) return
   hint.textContent = ''
-  sfx('tear'); pk.classList.add('torn'); ov.classList.add('flash')
-  await wait(650); pk.remove(); ov.classList.remove('flash')
+  { const rr = pk.getBoundingClientRect(); sfx('tear'); pk.classList.add('torn'); shake(2); FXC.hit(rr.left + rr.width / 2, rr.top + rr.height * .16, bcol, 1.6); FXC.screen('#ffffff', .55, .35) }
+  await wait(600); pk.remove()
 
-  // ---- stage 2: cards one by one ----
+  // ---- 2) rarity tease: a beam of light in the best card's colour ----
+  ov.classList.add('beam', 'b' + Math.min(bestRk, 6)); sfx('charge', bestRk)
+  { const [cx, cy] = C(); FXC.gather(cx, cy, bcol, .6 + bestRk * .12, 18 + bestRk * 6) }
+  await wait(450 + bestRk * 180)
+  ov.classList.remove('beam'); { const [cx, cy] = C(); FXC.hit(cx, cy, bcol, .8 + bestRk * .25); if (bestRk >= 3) FXC.rays(cx, cy, bcol, 10 + bestRk * 2, 900, 1.2) } shake(bestRk >= 4 ? 2 : 1)
+
+  // ---- 3) the cards, one by one ----
   const urls = await Promise.all(pre)
-  const stack = h('div', 'op-stack'); stage.append(stack); sfx('deal')
   const els = cards.map((c, i) => {
-    const big = TIER[c.r].rank >= 3
-    const e = h('div', 'op-card' + (big ? ' facedown' : ''), `<div class="in"><div class="f"></div><div class="b"><span>AUT</span></div></div>`)
-    e.style.setProperty('--rc', tierCol(c.r)); e.style.zIndex = 10 - i
-    e.style.transform = `translateY(${i * -4}px) rotate(${(i - 2) * 1.2}deg)`
+    const rk = TIER[c.r].rank, face = rk >= 3
+    const e = h('div', 'o2-card' + (face ? ' facedown' : ''), `<div class="in"><div class="f"></div><div class="b"><i class="bk-ring"></i><b>AUT</b><small>${face ? TIER[c.r].name.split(' ')[0] : ''}</small></div></div>`)
+    e.style.setProperty('--rc', tierCol(c.r)); e.style.zIndex = 10 - i; e.style.setProperty('--d', i * .06 + 's'); e.dataset.tier = c.r
+    e.style.setProperty('--off', i)
     { const im = new Image(); im.src = urls[i]; im.alt = c.name + ' ' + c.ver; im.decoding = 'sync'; e.querySelector('.f').append(im) }
-    if (isNew(c.key) && !seenNew.has(c.key) && seenNew.add(c.key)) e.querySelector('.f').append(h('span', 'op-new', 'NEW'))
-    e.dataset.tier = c.r
-    stack.append(e); return e
+    if (isNew(c.key) && !seenNew.has(c.key) && seenNew.add(c.key)) e.querySelector('.f').append(h('span', 'o2-new', 'NEW'))
+    stage.append(e); return e
   })
-  ov.querySelector('.op-skip').textContent = 'SKIP ›'
+  sfx('deal')
+  const label = $o('.o2-label')
   for (let i = 0; i < els.length; i++) {
     if (skipping) return
-    const e = els[i], c = cards[i], rk = TIER[c.r].rank
-    e.style.transform = 'none'; e.classList.add('top')
-    hint.textContent = e.classList.contains('facedown') ? 'TAP TO REVEAL' : 'TAP FOR NEXT'
+    const e = els[i], c = cards[i], rk = TIER[c.r].rank, col = tierCol(c.r)
+    $o('.o2-count').textContent = `${i + 1} / ${els.length}`
+    e.classList.add('top'); ov.style.setProperty('--bc', col)
+    hint.innerHTML = e.classList.contains('facedown') ? '<b>TAP</b> TO REVEAL' : '<b>TAP</b> FOR NEXT'
     if (e.classList.contains('facedown')) {
       await new Promise(res => e.onclick = res); e.onclick = null; hint.textContent = ''
-      ov.style.setProperty('--bc', tierCol(c.r))
-      sfx('charge', rk); e.classList.add('charge'); ov.classList.add('charging')
-      if (rk >= 4) { ov.classList.add('big'); await wait(rk >= 5 ? 1700 : 1200) } else await wait(550)
-      sfx('reveal', rk); e.classList.remove('charge', 'facedown'); e.classList.add('reveal'); ov.classList.remove('charging'); ov.classList.add('burst')
-      const lab = h('div', 'op-label', `<small>${TIER[c.r].name}</small><b>${c.name}</b><span>${c.ver}</span>`); lab.style.setProperty('--rc', tierCol(c.r)); stage.append(lab)
-      await wait(700); ov.classList.remove('burst', 'big')
-      hint.textContent = 'TAP FOR NEXT'
-      await new Promise(res => e.onclick = res); lab.remove()
+      const [cx, cy] = C()
+      if (rk >= 4) { // cinematic pull
+        ov.classList.add('cine'); sfx('charge', rk); e.classList.add('charge'); FXC.gather(cx, cy, col, rk >= 6 ? 1.3 : 1, 40); shake(1)
+        await wait(rk >= 6 ? 1500 : rk >= 5 ? 1200 : 950)
+      } else { sfx('charge', rk); e.classList.add('charge'); FXC.gather(cx, cy, col, .45, 16); await wait(480) }
+      sfx('reveal', rk); e.classList.remove('charge', 'facedown'); e.classList.add('reveal')
+      FXC.hit(cx, cy, col, rk >= 6 ? 2.4 : rk >= 5 ? 2 : rk >= 4 ? 1.7 : 1.2); FXC.screen(rk >= 6 ? '#ffffff' : col, rk >= 4 ? .5 : .25, .4); shake(rk >= 4 ? 3 : 2)
+      if (rk >= 6) ov.classList.add('rainbow')
+      if (rk >= 4) { const st = h('div', 'o2-stamp', `<small>${rk >= 6 ? '♛ SECRET RARE ♛' : rk >= 5 ? 'MYTHIC PULL' : 'LEGENDARY PULL'}</small>`); st.style.setProperty('--rc', col); ov.append(st); setTimeout(() => st.remove(), 1800) }
     } else {
-      if (i) sfx('reveal', rk)
-      await new Promise(res => e.onclick = res)
+      const [cx, cy] = C(); e.classList.add('reveal'); sfx('reveal', rk); FXC.hit(cx, cy, col, .7 + rk * .2)
+      if (!i) await wait(200)
     }
-    sfx('swipe'); e.onclick = null; e.classList.add('gone')
-    await wait(220)
+    setArt(urls[i])
+    { const [cx, cy] = C(), sr = stage.getBoundingClientRect()
+      if (rk >= 2) FXC.rays(cx, cy, col, 8 + rk * 3, 700 + rk * 120, 1.1 + rk * .15)
+      FXC.twinkle(cx, cy, sr.width * 1.3, sr.height * 1.1, col, 6 + rk * 3, 1.6)
+      if (rk >= 4) FXC.confetti(cx, sr.top + sr.height * .3, rk >= 6 ? ['#ff6ab0', '#ffd95a', '#6affc0', '#6ac8ff', '#b88cff', '#ffffff'] : [col, '#ffffff', rk >= 5 ? '#ff9ae0' : '#ffe08a'], rk >= 6 ? 140 : 90) }
+    label.style.setProperty('--rc', col)
+    label.innerHTML = `<small>${RARITY_MARK[c.r]} ${TIER[c.r].name}</small><b>${c.name}</b><span>${c.ver}</span>`
+    label.classList.remove('show'); void label.offsetWidth; label.classList.add('show')
+    await wait(rk >= 4 ? 700 : 260)
+    hint.innerHTML = i < els.length - 1 ? '<b>TAP</b> FOR NEXT' : '<b>TAP</b> TO FINISH'
+    await new Promise(res => { const go2 = ev => { if (ev.target.closest('.o2-skip')) return; ov.removeEventListener('click', go2); res() }; setTimeout(() => ov.addEventListener('click', go2), 120) })
+    label.classList.remove('show'); ov.classList.remove('cine', 'rainbow')
+    // fly into the tray
+    sfx('swipe'); e.classList.add('gone')
+    const slot = h('div', 'o2-slot'); slot.style.setProperty('--rc', col); slot.dataset.tier = c.r
+    { const im = new Image(); im.src = urls[i]; slot.append(im) } tray.append(slot)
+    await wait(200)
   }
-  if (!skipping) finish()
+  if (skipping) return
+  // ---- 4) line-up of the whole pack ----
+  hint.textContent = ''; stage.innerHTML = ''; ov.classList.add('lineup'); ov.style.setProperty('--bc', bcol)
+  const line = h('div', 'o2-line')
+  cards.forEach((c, i) => { const w = h('div', 'o2-lc'); w.style.setProperty('--rc', tierCol(c.r)); w.style.setProperty('--d', (i * .08) + 's'); w.dataset.tier = c.r; const im = new Image(); im.src = urls[i]; w.append(im); line.append(w) })
+  stage.append(line); tray.innerHTML = ''
+  const done = h('button', 'btn gold o2-done', 'CONTINUE'); done.onclick = finish; ov.append(done)
+  sfx('claim')
 }
 
 // ================= BINDERS =================

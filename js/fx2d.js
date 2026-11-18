@@ -32,6 +32,12 @@ export function createFX(host) {
     ring(p, t) { const r = p.size * ease(t), a = (1 - t) ** 1.6; x.strokeStyle = rgba(p.col, a); x.lineWidth = Math.max(1, p.w * (1 - t)); x.beginPath(); x.ellipse(p.x, p.y, r, r * (p.flat || 1), 0, 0, 7); x.stroke() },
     dust(p, t, dt) { p.vx *= .93; p.vy = p.vy * .93 - 20 * dt; p.x += p.vx * dt; p.y += p.vy * dt; const a = (1 - t) ** 1.3; glow(p.x, p.y, p.size * (1 + t), p.col, a * .7) },
     gather(p, t) { const e = ease(t); const px = p.sx + (p.x - p.sx) * e, py = p.sy + (p.y - p.sy) * e, a = Math.sin(t * Math.PI); glow(px, py, p.size, p.col, a * .8) },
+    // god rays: long soft wedges fanning out from a point
+    ray(p, t) { const a = (t < .15 ? t / .15 : (1 - t) ** 1.4) * p.a, len = p.size * (.6 + t * .6); x.save(); x.translate(p.x, p.y); x.rotate(p.ang + t * p.spin); const g = x.createLinearGradient(0, 0, len, 0); g.addColorStop(0, rgba('#ffffff', a)); g.addColorStop(.25, rgba(p.col, a * .7)); g.addColorStop(1, rgba(p.col, 0)); x.fillStyle = g; x.beginPath(); x.moveTo(0, 0); x.lineTo(len, -p.w); x.lineTo(len, p.w); x.closePath(); x.fill(); x.restore() },
+    // tumbling confetti (normal blend so colours stay solid)
+    conf(p, t, dt) { p.vy += 420 * dt; p.vx *= .99; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; x.globalCompositeOperation = 'source-over'; x.save(); x.translate(p.x, p.y); x.rotate(p.rot); x.scale(1, Math.cos(p.life * 9 + p.ph)); x.globalAlpha = Math.min(1, (1 - t) * 1.6); x.fillStyle = p.col; x.fillRect(-p.size, -p.size * .45, p.size * 2, p.size * .9); x.restore(); x.globalCompositeOperation = 'lighter' },
+    // twinkling 4-point star
+    twk(p, t) { const a = Math.sin(t * Math.PI), s = p.size * (.4 + a * .6); x.save(); x.translate(p.x, p.y); x.fillStyle = rgba('#ffffff', a); x.beginPath(); x.moveTo(0, -s); x.lineTo(s * .12, -s * .12); x.lineTo(s, 0); x.lineTo(s * .12, s * .12); x.lineTo(0, s); x.lineTo(-s * .12, s * .12); x.lineTo(-s, 0); x.lineTo(-s * .12, -s * .12); x.fill(); glow(0, 0, s * 1.4, p.col, a * .5); x.restore() },
     screen(p, t) { x.fillStyle = rgba(p.col, (1 - t) ** 2 * p.a); x.fillRect(0, 0, W, H) },
   }
   const add = o => { P.push({ life: 0, ...o }); kick() }
@@ -45,6 +51,9 @@ export function createFX(host) {
       dust(cx, cy, col, Math.round(8 + 10 * power), 260 + 120 * power, 7 + 3 * power)
     },
     gather(cx, cy, col, dur = .55, n = 26) { for (let i = 0; i < n; i++) { const a = R(0, Math.PI * 2), d = R(120, 260); add({ k: 'gather', x: cx, y: cy, sx: cx + Math.cos(a) * d, sy: cy + Math.sin(a) * d, max: dur, delay: R(0, .15), size: R(5, 10), col }) } add({ k: 'flare', x: cx, y: cy, max: dur + .2, delay: dur * .6, size: 70, col }) },
+    rays(cx, cy, col, n = 14, size = 900, dur = 1.4) { for (let i = 0; i < n; i++) add({ k: 'ray', x: cx, y: cy, max: dur * R(.8, 1.1), ang: i / n * Math.PI * 2 + R(-.1, .1), spin: R(-.12, .12), size: size * R(.7, 1.1), w: R(14, 40), a: R(.35, .7), col }) },
+    confetti(cx, cy, cols, n = 90) { for (let i = 0; i < n; i++) { const a = R(-Math.PI, 0), v = R(380, 900); add({ k: 'conf', x: cx + R(-40, 40), y: cy, vx: Math.cos(a) * v * .9, vy: Math.sin(a) * v, max: R(1.6, 2.6), size: R(4, 8), col: cols[i % cols.length], rot: R(0, 6), vr: R(-10, 10), ph: R(0, 6) }) } },
+    twinkle(cx, cy, w, h, col, n = 14, dur = 2.2) { for (let i = 0; i < n; i++) add({ k: 'twk', x: cx + R(-w / 2, w / 2), y: cy + R(-h / 2, h / 2), max: R(.6, 1.2), delay: R(0, dur), size: R(8, 18), col }) },
     screen(col, a = .45, dur = .35) { add({ k: 'screen', max: dur, col, a }) },
     ko(cx, cy) { this.hit(cx, cy, '#ff4a5a', 2); this.screen('#ff3d4a', .25, .5) },
     slash() { }, beam() { }, lines() { },

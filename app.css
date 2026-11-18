@@ -1628,3 +1628,103 @@ img[data-r=X] { border-radius: 12px; animation: rbGlow 4s linear infinite }
 @keyframes rbGlow { 0% { box-shadow: 0 0 0 1.5px #ff7ab8, 0 0 22px rgba(255,122,184,.5) } 25% { box-shadow: 0 0 0 1.5px #ffd95a, 0 0 22px rgba(255,217,90,.5) } 50% { box-shadow: 0 0 0 1.5px #7dffb6, 0 0 22px rgba(125,255,182,.5) } 75% { box-shadow: 0 0 0 1.5px #6ac8ff, 0 0 22px rgba(106,200,255,.5) } 100% { box-shadow: 0 0 0 1.5px #ff7ab8, 0 0 22px rgba(255,122,184,.5) } }
 .cg.miss img, .pocket.empty img { box-shadow: none !important; animation: none !important }
 @media (prefers-reduced-motion: reduce) { img[data-r=X] { animation: none } }
+
+/* ================= PACK OPENER v2 ================= */
+body.in-opener #app, body.in-opener #backdrop { visibility: hidden }
+#opener.op2 { position: fixed; inset: 0; z-index: 50; overflow: hidden; touch-action: none; user-select: none; --bc: #fff; background: #05050a; animation: fadein .3s }
+#opener.op2.out { animation: fadeout .35s forwards }
+.o2-bg { position: absolute; inset: 0; background: radial-gradient(60% 55% at 50% 42%, color-mix(in srgb, var(--bc) 26%, #10101a), #06060b 72%); transition: background .6s }
+.o2-spot { position: absolute; left: 50%; top: -10%; width: 70vmin; height: 90%; transform: translateX(-50%); background: linear-gradient(180deg, color-mix(in srgb, var(--bc) 30%, transparent), transparent 80%); clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%); opacity: .55; pointer-events: none; transition: background .6s }
+.o2-floor { position: absolute; left: 50%; bottom: 14%; width: 70vmin; height: 12vmin; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--bc) 50%, transparent), transparent); opacity: .7; pointer-events: none }
+.o2-floor::after { content: ""; position: absolute; inset: 30% 18%; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--bc) 70%, #fff); opacity: .45 }
+.o2-top { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 14px; padding: 16px 20px; z-index: 6 }
+.o2-pk { font: italic 900 20px var(--disp); letter-spacing: .1em; color: rgba(255,255,255,.75) }
+.o2-count { margin-left: auto; font: 900 13px var(--ui); letter-spacing: .2em; color: rgba(255,255,255,.55) }
+.o2-skip { border: 0; cursor: pointer; padding: 9px 18px; font: 900 12px var(--ui); letter-spacing: .12em; color: #fff; background: rgba(255,255,255,.1); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%) }
+.o2-hint { position: absolute; left: 0; right: 0; bottom: 6vh; text-align: center; z-index: 6; font: 800 14px var(--ui); letter-spacing: .3em; color: rgba(255,255,255,.65); pointer-events: none }
+.o2-hint b { color: #fff; font: italic 900 22px var(--disp); letter-spacing: .12em; margin-right: 6px }
+.o2-stage { position: absolute; left: 50%; top: 46%; width: min(72vw, 330px, 40vh); aspect-ratio: 360 / 552; transform: translate(-50%, -50%); z-index: 3; perspective: 1400px }
+/* pack */
+.o2-pack { position: absolute; inset: 0; cursor: grab; animation: pkIn .6s cubic-bezier(.2,1.2,.4,1) both, pkFloat 3s 0.6s ease-in-out infinite }
+.o2-pack.grab { animation: pkShake .12s linear infinite }
+@keyframes pkIn { from { transform: translateY(40%) scale(.6) rotate(-6deg); opacity: 0 } }
+@keyframes pkFloat { 50% { transform: translateY(-10px) } }
+@keyframes pkShake { 25% { transform: translate(1.5px, -1px) rotate(.4deg) } 75% { transform: translate(-1.5px, 1px) rotate(-.4deg) } }
+.o2-pack > .top, .o2-pack > .body { position: absolute; inset: 0; background-size: 100% 100%; border-radius: 14px; box-shadow: 0 30px 60px rgba(0,0,0,.6), 0 0 50px color-mix(in srgb, var(--bc) 30%, transparent); transition: transform .65s cubic-bezier(.3,.7,.2,1), opacity .65s }
+.o2-pack > .top { clip-path: inset(0 0 84% 0) } .o2-pack > .body { clip-path: inset(16% 0 0 0) }
+.o2-pack .cut { position: absolute; left: 0; right: 0; top: 16%; height: 4px; transform: translateY(-50%); z-index: 2; border-top: 2px dashed rgba(255,255,255,.7) }
+.o2-pack .cut i { display: block; height: 4px; margin-top: -3px; background: #fff; box-shadow: 0 0 14px #fff, 0 0 30px var(--bc); transform-origin: 0 50%; transform: scaleX(0) }
+.pk-shine { position: absolute; inset: 0; z-index: 2; border-radius: 14px; pointer-events: none; background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.35) 48%, transparent 60%); background-size: 260% 100%; animation: pkShine 2.6s ease-in-out infinite; mix-blend-mode: normal }
+@keyframes pkShine { from { background-position: 130% 0 } to { background-position: -130% 0 } }
+.o2-pack.torn { animation: none } .o2-pack.torn .cut, .o2-pack.torn .pk-shine { opacity: 0 }
+.o2-pack.torn > .top { transform: translate(50%, -160%) rotate(32deg); opacity: 0 }
+.o2-pack.torn > .body { transform: translateY(80%) scale(.85) rotate(-4deg); opacity: 0 }
+/* rarity beam */
+.o2-beam { position: absolute; left: 50%; top: -5%; bottom: 10%; width: 0; transform: translateX(-50%); z-index: 2; pointer-events: none; opacity: 0; background: linear-gradient(90deg, transparent, var(--bc) 35%, #fff 50%, var(--bc) 65%, transparent); transition: width .5s cubic-bezier(.2,.9,.3,1), opacity .3s }
+#opener.beam .o2-beam { opacity: .9; width: 60px }
+#opener.beam.b3 .o2-beam { width: 110px } #opener.beam.b4 .o2-beam { width: 180px } #opener.beam.b5 .o2-beam { width: 260px } #opener.beam.b6 .o2-beam { width: 360px; background: linear-gradient(90deg, transparent, #ff6ab0 15%, #ffd95a 30%, #fff 50%, #6affc0 70%, #6ac8ff 85%, transparent) }
+/* cards */
+.o2-card { position: absolute; inset: 0; cursor: pointer; transform: translateY(calc(var(--off) * -6px)) rotate(calc((var(--off) - 2) * 1.6deg)); transition: transform .5s cubic-bezier(.2,.9,.25,1), opacity .35s; animation: cIn .55s cubic-bezier(.2,1.15,.4,1) var(--d) both }
+@keyframes cIn { from { transform: translateY(50%) scale(.7); opacity: 0 } }
+.o2-card.top { transform: none }
+.o2-card .in { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.3,1.3,.5,1) }
+.o2-card .f, .o2-card .b { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 14px; overflow: hidden }
+.o2-card .f img { width: 100%; height: 100%; display: block }
+.o2-card .b { transform: rotateY(180deg); display: grid; place-content: center; text-align: center; gap: 4px;
+  background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--rc) 75%, #fff) 0, var(--rc) 30%, #120a1c 80%); box-shadow: inset 0 0 0 6px rgba(255,255,255,.22), inset 0 0 0 9px color-mix(in srgb, var(--rc) 60%, #000) }
+.o2-card .b b { font: italic 900 64px/1 var(--disp); color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.35) }
+.o2-card .b small { font: 900 12px var(--ui); letter-spacing: .4em; color: rgba(255,255,255,.85) }
+.bk-ring { position: absolute; left: 50%; top: 42%; width: 70%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid rgba(255,255,255,.4); box-shadow: 0 0 0 10px rgba(255,255,255,.06) }
+.o2-card[data-tier=X] .b { background: conic-gradient(from 0deg, #ff6ab0, #ffd95a, #6affc0, #6ac8ff, #b88cff, #ff6ab0) }
+.o2-card.facedown .in { transform: rotateY(180deg) }
+.o2-card.facedown.top { animation: auraB 1.6s ease-in-out infinite }
+.o2-card.facedown.top .b { box-shadow: inset 0 0 0 6px rgba(255,255,255,.22), 0 0 40px var(--rc), 0 0 90px color-mix(in srgb, var(--rc) 50%, transparent) }
+@keyframes auraB { 50% { transform: translateY(-8px) } }
+.o2-card.charge .in { animation: chg .25s ease-in-out infinite alternate }
+@keyframes chg { from { transform: rotateY(180deg) scale(1.02) } to { transform: rotateY(170deg) scale(1.08) } }
+.o2-card.reveal .in { transform: rotateY(0) scale(1.04) }
+.o2-card.reveal .f { box-shadow: 0 0 0 2px #fff, 0 0 40px var(--rc), 0 30px 60px rgba(0,0,0,.6) }
+.o2-card.gone { transform: translateY(85%) scale(.25) !important; opacity: 0; pointer-events: none; transition: transform .4s cubic-bezier(.5,0,.8,.4), opacity .35s .1s }
+.o2-new { position: absolute; top: 10px; right: 10px; padding: 3px 10px; font: 900 12px var(--ui); color: #fff; background: linear-gradient(135deg, #ff3d9a, #ffb627); clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%) }
+/* name label */
+.o2-label { position: absolute; left: 50%; top: calc(46% + min(36vw, 165px, 20vh) * 1.53 + 6px); transform: translateX(-50%); z-index: 4; width: 92vw; text-align: center; pointer-events: none; opacity: 0 }
+.o2-label.show { animation: lblIn .5s cubic-bezier(.2,1.2,.4,1) both }
+@keyframes lblIn { from { opacity: 0; transform: translate(-50%, 16px) } to { opacity: 1; transform: translate(-50%, 0) } }
+.o2-label small { display: inline-block; padding: 3px 14px; font: 900 11px var(--ui); letter-spacing: .26em; color: #0a0612; background: var(--rc); clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%) }
+.o2-label b { display: block; margin-top: 6px; font: italic 900 clamp(34px, 5vw, 54px)/.95 var(--disp); color: #fff; text-shadow: 0 0 24px color-mix(in srgb, var(--rc) 70%, transparent) }
+.o2-label span { font: 800 12px var(--ui); letter-spacing: .18em; color: rgba(255,255,255,.65) }
+/* cinematic */
+#opener.cine .o2-bg { background: radial-gradient(40% 40% at 50% 42%, color-mix(in srgb, var(--bc) 40%, #08080e), #000 70%) }
+#opener.cine .o2-spot { opacity: 1 }
+#opener.rainbow .o2-bg { background: conic-gradient(from 0deg at 50% 42%, #3a1030, #3a2a10, #103a2a, #10283a, #2a103a, #3a1030) }
+.o2-stamp { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); z-index: 6; pointer-events: none; animation: stamp 1.8s cubic-bezier(.2,1.2,.4,1) both }
+.o2-stamp small { display: block; padding: 8px 26px; font: italic 900 clamp(26px, 4vw, 40px) var(--disp); letter-spacing: .12em; color: #0a0612; background: linear-gradient(90deg, color-mix(in srgb, var(--rc) 60%, #fff), var(--rc), color-mix(in srgb, var(--rc) 60%, #fff)); clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); box-shadow: 0 0 40px var(--rc) }
+@keyframes stamp { 0% { transform: translateX(-50%) scale(2.6); opacity: 0 } 14% { transform: translateX(-50%) scale(.95); opacity: 1 } 22% { transform: translateX(-50%) scale(1) } 85% { opacity: 1 } 100% { opacity: 0 } }
+/* collection tray */
+.o2-tray { position: absolute; left: 50%; bottom: 11vh; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5 }
+.o2-slot { width: clamp(34px, 5vh, 54px); aspect-ratio: 360/552; border-radius: 5px; overflow: hidden; box-shadow: 0 0 0 1.5px var(--rc), 0 0 12px color-mix(in srgb, var(--rc) 50%, transparent); animation: slotIn .45s cubic-bezier(.2,1.3,.4,1) both }
+.o2-slot img { width: 100%; height: 100%; display: block }
+@keyframes slotIn { from { transform: translateY(-80px) scale(1.8); opacity: 0 } }
+/* final line-up */
+#opener.lineup .o2-stage { width: min(94vw, 980px); aspect-ratio: auto; height: auto; top: 44% }
+.o2-line { display: flex; justify-content: center; gap: 2%; perspective: 1200px }
+.o2-lc { width: 18%; max-width: 180px; aspect-ratio: 360/552; animation: lcIn .6s cubic-bezier(.2,1.2,.4,1) var(--d) both }
+.o2-lc img { width: 100%; height: 100%; display: block; border-radius: 10px; box-shadow: 0 0 0 1.5px var(--rc), 0 0 26px color-mix(in srgb, var(--rc) 55%, transparent), 0 20px 40px rgba(0,0,0,.6) }
+.o2-lc:nth-child(1) { transform: rotate(-6deg) translateY(14px) } .o2-lc:nth-child(2) { transform: rotate(-3deg) translateY(4px) } .o2-lc:nth-child(4) { transform: rotate(3deg) translateY(4px) } .o2-lc:nth-child(5) { transform: rotate(6deg) translateY(14px) }
+@keyframes lcIn { from { opacity: 0; transform: translateY(60px) scale(.6) } }
+.o2-done { position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%); z-index: 7; min-width: 200px; animation: lblIn .5s .5s both }
+/* shakes */
+#opener.shk1 .o2-stage { animation: oshk1 .3s } #opener.shk2 .o2-stage { animation: oshk2 .45s } #opener.shk3 { animation: oshk3 .55s }
+@keyframes oshk1 { 25% { translate: 4px -2px } 50% { translate: -4px 2px } 75% { translate: 2px 1px } }
+@keyframes oshk2 { 15% { translate: -9px 5px } 35% { translate: 8px -6px } 55% { translate: -5px 3px } 75% { translate: 3px -2px } }
+@keyframes oshk3 { 10% { translate: -14px 8px } 25% { translate: 12px -9px } 40% { translate: -9px 6px } 60% { translate: 6px -4px } 80% { translate: -2px 2px } }
+@media (max-width: 760px) { .o2-label b { font-size: 32px } .o2-lc { width: 19% } .o2-tray { bottom: 13vh } }
+@media (prefers-reduced-motion: reduce) { .o2-pack, .pk-shine, .o2-card.facedown.top { animation: none } }
+/* opener: real-art backdrop */
+.o2-art { position: absolute; inset: -6%; background: center / cover no-repeat; filter: blur(26px) saturate(1.5) brightness(.55); transform: scale(1.08); opacity: 0; transition: opacity .7s ease; will-change: opacity }
+.o2-art.on { opacity: 1 }
+.o2-grade { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(55% 50% at 50% 44%, transparent 30%, rgba(4,4,8,.55) 75%, rgba(4,4,8,.85)), linear-gradient(180deg, rgba(4,4,8,.35), transparent 30%, transparent 65%, rgba(4,4,8,.7)) }
+#opener.cine .o2-art { filter: blur(26px) saturate(1.7) brightness(.4) }
+#opener.rainbow .o2-grade { background: radial-gradient(55% 50% at 50% 44%, transparent 30%, rgba(4,4,8,.4) 80%), conic-gradient(from 0deg at 50% 44%, rgba(255,106,176,.18), rgba(255,217,90,.18), rgba(106,255,192,.18), rgba(106,200,255,.18), rgba(184,140,255,.18), rgba(255,106,176,.18)) }
+.o2-spot { mix-blend-mode: screen }
+.o2-tray { left: auto !important; right: 3vw; bottom: 4vh !important; transform: none !important }
