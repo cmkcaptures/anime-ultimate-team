@@ -1390,3 +1390,35 @@ body[data-page=players] { --a1: #8a5cff; --a2: #22d8ff; --a3: #ff5ac8 }
 .ar-active.pop img, .ar-active.popbig img { animation: none !important }
 #arena.iframe .stage3, #arena.iframe .ar-side { filter: brightness(2.2) contrast(1.3) saturate(.3) !important }
 .ftag { font-size: 16px !important; letter-spacing: .1em !important }
+
+/* ================= cut-in v3: card reveal ================= */
+.cutin { display: none !important }
+.cut2 { position: absolute; inset: 0; z-index: 2; pointer-events: none; --cc: #fff; overflow: hidden }
+.c2-dim { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4,4,8,.94) 0%, rgba(4,4,8,.86) 55%, rgba(4,4,8,.7)); animation: c2fade .22s ease-out both }
+.c2-light { position: absolute; left: 6%; top: 50%; width: 46vmin; height: 46vmin; margin-top: -23vmin; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--cc) 55%, transparent), transparent 68%); animation: c2fade .4s ease-out both }
+.c2-line { position: absolute; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--cc) 20%, #fff 50%, var(--cc) 80%, transparent); animation: c2line .5s cubic-bezier(.2,.9,.3,1) both }
+.c2-line.l1 { top: 22% } .c2-line.l2 { top: 78%; animation-delay: .06s }
+.c2-card { position: absolute; left: 9%; top: 50%; width: min(26vh, 300px); transform: translateY(-50%) rotate(-6deg); animation: c2card .5s cubic-bezier(.15,1.15,.35,1) both }
+.c2-card img { width: 100%; display: block; border-radius: 12px; box-shadow: 0 0 0 2px #fff, 0 0 40px color-mix(in srgb, var(--cc) 70%, transparent), 0 30px 60px rgba(0,0,0,.7) }
+.c2-txt { position: absolute; left: calc(9% + min(26vh, 300px) + 6%); right: 5%; top: 50%; transform: translateY(-50%); animation: c2txt .5s .08s cubic-bezier(.15,1,.3,1) both }
+.c2-txt small { display: block; font: 900 12px var(--ui); letter-spacing: .38em; color: var(--cc) }
+.c2-txt b { display: block; margin: 10px 0 12px; font: italic 900 clamp(46px, 7vw, 110px)/.88 var(--disp); color: #fff; text-transform: uppercase; letter-spacing: .005em }
+.c2-txt span { display: inline-flex; align-items: center; gap: 12px; font: italic 900 24px var(--disp); color: #fff; letter-spacing: .04em }
+.c2-txt span em { font: 800 11px var(--ui); font-style: normal; letter-spacing: .2em; color: rgba(255,255,255,.55); padding-left: 12px; border-left: 1px solid rgba(255,255,255,.25) }
+.cut2.foe .c2-dim { background: linear-gradient(270deg, rgba(4,4,8,.94) 0%, rgba(4,4,8,.86) 55%, rgba(4,4,8,.7)) }
+.cut2.foe .c2-light { left: auto; right: 6% } .cut2.foe .c2-card { left: auto; right: 9%; transform: translateY(-50%) rotate(6deg); animation-name: c2cardR }
+.cut2.foe .c2-txt { left: 5%; right: calc(9% + min(26vh, 300px) + 6%); text-align: right }
+.cut2.ult .c2-card { width: min(34vh, 360px) } .cut2.ult .c2-txt { left: calc(9% + min(34vh, 360px) + 5%) } .cut2.ult.foe .c2-txt { left: 5%; right: calc(9% + min(34vh, 360px) + 5%) }
+.cut2.ult .c2-txt b { font-size: clamp(54px, 8.5vw, 130px) }
+@keyframes c2fade { from { opacity: 0 } }
+@keyframes c2line { from { transform: scaleX(0) } }
+@keyframes c2card { from { transform: translate(-60%, -50%) rotate(-18deg) scale(.7); opacity: 0 } }
+@keyframes c2cardR { from { transform: translate(60%, -50%) rotate(18deg) scale(.7); opacity: 0 } }
+@keyframes c2txt { from { transform: translate(-30px, -50%); opacity: 0; letter-spacing: .2em } }
+.cut2.out .c2-card, .cut2.out .c2-txt, .cut2.out .c2-line { transition: transform .3s cubic-bezier(.6,0,.8,.3), opacity .3s; opacity: 0 }
+.cut2.out .c2-card { transform: translate(40%, -50%) rotate(4deg) scale(.9) } .cut2.out .c2-dim, .cut2.out .c2-light { transition: opacity .3s; opacity: 0 }
+@media (max-width: 760px) {
+  .c2-card, .cut2.ult .c2-card { left: 50% !important; right: auto !important; top: 34%; width: 38vw; margin-left: -19vw; animation-name: c2fade }
+  .c2-txt, .cut2.foe .c2-txt, .cut2.ult .c2-txt, .cut2.ult.foe .c2-txt { left: 6% !important; right: 6% !important; top: 72%; text-align: center }
+  .c2-txt b { font-size: 40px !important } .c2-txt span { font-size: 18px }
+}

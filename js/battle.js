@@ -327,11 +327,13 @@ export function startBattle(stage) {
     const b = document.createElement('i'); b.className = 'beam' + (wide ? ' wide' : ''); b.style.cssText = `left:${x1}px;top:${y1}px;width:${len}px;transform:rotate(${ang}rad);--sc:${col}`; FX().append(b); setTimeout(() => b.remove(), 650)
   }
   function cutin(card, move, sub, col, ult, uname) {
-    const c = document.createElement('div'); c.className = 'cutin' + (ult ? ' ult' : '') + (sub === 'ENEMY' ? ' foe' : '')
-    c.style.cssText = `--cc:${col};--art:url("${card.url}");--fx:${Math.round((card.fx ?? .5) * 100)}%;--fy:${Math.round((card.fy ?? .22) * 100)}%`
-    c.innerHTML = `<div class="ci-dim"></div><div class="ci-bar b1"></div><div class="ci-strip"><i></i></div><div class="ci-bar b2"></div>
-      <div class="ci-txt"><small>${ult ? (uname || 'ULTIMATE') + ' · ULTIMATE ART' : 'SPECIAL ART'}</small><b>${move}</b><span>${card.name} · ${card.ver}</span></div>`
-    FX().append(c); FXC.lines(innerWidth / 2, innerHeight / 2, col, ult ? 1.2 : .9)
+    const foe = sub === 'ENEMY', c = document.createElement('div'); c.className = 'cut2' + (ult ? ' ult' : '') + (foe ? ' foe' : '')
+    c.style.setProperty('--cc', col)
+    c.innerHTML = `<div class="c2-dim"></div><div class="c2-light"></div><div class="c2-line l1"></div><div class="c2-line l2"></div>
+      <div class="c2-card"><img alt=""></div>
+      <div class="c2-txt"><small>${foe ? 'ENEMY · ' : ''}${ult ? (uname || 'ULTIMATE') + ' · ULTIMATE' : 'SPECIAL ART'}</small><b>${move}</b><span>${card.name}<em>${card.ver}</em></span></div>`
+    thumbURL(card, 560).then(u => c.querySelector('img').src = u)
+    FX().append(c)
     setTimeout(() => c.classList.add('out'), ult ? 1150 : 850); setTimeout(() => c.remove(), ult ? 1500 : 1200)
   }
   function banner(text, sub, col) { const b = document.createElement('div'); b.className = 'mvban'; b.style.setProperty('--bc', col); b.innerHTML = `<small>${sub}</small><b>${text}</b>`; FX().append(b); setTimeout(() => b.remove(), 1300) }
