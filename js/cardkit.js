@@ -36,7 +36,7 @@ export const ANIME = {
   YGO: { name: 'YU-GI-OH!', tag: 'YGO', type: 'psychic' },
 }
 export const TYPE = {
-  ki: { c: ['#ff7a00', '#b80018', '#ffd400'], en: 'KI' },
+  ki: { c: ['#ff7a00', '#b80018', '#ffd400'], en: 'AURA' },
   mana: { c: ['#12c95c', '#04572b', '#c8ff3d'], en: 'MANA' },
   curse: { c: ['#b03dff', '#3d14b8', '#ff5ad1'], en: 'CURSED' },
   chak: { c: ['#00a8ff', '#0030c8', '#7df9ff'], en: 'CHAKRA' },
