@@ -35,6 +35,7 @@ export const ANIME = {
   KGB: { name: 'KAGURABACHI', tag: 'KGB', type: 'flame' },
   YGO: { name: 'YU-GI-OH!', tag: 'YGO', type: 'psychic' },
   DAN: { name: 'DANDADAN', tag: 'DAN', type: 'psychic' },
+  SL: { name: 'SOLO LEVELING', tag: 'SL', type: 'devil' },
 }
 export const TYPE = {
   ki: { c: ['#ff7a00', '#b80018', '#ffd400'], en: 'AURA' },
