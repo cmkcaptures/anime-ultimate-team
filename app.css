@@ -1489,3 +1489,93 @@ body[data-page=players] { --a1: #8a5cff; --a2: #22d8ff; --a3: #ff5ac8 }
 #arena .mat .ar-side .ar-active { height: clamp(110px, calc((100vh - 300px) / 2 - 36px), 250px) !important; align-self: center !important }
 #arena .mat .ar-side .ar-bench { max-height: 100%; align-self: center !important }
 #arena .mat .ar-side .ar-bench > * { align-self: center }
+
+/* ================= ARENAS v7: themed environments + illustrated mats ================= */
+.stage3 { display: none !important }
+.env { position: absolute; inset: 0; z-index: -1; overflow: hidden; contain: strict }
+.env i { position: absolute; display: block; pointer-events: none }
+.e-sky { inset: 0; background: var(--sky) }
+.e-far { left: -2%; right: -2%; bottom: 34%; height: 42%; background: var(--far) bottom / auto 100% repeat-x; opacity: .9 }
+.e-near { left: -2%; right: -2%; bottom: 20%; height: 30%; background: var(--near) bottom / auto 100% repeat-x }
+.e-amb { inset: -10% 0 0; background-image: var(--amb); background-size: var(--ambsz, 220px 220px); animation: amb var(--ambt, 14s) linear infinite; opacity: var(--ambo, .7) }
+@keyframes amb { from { background-position: 0 0 } to { background-position: var(--ambdx, 40px) var(--ambdy, 440px) } }
+.e-vig { inset: 0; background: radial-gradient(85% 70% at 50% 55%, transparent 55%, rgba(0,0,0,.75)) }
+body.in-battle.reduce-motion .e-amb, .e-amb { will-change: background-position }
+@media (prefers-reduced-motion: reduce) { .e-amb { animation: none } }
+
+/* the mat: themed surface + emblem, keeps the slots on top */
+.mat-in { background: none !important; overflow: hidden }
+.mat-surf { position: absolute; inset: 0; z-index: -2; border-radius: inherit; background: var(--mat) }
+.mat-surf::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(70% 60% at 50% 50%, transparent 40%, rgba(0,0,0,.45)), linear-gradient(180deg, rgba(255,255,255,.06), transparent 30%) }
+.mat-emb { position: absolute; left: 50%; top: 50%; width: min(42%, 420px); aspect-ratio: 1; transform: translate(-50%, -50%); z-index: -1; background: var(--emb) center / contain no-repeat; opacity: .5 }
+.mat-in { box-shadow: 0 0 0 2px var(--rim1, #333), 0 0 0 9px var(--rim2, #111), 0 0 0 11px var(--rim1, #333), 0 0 40px var(--rimglow, transparent), 0 50px 90px rgba(0,0,0,.75) !important }
+.mat-tag { color: rgba(255,255,255,.4) !important }
+
+/* arena title card */
+.arena-title { position: absolute; z-index: 70; left: 50%; top: 42%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; animation: atIn 2.3s cubic-bezier(.2,.9,.3,1) forwards }
+.arena-title small { display: block; font: 900 12px var(--ui); letter-spacing: .6em; color: var(--acc, #fff) }
+.arena-title b { display: block; margin: 6px 0; font: italic 900 clamp(48px, 7vw, 96px)/.9 var(--disp); color: #fff; letter-spacing: .02em; text-shadow: 0 0 40px var(--acc, #fff), 0 6px 0 rgba(0,0,0,.5) }
+.arena-title span { font: 800 13px var(--ui); letter-spacing: .3em; color: rgba(255,255,255,.7); text-transform: uppercase }
+@keyframes atIn { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); letter-spacing: .4em } 12% { opacity: 1; transform: translate(-50%, -50%) scale(1) } 78% { opacity: 1 } 100% { opacity: 0; transform: translate(-50%, -56%) } }
+
+/* ---------- SUNSET DOJO ---------- */
+#arena.th-dojo { --acc: #ffb060; --rim1: #c98a4a; --rim2: #3a2210; --rimglow: rgba(255,150,60,.25);
+  --sky: linear-gradient(180deg, #2a1838 0%, #8a3a3a 38%, #f08a4a 58%, #ffd08a 66%, #2a1a14 67%, #120c0a);
+  --far: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='160'%3E%3Cpath d='M0 160V95L70 50l60 40 70-70 80 65 60-35 90 60 70-45 100 55v40z' fill='%235a2a30'/%3E%3C/svg%3E");
+  --near: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='160'%3E%3Cpath d='M40 160V70h-20l60-30 60 30h-20v90zM300 160V60h-24l70-36 70 36h-24v100z' fill='%23180c0c'/%3E%3Crect x='70' y='90' width='10' height='14' fill='%23ffb060'/%3E%3Crect x='336' y='84' width='12' height='16' fill='%23ffb060'/%3E%3C/svg%3E");
+  --amb: radial-gradient(circle, rgba(255,190,120,.9) 1.2px, transparent 2px); --ambsz: 160px 180px; --ambt: 18s; --ambdx: 30px; --ambdy: -360px; --ambo: .55;
+  --mat: repeating-linear-gradient(90deg, rgba(0,0,0,.35) 0 2px, transparent 2px 120px), repeating-linear-gradient(0deg, transparent 0 46px, rgba(0,0,0,.18) 46px 48px), linear-gradient(90deg, #8a5a32, #a06a3a 20%, #8e5c34 40%, #a8703e 60%, #8a5a32 80%, #9a6638);
+  --emb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='none' stroke='%23fff3' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='36' fill='none' stroke='%23fff2' stroke-width='1.5'/%3E%3Cpath d='M50 18a32 32 0 0 1 0 64a16 16 0 0 1 0-32a16 16 0 0 0 0-32z' fill='%23fff2'/%3E%3C/svg%3E") }
+/* ---------- NEON DISTRICT ---------- */
+#arena.th-city { --acc: #ff3dd8; --rim1: #ff3dd8; --rim2: #0a0a18; --rimglow: rgba(255,61,216,.35);
+  --sky: linear-gradient(180deg, #05040e, #1a0b30 45%, #3a0f4a 62%, #0a0814 63%, #05050a);
+  --far: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='200'%3E%3Cg fill='%2314102a'%3E%3Crect x='0' y='80' width='50' height='120'/%3E%3Crect x='55' y='40' width='40' height='160'/%3E%3Crect x='100' y='100' width='60' height='100'/%3E%3Crect x='165' y='20' width='45' height='180'/%3E%3Crect x='215' y='70' width='70' height='130'/%3E%3Crect x='290' y='50' width='35' height='150'/%3E%3Crect x='330' y='90' width='80' height='110'/%3E%3Crect x='415' y='30' width='50' height='170'/%3E%3Crect x='470' y='110' width='50' height='90'/%3E%3C/g%3E%3Cg fill='%23ff3dd8' opacity='.7'%3E%3Crect x='62' y='60' width='4' height='4'/%3E%3Crect x='174' y='44' width='4' height='4'/%3E%3Crect x='186' y='90' width='4' height='4'/%3E%3Crect x='300' y='70' width='4' height='4'/%3E%3Crect x='425' y='60' width='4' height='4'/%3E%3C/g%3E%3Cg fill='%2322d8ff' opacity='.7'%3E%3Crect x='72' y='110' width='4' height='4'/%3E%3Crect x='230' y='100' width='4' height='4'/%3E%3Crect x='440' y='120' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E");
+  --near: linear-gradient(transparent, transparent);
+  --amb: linear-gradient(170deg, transparent 48%, rgba(150,200,255,.35) 49%, transparent 51%); --ambsz: 90px 120px; --ambt: .9s; --ambdx: -20px; --ambdy: 240px; --ambo: .45;
+  --mat: repeating-linear-gradient(90deg, transparent 0 calc(50% - 2px), rgba(255,220,60,.5) calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px) 100%), radial-gradient(60% 40% at 30% 30%, rgba(255,61,216,.18), transparent 70%), radial-gradient(60% 40% at 70% 70%, rgba(34,216,255,.18), transparent 70%), radial-gradient(rgba(255,255,255,.05) 1px, transparent 1.5px) 0 0 / 6px 6px, linear-gradient(180deg, #16151c, #0e0e14);
+  --emb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,6 94,50 50,94 6,50' fill='none' stroke='%23ff3dd8' stroke-width='2'/%3E%3Cpolygon points='50,20 80,50 50,80 20,50' fill='none' stroke='%2322d8ff' stroke-width='1.5'/%3E%3C/svg%3E") }
+/* ---------- HIDDEN LEAF SHRINE ---------- */
+#arena.th-forest { --acc: #8aff6a; --rim1: #6a8a4a; --rim2: #1a2414; --rimglow: rgba(140,255,100,.18);
+  --sky: linear-gradient(180deg, #0c2a2a, #2a6a4a 40%, #a8d88a 60%, #1a2a18 61%, #0a120a);
+  --far: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Cpath d='M20 200L50 60 80 200zM90 200L130 30 170 200zM180 200L210 80 240 200zM240 200L270 50 300 200z' fill='%231a3a24'/%3E%3C/svg%3E");
+  --near: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Cpath d='M0 200L40 40 80 200zM300 200L350 20 400 200z' fill='%230c1a10'/%3E%3Cpath d='M150 70h100M160 70v130M240 70v130M140 60h120' stroke='%23a02818' stroke-width='10'/%3E%3C/svg%3E");
+  --amb: radial-gradient(ellipse 5px 3px, rgba(160,255,120,.85) 60%, transparent 70%); --ambsz: 200px 200px; --ambt: 16s; --ambdx: 120px; --ambdy: 400px; --ambo: .6;
+  --mat: linear-gradient(90deg, rgba(0,0,0,.25) 2px, transparent 2px) 0 0 / 90px 90px, linear-gradient(0deg, rgba(0,0,0,.25) 2px, transparent 2px) 0 0 / 90px 90px, radial-gradient(rgba(140,180,110,.15) 1px, transparent 2px) 0 0 / 14px 14px, linear-gradient(160deg, #5a6a52, #4a5a44 50%, #56664c);
+  --emb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='none' stroke='%23fff3' stroke-width='3'/%3E%3Cpath d='M50 22c14 0 22 10 22 22S60 66 50 66s-16-8-16-16 6-12 12-12 9 5 9 9' fill='none' stroke='%23fff3' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") }
+/* ---------- CURSED DOMAIN ---------- */
+#arena.th-domain { --acc: #ff2a4a; --rim1: #8a0a2a; --rim2: #12040a; --rimglow: rgba(255,40,70,.35);
+  --sky: radial-gradient(60% 40% at 50% 20%, #5a0a2a, transparent 70%), linear-gradient(180deg, #12030a, #2a0614 50%, #0a0206);
+  --far: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Cpath d='M0 200V80l30-20v140zM60 200V30l40 30v140zM130 200V90h50v110zM210 200V50l30-30 30 30v150zM300 200V100l40-40 40 40v100z' fill='%23180610'/%3E%3C/svg%3E");
+  --near: linear-gradient(transparent, transparent);
+  --amb: radial-gradient(circle, rgba(255,60,90,.9) 1.4px, transparent 2px); --ambsz: 140px 160px; --ambt: 10s; --ambdx: 0px; --ambdy: -320px; --ambo: .7;
+  --mat: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,40,70,.05) 0 10deg, transparent 10deg 20deg), radial-gradient(circle at 50% 50%, transparent 30%, rgba(255,40,70,.12) 30.4%, transparent 31%, transparent 44%, rgba(255,40,70,.12) 44.4%, transparent 45%), linear-gradient(130deg, #1e0c14, #2a1018 50%, #160810);
+  --emb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='none' stroke='%23ff2a4a' stroke-width='2' stroke-dasharray='6 4'/%3E%3Cpath d='M50 14l10 26 26 10-26 10-10 26-10-26-26-10 26-10z' fill='none' stroke='%23ff2a4a' stroke-width='2'/%3E%3C/svg%3E") }
+/* ---------- GRAND LINE DECK ---------- */
+#arena.th-deck { --acc: #5ac8ff; --rim1: #d8b878; --rim2: #3a2a18; --rimglow: rgba(90,200,255,.2);
+  --sky: linear-gradient(180deg, #2a8ad8 0%, #8ad0ff 45%, #e8f6ff 58%, #1a6aa8 59%, #0a3a68 75%, #062240);
+  --far: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='120'%3E%3Cg fill='%23ffffff' opacity='.85'%3E%3Cellipse cx='90' cy='60' rx='70' ry='22'/%3E%3Cellipse cx='140' cy='48' rx='50' ry='24'/%3E%3Cellipse cx='420' cy='70' rx='90' ry='20'/%3E%3Cellipse cx='470' cy='56' rx='50' ry='22'/%3E%3C/g%3E%3C/svg%3E");
+  --near: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Cpath d='M0 60q37 -24 75 0t75 0 75 0 75 0V120H0z' fill='%23165a98'/%3E%3Cpath d='M0 80q37 -18 75 0t75 0 75 0 75 0V120H0z' fill='%230e4a80'/%3E%3C/svg%3E");
+  --amb: radial-gradient(circle, rgba(255,255,255,.7) 1px, transparent 1.6px); --ambsz: 240px 200px; --ambt: 20s; --ambdx: 200px; --ambdy: 0px; --ambo: .4;
+  --mat: repeating-linear-gradient(90deg, rgba(0,0,0,.4) 0 3px, transparent 3px 70px), repeating-linear-gradient(0deg, transparent 0 160px, rgba(0,0,0,.25) 160px 163px), linear-gradient(90deg, #a8783e, #b8884a 18%, #9e703a 36%, #b4844a 54%, #a27440 72%, #b0804a);
+  --emb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='%23fff3' stroke-width='3'/%3E%3Cpath d='M50 10v80M10 50h80M22 22l56 56M78 22L22 78' stroke='%23fff2' stroke-width='2'/%3E%3Ccircle cx='50' cy='50' r='10' fill='%23fff2'/%3E%3C/svg%3E") }
+/* ---------- NULL VOID COLOSSEUM ---------- */
+#arena.th-cosmos { --acc: #c9a8ff; --rim1: #e8c86a; --rim2: #14102a; --rimglow: rgba(200,160,255,.35);
+  --sky: radial-gradient(50% 35% at 75% 25%, rgba(140,80,255,.45), transparent 70%), radial-gradient(40% 30% at 20% 35%, rgba(60,140,255,.35), transparent 70%), radial-gradient(rgba(255,255,255,.8) 1px, transparent 1.4px) 0 0 / 70px 70px, radial-gradient(rgba(255,255,255,.5) 1px, transparent 1.4px) 30px 40px / 110px 110px, linear-gradient(180deg, #05030e, #0e0820 60%, #05030a);
+  --far: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='240'%3E%3Ccircle cx='620' cy='90' r='70' fill='%232a1a4a'/%3E%3Cellipse cx='620' cy='90' rx='120' ry='14' fill='none' stroke='%23c9a8ff' stroke-opacity='.4' stroke-width='3'/%3E%3C/svg%3E");
+  --near: linear-gradient(transparent, transparent);
+  --amb: radial-gradient(circle, rgba(200,170,255,.9) 1px, transparent 1.8px); --ambsz: 180px 180px; --ambt: 26s; --ambdx: -180px; --ambdy: 120px; --ambo: .55;
+  --mat: radial-gradient(circle at 50% 50%, transparent 24%, rgba(232,200,106,.25) 24.3%, transparent 25%, transparent 38%, rgba(232,200,106,.18) 38.3%, transparent 39%), repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,.03) 0 3deg, transparent 3deg 15deg), radial-gradient(rgba(255,255,255,.35) .8px, transparent 1.2px) 0 0 / 34px 34px, linear-gradient(160deg, #1a1236, #120c26 50%, #1c143a);
+  --emb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='none' stroke='%23e8c86a' stroke-opacity='.6' stroke-width='2'/%3E%3Cpolygon points='50,10 61,40 92,40 67,58 76,88 50,70 24,88 33,58 8,40 39,40' fill='none' stroke='%23e8c86a' stroke-opacity='.6' stroke-width='2'/%3E%3C/svg%3E") }
+@media (max-width: 760px) { .e-far { bottom: 50%; height: 26% } .e-near { bottom: 40%; height: 18% } .mat-emb { width: 60% } }
+
+/* ================= arenas from real artwork ================= */
+/* drop the drawn scenery entirely */
+#arena .e-far, #arena .e-near, #arena .e-amb, #arena .mat-emb { display: none !important }
+#arena .e-sky { background: radial-gradient(70% 55% at 50% 45%, #1b1828, #0a0910 72%) !important }
+#arena .mat-surf { background: linear-gradient(180deg, rgba(22,20,32,.92), rgba(14,13,22,.94)) !important }
+#arena .mat-in { box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 30px 80px rgba(0,0,0,.6) !important }
+/* with an arena image: the art fills the screen, the board becomes tinted glass over it */
+#arena.has-img .e-sky { background: var(--bgimg) center / cover no-repeat !important; filter: saturate(1.1) }
+#arena.has-img .e-vig { background: linear-gradient(180deg, rgba(4,4,8,.55), rgba(4,4,8,.15) 35%, rgba(4,4,8,.25) 65%, rgba(4,4,8,.8)), radial-gradient(90% 75% at 50% 50%, transparent 55%, rgba(0,0,0,.6)) !important }
+#arena.has-img .mat-surf { background: linear-gradient(180deg, rgba(10,10,18,.55), rgba(10,10,18,.45) 50%, rgba(10,10,18,.6)) !important; backdrop-filter: none }
+#arena.has-img .mat-in { box-shadow: 0 0 0 1px rgba(255,255,255,.22), inset 0 0 0 1px rgba(255,255,255,.06), 0 30px 80px rgba(0,0,0,.55) !important }

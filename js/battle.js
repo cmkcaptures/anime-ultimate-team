@@ -169,18 +169,31 @@ function planTurn(B, level, who = 'ai') {
 }
 const aiTurn = (B, level) => planTurn(B, level, 'ai')
 
+// ---------------- arenas ----------------
+export const ARENAS = {
+  dojo: { name: 'SUNSET DOJO', sub: 'Training Grounds' },
+  city: { name: 'NEON DISTRICT', sub: 'Street Arena' },
+  forest: { name: 'HIDDEN LEAF SHRINE', sub: 'Forest Arena' },
+  domain: { name: 'CURSED DOMAIN', sub: 'Shibuya Underground' },
+  deck: { name: 'GRAND LINE DECK', sub: 'Open Sea' },
+  cosmos: { name: 'NULL VOID COLOSSEUM', sub: 'Tournament of Power' },
+}
+const ARENA_KEYS = Object.keys(ARENAS)
+let ARENA_IMGS = null
+const arenaImgs = () => ARENA_IMGS || (ARENA_IMGS = fetch('arenas-list.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).catch(() => []))
+
 // ---------------- story ----------------
 const STAGES = [
-  { n: 1, name: 'Training Grounds', rating: 70, level: 1, coins: 1500 },
-  { n: 2, name: 'Street Brawl', rating: 74, level: 1, coins: 2000 },
-  { n: 3, name: 'Rival Academy', rating: 78, level: 2, coins: 2500 },
-  { n: 4, name: 'Tournament Prelims', rating: 81, level: 2, coins: 3000 },
-  { n: 5, name: 'Villain Hideout', rating: 84, level: 3, coins: 4000, pack: 'standard' },
-  { n: 6, name: 'Shinobi War', rating: 86, level: 3, coins: 5000 },
-  { n: 7, name: 'Cursed Domain', rating: 88, level: 3, coins: 6000 },
-  { n: 8, name: 'Grand Line Showdown', rating: 90, level: 4, coins: 7500, pack: 'premium' },
-  { n: 9, name: 'Tournament of Power', rating: 93, level: 4, coins: 10000 },
-  { n: 10, name: 'Gods of Destruction', rating: 96, level: 5, coins: 15000, pack: 'premium' },
+  { n: 1, name: 'Training Grounds', rating: 70, level: 1, coins: 1500, arena: 'dojo' },
+  { n: 2, name: 'Street Brawl', rating: 74, level: 1, coins: 2000, arena: 'city' },
+  { n: 3, name: 'Rival Academy', rating: 78, level: 2, coins: 2500, arena: 'forest' },
+  { n: 4, name: 'Tournament Prelims', rating: 81, level: 2, coins: 3000, arena: 'city' },
+  { n: 5, name: 'Villain Hideout', rating: 84, level: 3, coins: 4000, arena: 'domain', pack: 'standard' },
+  { n: 6, name: 'Shinobi War', rating: 86, level: 3, coins: 5000, arena: 'forest' },
+  { n: 7, name: 'Cursed Domain', rating: 88, level: 3, coins: 6000, arena: 'domain' },
+  { n: 8, name: 'Grand Line Showdown', rating: 90, level: 4, coins: 7500, arena: 'deck', pack: 'premium' },
+  { n: 9, name: 'Tournament of Power', rating: 93, level: 4, coins: 10000, arena: 'cosmos' },
+  { n: 10, name: 'Gods of Destruction', rating: 96, level: 5, coins: 15000, arena: 'cosmos', pack: 'premium' },
 ]
 function enemyTeam(stage) {
   if (stage.team && stage.team.length) { const t = stage.team.map(k => X.BYKEY[k]).filter(Boolean); if (t.length) return t.slice(0, 6) }
@@ -206,7 +219,7 @@ export function battlePage(el) {
   for (const s of STAGES) {
     const locked = s.n > prog + 1, done = s.n <= prog
     const r = h('button', 'stage' + (locked ? ' locked' : '') + (done ? ' done' : ''))
-    r.innerHTML = `<span class="sn">${String(s.n).padStart(2, '0')}</span><div class="si"><b>${s.name}</b><small>Enemy rating ~${s.rating} · AI level ${s.level}</small></div><div class="sr">${done ? '<em>CLEARED</em>' : ''}<span><i class="coin-i"></i>${(done ? Math.round(s.coins / 3) : s.coins).toLocaleString()}</span>${s.pack && !done ? `<span class="pk">+ ${s.pack === 'premium' ? 'PREMIUM' : ''} PACK</span>` : ''}</div>`
+    r.innerHTML = `<span class="sn">${String(s.n).padStart(2, '0')}</span><div class="si"><b>${s.name}</b><small>${ARENAS[s.arena] ? ARENAS[s.arena].name + ' · ' : ''}Enemy rating ~${s.rating} · AI level ${s.level}</small></div><div class="sr">${done ? '<em>CLEARED</em>' : ''}<span><i class="coin-i"></i>${(done ? Math.round(s.coins / 3) : s.coins).toLocaleString()}</span>${s.pack && !done ? `<span class="pk">+ ${s.pack === 'premium' ? 'PREMIUM' : ''} PACK</span>` : ''}</div>`
     r.disabled = locked || team.length < 6
     r.onclick = () => seenTutorial() ? startBattle(s) : tutorial(() => startBattle(s))
     list.append(r)
@@ -222,10 +235,11 @@ export function startBattle(stage) {
   refill(B.you); refill(B.ai)
   const youFirst = act(B.you).spd >= act(B.ai).spd
 
-  const ov = h('div', ''); ov.id = 'arena'
-  ov.innerHTML = `<div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
+  const AR = stage.arena && ARENAS[stage.arena] ? stage.arena : ARENA_KEYS[Math.floor(Math.random() * ARENA_KEYS.length)]
+  const ov = h('div', 'th-' + AR); ov.id = 'arena'
+  ov.innerHTML = `<div class="env"><i class="e-sky"></i><i class="e-far"></i><i class="e-near"></i><i class="e-amb"></i><i class="e-vig"></i></div><div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
     <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto">AUTO</button><span class="ar-stage">${stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
-    <div class="ar-plate ai"><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
+    <div class="ar-plate ai"><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
     <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
@@ -460,6 +474,14 @@ export function startBattle(stage) {
     ov.append(box)
   }
 
+  arenaImgs().then(list => {
+    let name = ARENAS[AR].name, sub = ARENAS[AR].sub
+    if (list.length) {
+      const pick = stage.pvp || !stage.n ? list[Math.floor(Math.random() * list.length)] : list[(stage.n - 1) % list.length]
+      ov.classList.add('has-img'); ov.style.setProperty('--bgimg', `url("${pick.url}")`); name = pick.name; sub = stage.pvp ? 'Ranked Arena' : 'Stage ' + stage.n
+    }
+    const t = document.createElement('div'); t.className = 'arena-title'; t.innerHTML = `<small>ARENA</small><b>${name}</b><span>${sub}</span>`; ov.append(t); setTimeout(() => t.remove(), 2300)
+  })
   draw()
   if (youFirst) { log(`You move first (${act(B.you).card.name} is faster)`) }
   else { log(`${act(B.ai).card.name} is faster · enemy moves first`); setTimeout(aiPhase, 900) }
