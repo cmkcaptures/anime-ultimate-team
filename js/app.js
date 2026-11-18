@@ -57,7 +57,7 @@ function toast(text, kind = 'ok') {
 const LAZY = 'IntersectionObserver' in window ? new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) { LAZY.unobserve(e.target); e.target._draw() } }, { rootMargin: '300px' }) : null
 function cardImg(c, w = 340) {
   const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, rated ${c.ovr}`; im.decoding = 'async'; im.draggable = false
-  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'
+  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r
   im._draw = () => thumbURL(c, w).then(u => im.src = u)
   if (LAZY) { LAZY.observe(im); setTimeout(() => { if (!im.src && im.isConnected && im.getBoundingClientRect().top < innerHeight + 300) { LAZY.unobserve(im); im._draw() } }, 50) } else im._draw()
   return im

@@ -1620,3 +1620,11 @@ body.in-battle.reduce-motion .e-amb, .e-amb { will-change: background-position }
 #arena.lite .art2:disabled { filter: grayscale(.85) brightness(.75) }
 /* banners stay dark glass for contrast */
 #arena.lite .tban::before { background: linear-gradient(90deg, transparent, rgba(14,20,36,.82) 18%, rgba(14,20,36,.82) 82%, transparent) }
+
+/* ================= rarity presence in menus ================= */
+img[data-r=L] { border-radius: 12px; box-shadow: 0 0 0 1px rgba(255,212,90,.7), 0 0 16px rgba(255,190,60,.35) }
+img[data-r=M] { border-radius: 12px; box-shadow: 0 0 0 1px rgba(255,140,220,.8), 0 0 20px rgba(255,90,200,.4) }
+img[data-r=X] { border-radius: 12px; animation: rbGlow 4s linear infinite }
+@keyframes rbGlow { 0% { box-shadow: 0 0 0 1.5px #ff7ab8, 0 0 22px rgba(255,122,184,.5) } 25% { box-shadow: 0 0 0 1.5px #ffd95a, 0 0 22px rgba(255,217,90,.5) } 50% { box-shadow: 0 0 0 1.5px #7dffb6, 0 0 22px rgba(125,255,182,.5) } 75% { box-shadow: 0 0 0 1.5px #6ac8ff, 0 0 22px rgba(106,200,255,.5) } 100% { box-shadow: 0 0 0 1.5px #ff7ab8, 0 0 22px rgba(255,122,184,.5) } }
+.cg.miss img, .pocket.empty img { box-shadow: none !important; animation: none !important }
+@media (prefers-reduced-motion: reduce) { img[data-r=X] { animation: none } }

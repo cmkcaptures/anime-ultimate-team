@@ -145,6 +145,23 @@ export function drawCard(x, d) {
     const star = (X, Y, s) => { x.save(); x.fillStyle = '#fff'; x.shadowColor = '#fff'; x.shadowBlur = 14; x.beginPath(); x.moveTo(X, Y - s); x.lineTo(X + s * .16, Y - s * .16); x.lineTo(X + s, Y); x.lineTo(X + s * .16, Y + s * .16); x.lineTo(X, Y + s); x.lineTo(X - s * .16, Y + s * .16); x.lineTo(X - s, Y); x.lineTo(X - s * .16, Y - s * .16); x.fill(); x.restore() }
     star(470, 70, 20); star(80, 300, 13); if (tr.rank >= 3) { star(610, 560, 16); star(310, 150, 9); star(560, 420, 8) }
   }
+  { // premium foil on high tiers
+    const rk = tr.rank; let sd = ((d.uid || 7) + 1) * 7919
+    const rnd = () => (sd = (sd * 9301 + 49297) % 233280) / 233280
+    if (rk >= 5) { // holographic rainbow bands
+      x.save(); x.globalCompositeOperation = 'overlay'; x.globalAlpha = rk >= 6 ? .34 : .24
+      const hb = x.createLinearGradient(0, 0, W, H); const cols = ['#ff5ab0', '#ffd95a', '#5affb0', '#5ac8ff', '#b88cff']
+      for (let i = 0; i <= 20; i++) hb.addColorStop(i / 20, cols[i % cols.length])
+      x.fillStyle = hb; x.fillRect(0, 0, W, H); x.restore()
+    }
+    if (rk >= 4) { // foil glitter
+      x.save(); x.globalCompositeOperation = 'screen'
+      const gc = rk >= 6 ? ['#ffffff', '#ffe9a8', '#c9f3ff', '#ffc9ec'] : rk >= 5 ? ['#ffffff', '#ffd0f0', '#d0f0ff'] : ['#fff6c9', '#ffe08a', '#ffffff']
+      for (let i = 0; i < (rk >= 6 ? 170 : 120); i++) { const gx = rnd() * W, gy = rnd() * (H * .62), gr = rnd() * 2.6 + .6; x.globalAlpha = .35 + rnd() * .55; x.fillStyle = gc[i % gc.length]; x.beginPath(); x.arc(gx, gy, gr, 0, 7); x.fill() }
+      for (let i = 0; i < (rk >= 6 ? 9 : 6); i++) { const gx = rnd() * W, gy = rnd() * H * .58, sz = 8 + rnd() * 12; x.globalAlpha = .9; x.fillStyle = '#fff'; x.beginPath(); x.moveTo(gx, gy - sz); x.lineTo(gx + sz * .14, gy - sz * .14); x.lineTo(gx + sz, gy); x.lineTo(gx + sz * .14, gy + sz * .14); x.lineTo(gx, gy + sz); x.lineTo(gx - sz * .14, gy + sz * .14); x.lineTo(gx - sz, gy); x.lineTo(gx - sz * .14, gy - sz * .14); x.fill() }
+      x.restore()
+    }
+  }
   const wg = x.createLinearGradient(0, 0, 300, 300); wg.addColorStop(0, 'rgba(0,0,0,.9)'); wg.addColorStop(.4, 'rgba(0,0,0,.5)'); wg.addColorStop(.62, 'rgba(0,0,0,0)'); x.fillStyle = wg; x.fillRect(0, 0, 320, 320)
   const pal = d.r === 'X' ? ['#fff', '#ffe9a8', '#c9f3ff'] : low ? ['#fff', tr.pal[0], tr.pal[1]] : ['#fff', c3, c1]
   const g2 = x.createLinearGradient(0, 30, 0, 160); g2.addColorStop(.15, pal[0]); g2.addColorStop(.6, pal[1]); g2.addColorStop(1, pal[2])
@@ -192,6 +209,33 @@ export function drawCard(x, d) {
   x.font = DISP(25); x.fillStyle = '#fff'; x.fillText(tr.name, 50 + n * 20, H - 31)
   x.font = '500 15px "JetBrains Mono"'; x.fillStyle = '#cfc8e6'; x.textAlign = 'right'; x.fillText(`${ANIME[d.anime].tag} · S01-${String(d.uid + 1).padStart(3, '0')}/${String(d.total || 0).padStart(3, '0')}`, W - 30, H - 33); x.textAlign = 'left'
   x.restore()
+  { // tiered frame: bevels, foil borders, filigree corners, crest
+    const rk = tr.rank, gold = ['#fff6c9', '#f2c040', '#a06a00']
+    const tierCol = d.r === 'X' ? '#ffffff' : d.r === 'M' ? '#ff7ad8' : d.r === 'L' ? '#ffd45a' : d.r === 'E' ? '#c08bff' : '#9ad8ff'
+    x.save()
+    if (rk >= 2) { rr(15, 15, W - 30, H - 30, 21); x.strokeStyle = 'rgba(255,255,255,.65)'; x.lineWidth = 2; x.stroke() }
+    if (rk >= 3) { rr(24, 24, W - 48, H - 48, 15); x.strokeStyle = tierCol; x.globalAlpha = .75; x.lineWidth = 2; x.stroke(); x.globalAlpha = 1 }
+    if (rk >= 5) { x.shadowColor = tierCol; x.shadowBlur = 22; rr(6, 6, W - 12, H - 12, 30); x.strokeStyle = 'rgba(255,255,255,.85)'; x.lineWidth = 3; x.stroke(); x.shadowBlur = 0 }
+    if (rk >= 4) {
+      // filigree corners
+      const cg = x.createLinearGradient(0, 0, 80, 80); cg.addColorStop(0, gold[0]); cg.addColorStop(.5, gold[1]); cg.addColorStop(1, gold[2])
+      const corner = (cx, cy, sx, sy) => {
+        x.save(); x.translate(cx, cy); x.scale(sx, sy); x.fillStyle = d.r === 'X' ? '#fff' : cg; x.strokeStyle = d.r === 'X' ? '#fff' : gold[0]; x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 6
+        x.beginPath(); x.moveTo(0, 0); x.lineTo(70, 0); x.lineTo(62, 8); x.lineTo(8, 8); x.lineTo(8, 62); x.lineTo(0, 70); x.closePath(); x.fill()
+        x.beginPath(); x.moveTo(20, 20); x.lineTo(32, 14); x.lineTo(26, 26); x.lineTo(14, 32); x.closePath(); x.fill()
+        x.lineWidth = 2; x.beginPath(); x.moveTo(16, 46); x.quadraticCurveTo(16, 16, 46, 16); x.stroke(); x.restore()
+      }
+      corner(12, 12, 1, 1); corner(W - 12, 12, -1, 1); corner(12, H - 12, 1, -1); corner(W - 12, H - 12, -1, -1)
+      // crest plaque at the top centre
+      x.save(); x.translate(W / 2, 14); x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 10
+      const pg = x.createLinearGradient(-70, 0, 70, 0)
+      if (d.r === 'X') ['#ff7ab8', '#ffd95a', '#7dffb6', '#6ac8ff', '#b78cff'].forEach((c, k) => pg.addColorStop(k / 4, c)); else if (d.r === 'M') { pg.addColorStop(0, '#ff5ab0'); pg.addColorStop(.5, '#ffe0f4'); pg.addColorStop(1, '#8a5cff') } else { pg.addColorStop(0, gold[2]); pg.addColorStop(.5, gold[0]); pg.addColorStop(1, gold[2]) }
+      x.fillStyle = pg; x.beginPath(); x.moveTo(-74, -6); x.lineTo(74, -6); x.lineTo(60, 26); x.lineTo(0, 38); x.lineTo(-60, 26); x.closePath(); x.fill()
+      x.shadowBlur = 0; x.strokeStyle = 'rgba(255,255,255,.8)'; x.lineWidth = 2; x.stroke()
+      x.fillStyle = '#1a0e04'; x.font = DISP(24); x.textAlign = 'center'; x.fillText(d.r === 'X' ? '♛ SECRET ♛' : d.r === 'M' ? '★ ★' : '★', 0, 22); x.restore()
+    }
+    x.restore()
+  }
 }
 
 // ---- small card images for menus, cached per card + awakening level ----
@@ -202,7 +246,7 @@ const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fi
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340) {
-  const bw = bucket(w), k = 't6|' + sig(c) + '|' + bw
+  const bw = bucket(w), k = 't7|' + sig(c) + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
