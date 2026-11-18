@@ -41,7 +41,7 @@ function kitEffects(me, a) {
 function fighter(card, lvl = 0) {
   const [pwr, spd, ki, tec, def, iq] = card.st || [70, 70, 70, 70, 70, 70]
   const hp = Math.round(card.ovr * 40 + def * 12 + (card.tag ? 600 : 0))
-  return { card, key: card.key, hp, max: hp, pwr, spd, ki, tec, def, iq, guard: 0, ko: false, lvl }
+  return { card, key: card.key, hp, max: hp, pwr, spd, ki, tec, def, iq, guard: 0, ko: false, lvl, dealt: 0, kos: 0, fort: 0 }
 }
 function drawArt(f) {
   // the fighter's role nudges which arts show up (fighters strike, supports blast/guard)
@@ -51,79 +51,123 @@ function drawArt(f) {
   if (r < (role === 'SHOOTER' || role === 'SUPPORT' ? .64 : .52)) return 'blast'
   return 'strike'
 }
-function newSide(cards) { return { team: cards.map(c => fighter(c)), active: 0, ki: 4, gauge: 0, hand: [], switched: false } }
+function newSide(cards) { return { team: cards.map(c => fighter(c)), active: 0, ki: 4, gauge: 0, hand: [], switched: false, seq: [] } }
 const act = s => s.team[s.active]
 const alive = s => s.team.filter(f => !f.ko)
+// bench passives: everyone waiting on the bench helps the active fighter
+const PASSIVE = { SUPPORT: ['heal', 4, 'MEDIC'], TANK: ['dr', 6, 'BULWARK'], ASSASSIN: ['crit', 4, 'KILLER INSTINCT'], FIGHTER: ['dmg', 3, 'BATTLE CRY'], SHOOTER: ['gauge', 5, 'SPOTTER'], STRIKER: ['gauge', 5, 'SPOTTER'] }
+function passives(s) {
+  const p = { heal: 0, dr: 0, crit: 0, dmg: 0, gauge: 0 }
+  s.team.forEach((f, i) => { if (i === s.active || f.ko) return; const q = PASSIVE[f.card.role]; if (q) p[q[0]] += q[1] })
+  p.dr = Math.min(p.dr, 18); p.dmg = Math.min(p.dmg, 12); p.crit = Math.min(p.crit, 12); p.heal = Math.min(p.heal, 12); p.gauge = Math.min(p.gauge, 15)
+  return p
+}
 function refill(s) { while (s.hand.length < HAND) s.hand.push(drawArt(act(s))) }
-function hit(att, def, base, stat, pierce) {
-  const crit = Math.random() < .08 + att.tec / 1200
+function hit(att, def, base, stat, pierce, A, D) {
+  const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}
+  const crit = Math.random() < .08 + att.tec / 1200 + (pa.crit || 0) / 100
   const mu = matchup(att, def)
   let dmg = base * (stat / 80) * (100 / (60 + def.def * .5)) * (0.92 + Math.random() * .16) * (crit ? 1.5 : 1) * mu
   const tagB = att.card.tag ? kitNum(att.card, /\+(\d+)% damage/) : 0; if (tagB) dmg *= 1 + tagB / 100
+  if (pa.dmg) dmg *= 1 + pa.dmg / 100
+  if (pd.dr) dmg *= 1 - pd.dr / 100
+  if (def.fort) dmg *= .7
   if (def.guard) { if (!pierce) dmg *= .5; def.guard = 0 }
   dmg = Math.max(1, Math.round(dmg))
-  def.hp = Math.max(0, def.hp - dmg); if (def.hp === 0) def.ko = true
+  def.hp = Math.max(0, def.hp - dmg); att.dealt += dmg; if (def.hp === 0 && !def.ko) { def.ko = true; att.kos++ }
   return { dmg, crit, mu }
 }
 // returns a list of events for the UI to animate
+const COMBOS = [
+  { seq: ['strike', 'strike', 'blast'], name: 'RUSH COMBO', bonus: .45 },
+  { seq: ['blast', 'strike', 'strike'], name: 'BURST CHAIN', bonus: .35 },
+  { seq: ['guard', 'special'], name: 'COUNTER ART', bonus: .3 },
+  { seq: ['strike', 'blast', 'special'], name: 'FULL ASSAULT', bonus: .6 },
+]
+function comboFor(seq) { for (const c of COMBOS) { const n = c.seq.length; if (seq.length >= n && c.seq.every((a, i) => seq[seq.length - n + i] === a)) return c } return null }
 function playArt(B, who, idx) {
   const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], art = me.hand[idx], cost = ARTS[art].cost, a = act(me), d = act(foe)
   if (me.ki < cost || a.ko || d.ko) return null
   me.ki -= cost; me.hand.splice(idx, 1)
+  me.seq.push(art)
   const ev = { who, art, hits: [] }
+  const combo = comboFor(me.seq), dmgArts = me.seq.filter(x => x !== 'guard').length
+  const chain = 1 + Math.min(.32, Math.max(0, dmgArts - 1) * .08) + (combo ? combo.bonus : 0)
+  if (combo) { ev.combo = combo.name; me.seq = [] }
+  ev.chain = art === 'guard' ? 0 : dmgArts
+  const pierce = /Ignores Guard/.test(kitTxt(a.card))
   if (art === 'guard') { a.guard = 1; ev.guard = true }
-  else if (art === 'strike') ev.hits.push({ t: d, ...hit(a, d, 260, a.pwr) })
-  else if (art === 'blast') ev.hits.push({ t: d, ...hit(a, d, 420, a.ki) })
+  else if (art === 'strike') ev.hits.push({ t: d, ...hit(a, d, 260 * chain, a.pwr, false, me, foe) })
+  else if (art === 'blast') ev.hits.push({ t: d, ...hit(a, d, 420 * chain, a.ki, false, me, foe) })
   else if (art === 'special') {
-    const base = pctOf(a.card) * 3.2
+    const base = pctOf(a.card) * 3.2 * chain
     ev.move = a.card.mv
-    if (isAoe(a.card)) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, t === d ? base * .75 : base * .3, Math.max(a.pwr, a.ki), /Ignores Guard/.test(kitTxt(a.card))) })
-    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), /Ignores Guard/.test(kitTxt(a.card))) })
+    if (isAoe(a.card)) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, t === d ? base * .75 : base * .3, Math.max(a.pwr, a.ki), pierce, me, foe) })
+    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce, me, foe) })
   }
   const dealt = ev.hits.reduce((n, x) => n + x.dmg, 0)
   me.gauge = Math.min(GAUGE_MAX, me.gauge + 6 + dealt / 90); foe.gauge = Math.min(GAUGE_MAX, foe.gauge + dealt / 140)
   if (art === 'special') ev.kit = kitEffects(me, a)
   return ev
 }
+const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION', 'Pierces Guard · +60% vs targets under 40% HP'], SUPPORT: ['RALLY', 'Big hit · heals the whole team 20%'], TANK: ['FORTRESS', 'Big hit · takes 30% less damage until your next turn'], SHOOTER: ['OVERDRIVE', 'Hits every enemy hard'], STRIKER: ['OVERDRIVE', 'Hits every enemy hard'] }
+const ultOf = c => c.tag ? ['DUO FINISH', 'Both partners strike · double hit'] : (ULT[c.role] || ULT.FIGHTER)
 function ultimate(B, who) {
   const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], a = act(me), d = act(foe)
   if (me.gauge < GAUGE_MAX || a.ko || d.ko) return null
-  me.gauge = 0
-  const ev = { who, art: 'ultimate', move: a.card.mv, hits: [] }
-  const base = pctOf(a.card) * 6
-  if (isAoe(a.card)) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, t === d ? base * .8 : base * .35, Math.max(a.pwr, a.ki), /Ignores Guard/.test(kitTxt(a.card))) })
-  else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), /Ignores Guard/.test(kitTxt(a.card))) })
+  me.gauge = 0; me.seq = []
+  const [uname] = ultOf(a.card), ev = { who, art: 'ultimate', move: a.card.mv, ult: uname, hits: [] }
+  const base = pctOf(a.card) * 6, stat = Math.max(a.pwr, a.ki), pierce = /Ignores Guard/.test(kitTxt(a.card))
+  const H = (t, b, p) => { if (!t.ko) ev.hits.push({ t, ...hit(a, t, b, stat, p, me, foe) }) }
+  if (a.card.tag) { H(d, base * .62, pierce); H(d, base * .62, true) }
+  else if (uname === 'BARRAGE') { H(d, base * .45, pierce); H(d, base * .45, pierce); H(d, base * .45, true) }
+  else if (uname === 'EXECUTION') H(d, base * (d.hp / d.max < .4 ? 1.6 : 1.05), true)
+  else if (uname === 'RALLY') { H(d, base * .9, pierce); for (const f of me.team) if (!f.ko) f.hp = Math.min(f.max, f.hp + Math.round(f.max * .2)); ev.rally = true }
+  else if (uname === 'FORTRESS') { H(d, base * .95, pierce); a.fort = 1; a.guard = 1; ev.fort = true }
+  else for (const t of alive(foe)) H(t, t === d ? base * .85 : base * .45, pierce)
   ev.kit = kitEffects(me, a)
   return ev
 }
 function nextAlive(s) { const i = s.team.findIndex(f => !f.ko); if (i >= 0) s.active = i; return i >= 0 }
 
 // ---------------- AI ----------------
-function aiTurn(B, level) {
-  const me = B.ai, evs = []
-  const smart = level >= 3
-  // swap out a nearly dead fighter if a healthier bench member exists
-  if (smart && !me.switched && act(me).hp / act(me).max < .22) {
-    const best = me.team.map((f, i) => [f, i]).filter(([f, i]) => !f.ko && i !== me.active).sort((x, y) => y[0].hp - x[0].hp)[0]
-    if (best) { me.active = best[1]; me.switched = true; evs.push({ who: 'ai', swap: true }) }
+function planTurn(B, level, who = 'ai') {
+  const me = B[who], foe = B[who === 'ai' ? 'you' : 'ai'], evs = []
+  const smart = level >= 3, clever = level >= 2
+  // counter-switch: bring in someone with type advantage, or rescue a dying fighter
+  if (smart && !me.switched) {
+    const cur = act(me), opp = act(foe), bench = me.team.map((f, i) => [f, i]).filter(([f, i]) => !f.ko && i !== me.active)
+    const adv = bench.filter(([f]) => matchup(f, opp) > 1 && f.hp / f.max > .4).sort((x, y) => y[0].hp - x[0].hp)[0]
+    const hurt = cur.hp / cur.max < .22 ? bench.sort((x, y) => y[0].hp - x[0].hp)[0] : null
+    const pick = (matchup(cur, opp) < 1 && adv) ? adv : hurt
+    if (pick) { me.active = pick[1]; me.switched = true; evs.push({ who, swap: true }) }
   }
-  let guard = 0
-  for (let n = 0; n < 6; n++) {
-    if (act(B.you).ko) break
-    if (me.gauge >= GAUGE_MAX && Math.random() < .9) { const e = ultimate(B, 'ai'); if (e) { evs.push(e); continue } }
-    const order = me.hand.map((a, i) => [a, i]).filter(([a]) => ARTS[a].cost <= me.ki)
-    if (!order.length) break
-    // prefer special, then the most damage per ki; guard once if low HP
-    order.sort((x, y) => (y[0] === 'special') - (x[0] === 'special') || (y[0] === 'blast') - (x[0] === 'blast'))
-    let pick = order[0]
-    const g = order.find(([a]) => a === 'guard')
-    if (g && !guard && act(me).hp / act(me).max < .5 && Math.random() < .6) pick = g
-    if (pick[0] === 'guard') guard++
-    if (!smart && Math.random() < .25 && order.length > 1) pick = order[order.length - 1]
-    const e = playArt(B, 'ai', pick[1]); if (!e) break; evs.push(e)
+  let guarded = false
+  for (let n = 0; n < 8; n++) {
+    if (act(foe).ko || act(me).ko) break
+    if (me.gauge >= GAUGE_MAX && (clever || Math.random() < .7)) { const e = ultimate(B, who); if (e) { evs.push(e); continue } }
+    const playable = me.hand.map((a, i) => [a, i]).filter(([a]) => ARTS[a].cost <= me.ki)
+    if (!playable.length) break
+    const hasSpecial = me.hand.includes('special'), opp = act(foe), mine = act(me)
+    let pick = null
+    // 1) finish a low target with the cheapest attack
+    if (clever && opp.hp / opp.max < .12) pick = playable.find(([a]) => a === 'strike') || playable.find(([a]) => a !== 'guard')
+    // 2) special if affordable
+    if (!pick) pick = playable.find(([a]) => a === 'special')
+    // 3) guard when an enemy ultimate is coming or when low
+    if (!pick && clever && !guarded && (foe.gauge >= 85 || mine.hp / mine.max < .45)) { pick = playable.find(([a]) => a === 'guard'); if (pick) guarded = true }
+    // 4) go for a named combo
+    if (!pick && level >= 4) { const want = me.seq.length && me.seq[me.seq.length - 1] === 'strike' ? (me.seq.length > 1 && me.seq[me.seq.length - 2] === 'strike' ? 'blast' : 'strike') : 'strike'; pick = playable.find(([a]) => a === want) }
+    // 5) save energy for a special next turn
+    if (!pick && clever && hasSpecial && me.ki - 1 < 4 - KI_PER_TURN + 1) break
+    if (!pick) pick = playable.filter(([a]) => a !== 'guard').sort((x, y) => ARTS[y[0]].cost - ARTS[x[0]].cost)[0]
+    if (!pick) break
+    if (!smart && Math.random() < .2 && playable.length > 1) pick = playable[playable.length - 1]
+    const e = playArt(B, who, pick[1]); if (!e) break; evs.push(e)
   }
   return evs
 }
+const aiTurn = (B, level) => planTurn(B, level, 'ai')
 
 // ---------------- story ----------------
 const STAGES = [
@@ -180,10 +224,10 @@ export function startBattle(stage) {
 
   const ov = h('div', ''); ov.id = 'arena'
   ov.innerHTML = `<div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
-    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><span class="ar-stage">${stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
-    <div class="ar-plate ai"><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
+    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto">AUTO</button><span class="ar-stage">${stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
+    <div class="ar-plate ai"><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
-    <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div><div class="ar-plate you"><span class="pn">YOU</span><span class="pk"></span></div>
+    <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div><div class="ar-plate you"><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
     <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
   document.body.append(ov); document.body.classList.add('in-battle')
   const $a = s => ov.querySelector(s)
@@ -191,7 +235,9 @@ export function startBattle(stage) {
   const FXC = createFX(ov)
   // 3D engine removed for performance; the stage is a static CSS scene
   const log = t => { const l = $a('.ar-log'); l.textContent = t; l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop') }
-  const wait = ms => new Promise(r => setTimeout(r, ms))
+  let SPEED = 1; try { SPEED = +localStorage.getItem('aut-bspeed') || 1 } catch { }
+  let AUTO = false
+  const wait = ms => new Promise(r => setTimeout(r, ms / SPEED))
   const IMG = new Map()
   const img = (f, w) => { const im = new Image(); im.alt = f.card.name; im.draggable = false; const k = f.key + w; if (!IMG.has(k)) IMG.set(k, thumbURL(f.card, w)); IMG.get(k).then(u => im.src = u); return im }
 
@@ -211,6 +257,7 @@ export function startBattle(stage) {
     let tg = a.querySelector('.mtag'); if (!tg) { tg = document.createElement('div'); a.append(tg) } tg.className = 'mtag ' + (mu > 1 ? 'adv' : mu < 1 ? 'weak' : 'none'); tg.textContent = mu > 1 ? 'ADVANTAGE' : mu < 1 ? 'WEAKNESS' : ''
     a.onclick = () => inspect(f, side)
     ov.querySelector('.ar-plate.' + side + ' .pk').innerHTML = s.team.map(g => `<i class="${g.ko ? 'ko' : ''}"></i>`).join('')
+    { const p = passives(s), chips = []; if (p.heal) chips.push(`<b class="pc heal">+${p.heal}% HEAL</b>`); if (p.dr) chips.push(`<b class="pc dr">-${p.dr}% DMG TAKEN</b>`); if (p.dmg) chips.push(`<b class="pc dmg">+${p.dmg}% DMG</b>`); if (p.crit) chips.push(`<b class="pc crit">+${p.crit}% CRIT</b>`); if (p.gauge) chips.push(`<b class="pc gg">+${p.gauge}% ULT/TURN</b>`); ov.querySelector('.ar-plate.' + side + ' .pp').innerHTML = chips.join('') }
     const bn = $a(`.ar-side.${side} .ar-bench`); bn.innerHTML = ''
     s.team.forEach((g, i) => {
       if (i === s.active) return
@@ -239,7 +286,7 @@ export function startBattle(stage) {
       hand.append(b)
     })
     const u = $a('.ar-ult'); u.disabled = !my || s.gauge < GAUGE_MAX; u.classList.toggle('ready', s.gauge >= GAUGE_MAX)
-    u.style.setProperty('--g', s.gauge / GAUGE_MAX); u.querySelector('small').textContent = Math.floor(s.gauge) + '%'
+    u.style.setProperty('--g', s.gauge / GAUGE_MAX); u.querySelector('small').textContent = s.gauge >= GAUGE_MAX ? ultOf(f.card)[0] : Math.floor(s.gauge) + '%'; u.title = ultOf(f.card).join(': ')
     $a('.ar-end').disabled = !my
     $a('.ar-turn').textContent = 'TURN ' + B.turn
   }
@@ -279,15 +326,21 @@ export function startBattle(stage) {
     const [x1, y1] = ctr(from), [x2, y2] = ctr(to), len = Math.hypot(x2 - x1, y2 - y1), ang = Math.atan2(y2 - y1, x2 - x1)
     const b = document.createElement('i'); b.className = 'beam' + (wide ? ' wide' : ''); b.style.cssText = `left:${x1}px;top:${y1}px;width:${len}px;transform:rotate(${ang}rad);--sc:${col}`; FX().append(b); setTimeout(() => b.remove(), 650)
   }
-  function cutin(card, move, sub, col, ult) {
+  function cutin(card, move, sub, col, ult, uname) {
     const c = document.createElement('div'); c.className = 'cutin' + (ult ? ' ult' : '') + (sub === 'ENEMY' ? ' foe' : '')
     c.style.cssText = `--cc:${col};--art:url("${card.url}");--fx:${Math.round((card.fx ?? .5) * 100)}%;--fy:${Math.round((card.fy ?? .22) * 100)}%`
     c.innerHTML = `<div class="ci-dim"></div><div class="ci-bar b1"></div><div class="ci-strip"><i></i></div><div class="ci-bar b2"></div>
-      <div class="ci-txt"><small>${ult ? 'ULTIMATE ART' : 'SPECIAL ART'}</small><b>${move}</b><span>${card.name} · ${card.ver}</span></div>`
+      <div class="ci-txt"><small>${ult ? (uname || 'ULTIMATE') + ' · ULTIMATE ART' : 'SPECIAL ART'}</small><b>${move}</b><span>${card.name} · ${card.ver}</span></div>`
     FX().append(c); FXC.lines(innerWidth / 2, innerHeight / 2, col, ult ? 1.2 : .9)
     setTimeout(() => c.classList.add('out'), ult ? 1150 : 850); setTimeout(() => c.remove(), ult ? 1500 : 1200)
   }
   function banner(text, sub, col) { const b = document.createElement('div'); b.className = 'mvban'; b.style.setProperty('--bc', col); b.innerHTML = `<small>${sub}</small><b>${text}</b>`; FX().append(b); setTimeout(() => b.remove(), 1300) }
+  function chainPop(side, n, combo) {
+    const c = document.createElement('div'); c.className = 'chainpop ' + side + (combo ? ' combo' : '')
+    c.innerHTML = combo ? `<small>COMBO</small><b>${combo}</b>` : `<b>${n}</b><small>CHAIN · +${Math.min(32, (n - 1) * 8)}%</small>`
+    FX().append(c); setTimeout(() => c.remove(), 1200); if (combo) sfx('bcharge')
+  }
+  function turnBanner(text, mine) { const t = document.createElement('div'); t.className = 'tban ' + (mine ? 'you' : 'ai'); t.innerHTML = `<b>${text}</b>`; FX().append(t); setTimeout(() => t.remove(), 1100) }
   function floatTag(el, text, cls) { const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'ftag ' + cls; t.textContent = text; t.style.left = x + 'px'; t.style.top = (y - 70) + 'px'; FX().append(t); setTimeout(() => t.remove(), 1200) }
 
   async function show(ev) {
@@ -297,11 +350,12 @@ export function startBattle(stage) {
     if (ev.guard) { log(`${act(B[side]).card.name} braces · GUARD`); sfx('bguard'); atk.classList.add('guarding'); await wait(450); atk.classList.remove('guarding'); draw(); return }
     const big = ev.art === 'special' || ev.art === 'ultimate', A = act(B[side]), col = tcol(A.card)
     const tgtEl = $a(`.ar-side.${other} .ar-active`)
-    log(big ? `${ev.art === 'ultimate' ? 'ULTIMATE · ' : ''}${ev.move}` : `${A.card.name} · ${ARTS[ev.art].name}`)
+    log(big ? `${ev.art === 'ultimate' ? ev.ult + ' · ' : ''}${ev.move}` : `${A.card.name} · ${ARTS[ev.art].name}`)
+    if (ev.chain > 1 || ev.combo) chainPop(side, ev.chain, ev.combo)
     // 1) the attacker card pops up and spins
     atk.classList.remove('pop', 'popbig', 'lunge'); void atk.offsetWidth; atk.classList.add(big ? 'popbig' : 'pop')
     atk.style.setProperty('--ac', col)
-    if (ev.art === 'ultimate') { ov.classList.add('ult'); ST3 && ST3.ult(side); sfx('bcharge'); FXC.screen(col, .35, .5); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'ULTIMATE', col, true); shake(2); await wait(1350) }
+    if (ev.art === 'ultimate') { ov.classList.add('ult'); ST3 && ST3.ult(side); sfx('bcharge'); FXC.screen(col, .35, .5); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'ULTIMATE', col, true, ev.ult); shake(2); await wait(1350) }
     else if (big) { sfx('bcharge'); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'SPECIAL', col); await wait(1000) }
     else await wait(300)
     // 2) the attack lands
@@ -310,7 +364,7 @@ export function startBattle(stage) {
     if (ev.art === 'strike') FXC.slash(tx, ty, col)
     if (ev.art === 'blast') FXC.beam(ax, ay, tx, ty, col, 22)
     if (big) { FXC.beam(ax, ay, tx, ty, col, ev.art === 'ultimate' ? 90 : 56); FXC.screen('#ffffff', .25, .2) }
-    if (big) await wait(140) // hit-stop: the beam connects, then everything detonates
+    if (big) { await wait(140); ov.classList.remove('iframe', 'punch'); void ov.offsetWidth; ov.classList.add('iframe', 'punch'); setTimeout(() => ov.classList.remove('iframe'), 110); setTimeout(() => ov.classList.remove('punch'), 420) }
     ST3 && ST3.hit(other, big)
     shake(ev.art === 'ultimate' ? 3 : big ? 2 : 1)
     for (const x of ev.hits) {
@@ -318,13 +372,15 @@ export function startBattle(stage) {
       const tgt = isActive ? tgtEl : $a(`.ar-side.${other} .ar-bench`)
       tgt.classList.remove('hurt'); void tgt.offsetWidth; tgt.classList.add('hurt')
       { const [hx, hy] = ctr(tgt); FXC.hit(hx, hy, x.crit ? '#ff5a6a' : big ? '#ffc840' : col, !isActive ? .7 : ev.art === 'ultimate' ? 2.3 : big ? 1.6 : ev.art === 'blast' ? 1.15 : .9) }
-      const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : ''); n.textContent = x.dmg.toLocaleString()
+      const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : '') + (x.mu > 1 ? ' adv' : ''); n.innerHTML = `<b>${x.dmg.toLocaleString()}</b>`; n.style.animationDelay = (ev.hits.indexOf(x) * .09) + 's'
       const r = tgt.getBoundingClientRect(); n.style.left = (r.left + r.width / 2) + 'px'; n.style.top = (r.top + r.height * .35) + 'px'
       ov.append(n); setTimeout(() => n.remove(), 1100)
       if (isActive && x.crit) floatTag(tgt, 'CRITICAL!', 'crit')
       else if (isActive && x.mu > 1) floatTag(tgt, 'SUPER EFFECTIVE', 'adv')
       else if (isActive && x.mu < 1) floatTag(tgt, 'RESISTED', 'weak')
     }
+    if (ev.rally) floatTag(atk, 'TEAM HEALED 20%', 'adv')
+    if (ev.fort) floatTag(atk, 'FORTRESS · -30% DMG', 'adv')
     if (ev.kit && ev.kit.length) { const [kx, ky] = ctr(atk); const t = document.createElement('div'); t.className = 'ftag kit'; t.textContent = ev.kit.join('  ·  '); t.style.left = kx + 'px'; t.style.top = (ky - 90) + 'px'; FX().append(t); setTimeout(() => t.remove(), 1500) }
     ov.classList.remove('ult')
     draw(); await wait(big ? 650 : 420)
@@ -367,22 +423,35 @@ export function startBattle(stage) {
 
   async function aiPhase() {
     B.busy = true; controls()
-    const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN); refill(s); s.switched = false
-    log('Enemy turn'); await wait(600)
+    const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
+    log('Enemy turn'); turnBanner('ENEMY TURN', false); draw(); await wait(800)
     for (const ev of aiTurn(B, stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
     B.turn++
-    const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false
-    B.busy = false; log('Your turn'); sfx('bturn'); draw()
+    const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); act(B.ai).fort = 0
+    B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); if (AUTO) autoTurn()
   }
   async function endTurn() { if (B.busy || B.over) return; await aiPhase() }
+  function startTurn(s) { const p = passives(s), a = act(s); if (p.heal && !a.ko) a.hp = Math.min(a.max, a.hp + Math.round(a.max * p.heal / 100)); if (p.gauge) s.gauge = Math.min(GAUGE_MAX, s.gauge + p.gauge) }
+  async function autoTurn() {
+    if (!AUTO || B.busy || B.over) return
+    B.busy = true; controls(); await wait(350)
+    for (const ev of planTurn(B, 4, 'you')) { if (B.over) return; await show(ev); if (B.over) return }
+    B.busy = false; if (!B.over && AUTO) await aiPhase()
+  }
+  { const sb = $a('.ar-speed'), sd = () => { sb.textContent = SPEED + '×'; sb.classList.toggle('on', SPEED > 1) }; sb.onclick = () => { SPEED = SPEED === 1 ? 2 : SPEED === 2 ? 3 : 1; try { localStorage.setItem('aut-bspeed', SPEED) } catch { } ov.style.setProperty('--spd', SPEED); sd() }; ov.style.setProperty('--spd', SPEED); sd()
+    const ab = $a('.ar-auto'); ab.onclick = () => { AUTO = !AUTO; ab.classList.toggle('on', AUTO); ab.textContent = AUTO ? 'AUTO ON' : 'AUTO'; if (AUTO && !B.busy && !B.over) autoTurn() } }
 
   async function end(won) {
     B.over = true; controls()
     await wait(500)
     const r = stage.pvp ? await X.act('pvp', { won, name: stage.name }) : await X.act('battle', { stage: stage.n, won })
     sfx(won ? 'claim' : 'error')
+    const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
-    box.innerHTML = `<h2>${won ? 'VICTORY' : 'DEFEAT'}</h2><p>${won ? (r.msg || 'Stage cleared.') : 'Your team was knocked out. Tweak your lineup and try again.'}</p>`
+    box.innerHTML = `<div class="rs-burst"></div><h2>${won ? 'VICTORY' : 'DEFEAT'}</h2><p>${won ? (r.msg || 'Stage cleared.') : 'Your team was knocked out. Tweak your lineup and try again.'}</p>
+      <div class="rs-body"><div class="rs-mvp"><span>MVP</span><div class="rs-card"></div><b>${mvp.card.name}</b><small>${mvp.dealt.toLocaleString()} DMG · ${mvp.kos} KO</small></div>
+      <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/6</b><span>SURVIVED</span></div></div></div>`
+    box.querySelector('.rs-card').append(img(mvp, 360))
     const b = document.createElement('button'); b.className = 'btn gold'; b.textContent = 'CONTINUE'; b.onclick = close; box.append(b)
     ov.append(box)
   }

@@ -2,7 +2,7 @@
 export function createFX(host) {
   const cv = document.createElement('canvas'); cv.className = 'fx2d'; host.append(cv)
   const x = cv.getContext('2d')
-  let W = 0, H = 0, DPR = Math.min(1.5, devicePixelRatio || 1)
+  let W = 0, H = 0, DPR = Math.min(innerWidth < 800 ? 1.25 : 1, devicePixelRatio || 1)
   const size = () => { W = host.clientWidth; H = host.clientHeight; cv.width = W * DPR; cv.height = H * DPR; x.setTransform(DPR, 0, 0, DPR, 0, 0) }
   size(); const ro = new ResizeObserver(size); ro.observe(host)
   const P = [] // particles: {k, x, y, vx, vy, life, max, size, col, ...}
@@ -46,6 +46,10 @@ export function createFX(host) {
       x.restore() },
     // radial speed lines from a point (used by cut-ins / ultimates)
     lines(p, t) { const a = t < .2 ? t / .2 : (1 - t) / .8; x.save(); x.translate(p.x, p.y); for (let i = 0; i < p.n; i++) { const ang = p.seed[i], r0 = p.size * .35 + (t * 300 + i * 37) % (p.size * .4), r1 = r0 + 60 + (i % 5) * 30; x.strokeStyle = rgba(i % 3 ? '#ffffff' : p.col, a * .55); x.lineWidth = 1 + (i % 3); x.beginPath(); x.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0); x.lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1); x.stroke() } x.restore() },
+    // glass shard
+    shard(p, t, dt) { p.vy += 700 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; const a = 1 - t; x.save(); x.translate(p.x, p.y); x.rotate(p.rot); x.fillStyle = rgba(t < .2 ? '#ffffff' : p.col, a); x.beginPath(); x.moveTo(0, -p.size); x.lineTo(p.size * .45, p.size * .6); x.lineTo(-p.size * .45, p.size * .4); x.fill(); x.restore() },
+    // vertical energy pillar
+    pillar(p, t) { const a = t < .15 ? t / .15 : (1 - t) ** 1.5, w = p.size * (1 - t * .5); const g = x.createLinearGradient(p.x - w, 0, p.x + w, 0); g.addColorStop(0, rgba(p.col, 0)); g.addColorStop(.5, rgba(p.col, a * .8)); g.addColorStop(1, rgba(p.col, 0)); x.fillStyle = g; x.fillRect(p.x - w, 0, w * 2, p.y + 60); x.fillStyle = 'rgba(255,255,255,' + a * .9 + ')'; x.fillRect(p.x - w * .12, 0, w * .24, p.y + 60) },
     // full-screen color flash
     screen(p, t) { x.fillStyle = rgba(p.col, (1 - t) ** 2 * p.a); x.fillRect(0, 0, W, H) },
   }
@@ -60,6 +64,9 @@ export function createFX(host) {
       add({ k: 'ring', x: cx, y: cy, max: .45, size: 140 * power, w: 6 * power, col })
       if (power > 1.2) add({ k: 'ring', x: cx, y: cy + 40, max: .6, size: 260 * power, w: 4, col: '#ffffff', flat: .3 })
       sparks(cx, cy, col, Math.round(18 + 22 * power), 520 + 260 * power, 2.5 + power)
+      for (let i = 0, n = Math.round(4 + power * 5); i < n; i++) { const a = R(0, Math.PI * 2), v = R(260, 620) * power; add({ k: 'shard', x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 200, max: R(.5, .9), size: R(6, 13) * Math.min(1.6, power), col, rot: R(0, 6), vr: R(-14, 14) }) }
+      add({ k: 'ring', x: cx, y: cy, max: .55, size: 190 * power, w: 3, col: '#ffffff' })
+      if (power >= 1.6) add({ k: 'pillar', x: cx, y: cy, max: .7, size: 46 * power, col })
       smoke(cx, cy, Math.round(3 + power * 3), 40 + 30 * power)
     },
     slash(cx, cy, col) { for (let i = 0; i < 3; i++) add({ k: 'slash', x: cx + R(-20, 20), y: cy + (i - 1) * 24, max: .42, delay: i * .06, size: R(70, 95), col, rot: -.5 + i * .5 }) },

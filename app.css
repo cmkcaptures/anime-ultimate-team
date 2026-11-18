@@ -1309,3 +1309,59 @@ body[data-page=players] { --a1: #8a5cff; --a2: #22d8ff; --a3: #ff5ac8 }
 .pst { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 14px 0 4px } .pst div { padding: 8px 0; border-radius: 10px; background: rgba(255,255,255,.06) } .pst b { display: block; font: italic 900 22px var(--disp) } .pst span { font: 900 8px var(--ui); letter-spacing: .14em; color: rgba(255,255,255,.5) }
 .t-players { cursor: pointer; text-align: left; border: 0; color: #fff; background: linear-gradient(120deg, #4a2bd0, #1a6ab8) !important }
 .ftag.kit { background: linear-gradient(90deg, #22d8ff, #8a5cff); color: #fff; font-size: 18px }
+
+/* ================= BATTLE v5 UI ================= */
+/* top bar buttons */
+.ar-speed, .ar-auto { border: 0; cursor: pointer; padding: 8px 14px; font: 900 11px var(--ui); letter-spacing: .1em; color: #fff; background: rgba(255,255,255,.08); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); transition: background .15s }
+.ar-speed.on { background: #22d8ff; color: #001218 } .ar-auto.on { background: linear-gradient(90deg, #ffb627, #ff7a1a); color: #2a1000 }
+/* plates: passive chips */
+.ar-plate .pp { display: flex; gap: 4px; flex-wrap: wrap; order: 3 }
+.ar-plate .pc { padding: 2px 7px; border-radius: 4px; font: 900 9px var(--ui); letter-spacing: .08em; background: rgba(255,255,255,.08); color: #fff }
+.pc.heal { color: #3dffa0 } .pc.dr { color: #8ad8ff } .pc.dmg { color: #ff8a5a } .pc.crit { color: #ff5ac8 } .pc.gg { color: #c9a8ff }
+/* damage numbers: chunky, outlined, staggered */
+.dmg { animation: dmgPop 1.15s cubic-bezier(.2,1.4,.4,1) both !important; font: italic 900 38px/1 var(--disp) !important; letter-spacing: .02em }
+.dmg b { display: block; color: #fff; -webkit-text-stroke: 3px #0a0a10; paint-order: stroke fill; text-shadow: 0 4px 0 rgba(0,0,0,.5) }
+.dmg.big b { font-size: 58px; background: linear-gradient(180deg, #fff6c0, #ffc030 55%, #ff7a1a); -webkit-background-clip: text; background-clip: text; color: transparent }
+.dmg.crit b { font-size: 50px; background: linear-gradient(180deg, #fff, #ff5a6a 60%); -webkit-background-clip: text; background-clip: text; color: transparent }
+.dmg.adv b { color: #9dffcf }
+@keyframes dmgPop { 0% { transform: translate(-50%, 20px) scale(.3); opacity: 0 } 14% { transform: translate(-50%, -6px) scale(1.25); opacity: 1 } 26% { transform: translate(-50%, 0) scale(1) } 80% { opacity: 1 } 100% { transform: translate(-50%, -54px) scale(.95); opacity: 0 } }
+/* chain / combo pop */
+.chainpop { position: absolute; z-index: 3; top: 30%; transform: translateY(-50%); text-align: center; pointer-events: none; animation: chainA 1.15s cubic-bezier(.2,1.3,.4,1) forwards }
+.chainpop.you { left: 7% } .chainpop.ai { right: 7% }
+.chainpop b { display: block; font: italic 900 72px/.85 var(--disp); color: #fff; -webkit-text-stroke: 3px #0a0a10; paint-order: stroke fill; text-shadow: 0 0 30px rgba(34,216,255,.7) }
+.chainpop small { display: block; margin-top: 4px; padding: 3px 10px; font: 900 11px var(--ui); letter-spacing: .2em; color: #001218; background: #22d8ff; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%) }
+.chainpop.combo b { font-size: 46px; background: linear-gradient(90deg, #ffe08a, #ff7a1a, #ff3d9a); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 0; text-shadow: none; filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 18px rgba(255,140,40,.6)) }
+.chainpop.combo small { background: #ffb627; color: #2a1000 }
+@keyframes chainA { 0% { transform: translateY(-50%) scale(2.4); opacity: 0 } 15% { transform: translateY(-50%) scale(.9); opacity: 1 } 25% { transform: translateY(-50%) scale(1) } 80% { opacity: 1 } 100% { transform: translateY(-62%) scale(1); opacity: 0 } }
+/* turn banner sweep */
+.tban { position: absolute; z-index: 3; left: 0; right: 0; top: 50%; height: 84px; margin-top: -42px; display: grid; place-items: center; pointer-events: none; overflow: hidden; animation: tbA 1.05s cubic-bezier(.2,.9,.3,1) forwards }
+.tban::before { content: ""; position: absolute; inset: 0; transform: skewY(-3deg); background: linear-gradient(90deg, transparent, rgba(6,8,14,.92) 18%, rgba(6,8,14,.92) 82%, transparent) }
+.tban.you::before { box-shadow: inset 0 2px 0 #22d8ff, inset 0 -2px 0 #22d8ff } .tban.ai::before { box-shadow: inset 0 2px 0 #ff8a2a, inset 0 -2px 0 #ff8a2a }
+.tban b { position: relative; font: italic 900 56px/1 var(--disp); letter-spacing: .06em; color: #fff; animation: tbT 1.05s cubic-bezier(.2,.9,.3,1) forwards }
+.tban.you b { text-shadow: 0 0 24px #22d8ff } .tban.ai b { text-shadow: 0 0 24px #ff8a2a }
+@keyframes tbA { 0% { clip-path: inset(50% 0 50% 0) } 18% { clip-path: inset(0 0 0 0) } 82% { clip-path: inset(0 0 0 0); opacity: 1 } 100% { clip-path: inset(50% 0 50% 0); opacity: 0 } }
+@keyframes tbT { 0% { transform: translateX(-40%); letter-spacing: .4em } 20% { transform: translateX(0); letter-spacing: .06em } 80% { transform: translateX(0) } 100% { transform: translateX(30%) } }
+/* impact frame + camera punch */
+#arena.iframe .stage3, #arena.iframe .ar-side { filter: invert(1) contrast(1.6) grayscale(1) }
+#arena.punch .ar-side, #arena.punch .stage3 { animation: punch .4s cubic-bezier(.2,1.4,.4,1) }
+@keyframes punch { 0% { transform: scale(1) } 20% { transform: scale(1.045) } 100% { transform: scale(1) } }
+/* hit flash on the card itself */
+.ar-active.hurt img { animation: hurtFlash .32s ease-out !important }
+@keyframes hurtFlash { 0% { filter: brightness(3) saturate(0) } 100% { filter: none } }
+/* ult button label */
+#arena .ar-ult small { font-size: 8px; letter-spacing: .06em; max-width: 72px; text-align: center; line-height: 1.1 }
+/* result screen with MVP */
+.ar-result { background: radial-gradient(60% 60% at 50% 40%, rgba(40,30,60,.9), rgba(4,4,8,.96)) !important; gap: 10px !important }
+.rs-burst { position: absolute; inset: 0; z-index: -1; background: radial-gradient(40% 30% at 50% 22%, rgba(255,200,60,.28), transparent 70%) }
+.ar-result.lose .rs-burst { background: radial-gradient(40% 30% at 50% 22%, rgba(255,60,74,.22), transparent 70%) }
+.ar-result h2 { animation: rsIn .6s cubic-bezier(.2,1.3,.4,1) both }
+@keyframes rsIn { from { transform: scale(2.2); opacity: 0; letter-spacing: .4em } }
+.rs-body { display: flex; gap: 22px; align-items: center; justify-content: center; flex-wrap: wrap; margin: 6px 0 10px; animation: rise .5s .25s ease-out both }
+.rs-mvp { position: relative; text-align: center }
+.rs-mvp > span { position: absolute; z-index: 2; top: -10px; left: 50%; transform: translateX(-50%); padding: 3px 14px; font: italic 900 16px var(--disp); letter-spacing: .1em; color: #2a1400; background: linear-gradient(90deg, #ffe08a, #ffb627); clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%) }
+.rs-card { width: 150px; margin: 0 auto 6px } .rs-card img { width: 100%; display: block; border-radius: 10px; box-shadow: 0 0 0 2px #ffd23a, 0 0 30px rgba(255,200,60,.45), 0 16px 30px rgba(0,0,0,.6) }
+.rs-mvp b { display: block; font: italic 900 24px var(--disp) } .rs-mvp small { font: 900 10px var(--ui); letter-spacing: .12em; color: rgba(255,255,255,.6) }
+.rs-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 260px }
+.rs-stats div { padding: 12px; border-radius: 12px; text-align: left; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08) }
+.rs-stats b { display: block; font: italic 900 30px/1 var(--disp) } .rs-stats span { font: 900 9px var(--ui); letter-spacing: .16em; color: rgba(255,255,255,.55) }
+@media (max-width: 760px) { .chainpop b { font-size: 48px } .tban b { font-size: 36px } .ar-plate .pp { display: none } .rs-card { width: 110px } }
