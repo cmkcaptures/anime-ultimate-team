@@ -178,7 +178,7 @@ export function drawCard(x, d) {
     const X = 30 + i * (sw + 8), Y = PY + 210
     x.save(); x.transform(1, 0, -.18, 1, 0, 0); const bx = x.createLinearGradient(0, Y, 0, Y + 66); bx.addColorStop(0, 'rgba(255,255,255,.18)'); bx.addColorStop(1, 'rgba(255,255,255,.04)')
     x.fillStyle = bx; x.fillRect(X + Y * .18, Y, sw, 66); x.fillStyle = d.r === 'X' ? '#fff' : low ? tr.pal[1] : c1; x.fillRect(X + Y * .18, Y + 62, sw, 4); x.restore()
-    x.textAlign = 'center'; x.font = '500 14px "JetBrains Mono"'; x.fillStyle = '#d5cdea'; x.fillText(['PWR', 'SPD', 'KI', 'TEC', 'DEF', 'IQ'][i], X + sw / 2 - 4, Y + 20)
+    x.textAlign = 'center'; x.font = '500 14px "JetBrains Mono"'; x.fillStyle = '#d5cdea'; x.fillText(['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i], X + sw / 2 - 4, Y + 20)
     x.font = DISP(42); x.fillStyle = '#fff'; x.fillText(v, X + sw / 2 - 6, Y + 58); x.textAlign = 'left'
   })
   const n = tr.rank + 1

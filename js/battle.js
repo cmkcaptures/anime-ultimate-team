@@ -1,4 +1,4 @@
-// AUT Battle — turn-based hybrid of DB Legends (Arts cards, Ki, Ultimates, switching) and TCG Pocket (turns, energy, bench).
+// AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
 import { TIER, TYPE, thumbURL } from './cardkit.js'
 import { sfx, sfxOn } from './sfx.js'
@@ -21,7 +21,7 @@ const ICON = {"strike":"<svg viewBox=\"0 0 64 64\"><path d=\"M14 30c0-4 3-7 7-7h
 const KI_PER_TURN = 3, KI_MAX = 10, HAND = 4, GAUGE_MAX = 100
 const ARTS = {
   strike: { name: 'STRIKE', cost: 1, col: '#ff4a5a', desc: 'Fast hit · PWR' },
-  blast: { name: 'BLAST', cost: 2, col: '#ffc23a', desc: 'Ki blast · KI' },
+  blast: { name: 'BLAST', cost: 2, col: '#ffc23a', desc: 'Energy blast · ENG' },
   guard: { name: 'GUARD', cost: 1, col: '#3dffa0', desc: 'Halve the next hit' },
   special: { name: 'SPECIAL', cost: 4, col: '#4aa8ff', desc: 'Signature move' },
 }
@@ -33,7 +33,7 @@ const kitNum = (c, re) => { const m = re.exec(kitTxt(c)); return m ? +m[1] : 0 }
 function kitEffects(me, a) {
   const c = a.card, notes = []
   const heal = kitNum(c, /Heal (\d+)% max HP/); if (heal) { const h = Math.round(a.max * heal / 100); a.hp = Math.min(a.max, a.hp + h); notes.push('+' + h.toLocaleString() + ' HP') }
-  const ki = kitNum(c, /Gain (\d+) Ki/); if (ki) { me.ki = Math.min(KI_MAX, me.ki + ki); notes.push('+' + ki + ' KI') }
+  const ki = kitNum(c, /Gain (\d+) Energy/); if (ki) { me.ki = Math.min(KI_MAX, me.ki + ki); notes.push('+' + ki + ' ENERGY') }
   const g = kitNum(c, /Ultimate gauge by (\d+)%/); if (g) { me.gauge = Math.min(GAUGE_MAX, me.gauge + g); notes.push('+' + g + '% ULT') }
   if (/Gain Guard/.test(kitTxt(c))) { a.guard = 1; notes.push('GUARD UP') }
   return notes
@@ -150,7 +150,7 @@ export function battlePage(el) {
   const { h, P } = X
   const prog = (P.battle && P.battle.cleared) || 0
   const team = P.team.filter(Boolean)
-  const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Ki, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
+  const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)
   { const t = h('button', 'btn dark', '📖 HOW TO PLAY'); t.style.marginTop = '12px'; t.onclick = () => tutorial(); el.append(t) }
   if (team.length < 6) {
@@ -222,10 +222,10 @@ export function startBattle(stage) {
   }
   function controls() {
     const s = B.you, my = !B.busy && !B.over
-    $a('.ar-ki').innerHTML = `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>KI</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`
+    $a('.ar-ki').innerHTML = `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`
     const hand = $a('.ar-hand'); hand.innerHTML = ''
     const f = act(s), rc = X.tierCol(f.card.r), fx = Math.round((f.card.fx ?? .5) * 100), fy = Math.round((f.card.fy ?? .22) * 100)
-    const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['KI BLAST', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'] }
+    const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['ENERGY', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'] }
     s.hand.forEach((a, i) => {
       const d = ARTS[a], sp = a === 'special', [kind, c1, c2] = KIND[a], b = document.createElement('button')
       b.className = 'art2 ' + a
@@ -251,7 +251,7 @@ export function startBattle(stage) {
     const foe = act(side === 'you' ? B.ai : B.you), mu = matchup(f, foe), t = tOf(f.card)
     o.innerHTML = `<div class="insp-card"></div><div class="insp-info"><span class="tp" style="--tc:${tcol(f.card)}">${tname(f.card)}</span><h3>${f.card.name}</h3><small>${f.card.ver}</small>
       <div class="ihp"><i style="width:${f.hp / f.max * 100}%"></i><span>${f.hp.toLocaleString()} / ${f.max.toLocaleString()} HP</span></div>
-      <div class="ist">${['PWR', 'SPD', 'KI', 'TEC', 'DEF', 'IQ'].map((k, i) => `<div><span>${k}</span><b>${[f.pwr, f.spd, f.ki, f.tec, f.def, f.iq][i]}</b></div>`).join('')}</div>
+      <div class="ist">${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'].map((k, i) => `<div><span>${k}</span><b>${[f.pwr, f.spd, f.ki, f.tec, f.def, f.iq][i]}</b></div>`).join('')}</div>
       <div class="imv"><b>${f.card.mv}</b><p>${(f.card.tx || []).join(' ')}</p></div>
       <div class="imu"><span>STRONG VS <b>${(TYPE[RING[(RING.indexOf(t) + 1) % RING.length]] || {}).en || ''}</b></span><span>WEAK TO <b>${(TYPE[weakTo(t)] || {}).en || ''}</b></span>${foe && f !== foe ? `<em class="${mu > 1 ? 'adv' : mu < 1 ? 'weak' : ''}">${mu > 1 ? 'Advantage vs ' + foe.card.name : mu < 1 ? 'Weak vs ' + foe.card.name : 'Neutral vs ' + foe.card.name}</em>` : ''}</div>
       <div class="ibtn"></div></div>`
@@ -395,13 +395,13 @@ export function startBattle(stage) {
 // ---------------- tutorial ----------------
 const STEPS = [
   { t: 'THE GOAL', d: 'Battles are 6 vs 6. You fight with <b>one active fighter</b> while the other 5 wait on the <b>bench</b>. Knock out <b>all 6</b> enemy fighters to win.', ic: '🏆' },
-  { t: 'TURNS & KI', d: 'You and the enemy take turns. Every turn you gain <b>+3 Ki</b> (the blue bar, max 10). Ki you don\'t spend carries over, so you can save up for a big turn.', ic: '⚡' },
-  { t: 'ARTS CARDS', d: 'You hold <b>4 Arts cards</b>, refilled each turn. Tap one to use it; the number in the corner is its Ki cost.<br><span class="tk s">STRIKE</span> 1 Ki · quick hit using PWR<br><span class="tk b">BLAST</span> 2 Ki · stronger ki attack using KI<br><span class="tk g">GUARD</span> 1 Ki · halves the next hit you take<br><span class="tk p">SPECIAL</span> 4 Ki · your fighter\'s signature move', ic: '🃏' },
+  { t: 'TURNS & ENERGY', d: 'You and the enemy take turns. Every turn you gain <b>+3 Energy</b> (the blue bar, max 10). Energy you don\'t spend carries over, so you can save up for a big turn.', ic: '⚡' },
+  { t: 'ARTS CARDS', d: 'You hold <b>4 Arts cards</b>, refilled each turn. Tap one to use it; the number in the corner is its Energy cost.<br><span class="tk s">STRIKE</span> 1 Energy · quick hit using PWR<br><span class="tk b">BLAST</span> 2 Energy · stronger energy attack using ENG<br><span class="tk g">GUARD</span> 1 Energy · halves the next hit you take<br><span class="tk p">SPECIAL</span> 4 Energy · your fighter\'s signature move', ic: '🃏' },
   { t: 'SPECIALS', d: 'Each fighter\'s Special uses their real card move. Moves that say <b>"all enemies"</b> hit the active fighter <b>and</b> splash the whole enemy bench.', ic: '💥' },
-  { t: 'ULTIMATE', d: 'Dealing and taking damage fills the <b>purple gauge</b> under your HP. When it turns <b>gold</b>, the ULTIMATE button lights up: a huge free attack that costs no Ki.', ic: '🌟' },
+  { t: 'ULTIMATE', d: 'Dealing and taking damage fills the <b>purple gauge</b> under your HP. When it turns <b>gold</b>, the ULTIMATE button lights up: a huge free attack that costs no Energy.', ic: '🌟' },
   { t: 'SWITCHING', d: 'Tap a fighter on <b>your bench</b> to swap them in, <b>once per turn</b>, free. Swap out a hurt fighter to save them, or bring in someone stronger. When a fighter is KO\'d, the next one comes in automatically.', ic: '🔄' },
   { t: 'WHO GOES FIRST', d: 'The fighter with the higher <b>SPD</b> stat moves first. Stronger cards also have more HP, so a well-built team matters. Use <b>Auto Build</b> on My Team if you\'re unsure.', ic: '🏃' },
-  { t: 'TIPS', d: '• Save Ki for a Special instead of spending it all on Strikes.<br>• Guard before the enemy\'s turn when your fighter is low.<br>• Fire your Ultimate as soon as it\'s ready.<br>• Hit <b>END TURN</b> when you\'re done.<br><br>Clear stages for coins, and the first clear of stages 5, 8 and 10 gives free packs.', ic: '💡' },
+  { t: 'TIPS', d: '• Save Energy for a Special instead of spending it all on Strikes.<br>• Guard before the enemy\'s turn when your fighter is low.<br>• Fire your Ultimate as soon as it\'s ready.<br>• Hit <b>END TURN</b> when you\'re done.<br><br>Clear stages for coins, and the first clear of stages 5, 8 and 10 gives free packs.', ic: '💡' },
 ]
 export function tutorial(onDone) {
   const ov = document.createElement('div'); ov.className = 'tut'; let i = 0
