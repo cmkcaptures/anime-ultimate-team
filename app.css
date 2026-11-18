@@ -1308,3 +1308,4 @@ body[data-page=players] { --a1: #8a5cff; --a2: #22d8ff; --a3: #ff5ac8 }
 .psheet { text-align: center } .psheet h2 { margin: 0; font: italic 900 40px/1 var(--disp) }
 .pst { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 14px 0 4px } .pst div { padding: 8px 0; border-radius: 10px; background: rgba(255,255,255,.06) } .pst b { display: block; font: italic 900 22px var(--disp) } .pst span { font: 900 8px var(--ui); letter-spacing: .14em; color: rgba(255,255,255,.5) }
 .t-players { cursor: pointer; text-align: left; border: 0; color: #fff; background: linear-gradient(120deg, #4a2bd0, #1a6ab8) !important }
+.ftag.kit { background: linear-gradient(90deg, #22d8ff, #8a5cff); color: #fff; font-size: 18px }

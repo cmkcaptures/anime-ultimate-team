@@ -27,6 +27,17 @@ const ARTS = {
 }
 const pctOf = c => { const m = /(\d+)%\s*PWR/.exec((c.tx || []).join(' ')); return m ? +m[1] : 220 }
 const isAoe = c => /all enemies/i.test((c.tx || []).join(' '))
+const kitTxt = c => (c.tx || []).join(' ')
+const kitNum = (c, re) => { const m = re.exec(kitTxt(c)); return m ? +m[1] : 0 }
+// applies a card's kit bonuses after its Special / Ultimate lands
+function kitEffects(me, a) {
+  const c = a.card, notes = []
+  const heal = kitNum(c, /Heal (\d+)% max HP/); if (heal) { const h = Math.round(a.max * heal / 100); a.hp = Math.min(a.max, a.hp + h); notes.push('+' + h.toLocaleString() + ' HP') }
+  const ki = kitNum(c, /Gain (\d+) Ki/); if (ki) { me.ki = Math.min(KI_MAX, me.ki + ki); notes.push('+' + ki + ' KI') }
+  const g = kitNum(c, /Ultimate gauge by (\d+)%/); if (g) { me.gauge = Math.min(GAUGE_MAX, me.gauge + g); notes.push('+' + g + '% ULT') }
+  if (/Gain Guard/.test(kitTxt(c))) { a.guard = 1; notes.push('GUARD UP') }
+  return notes
+}
 function fighter(card, lvl = 0) {
   const [pwr, spd, ki, tec, def, iq] = card.st || [70, 70, 70, 70, 70, 70]
   const hp = Math.round(card.ovr * 40 + def * 12 + (card.tag ? 600 : 0))
@@ -44,11 +55,12 @@ function newSide(cards) { return { team: cards.map(c => fighter(c)), active: 0, 
 const act = s => s.team[s.active]
 const alive = s => s.team.filter(f => !f.ko)
 function refill(s) { while (s.hand.length < HAND) s.hand.push(drawArt(act(s))) }
-function hit(att, def, base, stat) {
+function hit(att, def, base, stat, pierce) {
   const crit = Math.random() < .08 + att.tec / 1200
   const mu = matchup(att, def)
   let dmg = base * (stat / 80) * (100 / (60 + def.def * .5)) * (0.92 + Math.random() * .16) * (crit ? 1.5 : 1) * mu
-  if (def.guard) { dmg *= .5; def.guard = 0 }
+  const tagB = att.card.tag ? kitNum(att.card, /\+(\d+)% damage/) : 0; if (tagB) dmg *= 1 + tagB / 100
+  if (def.guard) { if (!pierce) dmg *= .5; def.guard = 0 }
   dmg = Math.max(1, Math.round(dmg))
   def.hp = Math.max(0, def.hp - dmg); if (def.hp === 0) def.ko = true
   return { dmg, crit, mu }
@@ -65,11 +77,12 @@ function playArt(B, who, idx) {
   else if (art === 'special') {
     const base = pctOf(a.card) * 3.2
     ev.move = a.card.mv
-    if (isAoe(a.card)) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, t === d ? base * .75 : base * .3, Math.max(a.pwr, a.ki)) })
-    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki)) })
+    if (isAoe(a.card)) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, t === d ? base * .75 : base * .3, Math.max(a.pwr, a.ki), /Ignores Guard/.test(kitTxt(a.card))) })
+    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), /Ignores Guard/.test(kitTxt(a.card))) })
   }
   const dealt = ev.hits.reduce((n, x) => n + x.dmg, 0)
   me.gauge = Math.min(GAUGE_MAX, me.gauge + 6 + dealt / 90); foe.gauge = Math.min(GAUGE_MAX, foe.gauge + dealt / 140)
+  if (art === 'special') ev.kit = kitEffects(me, a)
   return ev
 }
 function ultimate(B, who) {
@@ -78,8 +91,9 @@ function ultimate(B, who) {
   me.gauge = 0
   const ev = { who, art: 'ultimate', move: a.card.mv, hits: [] }
   const base = pctOf(a.card) * 6
-  if (isAoe(a.card)) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, t === d ? base * .8 : base * .35, Math.max(a.pwr, a.ki)) })
-  else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki)) })
+  if (isAoe(a.card)) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, t === d ? base * .8 : base * .35, Math.max(a.pwr, a.ki), /Ignores Guard/.test(kitTxt(a.card))) })
+  else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), /Ignores Guard/.test(kitTxt(a.card))) })
+  ev.kit = kitEffects(me, a)
   return ev
 }
 function nextAlive(s) { const i = s.team.findIndex(f => !f.ko); if (i >= 0) s.active = i; return i >= 0 }
@@ -311,6 +325,7 @@ export function startBattle(stage) {
       else if (isActive && x.mu > 1) floatTag(tgt, 'SUPER EFFECTIVE', 'adv')
       else if (isActive && x.mu < 1) floatTag(tgt, 'RESISTED', 'weak')
     }
+    if (ev.kit && ev.kit.length) { const [kx, ky] = ctr(atk); const t = document.createElement('div'); t.className = 'ftag kit'; t.textContent = ev.kit.join('  ·  '); t.style.left = kx + 'px'; t.style.top = (ky - 90) + 'px'; FX().append(t); setTimeout(() => t.remove(), 1500) }
     ov.classList.remove('ult')
     draw(); await wait(big ? 650 : 420)
     // knockouts
