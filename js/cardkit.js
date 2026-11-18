@@ -172,7 +172,13 @@ export function drawCard(x, d) {
   x.fillStyle = acc; x.beginPath(); x.moveTo(36, PY + 62); x.lineTo(36 + ew, PY + 62); x.lineTo(28 + ew, PY + 94); x.lineTo(28, PY + 94); x.fill()
   x.fillStyle = '#0a0612'; x.fillText(TYPE[d.t].en, 44, PY + 87)
   fitFont(x, d.mv, 46, W - 90 - ew); x.fillStyle = acc; x.fillText(d.mv, 48 + ew, PY + 94)
-  x.font = '500 23px "Sofia Sans"'; x.fillStyle = '#efeafc'; d.tx.forEach((l, i) => x.fillText(l, 30, PY + 138 + i * 30))
+  { // wrap the kit text into max 2 lines that fit the card, shrinking the font if needed
+    const maxW = W - 60, words = d.tx.join(' ').split(' ')
+    let fs = 23, lines
+    for (; fs >= 17; fs--) { x.font = '500 ' + fs + 'px "Sofia Sans"'; lines = ['']; for (const w of words) { const t = lines[lines.length - 1] ? lines[lines.length - 1] + ' ' + w : w; if (x.measureText(t).width <= maxW) lines[lines.length - 1] = t; else lines.push(w) } if (lines.length <= 2) break }
+    if (lines.length > 2) { lines = lines.slice(0, 2); while (x.measureText(lines[1] + '…').width > maxW) lines[1] = lines[1].slice(0, -1); lines[1] += '…' }
+    x.fillStyle = '#efeafc'; lines.forEach((l, i) => x.fillText(l, 30, PY + 138 + i * (fs + 7)))
+  }
   const sw = (W - 60 - 5 * 8) / 6
   d.st.forEach((v, i) => {
     const X = 30 + i * (sw + 8), Y = PY + 210
@@ -196,7 +202,7 @@ const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fi
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340) {
-  const bw = bucket(w), k = 't5|' + sig(c) + '|' + bw
+  const bw = bucket(w), k = 't6|' + sig(c) + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
