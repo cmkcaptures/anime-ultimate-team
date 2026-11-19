@@ -33,6 +33,7 @@ async function act(type, data = {}) {
 let lastCoins = null
 function applyState(s) {
   ST = s; P = s.profile
+  ambience()
   { const eq = P.eq || {}; document.body.dataset.frame = eq.frame || ''; document.body.dataset.opener = eq.opener || ''; const sp = document.getElementById('sideProfile'); if (sp) sp.dataset.border = eq.border || '' }
   for (const n of s.notices || []) toast(n.text, n.kind === 'sold' ? 'gold' : 'ok')
   $('#coinVal').textContent = fmt(P.coins); $('#ppVal').textContent = fmt(P.pp || 0)
@@ -340,7 +341,7 @@ PAGES.cards = (el) => {
   el.append(head)
   { const mu = h('button', 'btn violet', 'ギャラリー · CARD MUSEUM'); mu.style.marginTop = '4px'; mu.onclick = () => go('museum'); el.append(mu) }
   const tools = h('div', ''); tools.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:14px'
-  const MODES = ['OWNED', 'ALL', 'BINDER', 'EVOLVE']; const seg = segmented(['OWNED', 'ALL CARDS', 'BINDER', 'EVOLVE'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
+  const MODES = ['OWNED', 'ALL', 'BINDER', 'EVOLVE', 'FUSE']; const seg = segmented(['OWNED', 'ALL', 'BINDER', 'EVOLVE', 'FUSE'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
   const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search characters or forms'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
   const an = h('div', 'chips'), ra = h('div', 'chips')
   tools.append(seg, q, an, ra); el.append(tools)
@@ -353,13 +354,14 @@ PAGES.cards = (el) => {
     grid.className = 'cardgrid'
     if (CF.mode === 'BINDER') return drawBinder(grid)
     if (CF.mode === 'EVOLVE') return drawEvolve(grid)
+    if (CF.mode === 'FUSE') return drawFuse(grid)
     const list = POOL.filter(c => (CF.mode === 'ALL' || club()[c.key]) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && (!CF.q || (c.name + ' ' + c.ver).toLowerCase().includes(CF.q)))
       .sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
     grid.innerHTML = ''
     if (!list.length) { grid.append(h('div', 'empty', `<b>${own.length ? 'Nothing here' : 'No cards yet'}</b>${own.length ? 'Try a different filter.' : 'Open your free pack on the home screen.'}`)); grid.firstChild.style.gridColumn = '1/-1'; return }
     for (const c of list) {
       const e = club()[c.key], b = h('button', 'cg' + (e ? '' : ' miss')); b.append(cardImg(eff(c), 240))
-      if (e) { b.append(h('span', 'n', e.n)); if (e.lvl) b.append(h('span', 'lv', '★' + e.lvl)); if ((P.last || []).includes(c.key) && e.n === 1) b.append(h('span', 'nw', 'NEW')) }
+      if (e) { b.append(h('span', 'n', e.n)); if (e.ser && e.ser <= 100) b.append(h('span', 'sr', '#' + e.ser)); if (e.lvl) b.append(h('span', 'lv', '★' + e.lvl)); if ((P.last || []).includes(c.key) && e.n === 1) b.append(h('span', 'nw', 'NEW')) }
       b.onclick = () => cardDetail(c.key); grid.append(b)
     }
   }
@@ -383,6 +385,7 @@ async function cardDetail(key) {
     big.onpointerleave = () => im.style.transform = ''
     d.append(h('span', 'marks', `<span style="color:${tierCol(c.r)}">${RARITY_MARK[c.r]} ${TIER[c.r].name}</span>`))
     d.append(h('h2', '', c.name), h('span', 'ver', c.ver + (c.tag ? ' · TAG UNIT' : '')))
+    if (e && e.ser) d.append(h('span', 'serial' + (e.ser <= 100 ? ' low' : ''), `SERIAL #${String(e.ser).padStart(4, '0')}${e.ser <= 10 ? ' · ULTRA LOW' : e.ser <= 100 ? ' · LOW SERIAL' : ''}`))
     d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}${lvl ? ' · ★' + lvl : ''}`))
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
     d.append(h('div', 'movebox', `<b style="color:${TYPE[c.t].c[2]}">${TYPE[c.t].en} · ${c.mv}</b><p>${c.tx.join(' ')}</p>`))
@@ -660,6 +663,7 @@ function transferTargets(el) {
 PAGES.shop = (el) => {
   bannerBlock(el)
   shopHero(el)
+  gachaBlock(el)
   sbcBlock(el)
   el.append(h('div', 'sec', `<h3>PACK POINT EXCHANGE</h3><span class="cur"><i class="pp-i"></i>${fmt(P.pp || 0)}</span>`))
   el.append(h('p', 'muted', '<small style="font-weight:700">Every pack you open gives 5 pack points. Spend them on the exact card you want.</small>'))
@@ -1524,4 +1528,49 @@ function tierUp(t, TH) {
   const ov = h('div', 'tierup', `<div class="tu-burst"></div><small>SEASON PASS · ${TH.name}</small><b>TIER ${t}</b><span>New rewards unlocked. Tap to claim them.</span>`)
   ov.style.setProperty('--t1', TH.c1); ov.style.setProperty('--t2', TH.c2); document.body.append(ov); sfx('win')
   ov.onclick = () => ov.remove(); setTimeout(() => ov.isConnected && ov.remove(), 3200)
+}
+
+// ================= FUSION =================
+function drawFuse(grid) {
+  grid.className = 'fuse-list'; grid.innerHTML = ''
+  grid.append(h('p', 'muted', '<small style="font-weight:700">Fuse one spare copy of each character into their combined card. Inputs must be at most 2 rarities below the result.</small>'))
+  const R = ST.fusion.map(r => ({ ...r, o: BYKEY[r.out] })).filter(r => r.o).sort((x, y) => TIER[y.o.r].rank - TIER[x.o.r].rank)
+  for (const r of R) {
+    const pick = n => owned().filter(c => c.name === n && TIER[c.r].rank >= r.min && club()[c.key].n - (P.team.includes(c.key) ? 1 : 0) >= 1).sort((x, y) => x.ovr - y.ovr)[0]
+    const a = pick(r.a), b = pick(r.b), ok = a && b && (P.shards || 0) >= r.cost
+    const row = h('div', 'fuse-row' + (ok ? ' ok' : ''))
+    const slot = (c, n) => { const d = h('div', 'fz-in' + (c ? '' : ' miss')); if (c) d.append(cardImg(eff(c), 160)); else d.innerHTML = `<span>${n}<br><small>${ORDER[r.min] ? TIER[ORDER[r.min]].name : ''}+ spare</small></span>`; return d }
+    const res = h('button', 'fz-out'); res.append(cardImg(eff(r.o), 200)); res.onclick = () => cardDetail(r.out)
+    row.append(slot(a, r.a), h('i', 'fz-plus', '+'), slot(b, r.b), h('i', 'fz-plus', '='), res)
+    const go2 = h('button', 'btn gold sm', `FUSE · ◆${fmt(r.cost)}`); go2.disabled = !ok
+    go2.onclick = async () => { const x = await act('fuse', { out: r.out, ka: a.key, kb: b.key }); if (!x.error) evolveFX(a, r.o) }
+    row.append(go2); grid.append(row)
+  }
+}
+// ================= GACHA MACHINE =================
+function gachaBlock(el) {
+  el.append(h('div', 'sec', '<h3>GACHA MACHINE</h3><span class="muted" style="font-weight:700;font-size:12px">ガチャ · 1,000 coins a turn</span>'))
+  const box = h('section', 'gacha')
+  box.innerHTML = `<div class="gm"><div class="gm-dome">${Array.from({ length: 14 }, (_, i) => `<i style="--x:${(i * 37) % 80 + 6}%;--y:${(i * 53) % 60 + 20}%;--c:${['#ff3b6b', '#ffcc00', '#2fe0b0', '#3ab8ff', '#a46bff'][i % 5]}"></i>`).join('')}</div><div class="gm-body"><div class="gm-crank"></div><div class="gm-slot"></div></div></div>
+    <div class="gm-info"><b>Turn the crank!</b><p>Coins, shards, packs, gacha-only cosmetics, and a 1% shot at a random Legendary.</p><ul>${ST.gachaPool.filter(g => g.rare).map(g => '<li>' + g.label + '</li>').join('')}</ul></div>`
+  const b = h('button', 'btn gold big', `<span>TURN</span><b><i class="coin-i"></i>${fmt(ST.gachaCost)}</b>`); b.disabled = P.coins < ST.gachaCost
+  b.onclick = async () => {
+    b.disabled = true; box.classList.remove('spin'); void box.offsetWidth; box.classList.add('spin'); sfx('charge', 2)
+    const r = await act('gacha'); if (r.error) { b.disabled = false; return }
+    await wait(1300); sfx(r.prize.rare ? 'fanfare' : 'reveal', r.prize.rare ? 5 : 2)
+    const cap = h('div', 'capsule' + (r.prize.rare ? ' rare' : ''), `<i class="cp-top"></i><i class="cp-bot"></i><div class="cp-prize">${r.prize.key ? '' : ''}<small>${r.prize.rare ? '★ RARE PRIZE ★' : 'YOU GOT'}</small><b>${r.prize.label}</b></div>`)
+    if (r.prize.key) cap.querySelector('.cp-prize').prepend(cardImg(eff(BYKEY[r.prize.key]), 200))
+    document.body.append(cap); cap.onclick = () => { cap.remove(); if (r.prize.pack) toast('Pack added. Open it from the Shop.'); rerender() }
+  }
+  box.querySelector('.gm-info').append(b); el.append(box)
+}
+// ================= AMBIENCE: time of day + seasonal events =================
+function ambience() {
+  const d = new Date(), hr = d.getHours(), m = d.getMonth() + 1, day = d.getDate()
+  document.body.dataset.tod = hr >= 21 || hr < 6 ? 'night' : hr >= 17 ? 'dusk' : hr < 10 ? 'dawn' : 'day'
+  let fx = ''; try { fx = localStorage.getItem('aut-season-fx') || '' } catch { }
+  if (!fx) fx = (m === 10 && day >= 15) || (m === 11 && day <= 2) ? 'halloween' : (m === 12 && day >= 10) || (m === 1 && day <= 3) ? 'winter' : ''
+  document.body.dataset.fx = fx
+  if (fx && !document.getElementById('fxLayer')) { const L = document.createElement('div'); L.id = 'fxLayer'; L.innerHTML = Array.from({ length: 26 }, (_, i) => `<i style="--x:${(i * 41) % 100}%;--d:${6 + (i % 7)}s;--dl:-${(i * 1.3) % 9}s;--s:${.6 + (i % 4) * .25}"></i>`).join(''); document.body.append(L) }
+  if (!fx) document.getElementById('fxLayer')?.remove()
 }

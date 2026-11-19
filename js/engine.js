@@ -84,6 +84,7 @@ function value(c, lvl = 0) {
   const v = BASE[c.r] * (1 + (c.ovr - MID[c.r]) / 12) * (1 + .18 * lvl) * (S.market.demand[c.key] || 1)
   return Math.max(50, Math.round(v / 50) * 50)
 }
+const serMult = k => { const o = S && S.profile.club.cards[k]; return o && o.ser ? (o.ser <= 10 ? 3 : o.ser <= 100 ? 1.5 : 1) : 1 }
 const quickSell = (c, lvl) => Math.max(50, Math.round(value(c, lvl) * .2 / 50) * 50)
 const TAX = .05
 
@@ -113,7 +114,11 @@ function rollCharge2(F) { while (F.n < LIGHT_MAX && Date.now() - F.at >= LIGHT_E
 function rollFree() { rollCharge(S.profile.free, FREE_EVERY, FREE_MAX); rollCharge(S.profile.wonder, WONDER_EVERY, WONDER_MAX) }
 const notice = (text, kind = 'info') => { S.notices.push({ text, kind, t: Date.now() }); if (S.notices.length > 30) S.notices.shift() }
 const cardName = k => { const c = byKey(k); return c ? `${c.name} (${c.ver})` : 'card' }
-const giveCard = (k, lvl = 0) => { const now = Date.now(), e = S.profile.club.cards[k] || (S.profile.club.cards[k] = { n: 0, first: now, lvl: 0 }); e.n++; e.last = now; e.lvl = Math.max(e.lvl || 0, lvl || 0); return e }
+const PRINT = { C: 9999, U: 7500, R: 5000, E: 2500, L: 1000, M: 500, X: 250 }
+const rollSerial = k => { const c = byKey(k), cap = PRINT[c ? c.r : 'C'] || 9999; return 1 + Math.floor(Math.pow(Math.random(), .85) * cap) }
+// every new copy gets a serial; the card keeps its lowest (best) one
+const giveCard = (k, lvl = 0) => { const sr = rollSerial(k), r = giveCard0(k, lvl), o = S.profile.club.cards[k]; if (o) o.ser = Math.min(o.ser || 1e9, sr); return r }
+const giveCard0 = (k, lvl = 0) => { const now = Date.now(), e = S.profile.club.cards[k] || (S.profile.club.cards[k] = { n: 0, first: now, lvl: 0 }); e.n++; e.last = now; e.lvl = Math.max(e.lvl || 0, lvl || 0); return e }
 const addXP = n => { const P = S.profile; P.xp = (P.xp || 0) + n; passP().xp += n * 3 }
 // ---------- SEASON PASS: 4-week seasons, 50 tiers, 300 pass XP per tier ----------
 const PASS_TIER = 300, PASS_TIERS = 50, PASS_COST = 25000
@@ -133,6 +138,8 @@ const COSMETICS = {
   opener_rivals: { type: 'opener', name: 'Clash Opener', d: 'Red vs blue pack opening' },
   title_eternal: { type: 'title', name: 'Eternal Rival', d: 'Profile title' },
   frame_rivals_gold: { type: 'frame', name: 'Rivals Gold Frame', d: 'Animated gold rival border' },
+  title_capsule: { type: 'title', name: 'Capsule Kid', d: 'Gacha machine title' },
+  frame_capsule: { type: 'frame', name: 'Capsule Frame', d: 'Pastel candy border from the gacha machine' },
 }
 const PREM_COS = { 3: 'title_rival', 15: 'border_rivals', 20: 'frame_rivals', 30: 'opener_rivals', 45: 'title_eternal', 49: 'frame_rivals_gold' }
 const seasonNo = () => Math.floor(Date.now() / 864e5 / 28)
@@ -237,6 +244,29 @@ function achList() {
 const EVO_COPIES = { C: 3, U: 3, R: 2, E: 2, L: 1, M: 1 }
 function evoNext(k) { const c = byKey(k); if (!c || c.season) return []; const rk = RK(c.r), same = CARDS.filter(x => x.name === c.name && !x.season && RK(x.r) > rk); if (!same.length) return []; const nr = Math.min(...same.map(x => RK(x.r))); return same.filter(x => RK(x.r) === nr).map(x => x.key) }
 const evoShards = to => Math.round(SHARD_COST[byKey(to).r] * .4)
+// ---------- GACHA MACHINE ----------
+const GACHA_COST = 1000
+const GACHA = [
+  { w: 30, coins: 500, label: '500 coins' }, { w: 18, coins: 1500, label: '1,500 coins' }, { w: 6, coins: 5000, label: '5,000 coins', rare: 1 },
+  { w: 16, shards: 100, label: '◆100 shards' }, { w: 6, shards: 400, label: '◆400 shards', rare: 1 },
+  { w: 10, pack: 'silver', label: 'Silver Pack' }, { w: 6, pack: 'standard', label: 'Gold Pack' }, { w: 2, pack: 'premium', label: 'Premium Drop', rare: 1 },
+  { w: 3, cos: 'title_capsule', label: 'Title: Capsule Kid', rare: 1 }, { w: 2, cos: 'frame_capsule', label: 'Capsule Frame', rare: 1 },
+  { w: 1, card: 'L', label: 'Random Legendary card', rare: 1 },
+]
+// ---------- FUSION ----------
+function fusionRecipes() {
+  const C = CARDS.filter(c => !c.season), byName = n => C.filter(c => c.name === n)
+  const out = []
+  for (const c of C) {
+    let parts = null
+    if (c.name.includes(' & ')) parts = c.name.split(' & ').map(s => s.trim())
+    else if (c.name === 'GOGETA' || c.name === 'VEGITO') parts = ['GOKU', 'VEGETA']
+    if (!parts || parts.length !== 2) continue
+    const [a, b] = parts.map(byName); if (!a.length || !b.length) continue
+    out.push({ out: c.key, a: parts[0], b: parts[1], min: Math.max(0, RK(c.r) - 2), cost: Math.round(SHARD_COST[c.r] * .5) })
+  }
+  return out
+}
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
@@ -590,6 +620,25 @@ function act(a) {
       P.shards -= cost; giveCard(a.to); P.last = [a.to]; bump('evolve'); addXP(40)
       return { msg: `${c.name} evolved into ${t.ver}!`, to: a.to }
     }
+    case 'gacha': {
+      if (P.coins < GACHA_COST) return { error: 'You need 1,000 coins.' }
+      P.coins -= GACHA_COST; let t = Math.random() * GACHA.reduce((n, g) => n + g.w, 0), g = GACHA[0]; for (const x of GACHA) if ((t -= x.w) < 0) { g = x; break }
+      const R = { ...g }
+      if (g.coins) P.coins += g.coins; if (g.shards) P.shards = (P.shards || 0) + g.shards; if (g.pack) P.pending[g.pack] = (P.pending[g.pack] || 0) + 1
+      if (g.cos) { const cs = P.cos || (P.cos = []); if (cs.includes(g.cos)) { P.coins += 2000; R.label += ' (duplicate → 2,000 coins)' } else cs.push(g.cos) }
+      if (g.card) { const L = CARDS.filter(c => !c.season && c.r === g.card), c = L[Math.floor(Math.random() * L.length)]; giveCard(c.key); P.last = [c.key]; R.key = c.key; R.label = c.name + ' · ' + c.ver }
+      bump('gacha'); addXP(5); return { prize: R }
+    }
+    case 'fuse': {
+      const r = fusionRecipes().find(x => x.out === a.out); if (!r) return { error: 'Unknown fusion.' }
+      const ca = byKey(a.ka), cb = byKey(a.kb); if (!ca || !cb || ca.name !== r.a || cb.name !== r.b) return { error: 'Wrong cards for this fusion.' }
+      if (RK(ca.r) < r.min || RK(cb.r) < r.min) return { error: 'Those cards are too low a rarity for this fusion.' }
+      if (spare(a.ka) < 1 || spare(a.kb) < 1) return { error: 'Both cards need a spare copy (not in your team).' }
+      if ((P.shards || 0) < r.cost) return { error: `You need ◆${r.cost.toLocaleString()} shards.` }
+      for (const k of [a.ka, a.kb]) { const o = own(k); o.n--; if (o.n <= 0) delete P.club.cards[k] }
+      P.shards -= r.cost; giveCard(r.out); P.last = [r.out]; bump('fuse'); addXP(40)
+      return { msg: `Fusion complete: ${cardName(r.out)}!` }
+    }
     case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }
     case 'equip': {
       const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
@@ -618,9 +667,10 @@ function state() {
     boss: (() => { const BD = bossToday(); return BD ? { ...BD, me: bossP() } : null })(),
     login: (() => { const { L, can, next } = loginP(); return { streak: L.streak, can, next, rw: LOGIN_RW } })(),
     evo: Object.fromEntries(cards().map(c => [c.key, evoNext(c.key)]).filter(x => x[1].length)), evoCopies: EVO_COPIES, evoCost: Object.fromEntries(cards().map(c => [c.key, Math.round(SHARD_COST[c.r] * .4)])),
+    fusion: fusionRecipes(), gachaCost: GACHA_COST, gachaPool: GACHA.map(g => ({ label: g.label, rare: !!g.rare, w: g.w })),
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
-  for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = value(c, e ? e.lvl || 0 : 0); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
+  for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
   return JSON.parse(JSON.stringify(out))
 }
 function market() {
@@ -648,6 +698,7 @@ async function boot() {
   // newest save wins (cloud vs this device)
   S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
   const f = fresh(); S.profile = { ...f.profile, ...S.profile }; S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
+  for (const [k, o] of Object.entries(S.profile.club.cards)) if (!o.ser && byKey(k)) o.ser = rollSerial(k)
   // cards moved between rarity folders get a new key (folder/file); re-link everything by file name
   { const byFile = {}, dup = new Set(); for (const c of CARDS) { const f = c.key.split('/').pop(); if (byFile[f]) dup.add(f); byFile[f] = c.key } for (const f of dup) delete byFile[f]
     const ALIAS = { 'Common/jolyne.jpg': 'Epic/jolyne 5.jpg', 'Epic/jolyne.jpg': 'Uncommon/jolyne.jpg', 'Legendary/dabi.jpg': 'Legendary/dabi 5.jpg', 'Uncommon/dabi.jpg': 'Rare/dabi.jpg' }
