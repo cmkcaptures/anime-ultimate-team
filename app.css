@@ -2545,3 +2545,13 @@ body[data-page=shop] .ptile.on * { color: #fff !important } body[data-page=shop]
   .lb-feat { box-shadow: 0 0 0 5px #fff, 8px 10px 0 5px rgba(26,11,58,.45) !important }
   .op2 .o2-art { display: none }
 }
+.sh-tag .timer, .bh-info .timer, .rk-info .timer { color: #fff !important; background: var(--eN) !important; padding: 1px 7px; border-radius: 6px; font-weight: 800 }
+.bhero { margin-bottom: 20px !important }
+.arcs { margin-top: 6px; gap: 18px !important }
+.stages { gap: 16px !important }
+.wk { left: 0 !important; top: 0 !important; right: auto !important; bottom: auto !important; width: 100vw; height: 100dvh }
+.wk-info { left: 0 !important; right: 0 !important; justify-items: center }
+.wk-line span, .wk-name { font-family: var(--eD) !important; -webkit-text-stroke: 2px var(--eN); paint-order: stroke fill; text-shadow: 0 5px 0 var(--eN), 0 0 30px var(--oc) !important }
+.wk-name { border-radius: 14px; box-shadow: 0 0 0 3px #fff; border-bottom: 0 !important; background: var(--eN) !important }
+html body .mo.mo { background: linear-gradient(115deg, #ff8a1f 0 26%, #7b2ff2 26%) !important } .mo-grid { max-width: calc(100vw - 60px) } .mo-c { min-width: 0 }
+#opener.mo { background: linear-gradient(115deg, #ff8a1f 0 26%, #7b2ff2 26%) !important }

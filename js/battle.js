@@ -332,8 +332,8 @@ function rankedPage(el, ok) {
       <div class="rk-stats"><span><b>${R.w}</b>WINS</span><span><b>${R.l}</b>LOSSES</span><span><b>${R.streak}</b>STREAK</span><span><b>${R.ranks[R.best].name}</b>BEST</span></div></div>`
   const go = h('button', 'btn gold big rk-go', 'FIND MATCH'); go.disabled = !ok
   go.onclick = () => {
-    const rating = 74 + i * 4 + Math.min(3, Math.floor(R.streak / 2)), level = Math.min(5, 1 + Math.ceil(i * .7)), name = RIVALS[Math.floor(Math.random() * RIVALS.length)]
-    go2({ mode: 'ranked', id: 0, label: 'Ranked · ' + cur.name + ' · vs ' + name, name, rating, level, boost: i >= 5 ? 1.1 : 1, arena: ARENA_KEYS[Math.floor(Math.random() * ARENA_KEYS.length)] })
+    const rating = Math.min(95, Math.round(74 + i * 3.5) + Math.min(2, Math.floor(R.streak / 3))), level = Math.min(5, 1 + Math.ceil(i * .7)), name = RIVALS[Math.floor(Math.random() * RIVALS.length)]
+    go2({ mode: 'ranked', id: 0, label: 'Ranked · ' + cur.name + ' · vs ' + name, name, rating, level, boost: i >= 6 ? 1.05 : 1, arena: ARENA_KEYS[Math.floor(Math.random() * ARENA_KEYS.length)] })
   }
   hero.querySelector('.rk-info').append(go)
   el.append(hero)
