@@ -157,7 +157,15 @@ function bossToday() {
   if (!top.length) return null
   let x = Math.sin(day * 7919) * 10000; x -= Math.floor(x)
   const c = top[Math.floor(x * top.length)]
-  return { day, key: c.key, hpMult: BOSS_HP, tries: BOSS_TRIES, rw: BOSS_RW, ends: (day + 1) * 864e5 }
+  const AB = [
+    { id: 'aoe', d: 'Every 3rd turn it unleashes a wide attack that hits your whole team for 12% of their max HP.' },
+    { id: 'stun', d: 'Every 3rd turn its pressure stuns your active fighter, who loses their next turn.' },
+    { id: 'burn', d: 'Every 3rd turn it sets your whole team ablaze: 5% HP burn for 3 turns.' },
+    { id: 'drain', d: 'Every 3rd turn it drains 3 of your Energy and steals your Ultimate charge.' },
+    { id: 'rage', d: 'Every 3rd turn it powers up: +15% damage, stacking all fight long.' },
+  ]
+  const ab = AB[day % AB.length]
+  return { day, key: c.key, hpMult: BOSS_HP, tries: BOSS_TRIES, rw: BOSS_RW, ends: (day + 1) * 864e5, ab: { ...ab, name: c.mv || 'BOSS ATTACK' } }
 }
 function bossP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.boss || P.boss.day !== d) P.boss = { day: d, tries: 0, best: 0, total: 0, got: [] }; return P.boss }
 // ---------- MASTERY ----------

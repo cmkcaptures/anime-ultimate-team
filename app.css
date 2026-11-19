@@ -2555,3 +2555,7 @@ body[data-page=shop] .ptile.on * { color: #fff !important } body[data-page=shop]
 .wk-name { border-radius: 14px; box-shadow: 0 0 0 3px #fff; border-bottom: 0 !important; background: var(--eN) !important }
 html body .mo.mo { background: linear-gradient(115deg, #ff8a1f 0 26%, #7b2ff2 26%) !important } .mo-grid { max-width: calc(100vw - 60px) } .mo-c { min-width: 0 }
 #opener.mo { background: linear-gradient(115deg, #ff8a1f 0 26%, #7b2ff2 26%) !important }
+
+.bh-ab { display: grid; gap: 3px; margin: 0 0 12px; padding: 10px 14px; border-radius: 14px; background: linear-gradient(160deg, #ff6b8a, #c2183e); box-shadow: 0 0 0 3px #fff, 0 5px 0 3px #5a0618; max-width: 560px }
+.bh-ab b { font: 800 18px var(--eD); color: #fff; -webkit-text-stroke: 1px #5a0618; paint-order: stroke fill; text-shadow: 0 2px 0 #5a0618 }
+.bh-ab span { font: 700 13px/1.4 var(--eUI); color: #fff }
