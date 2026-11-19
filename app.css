@@ -2717,3 +2717,21 @@ body[data-opener=opener_rivals] .op2 .o2-bg { background: linear-gradient(115deg
 .lb-say.pop { animation: sayin .35s cubic-bezier(.2,1.4,.4,1) both }
 @keyframes sayin { from { opacity: 0; transform: scale(.6) } }
 .mus.locked .mus-art { filter: blur(16px) brightness(.4) saturate(.5) !important; opacity: 1 !important; transform: scale(1.15) } .mus.locked .mus-tx b { color: rgba(255,255,255,.6) }
+
+/* ================= PASS v2 ================= */
+.pass-claimall { margin: 12px 0 0 10px }
+.pass-reel { display: flex; gap: 14px; overflow-x: auto; padding: 8px 4px 16px }
+.pr-it { flex: 0 0 150px; display: grid; gap: 4px; justify-items: center; text-align: center; padding: 12px 10px; border-radius: 18px; background: linear-gradient(160deg, #3a2a7a, var(--eN)); box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(26,11,58,.55) }
+.pr-it.p { background: linear-gradient(160deg, #ff3b5c, #2a7bff) }
+.pr-it.got { opacity: .5 }
+.pr-art { width: 90px; height: 120px; border-radius: 10px; background: center 20% / cover; box-shadow: 0 0 0 2px #fff }
+.pr-ic { display: grid; place-items: center; width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,.3); font: 800 34px var(--eD); font-style: normal; color: #ffe14a; box-shadow: 0 0 0 2px #fff }
+.pr-it small { font: 800 10px var(--eUI); letter-spacing: .1em; color: rgba(255,255,255,.8) } .pr-it b { font: 800 16px/1.1 var(--eD); color: #fff }
+.pcell.ms { box-shadow: 0 0 0 3px #ffe14a, 0 0 18px rgba(255,204,0,.6), 0 6px 0 3px #8a3a00 !important }
+.pcell.ms small::after { content: " · MILESTONE"; color: #ffe14a }
+.tierup { position: fixed; inset: 0; z-index: 180; display: grid; place-content: center; text-align: center; background: rgba(10,4,32,.82); cursor: pointer; animation: tuIn .4s ease-out }
+.tu-burst { position: absolute; left: 50%; top: 50%; width: 600px; height: 600px; margin: -300px; border-radius: 50%; background: repeating-conic-gradient(var(--t1) 0 8deg, transparent 8deg 22deg, var(--t2) 22deg 30deg, transparent 30deg 44deg); opacity: .35; animation: tuSpin 6s linear infinite; -webkit-mask: radial-gradient(circle, #000 20%, transparent 70%); mask: radial-gradient(circle, #000 20%, transparent 70%) }
+.tierup small { position: relative; font: 800 13px var(--eUI); letter-spacing: .2em; color: #ffe14a }
+.tierup b { position: relative; display: block; font: 800 96px/1 var(--eD); color: #fff; -webkit-text-stroke: 3px #0a0420; paint-order: stroke fill; text-shadow: 0 8px 0 #0a0420; animation: tuPop .6s cubic-bezier(.2,1.5,.4,1) }
+.tierup span { position: relative; font: 700 15px var(--eUI); color: #fff }
+@keyframes tuIn { from { opacity: 0 } } @keyframes tuPop { from { transform: scale(2.2); opacity: 0 } } @keyframes tuSpin { to { transform: rotate(360deg) } }

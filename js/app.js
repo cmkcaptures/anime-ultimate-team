@@ -1268,12 +1268,19 @@ async function walkout(ov, FXC, c, rk) {
 // ================= SEASON PASS =================
 PAGES.pass = (el) => {
   const S = ST.pass, TH = S.theme
+  { let seen = 0; try { seen = +localStorage.getItem('aut-pass-seen-' + S.season) || 0 } catch { } if (S.tier > seen) { if (seen) setTimeout(() => tierUp(S.tier, TH), 400); try { localStorage.setItem('aut-pass-seen-' + S.season, S.tier) } catch { } } }
   const hero = h('section', 'bhero passhero', `<div><span class="sh-tag">SEASON ${S.shown} · ${TH.name} · ENDS IN <b class="timer" data-until="${S.ends - SKEW}"></b></span><h2>${TH.name === 'SEASON ' + S.shown ? 'SEASON PASS' : TH.name}</h2><small class="th-jp">${TH.jp} · ${TH.tag || 'Season Pass'}</small><p>Earn pass XP from everything: battles, packs, challenges, the Tower, arcs and events. The free track has this season's exclusive cards, never sold in packs. Premium adds cosmetics (card frames, titles, avatar borders, opener styles), packs, shards, a Legendary pick at 25 and a Mythic pick at 50.</p>
     <div class="pbar"><b>TIER ${S.tier}</b><i><s style="width:${S.tier >= S.max ? 100 : S.into / S.per * 100}%"></s></i><span>${S.tier >= S.max ? 'MAX' : S.into + ' / ' + S.per + ' XP'}</span></div></div>`)
   if (!S.prem) { const b = h('button', 'btn gold big', `<span>UNLOCK PREMIUM</span><b><i class="coin-i"></i>${fmt(S.cost)}</b>`); b.disabled = P.coins < S.cost; b.onclick = async () => { const r = await act('passBuy'); if (!r.error) rerender() }; hero.querySelector('div').append(b) }
   else hero.querySelector('div').append(h('span', 'pass-own', 'PREMIUM UNLOCKED'))
   hero.style.setProperty('--t1', TH.c1); hero.style.setProperty('--t2', TH.c2); hero.classList.add('themed')
+  { const ready = S.rw.reduce((n, [f, p], i) => n + (S.tier >= i + 1 && !S.f.includes(i + 1) ? 1 : 0) + (S.prem && S.tier >= i + 1 && !S.p.includes(i + 1) ? 1 : 0), 0)
+    if (ready) { const cl = h('button', 'btn gold big pass-claimall', `CLAIM ALL · ${ready}`); cl.onclick = async () => { cl.disabled = true; let packs = []; for (const [i, [f, p]] of S.rw.entries()) { const t = i + 1; if (S.tier < t) break; for (const [k, R] of [['f', f], ['p', p]]) { if (k === 'p' && !S.prem) continue; if (S[k].includes(t) || R.pick) continue; const r = await act('passClaim', { track: k, tier: t }); if (!r.error && r.rw && r.rw.pack) packs.push(r.rw.pack) } } toast(packs.length ? packs.length + ' packs added. Open them from the Shop.' : 'Rewards claimed!'); rerender() }; hero.querySelector('div').append(cl) } }
   el.append(hero)
+  { const best = []; S.rw.forEach(([f, p], i) => { for (const [k, R] of [['FREE', f], ['PREMIUM', p]]) if (R.big || R.card || R.cos) best.push({ t: i + 1, k, R }) })
+    const reel = h('div', 'pass-reel'); for (const b of best.slice(0, 12)) { const c = b.R.card && BYKEY[b.R.card], got = (b.k === 'FREE' ? S.f : S.p).includes(b.t)
+      const it = h('div', 'pr-it' + (b.k === 'PREMIUM' ? ' p' : '') + (got ? ' got' : ''), `${c ? `<i class="pr-art" style="background-image:url('${c.url}')"></i>` : `<i class="pr-ic">${b.R.cos ? '✦' : b.R.pick ? '★' : '🎴'}</i>`}<small>TIER ${b.t} · ${b.k}</small><b>${b.R.label}</b>`); reel.append(it) }
+    el.append(h('div', 'sec', '<h3>SEASON HIGHLIGHTS</h3><span class="muted" style="font-weight:700;font-size:12px">the big rewards this season</span>')); el.append(reel) }
   { const sc = S.seasonCards.map(k => BYKEY[k]).filter(Boolean)
     const box = h('section', 'season-cards'); box.append(h('div', 'sec', `<h3>SEASON ${S.shown} EXCLUSIVES</h3><span class="muted" style="font-weight:700;font-size:12px">free track only · never in packs</span>`))
     const g = h('div', 'cardgrid')
@@ -1284,7 +1291,7 @@ PAGES.pass = (el) => {
   const tr = h('div', 'ptrack')
   const cell = (t, k, R) => {
     const claimed = S[k].includes(t), reach = S.tier >= t, lock = k === 'p' && !S.prem
-    const b = h('button', 'pcell ' + k + (claimed ? ' got' : reach && !lock ? ' ready' : '') + (R.pack || R.pick || R.card || R.cos ? ' big' : '') + (R.card ? ' sc' : '') + (R.cos ? ' cos' : ''), `<small>${k === 'p' ? 'PREMIUM' : 'FREE'}</small><b>${R.label}</b><span>${claimed ? '✓ CLAIMED' : lock ? 'LOCKED' : reach ? 'CLAIM' : 'TIER ' + t}</span>`)
+    const b = h('button', 'pcell ' + k + (claimed ? ' got' : reach && !lock ? ' ready' : '') + (R.pack || R.pick || R.card || R.cos ? ' big' : '') + (R.card ? ' sc' : '') + (R.cos ? ' cos' : '') + (R.big ? ' ms' : ''), `<small>${k === 'p' ? 'PREMIUM' : 'FREE'}</small><b>${R.label}</b><span>${claimed ? '✓ CLAIMED' : lock ? 'LOCKED' : reach ? 'CLAIM' : 'TIER ' + t}</span>`)
     b.disabled = claimed || !reach || lock
     b.onclick = async () => {
       if (R.pick) return passPick(t, R.pick)
@@ -1511,4 +1518,10 @@ function museumView(c) {
 function partnerLine(c) {
   const L = [`Ready when you are.`, `Let's open some packs!`, `Who are we fighting today?`, `The Daily Boss won't beat itself.`, `I've been training. Try me in Ranked.`, `Check the Season Pass, there's free stuff.`, `Nobody stands above me.`, `Got any rivals for me?`, c.pas ? `${c.pas.n}… you've seen what I can do.` : 'Let\'s go.', `${c.mv}! …just warming up.`]
   return L[Math.floor(Math.random() * L.length)]
+}
+
+function tierUp(t, TH) {
+  const ov = h('div', 'tierup', `<div class="tu-burst"></div><small>SEASON PASS · ${TH.name}</small><b>TIER ${t}</b><span>New rewards unlocked. Tap to claim them.</span>`)
+  ov.style.setProperty('--t1', TH.c1); ov.style.setProperty('--t2', TH.c2); document.body.append(ov); sfx('win')
+  ov.onclick = () => ov.remove(); setTimeout(() => ov.isConnected && ov.remove(), 3200)
 }

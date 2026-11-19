@@ -134,20 +134,31 @@ const COSMETICS = {
   title_eternal: { type: 'title', name: 'Eternal Rival', d: 'Profile title' },
   frame_rivals_gold: { type: 'frame', name: 'Rivals Gold Frame', d: 'Animated gold rival border' },
 }
-const PREM_COS = { 5: 'title_rival', 15: 'border_rivals', 20: 'frame_rivals', 35: 'opener_rivals', 45: 'title_eternal', 50: 'frame_rivals_gold' }
+const PREM_COS = { 3: 'title_rival', 15: 'border_rivals', 20: 'frame_rivals', 30: 'opener_rivals', 45: 'title_eternal', 49: 'frame_rivals_gold' }
 const seasonNo = () => Math.floor(Date.now() / 864e5 / 28)
 function passP() { const P = S.profile, n = seasonNo(); if (!P.pass || P.pass.season !== n) P.pass = { season: n, xp: 0, prem: false, f: [], p: [] }; return P.pass }
-function freeCardTiers() { const L = seasonCards(), n = L.length; const m = {}; L.forEach((c, i) => { let t = Math.round(PASS_TIERS * (i + 1) / n); while (m[t] && t > 1) t--; m[t] = c.key }); return m }
+function freeCardTiers() { const L = seasonCards(), n = L.length, MS = [10, 25, 40, 50]; const m = {}; L.forEach((c, i) => { let t = Math.max(2, Math.round(48 * (i + 1) / n)); while ((m[t] || MS.includes(t)) && t > 1) t--; m[t] = c.key }); return m }
 function passReward(track, t) {
-  if (track === 'f') { const fc = freeCardTiers()[t]; if (fc) { const c = byKey(fc); return { card: fc, label: c.name + ' · ' + c.ver, season: 1 } } }
-  if (track === 'p' && PREM_COS[t] && theme().name === 'RIVALS') { const id = PREM_COS[t], C = COSMETICS[id]; return { cos: id, label: C.name, d: C.d } }
-  if (track === 'f') { if (t === 50) return { pack: 'premium', label: 'Premium Drop' }; if (t % 10 === 0) return { pack: 'jumbo', label: 'Jumbo Gold' }; if (t % 5 === 0) return { pack: 'standard', label: 'Gold Pack' }; return { coins: 300 + t * 20, label: (300 + t * 20).toLocaleString() + ' coins' } }
-  if (t === 50) return { pick: 'M', label: 'Pick any Mythic' }
-  if (t === 25) return { pick: 'L', label: 'Pick any Legendary' }
-  if (t % 10 === 0) return { pack: 'lightning', label: 'Lightning Pack' }
+  // milestones: 10, 25, 40, 50 are the big moments on both tracks
+  if (track === 'f') {
+    const fc = freeCardTiers()[t]; if (fc) { const c = byKey(fc); return { card: fc, label: c.name + ' · ' + c.ver, season: 1 } }
+    if (t === 50) return { pack: 'premium', label: 'Premium Drop', big: 1 }
+    if (t === 40) return { pack: 'jumbo', label: 'Jumbo Gold', big: 1 }
+    if (t === 25) return { pack: 'jumbo', label: 'Jumbo Gold', big: 1 }
+    if (t === 10) return { pack: 'standard', label: 'Gold Pack', big: 1 }
+    if (t % 5 === 0) return { pack: 'standard', label: 'Gold Pack' }
+    if (t % 3 === 0) return { shards: 60 + t * 3, label: '◆' + (60 + t * 3) + ' shards' }
+    if (t % 4 === 0) return { pack: 'silver', label: 'Silver Pack' }
+    return { coins: 400 + t * 25, label: (400 + t * 25).toLocaleString() + ' coins' }
+  }
+  if (PREM_COS[t] && theme().name === 'RIVALS') { const id = PREM_COS[t], C = COSMETICS[id]; return { cos: id, label: C.name, d: C.d, big: t >= 20 ? 1 : 0 } }
+  if (t === 50) return { pick: 'M', label: 'Pick any Mythic', big: 1 }
+  if (t === 25) return { pick: 'L', label: 'Pick any Legendary', big: 1 }
+  if (t === 40) return { pack: 'lightning', label: 'Lightning Pack', big: 1 }
+  if (t === 10) return { pack: 'lightning', label: 'Lightning Pack', big: 1 }
   if (t % 5 === 0) return { pack: 'premium', label: 'Premium Drop' }
-  if (t % 2 === 0) return { shards: 100 + t * 6, label: '◆' + (100 + t * 6) + ' shards' }
-  return { coins: 800 + t * 40, label: (800 + t * 40).toLocaleString() + ' coins' }
+  if (t % 2 === 0) return { shards: 150 + t * 8, label: '◆' + (150 + t * 8) + ' shards' }
+  return { coins: 1200 + t * 50, label: (1200 + t * 50).toLocaleString() + ' coins' }
 }
 // ---------- RANKED LADDER ----------
 const RANKS = [
