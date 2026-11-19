@@ -115,8 +115,8 @@ export function drawCard(x, d) {
   if (d.r === 'X') x.fillStyle = stops(x.createLinearGradient(0, 0, W, H), ['#ff7ab8', '#ffd95a', '#7dffb6', '#6ac8ff', '#b78cff', '#ff7ab8'])
   else { const bg = x.createRadialGradient(390, 320, 0, 390, 320, 720); bg.addColorStop(0, low ? '#e8e2d8' : '#fff'); bg.addColorStop(.09, c3); bg.addColorStop(.32, c1); bg.addColorStop(.64, c2); bg.addColorStop(1, '#07010f'); x.fillStyle = bg }
   x.fillRect(0, 0, W, H)
-  const ar = img.width / img.height; let dw = W, dh = W / ar; if (dh < H) { dh = H; dw = H * ar }; const zf = d.z || 1; dw *= zf; dh *= zf
-  const fxp = d.fx ?? .5, fyp = d.fy ?? .22, ox = Math.min(0, Math.max(W - dw, W / 2 - fxp * dw)), oy = Math.min(0, Math.max(H - dh, H * .3 - fyp * dh))
+  const AH = H - 300, ar = img.width / img.height; let dw = W, dh = W / ar; if (dh < AH) { dh = AH; dw = AH * ar }; const zf = d.z || 1; dw *= zf; dh *= zf
+  const fxp = d.fx ?? .5, fyp = d.fy ?? .22, ox = Math.min(0, Math.max(W - dw, W / 2 - fxp * dw)), oy = Math.min(0, Math.max(AH - dh, AH * .42 - fyp * dh))
   x.filter = real ? 'none' : d.r === 'X' ? 'grayscale(1) contrast(1.45) brightness(1.15)' : low ? 'saturate(1.2) contrast(1.1)' : 'saturate(1.7) contrast(1.22)'
   if (d.fit) { // whole-art mode: blurred cover behind, full image contained in the art window
     const f0 = x.filter; x.filter = (f0 === 'none' ? '' : f0 + ' ') + 'blur(18px) brightness(.55)'; x.drawImage(img, ox, oy, dw, dh); x.filter = f0
@@ -254,7 +254,7 @@ const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fi
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340) {
-  const bw = bucket(w), k = 't9|' + sig(c) + '|' + bw
+  const bw = bucket(w), k = 't10|' + sig(c) + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
