@@ -802,11 +802,11 @@ function rollPackKeys(type) {
 async function openPack(type) {
   if (document.getElementById('opener')) return
   const cards = rollPackKeys(type)
+  const pre = cards.map(c => thumbURL(c, 440, true)) // start drawing the cards right away
   const r = await act('openPack', { pack: type, keys: cards.map(c => c.key) })
   if (r.error) return
   const cnt = {}; cards.forEach(c => cnt[c.key] = (cnt[c.key] || 0) + 1); const isNew = k => (club()[k]?.n || 0) <= cnt[k]; const seenNew = new Set()
   const best = cards[cards.length - 1], bestRk = TIER[best.r].rank, bcol = tierCol(best.r)
-  const pre = cards.map(c => thumbURL(c, 440)) // render every card while the player is still tearing
   const ov = h('div', 'op2'); ov.id = 'opener'; ov.style.setProperty('--bc', bcol); ov.dataset.best = best.r
   ov.innerHTML = `<div class="o2-bg"></div><div class="o2-art a1"></div><div class="o2-art a2"></div><div class="o2-grade"></div><div class="o2-spot"></div><div class="o2-floor"></div><div class="o2-beam"></div>
     <div class="o2-stage"></div><div class="o2-label"></div><div class="o2-tray"></div><div class="o2-hint"></div>
@@ -1157,7 +1157,7 @@ async function multiOpen(type, n) {
   const packs = type === 'banner' ? rollBannerKeys(n) : Array.from({ length: n }, () => rollPackKeys(type))
   for (const pk of packs) { const r = await act('openPack', { pack: type, keys: pk.map(c => c.key) }); if (r.error) break }
   const all = packs.flat().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
-  const urls = await Promise.all(all.map(c => thumbURL(c, 260)))
+  const urls = await Promise.all(all.map(c => thumbURL(c, 260, true)))
   const ov = h('div', 'mo'); ov.id = 'opener'
   ov.innerHTML = `<div class="mo-bg"></div><div class="mo-head"><b>${n}× PULL</b><span>${all.length} cards</span><button class="o2-skip">REVEAL ALL</button></div><div class="mo-grid"></div><button class="btn gold mo-done">CONTINUE</button>`
   document.body.append(ov); document.body.classList.add('in-opener')

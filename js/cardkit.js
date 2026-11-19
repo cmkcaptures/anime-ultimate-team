@@ -94,9 +94,12 @@ export const ART = {}, ARTP = {}
 export function getArt(c) {
   return ARTP[c.id] || (ARTP[c.id] = (async () => {
     const ck = `v2|${c.key}|${c.mt}`
-    let blob = await idbGet(ck)
-    if (!blob) { const can = cutout(await loadImg(c.url)); blob = await new Promise(r => can.toBlob(r, 'image/webp', .92)); idbPut(ck, blob) }
-    return ART[c.id] = await loadImg(URL.createObjectURL(blob))
+    const blob = await idbGet(ck)
+    if (blob) return ART[c.id] = await loadImg(URL.createObjectURL(blob))
+    const can = cutout(await loadImg(c.url))
+    // use the canvas straight away; save the cached copy later when the browser is idle
+    setTimeout(() => can.toBlob(b => b && idbPut(ck, b), 'image/webp', .9), 1500)
+    return ART[c.id] = can
   })())
 }
 
@@ -255,24 +258,25 @@ export function drawCard(x, d) {
 
 // ---- small card images for menus, cached per card + awakening level ----
 const THUMBS = {}
-const bucket = w => w <= 260 ? 260 : w <= 440 ? 440 : 560
+const SMALL = innerWidth < 700
+const bucket = w => SMALL ? (w <= 300 ? 220 : w <= 460 ? 380 : 480) : w <= 260 ? 260 : w <= 440 ? 440 : 560
 const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.z, c.mv, c.total].join('|')
 // one render at a time, yielding to the browser between cards so scrolling stays smooth
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
-export function thumbURL(c, w = 340) {
+export function thumbURL(c, w = 340, prio) {
   const bw = bucket(w), k = 't10|' + sig(c) + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
-    const job = QUEUE.then(async () => {
-      await getArt(c); await idle()
+    const job = (prio ? getArt(c) : QUEUE).then(async () => {
+      await getArt(c); if (!prio) await idle()
       const can = document.createElement('canvas'); can.width = bw; can.height = Math.round(bw * 952 / 680)
       const x = can.getContext('2d'); x.scale(bw / 680, bw / 680); drawCard(x, c)
-      const blob = await new Promise(r => can.toBlob(r, 'image/webp', .86))
+      const blob = await new Promise(r => can.toBlob(r, 'image/webp', .84))
       idbPut(k, blob); return URL.createObjectURL(blob)
     })
-    QUEUE = job.catch(() => { })
+    if (!prio) QUEUE = job.catch(() => { })
     return job
   })())
 }
