@@ -339,7 +339,7 @@ async function boot() {
   S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
   const f = fresh(); S.profile = { ...f.profile, ...S.profile }; S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
   // cards moved between rarity folders get a new key (folder/file); re-link everything by file name
-  { const byFile = {}; for (const c of CARDS) byFile[c.key.split('/').pop()] = c.key
+  { const byFile = {}, dup = new Set(); for (const c of CARDS) { const f = c.key.split('/').pop(); if (byFile[f]) dup.add(f); byFile[f] = c.key } for (const f of dup) delete byFile[f]
     const fix = k => (k && !byKey(k) && byFile[k.split('/').pop()]) || k, P = S.profile, cc = {}
     for (const [k, e] of Object.entries(P.club.cards)) { const nk = fix(k); if (cc[nk]) { cc[nk].n += e.n; cc[nk].lvl = Math.max(cc[nk].lvl || 0, e.lvl || 0) } else cc[nk] = e }
     P.club.cards = cc; P.team = P.team.map(fix); P.showcase = (P.showcase || []).map(fix); P.last = (P.last || []).map(fix)
