@@ -2360,3 +2360,49 @@ body[data-page=shop] .ptile.on * { color: #fff !important } body[data-page=shop]
 .mh-stats span { font: 800 10px var(--eUI) !important; color: #fff !important; letter-spacing: .12em }
 .mticker { border-radius: 14px !important; background: var(--eN) !important; box-shadow: 0 0 0 3px #fff !important; margin: 16px 0 !important }
 .mticker b { color: var(--eY) !important }
+/* ================= THEME E: pack opener ================= */
+.op2 .o2-bg { background: linear-gradient(115deg, var(--eO) 0 28%, var(--eP) 28%) !important }
+.op2 .o2-bg::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255,255,255,.07) 0 14px, transparent 14px 46px), radial-gradient(60% 55% at 50% 45%, transparent 20%, rgba(10,4,32,.78) 80%) }
+.op2 .o2-grade { background: radial-gradient(55% 50% at 50% 44%, transparent 35%, rgba(10,4,32,.5) 80%) !important }
+.op2 .o2-art { opacity: .35 }
+.op2 .o2-pk { font: 800 26px var(--eD) !important; font-style: normal !important; color: #fff !important; -webkit-text-stroke: 1.5px var(--eN); paint-order: stroke fill; text-shadow: 0 3px 0 var(--eN) }
+.op2 .o2-count { padding: 6px 12px; border-radius: 10px; background: var(--eN); box-shadow: 0 0 0 2px #fff; color: #fff !important; font: 800 13px var(--eUI) !important }
+.op2 .o2-skip, .mo .o2-skip { border-radius: 12px !important; background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 5px 0 3px rgba(10,4,32,.6) !important; font: 800 15px var(--eD) !important; letter-spacing: .1em; color: #fff !important; clip-path: none !important }
+.op2 .o2-hint { color: #fff !important; font: 800 18px var(--eD) !important; letter-spacing: .2em; text-shadow: 0 3px 0 var(--eN) }
+.op2 .o2-hint b { display: inline-block; padding: 2px 10px; margin-right: 6px; border-radius: 8px; background: linear-gradient(180deg, #ffe14a, #ff9a00); color: #2a1200; box-shadow: 0 0 0 2px #fff; text-shadow: none }
+.op2 .o2-label { display: grid; justify-items: center; gap: 2px }
+.op2 .o2-label small { padding: 3px 12px; border-radius: 8px; background: var(--rc); color: #fff; font: 800 12px var(--eUI) !important; letter-spacing: .12em; box-shadow: 0 0 0 2px #fff; text-shadow: 0 1px 0 rgba(0,0,0,.5) }
+.op2 .o2-label b { font: 800 clamp(34px, 5vw, 56px)/1 var(--eD) !important; font-style: normal !important; color: #fff !important; -webkit-text-stroke: 2px var(--eN); paint-order: stroke fill; text-shadow: 0 5px 0 var(--eN) !important; background: none !important; -webkit-text-fill-color: #fff !important }
+.op2 .o2-label span { padding: 3px 12px; border-radius: 8px; background: var(--eN); box-shadow: 0 0 0 2px #fff; color: #fff !important; font: 800 13px var(--eUI) !important }
+.op2 .o2-slot { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--rc) !important; border-radius: 6px }
+.op2 .o2-new { background: var(--ePink) !important; box-shadow: 0 0 0 2px #fff; border-radius: 8px !important }
+.op2 .o2-stamp small { font-family: var(--eD) !important; font-style: normal !important; -webkit-text-stroke: 2px var(--eN); paint-order: stroke fill }
+.mo { background: linear-gradient(115deg, var(--eO) 0 26%, var(--eP) 26%) !important }
+.mo .mo-bg { background: repeating-linear-gradient(115deg, rgba(255,255,255,.07) 0 14px, transparent 14px 46px) !important }
+.mo .mo-head b { font-family: var(--eD) !important; -webkit-text-stroke: 1.5px var(--eN); paint-order: stroke fill; text-shadow: 0 4px 0 var(--eN) }
+.mo-c .f { box-shadow: 0 0 0 2px #fff }
+/* ================= THEME E: battle ================= */
+#arena.bc .bcs-wall { filter: brightness(.7) saturate(1.2) }
+#arena.bc .bcs-floor { background: repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 2px, transparent 2px 90px), repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 2px, transparent 2px 90px), radial-gradient(60% 50% at 50% 30%, #6a2bd9, #2a0f6a 70%) !important }
+#arena.bc .bcs-haze { background: radial-gradient(70% 40% at 50% 62%, rgba(255,138,31,.15), transparent 70%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(10,4,32,.7)) !important }
+.bct-s { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; border-radius: 16px !important; box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(10,4,32,.6) !important; overflow: hidden }
+.bct-s .bp { border-radius: 13px 0 0 13px } .bct-s.ai .bp { border-radius: 0 13px 13px 0 }
+.bct-s .bh, .bct-s.ai .bh { border-radius: 8px; box-shadow: 0 0 0 2px rgba(255,255,255,.85) !important; background: #0a0420 !important }
+.bct-s .bn b { font-family: var(--eD) !important; -webkit-text-stroke: 1px var(--eN); paint-order: stroke fill; text-shadow: 0 2px 0 var(--eN) }
+.bct-vs b { font-family: var(--eD) !important; font-size: 40px !important; color: #fff !important; -webkit-text-stroke: 2px #8a3a00; paint-order: stroke fill; text-shadow: 0 4px 0 #8a3a00, 0 0 20px rgba(255,210,58,.6) !important }
+.bct-vs small { padding: 2px 8px; border-radius: 6px; background: var(--eN); box-shadow: 0 0 0 2px #fff; color: #fff !important }
+#arena.bc .ar-top button { clip-path: none !important; border-radius: 12px !important; background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 5px 0 3px rgba(10,4,32,.6) !important; font: 800 14px var(--eD) !important; margin-right: 6px }
+#arena.bc .ar-top .ar-speed, #arena.bc .ar-top .ar-auto.on { background: linear-gradient(180deg, #ffe14a, #ff9a00) !important; color: #fff !important; -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill }
+#arena.bc .ar-stage { padding: 4px 12px; border-radius: 10px; background: var(--eN); box-shadow: 0 0 0 2px #fff; color: #fff !important }
+#arena.bc .ar-end { clip-path: none !important; border-radius: 16px !important; background: linear-gradient(160deg, #ffe14a, #ff9a00) !important; box-shadow: 0 0 0 3px #fff, 0 7px 0 3px #8a3a00 !important }
+#arena.bc .ar-end b, #arena.bc .ar-end small { color: #fff !important; -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill; text-shadow: 0 2px 0 #8a3a00; font-family: var(--eD) !important }
+#arena.bc .ar-end:disabled { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px rgba(255,255,255,.6), 0 4px 0 3px rgba(10,4,32,.6) !important }
+#arena.bc .ar-end:disabled b, #arena.bc .ar-end:disabled small { -webkit-text-stroke: 0; text-shadow: none; color: rgba(255,255,255,.55) !important }
+#arena.bc .ar-ult { box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(10,4,32,.6) !important }
+#arena.bc .ar-log { border-radius: 14px !important; clip-path: none !important; background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(10,4,32,.6) !important; font: 800 20px var(--eD) !important }
+#arena.bc .kring { box-shadow: 0 0 0 3px #fff !important }
+.bc-ko b { font-family: var(--eD) !important; -webkit-text-stroke: 5px var(--eN) !important }
+.ar-result { border-radius: 24px !important; box-shadow: 0 0 0 4px #fff, 0 10px 0 4px rgba(10,4,32,.6) !important }
+.ar-result h2 { font-family: var(--eD) !important; font-style: normal !important; -webkit-text-stroke: 2px var(--eN); paint-order: stroke fill; text-shadow: 0 6px 0 var(--eN) !important }
+.op2 .o2-count:empty { display: none }
+#arena.bc .ar-stage { flex: 0 0 auto !important; width: auto !important; margin-left: auto !important }
