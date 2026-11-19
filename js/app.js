@@ -225,53 +225,38 @@ setInterval(() => {
 // ================= HOME =================
 let homeIdx = 0
 PAGES.home = (el) => {
-  const types = Object.keys(ST.packs).filter(t => packPool(t).length)
-  const stage = h('div', 'packstage'); void 0
-  const car = h('div', 'carousel3'); stage.append(car)
-  const place = () => {
-    const n = types.length
-    ;[...car.children].forEach((b, i) => {
-      const d = ((i - homeIdx) % n + n) % n, pos = d === 0 ? 0 : d === 1 ? 1 : d === n - 1 ? -1 : 2
-      b.className = 'pk3 ' + (pos === 0 ? 'c' : pos === 1 ? 'r' : pos === -1 ? 'l' : 'h')
-      b.style.transform = pos === 2 ? 'translateX(0) scale(.5)' : `translateX(${pos * 118}px) translateZ(${pos ? -120 : 0}px) rotateY(${-pos * 24}deg) scale(${pos ? .82 : 1})`
-      b.style.opacity = pos === 2 ? 0 : 1
-    })
-  }
-  types.forEach((t, i) => {
-    const b = h('button', 'pk3'); b.setAttribute('aria-label', ST.packs[t].name); b.append(packEl(t, 300))
-    b.onclick = () => { if (b.classList.contains('c')) go('pack', t); else { homeIdx = i; place() } }
-    car.append(b)
-  })
-  place()
-  let sx = null; car.onpointerdown = e => sx = e.clientX; car.onpointerup = e => { if (sx !== null && Math.abs(e.clientX - sx) > 40) { homeIdx = (homeIdx + (e.clientX < sx ? 1 : -1) + types.length) % types.length; place() } sx = null }
-  // free pack timer, Pocket style
-  const F = ST.free, foot = h('div', 'foot'), fb = h('div', 'freebar')
-  const full = F.charges >= F.max
-  fb.innerHTML = `<div class="row"><span class="eyebrow" style="color:#fff">FREE PACKS</span><span class="charges">${Array.from({ length: F.max }, (_, i) => `<i class="${i < F.charges ? 'on' : ''}"></i>`).join('')}</span></div>
-    <div class="bar"><i ${full ? 'style="width:100%"' : `data-fill="${F.next - F.every},${F.next}"`}></i></div>
-    <div class="row"><span class="timer">${CLOCK_ICON}<span ${full ? '' : `data-until="${F.next}"`}>${full ? 'Full' : ''}</span></span></div>`
-  const ob = h('button', 'btn gold sm', F.charges ? 'OPEN FREE' : 'SHOP'); ob.onclick = async () => {
-    if (!ST.free.charges) return go('shop')
-    const r = await act('freePack'); if (!r.error) openPack('standard')
-  }
-  foot.append(fb, ob); stage.append(foot)
-  el.append(stage)
-  // tiles
-  const W = ST.wonderE, wcount = ST.wonder.length
-  const tiles = h('div', 'tiles2')
-  const tile = (cls, title, sub, ico, onclick, badge) => { const t = h('button', 'tile ' + cls, `${badge ? `<span class="badge">${badge}</span>` : ''}${ico}<b>${title}</b><small>${sub}</small>`); t.onclick = onclick; return t }
-  tiles.append(
-    tile('t-wonder', 'WONDER<br>PICK', `<span class="pips">${Array.from({ length: W.max }, (_, i) => `<i class="${i < W.charges ? 'on' : ''}"></i>`).join('')}</span>`, `<svg class="ico" viewBox="0 0 64 64"><g fill="#ffd23a" stroke="#7a4a00" stroke-width="2"><rect x="8" y="10" width="20" height="28" rx="4"/><rect x="34" y="6" width="22" height="30" rx="4" fill="#fff6c9"/><rect x="18" y="30" width="24" height="28" rx="4" fill="#ffb000"/></g></svg>`, () => go('wonder'), W.charges && wcount ? 'PICK READY' : ''),
-    tile('t-shop', 'SHOP', `${fmt(P.pp || 0)} pack points`, `<svg class="ico" viewBox="0 0 64 64"><path d="M14 22h36l-3 34H17Z" fill="#9ad8ff" stroke="#123a6a" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 26v-8a8 8 0 0 1 16 0v8" fill="none" stroke="#123a6a" stroke-width="3"/></svg>`, () => go('shop')),
-    tile('t-market', 'MARKET', 'Live auctions', `<svg class="ico" viewBox="0 0 64 64"><g fill="none" stroke="#a8ffcf" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 22h38l-8-8M54 42H16l8 8"/></g></svg>`, () => go('market')),
-    tile('t-team', 'MY TEAM', teamSub(), `<svg class="ico" viewBox="0 0 64 64"><g fill="#ff9ecb" stroke="#6a1d4a" stroke-width="2.5"><circle cx="32" cy="20" r="9"/><path d="M16 54a16 16 0 0 1 32 0Z"/></g></svg>`, () => go('team')),
+  const B = ST.banner, feat = B ? BYKEY[B.featured[0]] : POOL.slice().sort((a, b) => b.ovr - a.ovr)[0]
+  const lob = h('section', 'lobby')
+  // featured sticker card
+  const fc = h('button', 'lb-feat')
+  fc.style.setProperty('--art', `url("${feat.url}")`); fc.style.setProperty('--fx', Math.round((feat.fx ?? .5) * 100) + '%'); fc.style.setProperty('--fy', Math.round((feat.fy ?? .22) * 100) + '%')
+  fc.innerHTML = `<i class="lb-art"></i><span class="lb-tag"><small>${B ? 'LIMITED BANNER · 限定' : 'FEATURED · 注目'}</small><b>${feat.name}</b><em>${feat.ver}</em></span>`
+  fc.onclick = () => go('shop')
+  // menu
+  const mn = h('div', 'lb-menu')
+  const art = c => c ? `style="--art:url('${c.url}');--fx:${Math.round((c.fx ?? .5) * 100)}%;--fy:${Math.round((c.fy ?? .22) * 100)}%"` : ''
+  const pick = f => POOL.filter(f).sort((a, b) => b.ovr - a.ovr)[0]
+  const mb = (cls, jp, title, sub, c, fn, badge) => { const b = h('button', 'lb-b ' + cls, `<i class="lb-im" ${art(c)}></i>${badge ? `<span class="lb-new">${badge}</span>` : ''}<span class="lb-tx"><small>${jp}</small><b>${title}</b>${sub ? `<em>${sub}</em>` : ''}</span>`); b.onclick = fn; return b }
+  const owned1 = (P.team || []).map(k => BYKEY[k]).find(Boolean)
+  mn.append(
+    mb('main', 'バトル', 'BATTLE', 'Story · Tower · Arcs · Event', pick(c => c.anime === 'DBZ') || feat, () => go('battle'), ST.event ? 'EVENT LIVE' : ''),
+    mb('', '召喚', 'SUMMON', B ? 'Limited banner' : 'Packs', feat, () => go('shop'), 'NEW'),
+    mb('', 'チーム', 'TEAM', teamSub(), owned1 || pick(c => c.anime === 'FT'), () => go('team')),
+    mb('', 'コレクション', 'CARDS', Object.keys(club()).length + ' owned', pick(c => c.anime === 'BLE'), () => go('cards')),
+    mb('', 'マーケット', 'MARKET', 'Live auctions', pick(c => c.anime === 'MHA'), () => go('market')),
   )
-  el.append(tiles)
-  const bt = h('button', 'tile t-battle', `<b style="font-size:26px">BATTLE</b><small>Story mode · ${(P.battle && P.battle.cleared) || 0}/10 stages cleared</small>`); bt.style.minHeight = '84px'; bt.style.marginTop = '12px'; bt.style.width = '100%'; bt.onclick = () => go('battle'); el.append(bt)
-  const pl = h('button', 'tile t-players', `<b style="font-size:26px">PLAYERS</b><small>Leaderboard · friends · battle real teams</small>`); pl.style.minHeight = '84px'; pl.style.marginTop = '12px'; pl.style.width = '100%'; pl.onclick = () => go('players'); el.append(pl)
-  // showcase
+  lob.append(fc, mn); el.append(lob)
+  // quick strip: free packs, wonder pick, pass, players
+  const F = ST.free, W = ST.wonderE, full = F.charges >= F.max, qs = h('div', 'lb-quick')
+  const q = (title, jp, sub, fn, hot) => { const b = h('button', 'lb-q' + (hot ? ' hot' : ''), `<small>${jp}</small><b>${title}</b><em>${sub}</em>`); b.onclick = fn; return b }
+  qs.append(
+    q('FREE PACK', '無料', F.charges ? F.charges + ' ready' : `<span data-until="${F.next}"></span>`, async () => { if (!ST.free.charges) return go('shop'); const r = await act('freePack'); if (!r.error) openPack('standard') }, F.charges > 0),
+    q('WONDER PICK', 'ワンダー', W.charges + '/' + W.max + ' energy', () => go('wonder'), W.charges > 0),
+    q('SEASON PASS', 'パス', ST.pass ? 'Tier ' + ST.pass.tier : '', () => go('pass')),
+    q('PLAYERS', 'ランキング', 'Leaderboard', () => go('players')),
+  )
+  el.append(qs)
   el.append(showcaseBlock())
-  // last pulls
   const recent = (P.last || []).map(k => BYKEY[k]).filter(Boolean).map(eff)
   const sec = h('div', 'sec', `<h3>LAST PULLS</h3><button class="link">MY CARDS ›</button>`); sec.querySelector('button').onclick = () => go('cards'); el.append(sec)
   const rs = h('div', 'recent'); if (recent.length) recent.forEach(c => { const im = cardImg(c, 220); im.onclick = () => cardDetail(c.key); im.className = 'tap'; rs.append(im) }); else rs.innerHTML = '<span class="muted" style="font-weight:700">Open a pack to see your pulls here.</span>'
