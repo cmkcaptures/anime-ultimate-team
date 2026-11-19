@@ -347,6 +347,7 @@ async function cardDetail(key) {
     d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}${lvl ? ' · ★' + lvl : ''}`))
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
     d.append(h('div', 'movebox', `<b style="color:${TYPE[c.t].c[2]}">${TYPE[c.t].en} · ${c.mv}</b><p>${c.tx.join(' ')}</p>`))
+    if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
     d.append(h('span', 'eyebrow', `MARKET VALUE ~ ${fmt(ST.values[key])} COINS`))
     if (e) {
       const a = h('div', 'acts')

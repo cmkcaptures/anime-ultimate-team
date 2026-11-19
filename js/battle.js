@@ -41,7 +41,11 @@ function kitEffects(me, a) {
 function fighter(card, lvl = 0) {
   const [pwr, spd, ki, tec, def, iq] = card.st || [70, 70, 70, 70, 70, 70]
   const hp = Math.round(card.ovr * 40 + def * 12 + (card.tag ? 600 : 0))
-  return { card, key: card.key, hp, max: hp, pwr, spd, ki, tec, def, iq, guard: 0, ko: false, lvl, dealt: 0, kos: 0, fort: 0 }
+  const e = (card.pas && card.pas.e) || {}, boost = 1 + (e.allStats || 0) / 100
+  const f = { card, key: card.key, hp, max: hp, pwr: Math.round(pwr * boost), spd: Math.round(spd * boost) + (e.spd || 0), ki: Math.round(ki * boost), tec: Math.round(tec * boost), def: Math.round(def * boost), iq, guard: 0, ko: false, lvl, dealt: 0, kos: 0, fort: 0,
+    pe: e, endure: e.endure || 0, revive: e.revive || 0, firstNull: e.firstNull || 0, hitsTaken: 0, turns: 0, rage: 0, shieldHp: e.shield ? Math.round(hp * e.shield / 100) : 0, burn: 0, burnT: 0, attacks: 0, ultFired: 0, ultDodge: e.ultDodge || 0, sealed: 0, opened: 0, arise: 0 }
+  if (e.emperor) { f.pwr = Math.round(f.pwr * 1.1); f.ki = Math.round(f.ki * 1.1); f.def = Math.round(f.def * 1.1) }
+  return f
 }
 function drawArt(f) {
   // the fighter's role nudges which arts show up (fighters strike, supports blast/guard)
@@ -54,6 +58,9 @@ function drawArt(f) {
 function newSide(cards) { return { team: cards.map(c => fighter(c)), active: 0, ki: 4, gauge: 0, hand: [], switched: false, seq: [] } }
 const act = s => s.team[s.active]
 const alive = s => s.team.filter(f => !f.ko)
+const PE = f => (f && !f.sealed && f.pe) || {}
+let PASLOG = null // events the UI shows when a passive triggers
+const pasNote = (f, extra) => { if (PASLOG && f.card.pas) PASLOG.push({ f, name: f.card.pas.n, extra }) }
 // bench passives: everyone waiting on the bench helps the active fighter
 const PASSIVE = { SUPPORT: ['heal', 4, 'MEDIC'], TANK: ['dr', 6, 'BULWARK'], ASSASSIN: ['crit', 4, 'KILLER INSTINCT'], FIGHTER: ['dmg', 3, 'BATTLE CRY'], SHOOTER: ['gauge', 5, 'SPOTTER'], STRIKER: ['gauge', 5, 'SPOTTER'] }
 function passives(s) {
@@ -63,18 +70,68 @@ function passives(s) {
   return p
 }
 function refill(s) { while (s.hand.length < HAND) s.hand.push(drawArt(act(s))) }
-function hit(att, def, base, stat, pierce, A, D) {
-  const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}
-  const crit = Math.random() < .08 + att.tec / 1200 + (pa.crit || 0) / 100
+function hit(att, def, base, stat, pierce, A, D, kind) {
+  const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = PE(def)
+  // defensive dodges / nullifies first
+  if (def.firstNull > 0) { def.firstNull--; pasNote(def, 'NULLIFIED'); return { dmg: 0, crit: false, mu: 1, miss: 'NULLIFIED' } }
+  if (kind === 'ult' && def.ultDodge > 0) { def.ultDodge--; pasNote(def, 'ERASED'); return { dmg: 0, crit: false, mu: 1, miss: 'ERASED' } }
+  if (ed.dodge && Math.random() * 100 < ed.dodge) { pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
+  if (ea.onePunch && kind === 'strike' && def.card.r !== 'X' && Math.random() * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; def.ko = true; att.kos++; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
+  const crit = Math.random() < .08 + att.tec / 1200 + (pa.crit || 0) / 100 + (ea.crit || 0) / 100 || (ea.every3crit && (att.attacks + 1) % 3 === 0)
   const mu = matchup(att, def)
-  let dmg = base * (stat / 80) * (100 / (60 + def.def * .5)) * (0.92 + Math.random() * .16) * (crit ? 1.5 : 1) * mu
+  let dmg = base * (stat / 80) * (100 / (60 + def.def * .5 * (1 - (def.shred || 0) / 100))) * (0.92 + Math.random() * .16) * (crit ? (ea.critMult || 1.5) : 1) * mu
   const tagB = att.card.tag ? kitNum(att.card, /\+(\d+)% damage/) : 0; if (tagB) dmg *= 1 + tagB / 100
+  // attacker passive multipliers
+  let m = 1 + (ea.dmg || 0) / 100 + (att.rage || 0) / 100 + (att.arise || 0) / 100
+  if (ea.ramp) m += Math.min(ea.rampMax || 99, ea.ramp * att.turns) / 100
+  if (ea.stack) m += Math.min(ea.stackMax || 99, ea.stack * att.hitsTaken) / 100
+  if (ea.dmgLow && att.hp / att.max * 100 < (ea.lowAt || 50)) m += ea.dmgLow / 100
+  if (ea.ablaze && att.hp / att.max < .3) m += ea.ablaze / 100
+  if (ea.exec && def.hp / def.max < .4) m += ea.exec / 100
+  if (ea.vsHigh && def.card.ovr > att.card.ovr) m += ea.vsHigh / 100
+  if (ea.vsAnime && def.card.anime === ea.vsAnime) m += ea.vsAnimeB / 100
+  if (ea.vsRole && def.card.role === ea.vsRole) m += ea.vsRoleB / 100
+  if (ea.vsType && ea.vsType.includes(def.card.t)) m += ea.vsTypeB / 100
+  if (ea.avenge && A && A.team.some(f => f.ko && f !== att)) m += ea.avenge / 100
+  if (ea.lastStand && A && alive(A).length === 1) m += ea.lastStand / 100
+  if (ea.prideStack && D) m += ea.prideStack * alive(D).length / 100
+  if (kind === 'strike' && ea.strikeBoost) m += ea.strikeBoost / 100
+  if (kind === 'special' && ea.spec) m += ea.spec / 100
+  if (kind === 'ult' && ea.ultBoost && !(ea.ultBoost === 60 && att.ultFired)) m += ea.ultBoost / 100
+  if (ea.opener && !att.opened) { m += ea.opener / 100; att.opened = 1 }
+  if (A && A.teamDmg) m += A.teamDmg / 100
+  if (ed.vuln) m += ed.vuln / 100
+  dmg *= m
   if (pa.dmg) dmg *= 1 + pa.dmg / 100
   if (pd.dr) dmg *= 1 - pd.dr / 100
+  if (ed.dr) dmg *= 1 - ed.dr / 100
+  if (ed.adapt) dmg *= 1 - Math.min(ed.adaptMax || 30, ed.adapt * def.hitsTaken) / 100
   if (def.fort) dmg *= .7
-  if (def.guard) { if (!pierce) dmg *= .5; def.guard = 0 }
+  const pierceAll = pierce || ea.pierce || (kind === 'strike' && ea.pierceStrike) || (kind === 'special' && ea.pierceSpec)
+  if (def.guard) { if (!pierceAll) dmg *= ed.guardStrong ? 1 - ed.guardStrong / 100 : .5; def.guard = 0 }
   dmg = Math.max(1, Math.round(dmg))
-  def.hp = Math.max(0, def.hp - dmg); att.dealt += dmg; if (def.hp === 0 && !def.ko) { def.ko = true; att.kos++ }
+  if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) pasNote(def, 'SHIELD') }
+  def.hp = Math.max(0, def.hp - dmg); att.dealt += dmg; def.hitsTaken++
+  // on-hit passives
+  if (ea.drain && !ea.noHeal) att.hp = Math.min(att.max, att.hp + Math.round(dmg * ea.drain / 100))
+  if (ed.reflect && dmg > 0) { const rf = Math.round(dmg * ed.reflect / 100); att.hp = Math.max(1, att.hp - rf); pasNote(def, 'REFLECT ' + rf) }
+  if (ed.thorns) att.hp = Math.max(1, att.hp - Math.round(att.max * ed.thorns / 100))
+  if (ea.shred) def.shred = Math.min(30, (def.shred || 0) + ea.shred)
+  if (ea.burn) { def.burn = Math.max(def.burn, ea.burn); def.burnT = 3 }
+  if (ea.energyBurn && D) D.ki = Math.max(0, D.ki - ea.energyBurn)
+  if (ea.freeze && Math.random() * 100 < ea.freeze) { def.frozen = 1; pasNote(att, 'FROZEN') }
+  if (ea.gaugeDeny) def.gaugeDeny = ea.gaugeDeny
+  if (ed.bigHitHeal && dmg > def.max * .2 && def.hp > 0) def.hp = Math.min(def.max, def.hp + Math.round(def.max * ed.bigHitHeal / 100))
+  if (ea.recoil) att.hp = Math.max(1, att.hp - Math.round(att.max * ea.recoil / 100))
+  // knockouts, with survive / revive passives
+  if (def.hp === 0 && !def.ko) {
+    if (def.endure > 0) { def.endure--; def.hp = 1; pasNote(def, 'ENDURED'); if (ed.endureRage) def.rage = (def.rage || 0) + ed.endureRage; if (ed.endureEnergy && D) D.ki = Math.min(KI_MAX, D.ki + ed.endureEnergy) }
+    else if (D && D.angel && D.angel !== def) { D.angel.angelUsed = 1; D.angel = null; def.hp = 1; pasNote(def, 'SAVED') }
+    else if (ed.ablaze && !def.ablazeUsed && def.hp / def.max < .3) { def.ablazeUsed = 1; def.hp = 1; pasNote(def, 'HEART ABLAZE') }
+    else if (def.revive > 0) { def.hp = Math.round(def.max * def.revive / 100); def.revive = 0; pasNote(def, 'REVIVED') }
+    else { def.ko = true; att.kos++; if (ea.arise) att.arise = (att.arise || 0) + ea.arise; if (ea.koHeal) att.hp = Math.min(att.max, att.hp + Math.round(att.max * ea.koHeal / 100)) }
+  }
+  att.attacks++
   return { dmg, crit, mu }
 }
 // returns a list of events for the UI to animate
@@ -88,6 +145,7 @@ function comboFor(seq) { for (const c of COMBOS) { const n = c.seq.length; if (s
 function playArt(B, who, idx) {
   const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], art = me.hand[idx], cost = ARTS[art].cost, a = act(me), d = act(foe)
   if (me.ki < cost || a.ko || d.ko) return null
+  if (art === 'special' && me.confiscated) return null
   me.ki -= cost; me.hand.splice(idx, 1)
   me.seq.push(art)
   const ev = { who, art, hits: [] }
@@ -97,16 +155,25 @@ function playArt(B, who, idx) {
   ev.chain = art === 'guard' ? 0 : dmgArts
   const pierce = /Ignores Guard/.test(kitTxt(a.card))
   if (art === 'guard') { a.guard = 1; ev.guard = true }
-  else if (art === 'strike') ev.hits.push({ t: d, ...hit(a, d, 260 * chain, a.pwr, false, me, foe) })
-  else if (art === 'blast') ev.hits.push({ t: d, ...hit(a, d, 420 * chain, a.ki, false, me, foe) })
+  else if (art === 'strike') {
+    const ea = PE(a), n = ea.tripleStrike ? 3 : 1, per = ea.tripleStrike ? .4 : 1
+    for (let i = 0; i < n; i++) ev.hits.push({ t: d, ...hit(a, d, 260 * chain * per, a.pwr, false, me, foe, 'strike') })
+    if (ea.doubleStrike && Math.random() * 100 < ea.doubleStrike && !d.ko) { ev.hits.push({ t: d, ...hit(a, d, 260 * chain * .6, a.pwr, false, me, foe, 'strike') }); pasNote(a, 'DOUBLE STRIKE') }
+    if (ea.benchChip) { const b = alive(foe).filter(f => f !== d)[0]; if (b) ev.hits.push({ t: b, ...hit(a, b, 260 * ea.benchChip / 100, a.pwr, false, me, foe, 'strike') }) }
+    if (ea.chainBoost) a.rage = Math.min(40, (a.rage || 0) + ea.chainBoost)
+  }
+  else if (art === 'blast') ev.hits.push({ t: d, ...hit(a, d, 420 * chain, a.ki, false, me, foe, 'blast') })
   else if (art === 'special') {
     const base = pctOf(a.card) * 3.2 * chain
     ev.move = a.card.mv
-    if (isAoe(a.card)) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, t === d ? base * .75 : base * .3, Math.max(a.pwr, a.ki), pierce, me, foe) })
-    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce, me, foe) })
+    if (isAoe(a.card)) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, (t === d ? base * .75 : base * .3) * (t !== d && PE(a).aoeBoost ? 1 + PE(a).aoeBoost / 100 : 1), Math.max(a.pwr, a.ki), pierce, me, foe, 'special') })
+    else if (PE(a).twinSpec) { ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce, me, foe, 'special') }); if (!d.ko) ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce, me, foe, 'special') }) }
+    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce, me, foe, 'special') })
+    if (PE(a).splash) for (const t of alive(foe)) if (t !== d) ev.hits.push({ t, ...hit(a, t, base * PE(a).splash / 100, Math.max(a.pwr, a.ki), pierce, me, foe, 'special') })
+    if (PE(a).shambles && !a.shamUsed && a.hp / a.max < d.hp / d.max) { a.shamUsed = 1; const pa = a.hp / a.max, pd = d.hp / d.max; a.hp = Math.round(a.max * pd); d.hp = Math.max(1, Math.round(d.max * pa)); pasNote(a, 'SHAMBLES') }
   }
   const dealt = ev.hits.reduce((n, x) => n + x.dmg, 0)
-  me.gauge = Math.min(GAUGE_MAX, me.gauge + 6 + dealt / 90); foe.gauge = Math.min(GAUGE_MAX, foe.gauge + dealt / 140)
+  me.gauge = Math.min(GAUGE_MAX, me.gauge + (6 + dealt / 90) * (1 + (PE(a).gaugeBoost || 0) / 100)); foe.gauge = Math.min(GAUGE_MAX, foe.gauge + dealt / 140 * (1 - (d.gaugeDeny || 0) / 100))
   if (art === 'special') ev.kit = kitEffects(me, a)
   return ev
 }
@@ -118,14 +185,19 @@ function ultimate(B, who) {
   me.gauge = 0; me.seq = []
   const [uname] = ultOf(a.card), ev = { who, art: 'ultimate', move: a.card.mv, ult: uname, hits: [] }
   const base = pctOf(a.card) * 6, stat = Math.max(a.pwr, a.ki), pierce = /Ignores Guard/.test(kitTxt(a.card))
-  const H = (t, b, p) => { if (!t.ko) ev.hits.push({ t, ...hit(a, t, b, stat, p, me, foe) }) }
+  const H = (t, b, p) => { if (!t.ko) ev.hits.push({ t, ...hit(a, t, b, stat, p || PE(a).pierce, me, foe, 'ult') }) }
+  const ea = PE(a)
+  if (ea.sacrifice) { for (const t of [d]) H(t, base * ea.sacrifice, true); a.hp = 0; a.ko = true; pasNote(a, 'GATE OF DEATH'); ev.kit = []; a.ultFired = 1; return ev }
+  if (ea.ultAoe) { for (const t of alive(foe)) H(t, t === d ? base : base * .55); if (ea.ultHeal) a.hp = Math.min(a.max, a.hp + Math.round(a.max * ea.ultHeal / 100)); ev.kit = kitEffects(me, a); a.ultFired = 1; return ev }
+  if (ea.doubleUlt || ea.twinUlt) { const k = ea.twinUlt ? .6 : 1; H(d, base * k); if (!d.ko) H(d, base * k); else { const n = alive(foe)[0]; if (n) H(n, base * k * .7) } ev.kit = kitEffects(me, a); a.ultFired = 1; return ev }
+  if (ea.ultHeal) a.hp = Math.min(a.max, a.hp + Math.round(a.max * ea.ultHeal / 100))
   if (a.card.tag) { H(d, base * .62, pierce); H(d, base * .62, true) }
   else if (uname === 'BARRAGE') { H(d, base * .45, pierce); H(d, base * .45, pierce); H(d, base * .45, true) }
   else if (uname === 'EXECUTION') H(d, base * (d.hp / d.max < .4 ? 1.6 : 1.05), true)
   else if (uname === 'RALLY') { H(d, base * .9, pierce); for (const f of me.team) if (!f.ko) f.hp = Math.min(f.max, f.hp + Math.round(f.max * .2)); ev.rally = true }
   else if (uname === 'FORTRESS') { H(d, base * .95, pierce); a.fort = 1; a.guard = 1; ev.fort = true }
   else for (const t of alive(foe)) H(t, t === d ? base * .85 : base * .45, pierce)
-  ev.kit = kitEffects(me, a)
+  ev.kit = kitEffects(me, a); a.ultFired = 1
   return ev
 }
 function nextAlive(s) { const i = s.team.findIndex(f => !f.ko); if (i >= 0) s.active = i; return i >= 0 }
@@ -232,8 +304,27 @@ export function startBattle(stage) {
   const { h, cardImg, eff, BYKEY, P } = X
   const yours = P.team.filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
+  PASLOG = []
+  for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) {
+    for (const f of me.team) {
+      const e = PE(f)
+      if (e.energy) me.ki = Math.min(KI_MAX, me.ki + e.energy)
+      if (e.ultStart) me.gauge = Math.max(me.gauge, e.ultStart)
+      if (e.teamDmg) me.teamDmg = Math.max(me.teamDmg || 0, e.teamDmg)
+      if (e.guardianAngel) me.angel = f
+      if (e.slow) foe.ki = Math.max(0, foe.ki - e.slow)
+      if (e.slowSpd) for (const g of foe.team) g.spd -= e.slowSpd
+      if (e.confiscate) foe.confiscated = 1
+      if (e.copyStat) { const best = Math.max(...foe.team.map(g => Math.max(g.pwr, g.ki, g.def))); f.pwr = Math.max(f.pwr, best) }
+    }
+  }
+  const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
+  sealNow()
   refill(B.you); refill(B.ai)
-  const youFirst = act(B.you).spd >= act(B.ai).spd
+  const fA = PE(act(B.you)).first, fB = PE(act(B.ai)).first
+  const youFirst = fA && !fB ? true : fB && !fA ? false : act(B.you).spd >= act(B.ai).spd
+  if (youFirst && PE(act(B.you)).stopFirst) B.ai.skip = 1
+  if (!youFirst && PE(act(B.ai)).stopFirst) B.you.skip = 1
 
   const AR = stage.arena && ARENAS[stage.arena] ? stage.arena : ARENA_KEYS[Math.floor(Math.random() * ARENA_KEYS.length)]
   const ov = h('div', 'th-' + AR); ov.id = 'arena'
@@ -315,7 +406,7 @@ export function startBattle(stage) {
     o.innerHTML = `<div class="insp-card"></div><div class="insp-info"><span class="tp" style="--tc:${tcol(f.card)}">${tname(f.card)}</span><h3>${f.card.name}</h3><small>${f.card.ver}</small>
       <div class="ihp"><i style="width:${f.hp / f.max * 100}%"></i><span>${f.hp.toLocaleString()} / ${f.max.toLocaleString()} HP</span></div>
       <div class="ist">${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'].map((k, i) => `<div><span>${k}</span><b>${[f.pwr, f.spd, f.ki, f.tec, f.def, f.iq][i]}</b></div>`).join('')}</div>
-      <div class="imv"><b>${f.card.mv}</b><p>${(f.card.tx || []).join(' ')}</p></div>
+      <div class="imv"><b>${f.card.mv}</b><p>${(f.card.tx || []).join(' ')}</p></div>${f.card.pas ? `<div class="imp"><b>⚡ ${f.card.pas.n}</b><p>${f.card.pas.d}</p></div>` : ''}
       <div class="imu"><span>STRONG VS <b>${(TYPE[RING[(RING.indexOf(t) + 1) % RING.length]] || {}).en || ''}</b></span><span>WEAK TO <b>${(TYPE[weakTo(t)] || {}).en || ''}</b></span>${foe && f !== foe ? `<em class="${mu > 1 ? 'adv' : mu < 1 ? 'weak' : ''}">${mu > 1 ? 'Advantage vs ' + foe.card.name : mu < 1 ? 'Weak vs ' + foe.card.name : 'Neutral vs ' + foe.card.name}</em>` : ''}</div>
       <div class="ibtn"></div></div>`
     o.querySelector('.insp-card').append(img(f, 520))
@@ -361,6 +452,7 @@ export function startBattle(stage) {
   function turnBanner(text, mine) { const t = document.createElement('div'); t.className = 'tban ' + (mine ? 'you' : 'ai'); t.innerHTML = `<b>${text}</b>`; FX().append(t); setTimeout(() => t.remove(), 1100) }
   function floatTag(el, text, cls) { const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'ftag ' + cls; t.textContent = text; t.style.left = x + 'px'; t.style.top = (y - 70) + 'px'; FX().append(t); setTimeout(() => t.remove(), 1200) }
 
+  function pasPop(n) { const el = $a(`.ar-side.${n.f === act(B.you) || B.you.team.includes(n.f) ? 'you' : 'ai'} .ar-active`); if (!el) return; const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'pas-pop'; t.innerHTML = `<small>${n.extra || 'PASSIVE'}</small><b>${n.name}</b>`; t.style.left = x + 'px'; t.style.top = (y - 120) + 'px'; FX().append(t); setTimeout(() => t.remove(), 1500) }
   async function show(ev) {
     if (ev.swap) { log('Enemy switched fighters'); sfx('bswitch'); draw(); await wait(500); return }
     const side = ev.who, other = side === 'you' ? 'ai' : 'you'
@@ -402,6 +494,7 @@ export function startBattle(stage) {
     if (ev.rally) floatTag(atk, 'TEAM HEALED 20%', 'adv')
     if (ev.fort) floatTag(atk, 'FORTRESS · -30% DMG', 'adv')
     if (ev.kit && ev.kit.length) { const [kx, ky] = ctr(atk); const t = document.createElement('div'); t.className = 'ftag kit'; t.textContent = ev.kit.join('  ·  '); t.style.left = kx + 'px'; t.style.top = (ky - 90) + 'px'; FX().append(t); setTimeout(() => t.remove(), 1500) }
+    if (PASLOG && PASLOG.length) { const seen = new Set(); for (const n of PASLOG.splice(0)) { if (seen.has(n.name)) continue; seen.add(n.name); pasPop(n) } }
     ov.classList.remove('ult')
     draw(); await wait(big ? 650 : 420)
     // knockouts
@@ -444,14 +537,30 @@ export function startBattle(stage) {
   async function aiPhase() {
     B.busy = true; controls()
     const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
+    if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; draw(); return }
     log('Enemy turn'); turnBanner('ENEMY TURN', false); draw(); await wait(800)
     for (const ev of aiTurn(B, stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
+    if (B.you.skip || act(B.you).frozen) { B.you.skip = 0; act(B.you).frozen = 0; log('You lose your turn!'); turnBanner('TIME STOPPED', true); await wait(900); B.turn++; return aiPhase() }
     B.turn++
     const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); act(B.ai).fort = 0
     B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); if (AUTO) autoTurn()
   }
   async function endTurn() { if (B.busy || B.over) return; await aiPhase() }
-  function startTurn(s) { const p = passives(s), a = act(s); if (p.heal && !a.ko) a.hp = Math.min(a.max, a.hp + Math.round(a.max * p.heal / 100)); if (p.gauge) s.gauge = Math.min(GAUGE_MAX, s.gauge + p.gauge) }
+  function startTurn(s) {
+    const a0 = act(s), e = PE(a0), foe = s === B.you ? B.ai : B.you
+    a0.turns++
+    if (e.regen && !e.noHeal) a0.hp = Math.min(a0.max, a0.hp + Math.round(a0.max * e.regen / 100))
+    if (e.bleed) a0.hp = Math.max(1, a0.hp - Math.round(a0.max * e.bleed / 100))
+    if (e.emperor) a0.hp = Math.max(1, a0.hp - Math.round(a0.max * .03))
+    if (a0.burnT > 0) { a0.hp = Math.max(1, a0.hp - Math.round(a0.max * a0.burn / 100)); a0.burnT-- }
+    if (e.guardAuto) a0.guard = 1
+    if (e.haki) { const o = act(foe); if (o && o.card.ovr < a0.card.ovr) foe.ki = Math.max(0, foe.ki - e.haki) }
+    for (const f of s.team) { const fe = PE(f); if (fe.teamHeal && !f.ko) for (const g of s.team) if (!g.ko) g.hp = Math.min(g.max, g.hp + Math.round(g.max * fe.teamHeal / 100)) }
+    if (e.specDraw && Math.random() * 100 < e.specDraw) { s.hand[0] = 'special' }
+    if (e.timeStop && Math.random() * 100 < e.timeStop) { foe.skip = 1; pasNote(a0, 'TIME STOP') }
+    if (e.charge && s.lastSkipped) a0.rage = Math.max(a0.rage || 0, e.charge)
+    s.confiscated = 0; sealNow()
+    const p = passives(s), a = act(s); if (p.heal && !a.ko) a.hp = Math.min(a.max, a.hp + Math.round(a.max * p.heal / 100)); if (p.gauge) s.gauge = Math.min(GAUGE_MAX, s.gauge + p.gauge) }
   async function autoTurn() {
     if (!AUTO || B.busy || B.over) return
     B.busy = true; controls(); await wait(350)

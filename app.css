@@ -1747,3 +1747,10 @@ body.in-opener #app, body.in-opener #backdrop { visibility: hidden }
   #arena .ar-plate.you { display: none !important }
   #arena .mat-in { bottom: 2px !important }
 }
+/* moment passives */
+.pasbox { box-shadow: inset 3px 0 0 #22d8ff !important } .pasbox b { color: #22d8ff !important }
+.imp { padding: 10px 12px; border-radius: 10px; background: rgba(34,216,255,.08); box-shadow: inset 3px 0 0 #22d8ff } .imp b { font: italic 900 17px var(--disp); color: #22d8ff } .imp p { margin: 4px 0 0; font: 600 12px/1.5 var(--ui); color: rgba(255,255,255,.85) }
+.pas-pop { position: fixed; z-index: 72; transform: translateX(-50%); text-align: center; pointer-events: none; animation: pasPop 1.5s cubic-bezier(.2,1.2,.4,1) forwards }
+.pas-pop small { display: block; font: 900 9px var(--ui); letter-spacing: .3em; color: #22d8ff }
+.pas-pop b { display: block; padding: 4px 14px; font: italic 900 20px var(--disp); letter-spacing: .04em; color: #001218; background: linear-gradient(90deg, #22d8ff, #a8f6ff); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); box-shadow: 0 0 20px rgba(34,216,255,.6) }
+@keyframes pasPop { 0% { transform: translate(-50%, 14px) scale(.6); opacity: 0 } 14% { transform: translate(-50%, 0) scale(1.08); opacity: 1 } 24% { transform: translate(-50%, 0) scale(1) } 80% { opacity: 1 } 100% { transform: translate(-50%, -24px); opacity: 0 } }
