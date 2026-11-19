@@ -1,5 +1,5 @@
 import { createFX } from './fx2d.js'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN } from './battle.js'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor } from './battle.js'
 import * as ACC from './account.js'
 import { sfx, sfxOn, music, musicOn } from './sfx.js'
 // ANIME ULTIMATE TEAM — app shell + pages
@@ -16,7 +16,7 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
 let POOL = [], BYKEY = {}, ST = null, P = null
 const club = () => P.club.cards
 const effL = (c, l) => (l ? { ...c, lvl: l } : c)
-const eff = c => effL(c, (club()[c.key] && club()[c.key].lvl) || 0)
+const eff = c => { const o = club()[c.key], x = effL(c, (o && o.lvl) || 0); return o && o.sig ? { ...x, sig: 1, ovr: x.ovr + 2, st: (x.st || []).map(v => Math.min(99, v + 2)) } : x }
 const owned = () => POOL.filter(c => club()[c.key])
 const tierCol = r => r === 'X' ? '#e0c8ff' : TIER[r].pal[1]
 const ANAME = a => ANIME[a] ? ANIME[a].name.replace(/\b\w+/g, w => w[0] + w.slice(1).toLowerCase()) : a
@@ -59,7 +59,7 @@ function toast(text, kind = 'ok') {
 const LAZY = 'IntersectionObserver' in window ? new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) { LAZY.unobserve(e.target); e.target._draw() } }, { rootMargin: '300px' }) : null
 function cardImg(c, w = 340) {
   const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, rated ${c.ovr}`; im.decoding = 'async'; im.draggable = false
-  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r
+  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r; if (c.sig) im.dataset.sig = 1
   im._draw = () => thumbURL(c, w).then(u => im.src = u)
   if (LAZY) { LAZY.observe(im); setTimeout(() => { if (!im.src && im.isConnected && im.getBoundingClientRect().top < innerHeight + 300) { LAZY.unobserve(im); im._draw() } }, 50) } else im._draw()
   return im
@@ -177,7 +177,7 @@ const packEl = (type, w) => { const cv = document.createElement('canvas'); packC
 
 // ================= router + transitions =================
 const TABS = ['home', 'cards', 'team', 'market', 'shop', 'battle']
-const TITLES = { achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
+const TITLES = { museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
 let CUR = null, CURARG = null, curEl = null
 const PAGES = {}
 function go(name, arg, opts = {}) {
@@ -227,13 +227,13 @@ setInterval(() => {
 // ================= HOME =================
 let homeIdx = 0
 PAGES.home = (el) => {
-  const B = ST.banner, feat = B ? BYKEY[B.featured[0]] : POOL.slice().sort((a, b) => b.ovr - a.ovr)[0]
+  const B = ST.banner, partner = P.avatar && BYKEY[P.avatar], feat = partner || (B ? BYKEY[B.featured[0]] : POOL.slice().sort((a, b) => b.ovr - a.ovr)[0])
   const lob = h('section', 'lobby')
   // featured sticker card
   const fc = h('button', 'lb-feat')
   fc.style.setProperty('--art', `url("${feat.url}")`); fc.style.setProperty('--fx', Math.round((feat.fx ?? .5) * 100) + '%'); fc.style.setProperty('--fy', Math.round((feat.fy ?? .22) * 100) + '%')
-  fc.innerHTML = `<i class="lb-art"></i><span class="lb-tag"><small>${B ? 'LIMITED BANNER · 限定' : 'FEATURED · 注目'}</small><b>${feat.name}</b><em>${feat.ver}</em></span>`
-  fc.onclick = () => go('shop')
+  fc.innerHTML = `<i class="lb-art"></i><span class="lb-tag"><small>${partner ? 'YOUR PARTNER · 相棒' : B ? 'LIMITED BANNER · 限定' : 'FEATURED · 注目'}</small><b>${feat.name}</b><em>${feat.ver}</em></span>${partner ? `<span class="lb-say">${partnerLine(feat)}</span>` : ''}`
+  fc.onclick = () => { if (!partner) return go('shop'); const sy = fc.querySelector('.lb-say'); sy.textContent = partnerLine(feat); sy.classList.remove('pop'); void sy.offsetWidth; sy.classList.add('pop') }
   // menu
   const mn = h('div', 'lb-menu')
   const art = c => c ? `style="--art:url('${c.url}');--fx:${Math.round((c.fx ?? .5) * 100)}%;--fy:${Math.round((c.fy ?? .22) * 100)}%"` : ''
@@ -338,8 +338,9 @@ PAGES.cards = (el) => {
       <div class="ch-rar">${byR.map(([r0, n, t]) => `<span style="--rc:${tierCol(r0)}"><b>${RARITY_MARK[r0]}</b>${n}/${t}</span>`).join('')}</div></div>`
   if (top) head.querySelector('.ch-card').onclick = () => cardDetail(top.key)
   el.append(head)
+  { const mu = h('button', 'btn violet', 'ギャラリー · CARD MUSEUM'); mu.style.marginTop = '4px'; mu.onclick = () => go('museum'); el.append(mu) }
   const tools = h('div', ''); tools.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:14px'
-  const MODES = ['OWNED', 'ALL', 'BINDER']; const seg = segmented(['OWNED', 'ALL CARDS', 'BINDER'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
+  const MODES = ['OWNED', 'ALL', 'BINDER', 'EVOLVE']; const seg = segmented(['OWNED', 'ALL CARDS', 'BINDER', 'EVOLVE'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
   const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search characters or forms'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
   const an = h('div', 'chips'), ra = h('div', 'chips')
   tools.append(seg, q, an, ra); el.append(tools)
@@ -351,6 +352,7 @@ PAGES.cards = (el) => {
     q.style.display = ra.style.display = CF.mode === 'BINDER' ? 'none' : ''
     grid.className = 'cardgrid'
     if (CF.mode === 'BINDER') return drawBinder(grid)
+    if (CF.mode === 'EVOLVE') return drawEvolve(grid)
     const list = POOL.filter(c => (CF.mode === 'ALL' || club()[c.key]) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && (!CF.q || (c.name + ' ' + c.ver).toLowerCase().includes(CF.q)))
       .sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
     grid.innerHTML = ''
@@ -385,6 +387,7 @@ async function cardDetail(key) {
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
     d.append(h('div', 'movebox', `<b style="color:${TYPE[c.t].c[2]}">${TYPE[c.t].en} · ${c.mv}</b><p>${c.tx.join(' ')}</p>`))
     if (e) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
+    if (ST.evo[key]) d.append(evoBlock(key))
     if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
     d.append(h('span', 'eyebrow', `MARKET VALUE ~ ${fmt(ST.values[key])} COINS`))
     if (e) {
@@ -490,6 +493,7 @@ PAGES.team = (el) => {
     }
     el.append(g)
   }
+  { const cb = combosFor(P.team.map(k => k && BYKEY[k])); el.append(h('div', 'combo-row', cb.length ? cb.map(x => `<span class="cmb on"><b>${x.n}</b><small>${x.a} + ${x.b} · +6% team damage</small></span>`).join('') : '<span class="cmb"><b>NO TEAM COMBOS</b><small>Put famous pairs together (Naruto + Sasuke, Goku + Vegeta, Deku + Bakugo…) to unlock combos.</small></span>')) }
   slots(0, 3, 'STARTERS')
   const chem = h('div', 'chemrow'); const L = ['NO LINK', 'SAME SERIES +', 'SAME FACTION ++']
   st.links.forEach((l, i) => chem.append(h('div', 'stat', `<b style="font-size:18px;color:${l === 2 ? 'var(--green)' : l === 1 ? 'var(--gold)' : l === 0 ? 'var(--red)' : 'var(--ink3)'}">${l < 0 ? 'EMPTY' : L[l]}</b><span>${i === 0 ? 'LEADER ↔ STARTER' : 'STARTER ↔ STARTER'}</span>`)))
@@ -807,9 +811,9 @@ function rollPackKeys(type) {
 
 async function openPack(type) {
   if (document.getElementById('opener')) return
-  const cards = rollPackKeys(type)
+  const cards = rollPackKeys(type), sigP = type === 'premium' || type === 'lightning' || type === 'banner' ? .04 : .02, sigs = cards.filter(() => Math.random() < sigP).map(c => c.key)
   const pre = cards.map(c => thumbURL(c, 440, true)) // start drawing the cards right away
-  const r = await act('openPack', { pack: type, keys: cards.map(c => c.key) })
+  const r = await act('openPack', { pack: type, keys: cards.map(c => c.key), sig: sigs })
   if (r.error) return
   const cnt = {}; cards.forEach(c => cnt[c.key] = (cnt[c.key] || 0) + 1); const isNew = k => (club()[k]?.n || 0) <= cnt[k]; const seenNew = new Set()
   const best = cards[cards.length - 1], bestRk = TIER[best.r].rank, bcol = tierCol(best.r)
@@ -854,7 +858,7 @@ async function openPack(type) {
   const urls = await Promise.all(pre)
   const els = cards.map((c, i) => {
     const rk = TIER[c.r].rank, face = rk >= 3
-    const e = h('div', 'o2-card' + (face ? ' facedown' : ''), `<div class="in"><div class="f"></div><div class="b"><i class="bk-ring"></i><b>AUT</b><small>${face ? TIER[c.r].name.split(' ')[0] : ''}</small></div></div>`)
+    const e = h('div', 'o2-card' + (face ? ' facedown' : '') + (sigs.includes(c.key) ? ' sig' : ''), `<div class="in"><div class="f"></div><div class="b"><i class="bk-ring"></i><b>AUT</b><small>${face ? TIER[c.r].name.split(' ')[0] : ''}</small></div></div>`)
     e.style.setProperty('--rc', tierCol(c.r)); e.style.zIndex = 10 - i; e.style.setProperty('--d', i * .06 + 's'); e.dataset.tier = c.r
     e.style.setProperty('--off', i)
     { const im = new Image(); im.src = urls[i]; im.alt = c.name + ' ' + c.ver; im.decoding = 'sync'; e.querySelector('.f').append(im) }
@@ -1172,7 +1176,7 @@ function bannerBlock(el) {
 async function multiOpen(type, n) {
   if (document.getElementById('opener')) return
   const packs = type === 'banner' ? rollBannerKeys(n) : Array.from({ length: n }, () => rollPackKeys(type))
-  for (const pk of packs) { const r = await act('openPack', { pack: type, keys: pk.map(c => c.key) }); if (r.error) break }
+  for (const pk of packs) { const sg = pk.filter(() => Math.random() < .04).map(c => c.key); const r = await act('openPack', { pack: type, keys: pk.map(c => c.key), sig: sg }); if (r.error) break }
   const all = packs.flat().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
   const urls = await Promise.all(all.map(c => thumbURL(c, 260, true)))
   const ov = h('div', 'mo'); ov.id = 'opener'
@@ -1443,4 +1447,68 @@ function lockerBlock() {
     g.append(b)
   }
   box.append(g); return box
+}
+
+// ================= EVOLUTIONS =================
+function evoBlock(key) {
+  const c = BYKEY[key], e = club()[key], tos = ST.evo[key].map(k => BYKEY[k]).filter(Boolean)
+  const need = ST.evoCopies[c.r] || 1, spare = e ? e.n - (P.team.includes(key) ? 1 : 0) : 0, mx = ((P.mast || {})[key] || 0), m1 = mx >= ST.mastT[1]
+  const box = h('div', 'evobox', `<b>⬆ EVOLVES INTO</b><div class="evo-to"></div><ul>
+    <li class="${spare >= need ? 'ok' : ''}">${need} spare cop${need > 1 ? 'ies' : 'y'} of this card (you have ${Math.max(0, spare)})</li>
+    <li class="${m1 ? 'ok' : ''}">Mastery 1 with this card (${mx}/${ST.mastT[1]} XP)</li>
+    <li class="${(P.shards || 0) >= ST.evoCost[tos[0].key] ? 'ok' : ''}">◆${fmt(ST.evoCost[tos[0].key])} shards (you have ${fmt(P.shards || 0)})</li></ul>`)
+  const row = box.querySelector('.evo-to')
+  for (const t of tos) {
+    const b = h('button', 'evo-c'); b.append(cardImg(eff(t), 200)); b.append(h('span', '', 'EVOLVE')); b.disabled = !e || spare < need || !m1 || (P.shards || 0) < ST.evoCost[t.key]
+    b.onclick = async () => { const r = await act('evolve', { key, to: t.key }); if (!r.error) { closeModal(); evolveFX(c, t) } }
+    row.append(b)
+  }
+  return box
+}
+async function evolveFX(from, to) {
+  const [u1, u2] = await Promise.all([thumbURL(eff(from), 440, true), thumbURL(eff(to), 440, true)])
+  const ov = h('div', 'evo-fx', `<div class="ef-bg"></div><img class="ef-a" src="${u1}"><img class="ef-b" src="${u2}"><div class="ef-flash"></div><div class="ef-txt"><small>進化 · EVOLUTION</small><b>${to.name}</b><span>${to.ver}</span></div>`)
+  ov.style.setProperty('--rc', tierCol(to.r)); document.body.append(ov); sfx('orb', 1)
+  setTimeout(() => sfx('crack', 1), 1300); setTimeout(() => sfx('fanfare', TIER[to.r].rank), 2000)
+  setTimeout(() => { ov.onclick = () => { ov.remove(); rerender() } }, 2600); setTimeout(() => { if (ov.isConnected) { ov.remove(); rerender() } }, 6500)
+}
+function drawEvolve(grid) {
+  grid.className = 'evo-list'; grid.innerHTML = ''
+  const heads = Object.keys(ST.evo).filter(k => !Object.values(ST.evo).some(L => L.includes(k)))
+  const chainOf = k => { const out = [[k]]; let cur = [k]; for (let i = 0; i < 6; i++) { const nx = [...new Set(cur.flatMap(x => ST.evo[x] || []))]; if (!nx.length) break; out.push(nx); cur = nx } return out }
+  const seen = new Set()
+  for (const hd of heads.sort((a, b) => BYKEY[a].name.localeCompare(BYKEY[b].name))) {
+    const nm = BYKEY[hd].name; if (seen.has(nm)) continue; seen.add(nm)
+    const firsts = heads.filter(k => BYKEY[k].name === nm), stages = []
+    for (const f of firsts) chainOf(f).forEach((lvl, i) => { stages[i] = [...new Set([...(stages[i] || []), ...lvl])] })
+    const row = h('div', 'evo-row', `<b>${nm}</b>`), line = h('div', 'evo-line')
+    stages.forEach((lvl, i) => { if (i) line.append(h('i', 'evo-arrow', '›')); const g = h('div', 'evo-stage'); for (const k of lvl) { const c = BYKEY[k], btn = h('button', 'cg' + (club()[k] ? '' : ' miss')); btn.append(cardImg(eff(c), 160)); btn.onclick = () => cardDetail(k); g.append(btn) } line.append(g) })
+    row.append(line); grid.append(row)
+  }
+}
+// ================= MUSEUM =================
+const MU = { a: 'ALL' }
+PAGES.museum = (el) => {
+  el.append(h('section', 'bhero', `<div><span class="sh-tag">ギャラリー · MUSEUM</span><h2>CARD MUSEUM</h2><p>Every card's full art and the moment behind it. Owned cards are unlocked; the rest stay in shadow until you pull them.</p></div><div class="bstat"><b>${owned().length}</b><span>/ ${POOL.length} UNLOCKED</span></div>`))
+  const chips = h('div', 'chips'); chips.style.flexWrap = 'wrap'
+  for (const [v, l] of [['ALL', 'All series'], ...[...new Set(POOL.map(c => c.anime))].map(a => [a, ANAME(a)])]) { const b = h('button', 'chip' + (MU.a === v ? ' on' : ''), l); b.onclick = () => { MU.a = v; rerender() }; chips.append(b) }
+  el.append(chips)
+  const g = h('div', 'mus-grid')
+  for (const c of POOL.filter(c => MU.a === 'ALL' || c.anime === MU.a).sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)) {
+    const have = !!club()[c.key], t = h('button', 'mus' + (have ? '' : ' locked'))
+    t.style.setProperty('--art', `url("${c.url}")`); t.style.setProperty('--rc', tierCol(c.r))
+    t.innerHTML = `<i class="mus-art"></i><div class="mus-tx"><small style="color:${tierCol(c.r)}">${RARITY_MARK[c.r]} ${TIER[c.r].name} · ${ANAME(c.anime)}</small><b>${have ? c.name : '???'}</b><span>${have ? c.ver : 'Not yet pulled'}</span>${have && c.pas ? `<p>"${c.pas.d}"</p>` : ''}</div>`
+    t.onclick = () => have ? museumView(c) : toast('Pull this card to unlock its art.')
+    g.append(t)
+  }
+  el.append(g)
+}
+function museumView(c) {
+  const ov = h('div', 'mus-view', `<i class="mv-art" style="background-image:url('${c.url}')"></i><div class="mv-tx"><small>${ANAME(c.anime)} · ${c.faction}</small><b>${c.name}</b><span>${c.ver}</span><p><strong>${c.mv}</strong> — ${(c.tx || []).join(' ')}</p>${c.pas ? `<p><strong>${c.pas.n}</strong> — ${c.pas.d}</p>` : ''}<em>Tap anywhere to close</em></div>`)
+  ov.onclick = () => ov.remove(); document.body.append(ov)
+}
+// ================= HOME PARTNER =================
+function partnerLine(c) {
+  const L = [`Ready when you are.`, `Let's open some packs!`, `Who are we fighting today?`, `The Daily Boss won't beat itself.`, `I've been training. Try me in Ranked.`, `Check the Season Pass, there's free stuff.`, `Nobody stands above me.`, `Got any rivals for me?`, c.pas ? `${c.pas.n}… you've seen what I can do.` : 'Let\'s go.', `${c.mv}! …just warming up.`]
+  return L[Math.floor(Math.random() * L.length)]
 }

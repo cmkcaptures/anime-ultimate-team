@@ -222,6 +222,10 @@ function achList() {
   const got = P.ach || {}
   return L.map(x => ({ ...x, p: Math.min(x.p, x.need), done: x.p >= x.need, claimed: !!got[x.id] }))
 }
+// ---------- EVOLUTIONS ----------
+const EVO_COPIES = { C: 3, U: 3, R: 2, E: 2, L: 1, M: 1 }
+function evoNext(k) { const c = byKey(k); if (!c || c.season) return []; const rk = RK(c.r), same = CARDS.filter(x => x.name === c.name && !x.season && RK(x.r) > rk); if (!same.length) return []; const nr = Math.min(...same.map(x => RK(x.r))); return same.filter(x => RK(x.r) === nr).map(x => x.key) }
+const evoShards = to => Math.round(SHARD_COST[byKey(to).r] * .4)
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
@@ -364,7 +368,8 @@ function act(a) {
       if (!(P.pending[a.pack] > 0)) return { error: 'No unopened pack of that type.' }
       P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = [];
       if (a.pack === 'banner') { const B = banner(), pt = P.pity || (P.pity = {}), pr = pt[B.id] || (pt[B.id] = { n: 0, m: 0, f: 0 }); pr.n++; pr.m++; pr.f++; for (const k of a.keys || []) { const c = byKey(k); if (c && 'MX'.includes(c.r)) pr.m = 0; if (B.featured.includes(k)) pr.f = 0 } } P.pp = Math.min(2500, (P.pp || 0) + PP_PER_PACK); addXP(40)
-      for (const k of a.keys || []) { const c = byKey(k); if (!c) continue; giveCard(k); P.last.push(k); const rk = 'CURELMX'.indexOf(c.r); if (rk >= 3) bump('epic'); if (rk >= 4) bump('legend') }
+      const SIG = new Set(a.sig || [])
+      for (const k of a.keys || []) { const c = byKey(k); if (!c) continue; giveCard(k); if (SIG.has(k)) { const o = P.club.cards[k]; o.sig = (o.sig || 0) + 1; bump('sig') } P.last.push(k); const rk = 'CURELMX'.indexOf(c.r); if (rk >= 3) bump('epic'); if (rk >= 4) bump('legend') }
       return {}
     }
     case 'ppBuy': {
@@ -563,6 +568,17 @@ function act(a) {
       if (R.title) { const id = 'title_ach_' + x.id; (P.cos = P.cos || []).includes(id) || P.cos.push(id) }
       addXP(30); return { msg: `Achievement: ${x.name}!${R.title ? ' New title: ' + R.title : ''}`, rw: R }
     }
+    case 'evolve': {
+      const c = byKey(a.key), t = byKey(a.to); if (!c || !t) return { error: 'Unknown card.' }
+      if (!evoNext(a.key).includes(a.to)) return { error: 'That is not the next form.' }
+      const need = EVO_COPIES[c.r] || 1, cost = evoShards(a.to), m = mastLv((P.mast || {})[a.key] || 0) - 1
+      if (spare(a.key) < need) return { error: `You need ${need} spare cop${need > 1 ? 'ies' : 'y'} of ${c.name} (not in your team).` }
+      if ((P.shards || 0) < cost) return { error: `You need ◆${cost.toLocaleString()} shards.` }
+      if (m < 1) return { error: 'Reach Mastery 1 with this card first (win battles with it in your team).' }
+      const o = own(a.key); o.n -= need; if (o.n <= 0) delete P.club.cards[a.key]
+      P.shards -= cost; giveCard(a.to); P.last = [a.to]; bump('evolve'); addXP(40)
+      return { msg: `${c.name} evolved into ${t.ver}!`, to: a.to }
+    }
     case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }
     case 'equip': {
       const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
@@ -590,6 +606,7 @@ function state() {
     ranked: (() => { const R = rankP(), i = rankOf(R.pts); return { ...R, tier: i, ranks: RANKS, ends: (seasonNo() + 1) * 28 * 864e5 } })(),
     boss: (() => { const BD = bossToday(); return BD ? { ...BD, me: bossP() } : null })(),
     login: (() => { const { L, can, next } = loginP(); return { streak: L.streak, can, next, rw: LOGIN_RW } })(),
+    evo: Object.fromEntries(cards().map(c => [c.key, evoNext(c.key)]).filter(x => x[1].length)), evoCopies: EVO_COPIES, evoCost: Object.fromEntries(cards().map(c => [c.key, Math.round(SHARD_COST[c.r] * .4)])),
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = value(c, e ? e.lvl || 0 : 0); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }

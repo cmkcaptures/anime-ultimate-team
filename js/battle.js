@@ -11,6 +11,16 @@ export function initBattle(ctx) { X = ctx }
 const RING = ['ki', 'curse', 'chak', 'haki', 'mana', 'quirk', 'ego', 'breath', 'nen', 'magic', 'devil', 'stand', 'ghoul', 'reiatsu', 'kaiju', 'psychic', 'flame', 'hero']
 const tOf = c => c.t || 'ki'
 export const beats = (a, b) => RING[(RING.indexOf(a) + 1) % RING.length] === b
+// team combos: these pairs on the same team link up
+export const TEAM_COMBOS = [
+  { a: 'NARUTO', b: 'SASUKE', n: 'RASENGAN × CHIDORI' }, { a: 'GOKU', b: 'VEGETA', n: 'FINAL KAMEHAMEHA' }, { a: 'DEKU', b: 'BAKUGO', n: 'WONDER DUO' },
+  { a: 'GOJO', b: 'GETO', n: 'STRONGEST DUO' }, { a: 'GOJO', b: 'SUKUNA', n: 'STRONGEST VS KING' }, { a: 'ICHIGO', b: 'AIZEN', n: 'BEYOND TRANSCENDENCE' },
+  { a: 'LUFFY', b: 'ZORO', n: 'CAPTAIN & FIRST MATE' }, { a: 'GON', b: 'KILLUA', n: 'BEST FRIENDS' }, { a: 'TANJIRO', b: 'ZENITSU', n: 'KAMADO SQUAD' },
+  { a: 'ASTA', b: 'YUNO', n: 'RIVALS TO WIZARD KING' }, { a: 'NATSU', b: 'GRAY', n: 'FIRE & ICE' }, { a: 'ITADORI', b: 'TODO', n: 'BEST FRIENDS' },
+  { a: 'JOTARO', b: 'DIO', n: 'ZA WARUDO CLASH' }, { a: 'SHINRA', b: 'SHO', n: 'KUSAKABE BROTHERS' }, { a: 'MADARA', b: 'OBITO', n: 'EYE OF THE MOON' },
+  { a: 'ITACHI', b: 'SASUKE', n: 'UCHIHA BROTHERS' }, { a: 'DENJI', b: 'POWER', n: 'DEVIL DUO' }, { a: 'YAMI', b: 'ASTA', n: 'SURPASS YOUR LIMITS' },
+]
+export function combosFor(cards) { const names = new Set(); for (const c of cards) if (c) for (const p of c.name.split(' & ')) names.add(p.trim()); return TEAM_COMBOS.filter(x => names.has(x.a) && names.has(x.b)) }
 // series synergy: 3+ fighters from one series boost the whole team's damage
 export const SYN = { 3: 4, 4: 6, 5: 8, 6: 10 }
 export function synergy(cards) { const n = {}; for (const c of cards) if (c) n[c.anime] = (n[c.anime] || 0) + 1; let best = null; for (const a in n) if (!best || n[a] > n[best]) best = a; const k = best ? n[best] : 0; return { anime: best, n: k, bonus: SYN[Math.min(6, k)] || 0 } }
@@ -449,6 +459,7 @@ export function startBattle(stage) {
       if (e.copyStat) { const best = Math.max(...foe.team.map(g => Math.max(g.pwr, g.ki, g.def))); f.pwr = Math.max(f.pwr, best) }
     }
   }
+  for (const sd of [B.you, B.ai]) { const cb = combosFor(sd.team.map(f => f.card)); if (cb.length) { sd.teamDmg = (sd.teamDmg || 0) + 6 * cb.length; sd.combos = cb } }
   for (const sd of [B.you, B.ai]) { const sy = synergy(sd.team.map(f => f.card)); if (sy.bonus) { sd.teamDmg = (sd.teamDmg || 0) + sy.bonus; sd.syn = sy } }
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
   sealNow()
@@ -761,6 +772,7 @@ export function startBattle(stage) {
     const t = document.createElement('div'); t.className = 'arena-title'; t.innerHTML = `<small>ARENA</small><b>${name}</b><span>${sub}</span>`; ov.append(t); setTimeout(() => t.remove(), 2300)
   })
   draw()
+  if (B.you.combos) setTimeout(() => { for (const [i, cb] of B.you.combos.entries()) setTimeout(() => banner(cb.n, 'TEAM COMBO · +6% DAMAGE', '#ffcc00'), i * 1400) }, 2600)
   if (youFirst) { log(`You move first (${act(B.you).card.name} is faster)`) }
   else { log(`${act(B.ai).card.name} is faster · enemy moves first`); setTimeout(aiPhase, 900) }
 }
