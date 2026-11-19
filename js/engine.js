@@ -37,22 +37,22 @@ const BASE = { C: 200, U: 500, R: 1400, E: 4500, L: 16000, M: 60000, X: 220000 }
 const MID = { C: 68, U: 76, R: 82, E: 87, L: 92, M: 96, X: 98.5 }
 const PACKS = {
   standard: { name: 'Legends Drop', cost: 1500 },
-  premium: { name: 'Premium Drop', cost: 6000 },
-  DBZ: { name: 'Dragon Ball Pack', cost: 3000, anime: 'DBZ' },
-  NAR: { name: 'Naruto Pack', cost: 3000, anime: 'NAR' },
-  JJK: { name: 'Jujutsu Kaisen Pack', cost: 3000, anime: 'JJK' },
-  OP: { name: 'One Piece Pack', cost: 3000, anime: 'OP' },
-  MHA: { name: 'Hero Academia Pack', cost: 3000, anime: 'MHA' },
-  BC: { name: 'Black Clover Pack', cost: 3000, anime: 'BC' },
-  DS: { name: 'Demon Slayer Pack', cost: 3000, anime: 'DS' },
-  BL: { name: 'Blue Lock Pack', cost: 3000, anime: 'BL' },
-  HXH: { name: 'Hunter x Hunter Pack', cost: 3000, anime: 'HXH' },
-  FT: { name: 'Fairy Tail Pack', cost: 3000, anime: 'FT' },
-  JJBA: { name: 'JoJo Pack', cost: 3000, anime: 'JJBA' },
-  CSM: { name: 'Chainsaw Man Pack', cost: 3000, anime: 'CSM' },
+  premium: { name: 'Premium Drop', cost: 7500 },
+  DBZ: { name: 'Dragon Ball Pack', cost: 2500, anime: 'DBZ' },
+  NAR: { name: 'Naruto Pack', cost: 2500, anime: 'NAR' },
+  JJK: { name: 'Jujutsu Kaisen Pack', cost: 2500, anime: 'JJK' },
+  OP: { name: 'One Piece Pack', cost: 2500, anime: 'OP' },
+  MHA: { name: 'Hero Academia Pack', cost: 2500, anime: 'MHA' },
+  BC: { name: 'Black Clover Pack', cost: 2500, anime: 'BC' },
+  DS: { name: 'Demon Slayer Pack', cost: 2500, anime: 'DS' },
+  BL: { name: 'Blue Lock Pack', cost: 2500, anime: 'BL' },
+  HXH: { name: 'Hunter x Hunter Pack', cost: 2500, anime: 'HXH' },
+  FT: { name: 'Fairy Tail Pack', cost: 2500, anime: 'FT' },
+  JJBA: { name: 'JoJo Pack', cost: 2500, anime: 'JJBA' },
+  CSM: { name: 'Chainsaw Man Pack', cost: 2500, anime: 'CSM' },
 }
 const FREE_EVERY = 12 * 3600e3, FREE_MAX = 2
-const PP_PER_PACK = 5, PP_COST = { C: 35, U: 70, R: 150, E: 400, L: 1000, M: 1500, X: 2500 }
+const PP_PER_PACK = 5, PP_COST = { C: 35, U: 70, R: 150, E: 450, L: 1400, M: 2400, X: 4000 }
 function value(c, lvl = 0) {
   if (!c) return 0
   const v = BASE[c.r] * (1 + (c.ovr - MID[c.r]) / 12) * (1 + .18 * lvl) * (S.market.demand[c.key] || 1)
@@ -122,7 +122,7 @@ function rewards() {
 // ---------------- AI traders ----------------
 const TRADERS = ['SaiyanSam', 'KonohaKid', 'CursedCarl', 'StrawHatSue', 'NimbusNate', 'SharinganSi', 'DomainDan', 'GomuGomuGabe', 'KameKev', 'RasenRhea', 'SixEyesSol', 'ZoroLost', 'BulmaB', 'TojiFan99', 'ItachiStan', 'GearFiveGio']
 const WEIGHT = { C: 30, U: 25, R: 18, E: 12, L: 8, M: 4, X: 1.5 }
-const PACK_ODDS = { C: 38, U: 28, R: 18, E: 9.5, L: 4.6, M: 1.5, X: .4 }
+const PACK_ODDS = { C: 48, U: 30, R: 14, E: 5.6, L: 1.9, M: .42, X: .08 }
 const pick = a => a[Math.floor(Math.random() * a.length)]
 function weightedCard(w = WEIGHT) {
   const all = cards(); if (!all.length) return null
@@ -133,7 +133,7 @@ function weightedCard(w = WEIGHT) {
 function aiPack() {
   const all = cards(), out = []
   for (let i = 0; i < 5; i++) { let r = Math.random() * 100, t = 'C'; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) if ((r -= PACK_ODDS[k]) < 0) { t = k; break } const l = all.filter(c => c.r === t); out.push((l.length ? pick(l) : weightedCard()).key) }
-  if (Math.random() < .35) out[Math.floor(Math.random() * 5)] = (weightedCard({ C: 0, U: 0, R: 4, E: 6, L: 4, M: 1.5, X: .5 }) || {}).key
+  if (Math.random() < .2) out[Math.floor(Math.random() * 5)] = (weightedCard({ C: 0, U: 0, R: 10, E: 5, L: 1.2, M: .25, X: .05 }) || {}).key
   return out.filter(Boolean)
 }
 function record(key, price) { const h = S.market.history[key] || (S.market.history[key] = []); h.push({ p: price, t: Date.now() }); if (h.length > 40) h.shift() }

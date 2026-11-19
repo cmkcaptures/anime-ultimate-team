@@ -709,18 +709,21 @@ PAGES.missions = (el) => {
 
 // ================= POCKET-STYLE PACK OPENING (in-app) =================
 const PACKODDS = {
-  standard: { odds: { C: 38, U: 28, R: 18, E: 9.5, L: 4.6, M: 1.5, X: .4 } },
-  premium: { odds: { C: 12, U: 26, R: 30, E: 20, L: 8.5, M: 2.8, X: .7 }, guarantee: 'E' },
+  standard: { odds: { C: 48, U: 30, R: 14, E: 5.6, L: 1.9, M: .42, X: .08 } },
+  premium: { odds: { C: 22, U: 34, R: 27, E: 12.5, L: 3.6, M: .75, X: .15 }, guarantee: 'E' },
+  series: { odds: { C: 46, U: 30, R: 15, E: 6.3, L: 2.1, M: .5, X: .1 } },
 }
 function rollPackKeys(type) {
-  const def = PACKODDS[type] || PACKODDS.standard, info = (ST.packs && ST.packs[type]) || {}
+  const info = (ST.packs && ST.packs[type]) || {}, def = PACKODDS[type] || (info.anime ? PACKODDS.series : PACKODDS.standard)
   const pool = info.anime ? POOL.filter(c => c.anime === info.anime) : POOL
   const rollT = () => { let r = Math.random() * 100; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) { if ((r -= def.odds[k]) < 0) return k } return 'C' }
   const pick = r => { const i = ORDER.indexOf(r); for (let d = 0; d < 7; d++) for (const j of [i - d, i + d]) { const l = pool.filter(c => c.r === ORDER[j]); if (l.length) return l[Math.floor(Math.random() * l.length)] } return POOL[0] }
   // weighted draw over the cards that actually exist in this pack, so small series packs don't repeat one card
   const cnt = {}; for (const c of pool) cnt[c.r] = (cnt[c.r] || 0) + 1
-  const wOf = c => (def.odds[c.r] ?? (c.r === 'C' ? 38 : 1)) / cnt[c.r]
-  const draw = used => { const avail = pool.filter(c => !used.has(c.key)); const L = avail.length ? avail : pool; let t = Math.random() * L.reduce((n, c) => n + wOf(c), 0); for (const c of L) if ((t -= wOf(c)) < 0) return c; return L[0] }
+  const wOf = c => (def.odds[c.r] ?? 1) / cnt[c.r]
+  const drawTier = () => { let t = Math.random() * 100; let tier = 'C'; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) if ((t -= def.odds[k]) < 0) { tier = k; break } for (let i = ORDER.indexOf(tier); i >= 0; i--) if (cnt[ORDER[i]]) return ORDER[i]; return ORDER.find(k => cnt[k]) }
+  const draw = used => { const tr = drawTier(); const L0 = pool.filter(c => c.r === tr && !used.has(c.key)); const L = L0.length ? L0 : pool.filter(c => c.r === tr); return L[Math.floor(Math.random() * L.length)] || pool[0] }
+  const drawOld = used => { const avail = pool.filter(c => !used.has(c.key)); const L = avail.length ? avail : pool; let t = Math.random() * L.reduce((n, c) => n + wOf(c), 0); for (const c of L) if ((t -= wOf(c)) < 0) return c; return L[0] }
   const out = [], used = new Set(); for (let i = 0; i < 5; i++) { const c = draw(used); out.push(c); used.add(c.key) }
   if (def.guarantee && !out.some(c => TIER[c.r].rank >= TIER[def.guarantee].rank)) out[0] = pick(def.guarantee)
   return out.sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr) // worst first, best revealed last
@@ -890,7 +893,7 @@ function showcasePicker(slot) {
 
 // ================= SHOP v2 =================
 let SHOPSEL = 'premium'
-function packOdds(t) { return (PACKODDS[t] || PACKODDS.standard).odds }
+function packOdds(t) { const info = ST.packs[t] || {}; return (PACKODDS[t] || (info.anime ? PACKODDS.series : PACKODDS.standard)).odds }
 function packDesc(t) { const pk = ST.packs[t]; return t === 'premium' ? 'Boosted odds with a guaranteed Epic or better in every pack.' : pk.anime ? 'Only ' + ANAME(pk.anime) + ' cards. Chase every moment in the series.' : 'Every series and every rarity. The classic pull.' }
 function buyOrOpen(t) { return async () => { if ((P.pending[t] || 0) > 0) return openPack(t); const x = await act('buyPack', { pack: t }); if (!x.error) openPack(t) } }
 function shopHero(el) {
@@ -913,10 +916,14 @@ function shopHero(el) {
   hero.onpointerleave = () => tilt.style.transform = ''
   const od = hero.querySelector('.sh-odds')
   for (const r of ORDER.slice().reverse()) { if (!odds[r] && r !== 'C') continue; const v = odds[r] || 0; const row = h('div', 'od', `<span>${TIER[r].name}</span><i><b style="width:${Math.min(100, v * 2.4)}%"></b></i><em>${v}%</em>`); row.style.setProperty('--rc', tierCol(r)); od.append(row) }
+  { const per = rk => 1 - Math.pow(1 - (odds[rk] || 0) / 100, 5), fmtN = p => p >= .5 ? Math.round(p * 100) + '%' : '1 in ' + Math.round(1 / p).toLocaleString()
+    const pp = h('div', 'sh-per', `<span>PER PACK</span><b style="color:${tierCol('L')}">Legendary+ ${fmtN(per('L') + per('M') + per('X'))}</b><b style="color:${tierCol('M')}">Mythic+ ${fmtN(per('M') + per('X'))}</b><b style="color:#d9b8ff">Rainbow ${fmtN(per('X'))}</b>`)
+    od.after(pp) }
   const bb = hero.querySelector('.sh-buy')
   const buy = h('button', 'btn gold big', `<span>BUY</span><b><i class="coin-i"></i>${fmt(pk.cost)}</b>`); buy.disabled = P.coins < pk.cost
   buy.onclick = async () => { const x = await act('buyPack', { pack: t }); if (!x.error) openPack(t) }
   bb.append(buy)
+  { const wi = h('button', 'btn dark big', '<span>WHAT\'S INSIDE</span>'); wi.onclick = () => packContents(t); bb.append(wi) }
   if (pend) { const o = h('button', 'btn green big', `<span>OPEN</span><b>${pend} READY</b>`); o.onclick = () => openPack(t); bb.append(o) }
   el.append(hero)
   // pack selector strip
@@ -1032,4 +1039,21 @@ function playerSheet(p) {
     }
     sh.append(acts)
   })
+}
+
+// ================= what's inside a pack =================
+function packContents(t) {
+  const pool = packPool(t).slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr), odds = packOdds(t)
+  const own = pool.filter(c => club()[c.key]).length
+  openModal(sh => {
+    sh.append(h('div', 'wi-head', `<span class="eyebrow">WHAT'S INSIDE</span><h2>${ST.packs[t].name}</h2><p class="muted" style="font-weight:800">${own} / ${pool.length} collected · 5 cards per pack</p>`))
+    for (const rk of ORDER.slice().reverse()) {
+      const list = pool.filter(c => c.r === rk); if (!list.length) continue
+      const each = (odds[rk] || 0) / list.length
+      sh.append(h('div', 'wi-tier', `<b style="color:${tierCol(rk)}">${RARITY_MARK[rk]} ${TIER[rk].name}</b><span>${odds[rk]}% per card · ${list.length} cards · each ${each < .01 ? each.toFixed(3) : each.toFixed(2)}%</span>`))
+      const g = h('div', 'cardgrid wi-grid')
+      for (const c of list) { const b = h('button', 'cg' + (club()[c.key] ? '' : ' miss')); b.append(cardImg(eff(c), 200)); b.onclick = () => cardDetail(c.key); g.append(b) }
+      sh.append(g)
+    }
+  }, true)
 }
