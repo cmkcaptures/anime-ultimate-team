@@ -1051,7 +1051,7 @@ document.addEventListener('click', e => { const b = e.target.closest('button'); 
 // ================= BATTLE =================
 PAGES.battle = el => battlePage(el)
 TITLES.battle = 'BATTLE'
-initBattle({ h, $, cardImg, eff, ST: () => ST, get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
+initBattle({ h, $, cardImg, eff, ST: () => ST, lb: f => ACC.leaderboard(f), get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
 
 // ================= PLAYERS (accounts, leaderboard, friends, PvP) =================
 const PS = { tab: 0, sort: 'level' }

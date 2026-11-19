@@ -2515,3 +2515,18 @@ body[data-page=shop] .ptile.on * { color: #fff !important } body[data-page=shop]
 .rk-t.on { box-shadow: 0 0 0 4px var(--eY), 0 6px 0 4px #8a3a00; transform: translateY(-4px) }
 .rk-t:not(.got) { opacity: .7 }
 @media (max-width: 700px) { .rkhero { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 20px } .rk-badge { width: 130px } .rk-info h2 { font-size: 48px } .rk-stats { justify-content: center } .rk-go { min-width: 0; width: 100% } }
+
+/* ================= DAILY BOSS ================= */
+.bosshero { position: relative; display: grid; grid-template-columns: minmax(220px, 340px) 1fr; gap: 28px; align-items: center; padding: 24px 28px; margin: 4px 0 18px; border-radius: 24px; background: linear-gradient(160deg, #6a0b2a, #1a0420); box-shadow: 0 0 0 4px #fff, 0 10px 0 4px rgba(26,11,58,.6); overflow: hidden; isolation: isolate }
+.bosshero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(50% 80% at 15% 50%, rgba(255,60,90,.45), transparent 70%), repeating-linear-gradient(115deg, rgba(255,255,255,.05) 0 12px, transparent 12px 32px) }
+.bh-art { display: block; aspect-ratio: 3/4; border-radius: 20px; background: var(--art) var(--fx) var(--fy) / cover; transform: rotate(-3deg); box-shadow: 0 0 0 5px #fff, 10px 12px 0 5px rgba(0,0,0,.4), 0 0 60px rgba(255,60,90,.5) }
+.bh-info small { font: 800 11px var(--eUI); letter-spacing: .1em; color: #ffb0c0 }
+.bh-info h2 { margin: 4px 0 10px; font: 800 64px/.9 var(--eD); color: #fff; -webkit-text-stroke: 2px #3a0012; paint-order: stroke fill; text-shadow: 0 6px 0 #3a0012 }
+.bh-name { display: inline-grid; padding: 8px 16px; border-radius: 14px; background: #0a0420; box-shadow: 0 0 0 2px #fff; margin-bottom: 10px }
+.bh-name b { font: 800 30px/1 var(--eD); color: #ff6b8a } .bh-name span { font: 700 12px var(--eUI); color: rgba(255,255,255,.75) }
+.bh-info p { margin: 0 0 14px; font: 600 14px/1.5 var(--eUI); color: rgba(255,255,255,.85); max-width: 560px }
+.boss-lb { display: grid; gap: 10px; margin-bottom: 20px }
+.bl-row { display: grid; grid-template-columns: 50px 1fr auto; align-items: center; padding: 10px 16px; border-radius: 14px; background: linear-gradient(160deg, #3a2a7a, var(--eN)); box-shadow: 0 0 0 3px #fff, 0 5px 0 3px rgba(26,11,58,.55) }
+.bl-row b { font: 800 26px var(--eD); color: var(--eY) } .bl-row span { font: 800 16px var(--eUI); color: #fff } .bl-row em { font: 800 22px var(--eD); font-style: normal; color: #ff6b8a }
+.bl-row.top { background: linear-gradient(160deg, #ffe14a, #ff9a00) } .bl-row.top b, .bl-row.top span, .bl-row.top em { color: #fff; -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill; text-shadow: 0 2px 0 #8a3a00 }
+@media (max-width: 700px) { .bosshero { grid-template-columns: 1fr; text-align: center; padding: 18px } .bh-art { width: 60%; justify-self: center } .bh-info h2 { font-size: 48px } }

@@ -288,7 +288,7 @@ function teamFrom(main, rating) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['story', 'STORY'], ['ranked', 'RANKED'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
+  for (const [k, n] of [['story', 'STORY'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -296,6 +296,31 @@ function modeTabs(el) {
 function go2(stage) { seenTutorial() ? startBattle(stage) : tutorial(() => startBattle(stage)) }
 const RK_COL = ['#d0884a', '#c8d4e8', '#ffcc33', '#5fe0d0', '#7fc8ff', '#c38cff', '#ff5fa2']
 const RIVALS = ['Kenji', 'Aiko', 'Ren', 'Yuki', 'Haru', 'Sora', 'Mika', 'Daichi', 'Rin', 'Kaito', 'Nao', 'Hikari', 'Takeshi', 'Emi', 'Riku', 'Akira']
+function bossPage(el, ok) {
+  const { h } = X, BD = X.ST().boss; if (!BD) return
+  const c = X.BYKEY[BD.key], me = BD.me, left = BD.tries - me.tries
+  const hero = h('section', 'bosshero')
+  hero.style.setProperty('--art', `url("${c.url}")`); hero.style.setProperty('--fx', Math.round((c.fx ?? .5) * 100) + '%'); hero.style.setProperty('--fy', Math.round((c.fy ?? .22) * 100) + '%')
+  hero.innerHTML = `<i class="bh-art"></i><div class="bh-info"><small>デイリーボス · NEW BOSS IN <b class="timer" data-until="${BD.ends}"></b></small><h2>DAILY BOSS</h2>
+    <div class="bh-name"><b>${c.name}</b><span>${c.ver} · ${BD.hpMult}× HP</span></div>
+    <p>Everyone fights the same boss today. You can't win; deal as much damage as you can in 12 turns before it retreats. Your best attempt counts.</p>
+    <div class="rk-stats"><span><b>${me.best.toLocaleString()}</b>BEST DAMAGE</span><span><b>${left}/${BD.tries}</b>ATTEMPTS LEFT</span><span><b>${me.total.toLocaleString()}</b>TOTAL TODAY</span></div></div>`
+  const go = h('button', 'btn gold big rk-go', left > 0 ? 'FIGHT THE BOSS' : 'COME BACK TOMORROW'); go.disabled = !ok || left < 1
+  go.onclick = () => go2({ mode: 'boss', id: 0, boss: BD.hpMult, label: 'Daily Boss · ' + c.name, name: c.name, level: 5, team: [BD.key], arena: ARENA_KEYS[BD.day % ARENA_KEYS.length] })
+  hero.querySelector('.bh-info').append(go); el.append(hero)
+  el.append(h('div', 'sec', '<h3>DAMAGE REWARDS</h3><span class="muted" style="font-weight:700;font-size:12px">unlocked once a day by your best attempt</span>'))
+  const g = h('div', 'rk-tiers')
+  BD.rw.forEach((r, i) => { const done = me.got.includes(i); g.append(h('div', 'rk-t' + (done ? ' got on' : ''), `<b>${r.at.toLocaleString()}</b><small>DAMAGE</small><span>${done ? '✓ ' : ''}${r.label}</span>`)) })
+  el.append(g)
+  el.append(h('div', 'sec', '<h3>TODAY\'S TOP DAMAGE</h3>'))
+  const lb = h('div', 'boss-lb', '<p class="muted">Loading…</p>'); el.append(lb)
+  ;(async () => {
+    try {
+      const rows = (await X.lb('bossScore')).filter(p => Math.floor((p.bossScore || 0) / 1e9) === BD.day).slice(0, 20)
+      lb.innerHTML = rows.length ? rows.map((p, i) => `<div class="bl-row${i < 3 ? ' top' : ''}"><b>${i + 1}</b><span>${p.name || 'Player'}</span><em>${((p.bossScore || 0) % 1e9).toLocaleString()}</em></div>`).join('') : '<p class="muted">No one has fought today\'s boss yet. Be first!</p>'
+    } catch { lb.innerHTML = '<p class="muted">Sign in to see the leaderboard.</p>' }
+  })()
+}
 function rankedPage(el, ok) {
   const { h } = X, R = X.ST().ranked, i = R.tier, cur = R.ranks[i], nxt = R.ranks[i + 1], col = RK_COL[i]
   const pct = nxt ? Math.round((R.pts - cur.at) / (nxt.at - cur.at) * 100) : 100
@@ -380,7 +405,7 @@ export function battlePage(el) {
   modeTabs(el)
   if (MODE !== 'story') {
     if (team.length < 6) { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
-    return (MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
+    return (MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
   }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)
@@ -408,6 +433,7 @@ export function startBattle(stage) {
   const yours = P.team.filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
+  if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * 1.12); f.ki = Math.round(f.ki * 1.12); f.def = Math.round(f.def * 1.15) }
   if (stage.boost && stage.boost !== 1) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boost); for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * (1 + (stage.boost - 1) * .6)) }
   for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) {
     for (const f of me.team) {
@@ -658,6 +684,7 @@ export function startBattle(stage) {
     if (stage.pvp) { FXC.dispose(); document.body.classList.remove('in-battle'); B.closed = true; ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('players'); return } FXC.dispose(); document.body.classList.remove('in-battle'); B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
 
   async function aiPhase() {
+    if (stage.boss && B.turn >= 12 && !B.over) { log('Time up! The boss retreats.'); return end(false) }
     B.busy = true; controls()
     const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
     if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
@@ -697,11 +724,11 @@ export function startBattle(stage) {
   async function end(won) {
     B.over = true; controls()
     await wait(500)
-    const r = stage.pvp ? await X.act('pvp', { won, name: stage.name }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won } : { stage: stage.n, won })
+    const r = stage.pvp ? await X.act('pvp', { won, name: stage.name }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0) } : { stage: stage.n, won })
     sfx(won ? 'claim' : 'error')
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
-    box.innerHTML = `<div class="rs-burst"></div><h2>${won ? 'VICTORY' : 'DEFEAT'}</h2><p>${won ? (r.msg || 'Stage cleared.') : 'Your team was knocked out. Tweak your lineup and try again.'}</p>
+    box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : won ? (r.msg || 'Stage cleared.') : 'Your team was knocked out. Tweak your lineup and try again.'}</p>
       <div class="rs-body"><div class="rs-mvp"><span>MVP</span><div class="rs-card"></div><b>${mvp.card.name}</b><small>${mvp.dealt.toLocaleString()} DMG · ${mvp.kos} KO</small></div>
       <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/6</b><span>SURVIVED</span></div></div></div>`
     box.querySelector('.rs-card').append(img(mvp, 360))

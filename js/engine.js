@@ -23,7 +23,7 @@ async function cloudSave() {
 function summary() {
   const P = S.profile, own = Object.keys(P.club.cards).filter(k => byKey(k)), team = P.team.filter(k => k && byKey(k))
   return { level: levelOf(P.xp || 0).lv, cards: own.length, packs: P.club.packs || 0, cleared: (P.battle && P.battle.cleared) || 0, wins: (P.battle && P.battle.wins) || 0, losses: (P.battle && P.battle.losses) || 0,
-    pvpWins: (P.battle && P.battle.pvpW) || 0, rating: team.length ? Math.round(team.reduce((n, k) => n + byKey(k).ovr, 0) / team.length) : 0, team, showcase: (P.showcase || []).filter(k => byKey(k)) }
+    pvpWins: (P.battle && P.battle.pvpW) || 0, bossScore: P.boss && P.boss.day === Math.floor(Date.now() / 864e5) ? P.boss.day * 1e9 + P.boss.best : 0, rating: team.length ? Math.round(team.reduce((n, k) => n + byKey(k).ovr, 0) / team.length) : 0, team, showcase: (P.showcase || []).filter(k => byKey(k)) }
 }
 function setSync(s) { document.documentElement.dataset.sync = s }
 
@@ -149,6 +149,17 @@ function rankP() {
   }
   return P.rank
 }
+// ---------- DAILY BOSS ----------
+const BOSS_TRIES = 3, BOSS_HP = 45
+const BOSS_RW = [{ at: 10000, label: '1,000 coins', coins: 1000 }, { at: 25000, label: 'Gold Pack', pack: 'standard' }, { at: 50000, label: '2,500 coins + ◆200', coins: 2500, shards: 200 }, { at: 90000, label: 'Premium Drop', pack: 'premium' }, { at: 150000, label: 'Lightning Pack', pack: 'lightning' }]
+function bossToday() {
+  const day = Math.floor(Date.now() / 864e5), top = CARDS.filter(c => 'MX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
+  if (!top.length) return null
+  let x = Math.sin(day * 7919) * 10000; x -= Math.floor(x)
+  const c = top[Math.floor(x * top.length)]
+  return { day, key: c.key, hpMult: BOSS_HP, tries: BOSS_TRIES, rw: BOSS_RW, ends: (day + 1) * 864e5 }
+}
+function bossP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.boss || P.boss.day !== d) P.boss = { day: d, tries: 0, best: 0, total: 0, got: [] }; return P.boss }
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
@@ -394,6 +405,12 @@ function act(a) {
     case 'battle': {
       // mastery for every fighter in your team
       { const M = P.mast || (P.mast = {}); const ups = []; for (const k of P.team.filter(Boolean)) { const before = mastLv(M[k] || 0); M[k] = (M[k] || 0) + (a.won ? 25 : 10); const after = mastLv(M[k]); for (let l = before + 1; l <= after; l++) { if (MAST_RW[l - 1]) P.coins += MAST_RW[l - 1]; ups.push(cardName(k) + ' Mastery ' + l) } } if (ups.length) notice('Mastery up: ' + ups.join(', '), 'ok') }
+      if (a.mode === 'boss') {
+        const Bo = bossP(), BD = bossToday(); if (Bo.tries >= BOSS_TRIES) return { error: 'No boss attempts left today.' }
+        Bo.tries++; const dmg = Math.max(0, Math.min(2e6, Math.round(+a.dmg || 0))); Bo.total += dmg; const prev = Bo.best; Bo.best = Math.max(Bo.best, dmg); addXP(30)
+        const got = []; for (let i = 0; i < BOSS_RW.length; i++) { const r = BOSS_RW[i]; if (Bo.best >= r.at && !Bo.got.includes(i)) { Bo.got.push(i); if (r.coins) P.coins += r.coins; if (r.shards) P.shards = (P.shards || 0) + r.shards; if (r.pack) P.pending[r.pack] = (P.pending[r.pack] || 0) + 1; got.push(r.label) } }
+        return { msg: `${dmg.toLocaleString()} damage to the boss${dmg > prev ? ' · NEW BEST' : ''}${got.length ? ' · Unlocked: ' + got.join(', ') : ''}` }
+      }
       if (a.mode === 'ranked') {
         const R = rankP(), before = rankOf(R.pts)
         if (a.won) { R.w++; R.streak = Math.max(1, R.streak + 1); const gain = 30 + Math.min(20, (R.streak - 1) * 5); R.pts += gain; P.coins += 400; addXP(35); const now = rankOf(R.pts); R.best = Math.max(R.best, now)
@@ -467,6 +484,7 @@ function state() {
     wonder: S.wonder, now: Date.now(),
     pass: (() => { const S2 = passP(); return { ...S2, tier: Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER)), into: S2.xp % PASS_TIER, per: PASS_TIER, max: PASS_TIERS, cost: PASS_COST, ends: (seasonNo() + 1) * 28 * 864e5, rw: Array.from({ length: PASS_TIERS }, (_, i) => [passReward('f', i + 1), passReward('p', i + 1)]) } })(),
     ranked: (() => { const R = rankP(), i = rankOf(R.pts); return { ...R, tier: i, ranks: RANKS, ends: (seasonNo() + 1) * 28 * 864e5 } })(),
+    boss: (() => { const BD = bossToday(); return BD ? { ...BD, me: bossP() } : null })(),
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = value(c, e ? e.lvl || 0 : 0); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
