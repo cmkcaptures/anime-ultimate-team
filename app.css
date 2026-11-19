@@ -1728,3 +1728,11 @@ body.in-opener #app, body.in-opener #backdrop { visibility: hidden }
 #opener.rainbow .o2-grade { background: radial-gradient(55% 50% at 50% 44%, transparent 30%, rgba(4,4,8,.4) 80%), conic-gradient(from 0deg at 50% 44%, rgba(255,106,176,.18), rgba(255,217,90,.18), rgba(106,255,192,.18), rgba(106,200,255,.18), rgba(184,140,255,.18), rgba(255,106,176,.18)) }
 .o2-spot { mix-blend-mode: screen }
 .o2-tray { left: auto !important; right: 3vw; bottom: 4vh !important; transform: none !important }
+/* feedback fixes */
+.ar-plate .pe { display: inline-flex; align-items: baseline; gap: 2px; padding: 2px 8px; border-radius: 4px; background: rgba(0,229,255,.15); color: #22d8ff; font: 900 12px var(--ui) }
+.ar-plate .pe b { font: italic 900 18px var(--disp); color: #fff } .ar-plate .pe small { opacity: .6 }
+#arena .ar-bench.can-swap { position: relative }
+#arena .ar-bench.can-swap::before { content: "TAP A CARD TO SWAP"; position: absolute; left: 0; right: 0; top: -18px; text-align: center; font: 900 9px var(--ui); letter-spacing: .2em; color: #22d8ff; white-space: nowrap }
+#arena .ar-bench.can-swap .bslot:not(.ko) { box-shadow: 0 0 0 2px #22d8ff, 0 8px 14px rgba(0,0,0,.55) !important }
+.o2-top { z-index: 90 !important } .o2-done { z-index: 90 !important; position: fixed !important; bottom: 5vh !important }
+@media (max-width: 760px) { #opener.lineup .o2-stage { top: 40% !important } .o2-lc { width: 19% } }

@@ -679,7 +679,11 @@ function rollPackKeys(type) {
   const pool = info.anime ? POOL.filter(c => c.anime === info.anime) : POOL
   const rollT = () => { let r = Math.random() * 100; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) { if ((r -= def.odds[k]) < 0) return k } return 'C' }
   const pick = r => { const i = ORDER.indexOf(r); for (let d = 0; d < 7; d++) for (const j of [i - d, i + d]) { const l = pool.filter(c => c.r === ORDER[j]); if (l.length) return l[Math.floor(Math.random() * l.length)] } return POOL[0] }
-  const out = []; for (let i = 0; i < 5; i++) out.push(pick(rollT()))
+  // weighted draw over the cards that actually exist in this pack, so small series packs don't repeat one card
+  const cnt = {}; for (const c of pool) cnt[c.r] = (cnt[c.r] || 0) + 1
+  const wOf = c => (def.odds[c.r] ?? (c.r === 'C' ? 38 : 1)) / cnt[c.r]
+  const draw = used => { const avail = pool.filter(c => !used.has(c.key)); const L = avail.length ? avail : pool; let t = Math.random() * L.reduce((n, c) => n + wOf(c), 0); for (const c of L) if ((t -= wOf(c)) < 0) return c; return L[0] }
+  const out = [], used = new Set(); for (let i = 0; i < 5; i++) { const c = draw(used); out.push(c); used.add(c.key) }
   if (def.guarantee && !out.some(c => TIER[c.r].rank >= TIER[def.guarantee].rank)) out[0] = pick(def.guarantee)
   return out.sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr) // worst first, best revealed last
 }
@@ -788,6 +792,7 @@ async function openPack(type) {
   cards.forEach((c, i) => { const w = h('div', 'o2-lc'); w.style.setProperty('--rc', tierCol(c.r)); w.style.setProperty('--d', (i * .08) + 's'); w.dataset.tier = c.r; const im = new Image(); im.src = urls[i]; w.append(im); line.append(w) })
   stage.append(line); tray.innerHTML = ''
   const done = h('button', 'btn gold o2-done', 'CONTINUE'); done.onclick = finish; ov.append(done)
+  setTimeout(() => ov.addEventListener('click', e => { if (!e.target.closest('.o2-skip')) finish() }, { once: true }), 600)
   sfx('claim')
 }
 
