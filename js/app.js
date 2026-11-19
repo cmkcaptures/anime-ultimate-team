@@ -190,7 +190,7 @@ function go(name, arg, opts = {}) {
   el.classList.add('in'); setTimeout(() => el.classList.remove('in'), 900)
   $('#ptitle').textContent = TITLES[name] || ''
   const tab = TABS.includes(name) ? name : name === 'pack' || name === 'results' || name === 'wonder' || name === 'missions' ? (name === 'missions' ? null : 'home') : null
-  document.querySelectorAll('#nav button').forEach((b, i) => { const on = b.dataset.go === tab; b.classList.toggle('on', on); if (on) $('#navPill').style.setProperty('--i', i) })
+  document.querySelectorAll('#nav button').forEach((b, i) => { const on = b.dataset.go === tab; b.classList.toggle('on', on); if (on) { $('#navPill').style.setProperty('--i', i); $('#navPill').style.setProperty('--py', b.offsetTop + 'px') } })
   $('#fab').hidden = name !== 'home'
 }
 const rerender = () => { if (curEl && PAGES[CUR]) { curEl.innerHTML = ''; PAGES[CUR](curEl, CURARG) } }
