@@ -324,8 +324,15 @@ PAGES.results = (el) => {
 const CF = { q: '', anime: 'ALL', rar: 'ALL', mode: 'OWNED' }
 PAGES.cards = (el) => {
   const own = owned(), pct = Math.round(own.length / Math.max(1, POOL.length) * 100)
-  const head = h('div', 'panel pad')
-  head.innerHTML = `<div class="collhead"><div class="stat"><b>${own.length}</b><span>OWNED</span></div><div class="stat"><b>${POOL.length}</b><span>IN SET</span></div><div class="stat"><b>${pct}%</b><span>COMPLETE</span></div></div><div class="bar" style="margin-top:12px"><i style="width:${pct}%"></i></div>`
+  const top = own.slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)[0]
+  const byR = ORDER.slice().reverse().map(r0 => [r0, own.filter(c => c.r === r0).length, POOL.filter(c => c.r === r0).length]).filter(x => x[2])
+  const head = h('section', 'chead')
+  head.innerHTML = `${top ? `<div class="ch-card" style="--art:url('${top.url}');--fx:${Math.round((top.fx ?? .5) * 100)}%;--fy:${Math.round((top.fy ?? .22) * 100)}%"><i></i><span>BEST · ${top.name}</span></div>` : ''}
+    <div class="ch-main"><small>コレクション</small><h2>COLLECTION</h2>
+      <div class="ch-stats"><div class="s1"><b>${own.length}</b><span>OWNED</span></div><div class="s2"><b>${POOL.length}</b><span>IN SET</span></div><div class="s3"><b>${pct}%</b><span>COMPLETE</span></div></div>
+      <div class="ch-bar"><i style="width:${pct}%"></i></div>
+      <div class="ch-rar">${byR.map(([r0, n, t]) => `<span style="--rc:${tierCol(r0)}"><b>${RARITY_MARK[r0]}</b>${n}/${t}</span>`).join('')}</div></div>`
+  if (top) head.querySelector('.ch-card').onclick = () => cardDetail(top.key)
   el.append(head)
   const tools = h('div', ''); tools.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:14px'
   const MODES = ['OWNED', 'ALL', 'BINDER']; const seg = segmented(['OWNED', 'ALL CARDS', 'BINDER'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
@@ -448,8 +455,12 @@ function autoTeam(target) {
 }
 PAGES.team = (el) => {
   const st = teamStats(), sy = synergy(P.team.map(k => k && BYKEY[k]))
-  const head = h('div', 'panel pad'); head.innerHTML = `<div class="collhead"><div class="stat"><b>${st.rating || '--'}</b><span>RATING</span></div><div class="stat"><b>${st.chem}%</b><span>CHEMISTRY</span></div><div class="stat"><b style="color:${sy.bonus ? 'var(--gold)' : 'inherit'}">${sy.bonus ? '+' + sy.bonus + '%' : '—'}</b><span>SERIES SYNERGY</span></div><div class="stat"><b>${st.count}/6</b><span>CARDS</span></div></div>
-    <div class="synrow">${sy.n >= 2 ? `<b>${sy.n}× ${ANAME(sy.anime).toUpperCase()}</b>` : '<b>NO SERIES SYNERGY YET</b>'}<span>3 from one series +4% team damage · 4 → +6% · 5 → +8% · all 6 → +10%</span></div>`
+  const lead = BYKEY[P.team[0]]
+  const head = h('section', 'thead2')
+  head.innerHTML = `${lead ? `<div class="ch-card" style="--art:url('${lead.url}');--fx:${Math.round((lead.fx ?? .5) * 100)}%;--fy:${Math.round((lead.fy ?? .22) * 100)}%"><i></i><span>LEADER · ${lead.name}</span></div>` : ''}
+    <div class="ch-main"><small>チーム</small><h2>MY TEAM</h2>
+      <div class="ch-stats"><div class="s3"><b>${st.rating || '--'}</b><span>RATING</span></div><div class="s2"><b>${st.chem}%</b><span>CHEMISTRY</span></div><div class="s1"><b>${sy.bonus ? '+' + sy.bonus + '%' : '—'}</b><span>SYNERGY</span></div><div class="s4"><b>${st.count}/6</b><span>CARDS</span></div></div>
+      <div class="synrow">${sy.n >= 2 ? `<b>${sy.n}× ${ANAME(sy.anime).toUpperCase()}</b>` : '<b>NO SERIES SYNERGY YET</b>'}<span>3 from one series +4% team damage · 4 → +6% · 5 → +8% · all 6 → +10%</span></div></div>`
   el.append(head)
   // build-for panel
   const targets = buildTargets(); if (!targets.find(t => t.id === TB.target)) TB.target = 'best'

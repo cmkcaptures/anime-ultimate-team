@@ -2272,3 +2272,50 @@ body[data-page=shop] #top { background: transparent !important }
   #nav button.on { background: linear-gradient(180deg, #ffe14a, var(--eY2)) !important; box-shadow: 0 5px 0 #b36b00 !important }
   #nav button.on svg { color: var(--eN) }
 }
+
+/* ================= THEME E: Cards + Team ================= */
+.chead, .thead2 { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center; padding: 22px 26px; margin: 6px 0 22px; border-radius: 22px; background: linear-gradient(160deg, #3a2a7a, var(--eN)); box-shadow: 0 0 0 4px #fff, 0 9px 0 4px rgba(26,11,58,.55); overflow: hidden; isolation: isolate }
+.chead::before, .thead2::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(255,255,255,.14), transparent 40%), repeating-linear-gradient(115deg, rgba(255,255,255,.05) 0 10px, transparent 10px 26px) }
+.ch-card { position: relative; width: 150px; aspect-ratio: 3/4; border-radius: 16px; overflow: hidden; transform: rotate(-4deg); cursor: pointer; box-shadow: 0 0 0 4px #fff, 8px 10px 0 4px rgba(0,0,0,.35) }
+.ch-card i { position: absolute; inset: 0; background: var(--art) var(--fx) var(--fy) / cover }
+.ch-card span { position: absolute; left: 6px; right: 6px; bottom: 6px; padding: 4px 8px; border-radius: 8px; background: var(--eN); font: 800 11px var(--eUI); letter-spacing: .06em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 0 0 2px #fff }
+.ch-main small { font: 900 12px var(--eJ); color: var(--eY); letter-spacing: .1em }
+.ch-main h2 { margin: 0 0 12px; font: 800 46px/1 var(--eD); color: #fff; text-shadow: 0 4px 0 #0a0420 }
+.ch-stats { display: flex; flex-wrap: wrap; gap: 12px }
+.ch-stats > div { --c1: #ff5fa2; --c2: #c2187a; --cs: #6a0b40; position: relative; min-width: 110px; padding: 10px 16px; border-radius: 14px; background: linear-gradient(160deg, var(--c1), var(--c2)); box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(10,4,32,.6); overflow: hidden }
+.ch-stats > div::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.3), transparent 45%) }
+.ch-stats b { position: relative; display: block; font: 800 32px/1 var(--eD); color: #fff; -webkit-text-stroke: 1px var(--cs); paint-order: stroke fill; text-shadow: 0 3px 0 var(--cs) }
+.ch-stats span { position: relative; font: 800 10px var(--eUI); letter-spacing: .14em; color: #fff; text-shadow: 0 1px 0 var(--cs) }
+.ch-stats .s2 { --c1: #3ab8ff; --c2: #1460d8; --cs: #062a6a } .ch-stats .s3 { --c1: #ffe14a; --c2: #ff9a00; --cs: #8a3a00 } .ch-stats .s4 { --c1: #2fe0b0; --c2: #0d9a7a; --cs: #04402f }
+.ch-bar { height: 14px; margin: 16px 0 12px; border-radius: 8px; background: #0a0420; box-shadow: 0 0 0 2px #fff; overflow: hidden }
+.ch-bar i { display: block; height: 100%; background: repeating-linear-gradient(115deg, #ffe14a 0 10px, #ffb000 10px 20px); box-shadow: inset 0 -3px 0 rgba(0,0,0,.2) }
+.ch-rar { display: flex; flex-wrap: wrap; gap: 8px }
+.ch-rar span { display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; border-radius: 10px; background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 2px var(--rc); font: 800 12px var(--eUI); color: #fff }
+.ch-rar b { color: var(--rc) }
+.thead2 .synrow { border-top: 0 !important; box-shadow: none !important; background: rgba(0,0,0,.3) !important; padding: 8px 12px; margin-top: 14px }
+@media (max-width: 700px) { .chead, .thead2 { grid-template-columns: 1fr; padding: 18px } .ch-card { width: 120px; justify-self: center } .ch-main h2 { font-size: 38px } .ch-stats > div { min-width: 0; flex: 1 1 40% } }
+/* search + chips */
+.field { border-radius: 14px !important; background: #fff !important; color: var(--eN) !important; font: 700 15px var(--eUI) !important; box-shadow: 0 0 0 3px var(--eN), 0 5px 0 3px rgba(26,11,58,.5) !important; border: 0 !important; padding: 12px 16px !important }
+.field::placeholder { color: #8a7fb0 }
+.chips { gap: 8px !important; padding: 4px 3px 8px !important }
+.chip { height: 36px !important; border-radius: 12px !important; font: 800 13px var(--eUI) !important; position: relative; overflow: hidden }
+.seg { padding: 5px !important; border-radius: 16px !important }
+.seg .knob { border-radius: 12px !important; background: linear-gradient(180deg, #ffe14a, #ff9a00) !important; box-shadow: 0 4px 0 #8a3a00 !important }
+.seg button { font: 800 16px var(--eD) !important; letter-spacing: .1em; color: rgba(255,255,255,.75) !important }
+.seg button.on { color: #fff !important; -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill; text-shadow: 0 2px 0 #8a3a00 }
+/* grid badges */
+.cardgrid { gap: 18px 14px !important }
+.cg .n { background: var(--ePink) !important; box-shadow: 0 0 0 2px #fff, 0 3px 0 2px rgba(0,0,0,.3) !important; border-radius: 10px !important; color: #fff; font: 800 13px var(--eUI) !important }
+.cg .nw { background: linear-gradient(180deg, #ffe14a, #ff9a00) !important; color: #2a1200 !important; box-shadow: 0 0 0 2px #fff !important }
+/* team slots */
+.teamslots { gap: 22px !important }
+.tslot { border: 0 !important; border-radius: 16px !important; background: linear-gradient(160deg, rgba(58,42,122,.7), rgba(26,11,58,.7)) !important; box-shadow: 0 0 0 3px rgba(255,255,255,.8), 0 7px 0 3px rgba(26,11,58,.5) !important; color: #fff !important; font: 800 54px var(--eD) !important }
+.tslot:has(img) { background: none !important; box-shadow: none !important }
+.tslot img { border-radius: 12px; box-shadow: 0 0 0 3px #fff, 0 8px 0 3px rgba(26,11,58,.55) !important }
+.tslot .r { top: -12px !important; padding: 4px 12px !important; clip-path: none !important; border-radius: 10px !important; background: var(--eN) !important; box-shadow: 0 0 0 2px #fff; font: 800 11px var(--eUI) !important }
+.teamslots:first-of-type .tslot:first-child .r { background: linear-gradient(180deg, #ffe14a, #ff9a00) !important; color: #2a1200 !important }
+.chemrow .stat { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(26,11,58,.5) !important; border-radius: 14px !important }
+.syn-tag { border-radius: 8px; box-shadow: 0 0 0 2px #fff }
+.tb-targets { padding: 8px 6px 14px !important; gap: 14px !important }
+.tslot .r { color: #fff !important }
+.teamslots { background: none !important; box-shadow: none !important; padding: 14px 4px 6px !important }
