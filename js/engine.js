@@ -36,7 +36,11 @@ const byKey = k => CARDS.find(c => c.key === k)
 const BASE = { C: 200, U: 500, R: 1400, E: 4500, L: 16000, M: 60000, X: 220000 }
 const MID = { C: 68, U: 76, R: 82, E: 87, L: 92, M: 96, X: 98.5 }
 const PACKS = {
-  standard: { name: 'Legends Drop', cost: 1500 },
+  bronze: { name: 'Bronze Pack', cost: 500 },
+  silver: { name: 'Silver Pack', cost: 1200 },
+  standard: { name: 'Gold Pack', cost: 1500 },
+  jumbo: { name: 'Jumbo Gold', cost: 3600, size: 12 },
+  lightning: { name: 'Lightning Pack', cost: 6000, stock: 3 },
   premium: { name: 'Premium Drop', cost: 7500 },
   DBZ: { name: 'Dragon Ball Pack', cost: 2500, anime: 'DBZ' },
   NAR: { name: 'Naruto Pack', cost: 2500, anime: 'NAR' },
@@ -61,7 +65,7 @@ function banner() {
   const ends = (wk + 1) * 7 * 864e5 - 3 * 864e5
   return { id: 'b' + wk, name: 'FEATURED BANNER', cost: BANNER_COST, featured: [f1.key, f2.key], ends, pityMythic: PITY_MYTHIC, pityFeatured: PITY_FEATURED }
 }
-const FREE_EVERY = 12 * 3600e3, FREE_MAX = 2
+const FREE_EVERY = 12 * 3600e3, FREE_MAX = 2, LIGHT_EVERY = 6 * 3600e3, LIGHT_MAX = 3
 const PP_PER_PACK = 5, PP_COST = { C: 35, U: 70, R: 150, E: 450, L: 1400, M: 2400, X: 4000 }
 function value(c, lvl = 0) {
   if (!c) return 0
@@ -93,6 +97,7 @@ function rollWeek() { const P = S.profile; if (!P.week || P.week.id !== weekId()
 function bump(k, n = 1) { rollDay(); rollWeek(); const P = S.profile; P.day[k] = (P.day[k] || 0) + n; P.week[k] = (P.week[k] || 0) + n }
 function rollCharge(F, every, max) { while (F.charges < max && Date.now() - F.at >= every) { F.charges++; F.at += every } if (F.charges >= max) F.at = Date.now() }
 const WONDER_EVERY = 6 * 3600e3, WONDER_MAX = 2
+function rollCharge2(F) { while (F.n < LIGHT_MAX && Date.now() - F.at >= LIGHT_EVERY) { F.n++; F.at += LIGHT_EVERY } if (F.n >= LIGHT_MAX) F.at = Date.now() }
 function rollFree() { rollCharge(S.profile.free, FREE_EVERY, FREE_MAX); rollCharge(S.profile.wonder, WONDER_EVERY, WONDER_MAX) }
 const notice = (text, kind = 'info') => { S.notices.push({ text, kind, t: Date.now() }); if (S.notices.length > 30) S.notices.shift() }
 const cardName = k => { const c = byKey(k); return c ? `${c.name} (${c.ver})` : 'card' }
@@ -211,6 +216,7 @@ function act(a) {
       const B = a.pack === 'banner' ? banner() : null, pk = B ? { cost: B.cost } : PACKS[a.pack]; if (!pk) return { error: 'Unknown pack.' }
       const n = a.count === 10 ? 10 : 1, cost = n === 10 ? Math.round(pk.cost * 10 * .9) : pk.cost
       if (P.coins < cost) return { error: `You need ${cost.toLocaleString()} coins.` }
+      if (a.pack === 'lightning') { P.light = P.light || { n: LIGHT_MAX, at: now }; rollCharge2(P.light); if (P.light.n < n) return { error: 'Lightning Packs are sold out. More arrive soon.' }; if (P.light.n >= LIGHT_MAX) P.light.at = now; P.light.n -= n }
       P.coins -= cost; P.pending[a.pack] = (P.pending[a.pack] || 0) + n; return {}
     }
     case 'openPack': {
@@ -317,7 +323,7 @@ function state() {
   rollFree()
   const P = S.profile
   const out = {
-    profile: P, notices: S.notices, packs: PACKS, banner: banner(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST,
+    profile: P, notices: S.notices, packs: PACKS, banner: banner(), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST,
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now()

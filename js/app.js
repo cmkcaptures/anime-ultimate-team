@@ -79,7 +79,11 @@ fontsReady.then(() => {
 
 // ================= pack art (Pocket-style booster packs) =================
 const PACKLOOK = {
-  standard: { t: ['LEGENDS', 'DROP'], c: ['#ff2d9a', '#7a3dff', '#12092e', '#2db4ff', '#3dffb0'], set: 'S1' },
+  bronze: { t: ['BRONZE', 'PACK'], c: ['#ffd9b0', '#c87a3a', '#6a3810', '#2a1406', '#ffd9b0'], set: 'BR' },
+  silver: { t: ['SILVER', 'PACK'], c: ['#ffffff', '#b8c4d8', '#5a6478', '#1a1e28', '#e8eef8'], set: 'SV' },
+  jumbo: { t: ['JUMBO', 'GOLD'], c: ['#fff4c0', '#ffb627', '#a86a00', '#2a1800', '#fff4c0'], set: 'JG' },
+  lightning: { t: ['LIGHTNING', 'PACK'], c: ['#e0f4ff', '#3ab8ff', '#4a2bd0', '#0a0a2a', '#ffe14a'], set: 'LT' },
+  standard: { t: ['GOLD', 'PACK'], c: ['#ff2d9a', '#7a3dff', '#12092e', '#2db4ff', '#3dffb0'], set: 'S1' },
   premium: { t: ['PREMIUM', 'DROP'], c: ['#fff6c9', '#ffd23a', '#b07a1c', '#2a1600', '#ffe9a0'], set: 'S1+' },
   DBZ: { t: ['DRAGON', 'BALL'], c: ['#ffd400', '#ff7a00', '#b80018', '#3a0a00', '#ffd400'], set: 'DB' },
   NAR: { t: ['HIDDEN', 'LEAF'], c: ['#7df9ff', '#00a8ff', '#0030c8', '#061440', '#7df9ff'], set: 'NR' },
@@ -104,8 +108,8 @@ async function packCanvas0(type, w = 300) {
   await fontsReady
   const L = PACKLOOK[type] || PACKLOOK.standard, H = Math.round(w * 1.6), c = document.createElement('canvas'); c.width = w; c.height = H
   const x = c.getContext('2d'), sc = w / 300; x.scale(sc, sc); const W = 300, HH = 480
-  const finish = type === 'premium' ? 'gold' : type === 'standard' ? 'chrome' : 'series'
-  const metal = finish === 'gold' ? ['#fff4c0', '#e8b23a', '#8a5a08', '#ffe9a0', '#b8820a'] : finish === 'chrome' ? ['#ffffff', '#b8c4d8', '#5a6478', '#e8eef8', '#8a96aa'] : [L.c[4] || L.c[0], L.c[0], L.c[2], L.c[0], L.c[1]]
+  const finish = type === 'premium' || type === 'standard' || type === 'jumbo' ? 'gold' : type === 'silver' ? 'chrome' : type === 'bronze' ? 'bronze' : 'series'
+  const metal = finish === 'bronze' ? ['#ffe0c0', '#d0884a', '#6a3810', '#ffcb98', '#a85c22'] : finish === 'gold' ? ['#fff4c0', '#e8b23a', '#8a5a08', '#ffe9a0', '#b8820a'] : finish === 'chrome' ? ['#ffffff', '#b8c4d8', '#5a6478', '#e8eef8', '#8a96aa'] : [L.c[4] || L.c[0], L.c[0], L.c[2], L.c[0], L.c[1]]
   // ---- wrapper silhouette with serrated crimp edges ----
   const CR = 26, teeth = 22, tw = W / teeth
   const shape = () => { x.beginPath(); x.moveTo(0, CR); for (let i = 0; i <= teeth; i++) x.lineTo(i * tw, i % 2 ? 0 : 7); x.lineTo(W, CR); x.lineTo(W, HH - CR); for (let i = teeth; i >= 0; i--) x.lineTo(i * tw, i % 2 ? HH : HH - 7); x.lineTo(0, HH - CR); x.closePath() }
@@ -116,7 +120,7 @@ async function packCanvas0(type, w = 300) {
   const lb = x.createRadialGradient(W / 2, 200, 10, W / 2, 200, 260); lb.addColorStop(0, 'rgba(255,255,255,.75)'); lb.addColorStop(.25, 'rgba(255,255,255,.18)'); lb.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = lb; x.fillRect(0, 0, W, HH)
   x.save(); x.globalAlpha = .1; x.strokeStyle = '#fff'; x.lineWidth = 1; for (let i = 0; i < 48; i++) { const ag = i / 48 * Math.PI * 2; x.beginPath(); x.moveTo(W / 2, 200); x.lineTo(W / 2 + Math.cos(ag) * 500, 200 + Math.sin(ag) * 500); x.stroke() } x.restore()
   // ---- character collage: 3 best cards ----
-  const pool = packPool(type).slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
+  const pool = packPool(type).filter(c => ((PACKODDS[type] || {}).odds || { C: 1 })[c.r] !== 0).sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
   const picks = []; for (const cd of pool) { if (!picks.some(p => p.name === cd.name)) picks.push(cd); if (picks.length === 3) break }
   const draw = async (cd, cx, cw, chh, top, alpha, dark) => {
     try {
@@ -159,8 +163,8 @@ async function packCanvas0(type, w = 300) {
   title(L.t[0], 388, 58); title(L.t[1], 436, 50)
   // set badge + card count
   x.fillStyle = 'rgba(0,0,0,.65)'; rr2(x, W - 66, CR + 12, 52, 22, 5); x.fill(); x.fillStyle = '#fff'; x.font = '900 12px "Sofia Sans"'; x.fillText(L.set + ' · S1', W - 40, CR + 27)
-  x.fillStyle = 'rgba(0,0,0,.65)'; rr2(x, 14, CR + 12, 58, 22, 5); x.fill(); x.fillStyle = '#fff'; x.fillText('5 CARDS', 43, CR + 27)
-  if (finish === 'gold') { x.fillStyle = '#ffd23a'; x.font = 'italic 900 13px "Sofia Sans Extra Condensed"'; x.fillText('★ EPIC+ GUARANTEED ★', W / 2, HH - CR - 14) }
+  x.fillStyle = 'rgba(0,0,0,.65)'; rr2(x, 14, CR + 12, 62, 22, 5); x.fill(); x.fillStyle = '#fff'; x.fillText(((PACKODDS[type] || {}).size || 5) + ' CARDS', 45, CR + 27)
+  if (type === 'premium' || type === 'lightning') { x.fillStyle = '#ffd23a'; x.font = 'italic 900 13px "Sofia Sans Extra Condensed"'; x.fillText(type === 'lightning' ? '⚡ LIMITED STOCK · EPIC+ ⚡' : '★ EPIC+ GUARANTEED ★', W / 2, HH - CR - 14) }
   x.restore()
   // outer rim highlight
   shape(); x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 1.5; x.stroke()
@@ -710,7 +714,11 @@ PAGES.missions = (el) => {
 
 // ================= POCKET-STYLE PACK OPENING (in-app) =================
 const PACKODDS = {
+  bronze: { odds: { C: 72, U: 28, R: 0, E: 0, L: 0, M: 0, X: 0 } },
+  silver: { odds: { C: 25, U: 47, R: 24, E: 3.6, L: .4, M: 0, X: 0 } },
   standard: { odds: { C: 48, U: 30, R: 14, E: 5.6, L: 1.9, M: .42, X: .08 } },
+  jumbo: { odds: { C: 48, U: 30, R: 14, E: 5.6, L: 1.9, M: .42, X: .08 }, size: 12 },
+  lightning: { odds: { C: 8, U: 30, R: 36, E: 21.5, L: 3.6, M: .75, X: .15 }, guarantee: 'E' },
   premium: { odds: { C: 22, U: 34, R: 27, E: 12.5, L: 3.6, M: .75, X: .15 }, guarantee: 'E' },
   series: { odds: { C: 46, U: 30, R: 15, E: 6.3, L: 2.1, M: .5, X: .1 } },
 }
@@ -747,7 +755,7 @@ function rollPackKeys(type) {
   const drawTier = () => { let t = Math.random() * 100; let tier = 'C'; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) if ((t -= def.odds[k]) < 0) { tier = k; break } for (let i = ORDER.indexOf(tier); i >= 0; i--) if (cnt[ORDER[i]]) return ORDER[i]; return ORDER.find(k => cnt[k]) }
   const draw = used => { const tr = drawTier(); const L0 = pool.filter(c => c.r === tr && !used.has(c.key)); const L = L0.length ? L0 : pool.filter(c => c.r === tr); return L[Math.floor(Math.random() * L.length)] || pool[0] }
   const drawOld = used => { const avail = pool.filter(c => !used.has(c.key)); const L = avail.length ? avail : pool; let t = Math.random() * L.reduce((n, c) => n + wOf(c), 0); for (const c of L) if ((t -= wOf(c)) < 0) return c; return L[0] }
-  const out = [], used = new Set(); for (let i = 0; i < 5; i++) { const c = draw(used); out.push(c); used.add(c.key) }
+  const out = [], used = new Set(); for (let i = 0; i < (def.size || 5); i++) { const c = draw(used); out.push(c); used.add(c.key) }
   if (def.guarantee && !out.some(c => TIER[c.r].rank >= TIER[def.guarantee].rank)) out[0] = pick(def.guarantee)
   return out.sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr) // worst first, best revealed last
 }
@@ -917,7 +925,7 @@ function showcasePicker(slot) {
 // ================= SHOP v2 =================
 let SHOPSEL = 'premium'
 function packOdds(t) { const info = ST.packs[t] || {}; return (PACKODDS[t] || (info.anime ? PACKODDS.series : PACKODDS.standard)).odds }
-function packDesc(t) { const pk = ST.packs[t]; return t === 'premium' ? 'Boosted odds with a guaranteed Epic or better in every pack.' : pk.anime ? 'Only ' + ANAME(pk.anime) + ' cards. Chase every moment in the series.' : 'Every series and every rarity. The classic pull.' }
+function packDesc(t) { const pk = ST.packs[t]; return t === 'bronze' ? 'Commons and Uncommons only. Cheap filler for your collection.' : t === 'silver' ? 'Mostly Uncommon and Rare, with a small Epic chance.' : t === 'jumbo' ? '12 cards with Gold odds. The most cards per coin.' : t === 'lightning' ? 'Top odds, Epic or better guaranteed. Only 3 in stock, more every 6 hours.' : t === 'standard' ? 'Every series and every rarity. The classic pull.' : t === 'premium' ? 'Boosted odds with a guaranteed Epic or better in every pack.' : pk.anime ? 'Only ' + ANAME(pk.anime) + ' cards. Chase every moment in the series.' : 'Every series and every rarity. The classic pull.' }
 function buyOrOpen(t) { return async () => { if ((P.pending[t] || 0) > 0) return openPack(t); const x = await act('buyPack', { pack: t }); if (!x.error) openPack(t) } }
 function shopHero(el) {
   const types = Object.keys(ST.packs).filter(t => packPool(t).length)
@@ -944,6 +952,7 @@ function shopHero(el) {
     od.after(pp) }
   const bb = hero.querySelector('.sh-buy')
   const buy = h('button', 'btn gold big', `<span>BUY</span><b><i class="coin-i"></i>${fmt(pk.cost)}</b>`); buy.disabled = P.coins < pk.cost
+  if (t === 'lightning') { const L = ST.light; buy.disabled = buy.disabled || L.n < 1; bb.after(h('div', 'lt-stock', `⚡ <b>${L.n}/${L.max}</b> in stock${L.next ? ` · next in <span class="timer" data-until="${L.next - SKEW}"></span>` : ''}`)) }
   buy.onclick = async () => { const x = await act('buyPack', { pack: t }); if (!x.error) openPack(t) }
   bb.append(buy)
   { const wi = h('button', 'btn dark big', '<span>WHAT\'S INSIDE</span>'); wi.onclick = () => packContents(t); bb.append(wi) }

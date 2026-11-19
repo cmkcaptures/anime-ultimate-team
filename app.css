@@ -1867,3 +1867,6 @@ body[data-page=shop] .btn.dark.big { background: rgba(0,0,0,.4) !important; box-
 .mo-c.up .in { transform: none } .mo-c.up[data-tier=E] .f, .mo-c.up[data-tier=L] .f, .mo-c.up[data-tier=M] .f, .mo-c.up[data-tier=X] .f { box-shadow: 0 0 0 2px var(--rc), 0 0 22px var(--rc) }
 .mo-done { min-width: 220px }
 @media (max-width: 1000px) { .bnr { grid-template-columns: 1fr; margin: -6px -16px 18px; padding: 24px 16px } .bnr-cards { display: none } .mo-grid { grid-template-columns: repeat(5, 1fr) } }
+.o2-line { flex-wrap: wrap; row-gap: 14px } #opener.lineup .o2-lc { width: min(18%, 150px) }
+#opener.lineup .o2-stage:has(.o2-lc:nth-child(6)) .o2-lc { width: min(14%, 120px); transform: none !important }
+.lt-stock { margin-top: 10px; font: 700 13px Inter, sans-serif; color: #d4c8ff } .lt-stock b { color: #ffe14a }
