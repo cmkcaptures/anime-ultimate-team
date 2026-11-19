@@ -121,7 +121,13 @@ export function drawCard(x, d) {
   if (d.fit) { // whole-art mode: blurred cover behind, full image contained in the art window
     const f0 = x.filter; x.filter = (f0 === 'none' ? '' : f0 + ' ') + 'blur(18px) brightness(.55)'; x.drawImage(img, ox, oy, dw, dh); x.filter = f0
     const AH = H * d.fit, s = Math.min(W / img.width, AH / img.height), cw = img.width * s, ch = img.height * s
-    x.drawImage(img, (W - cw) / 2, 18, cw, ch)
+    { // fill the full card width; fade the art edges into the blurred backdrop instead of a hard box
+      const s2 = W / img.width, cw2 = W, ch2 = img.height * s2, y2 = Math.max(0, (H * .62 - ch2) / 2)
+      const off = document.createElement('canvas'); off.width = W; off.height = Math.ceil(ch2); const o = off.getContext('2d')
+      o.drawImage(img, 0, 0, cw2, ch2); o.globalCompositeOperation = 'destination-in'
+      const fg = o.createLinearGradient(0, 0, 0, ch2); fg.addColorStop(0, 'rgba(0,0,0,0)'); fg.addColorStop(.08, '#000'); fg.addColorStop(.88, '#000'); fg.addColorStop(1, 'rgba(0,0,0,0)'); o.fillStyle = fg; o.fillRect(0, 0, cw2, ch2)
+      x.drawImage(off, 0, y2)
+    }
   } else x.drawImage(img, ox, oy, dw, dh)
   x.filter = 'none'
   if (real) { } else if (d.r === 'X') {
@@ -248,7 +254,7 @@ const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fi
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340) {
-  const bw = bucket(w), k = 't7|' + sig(c) + '|' + bw
+  const bw = bucket(w), k = 't8|' + sig(c) + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
