@@ -102,34 +102,71 @@ function packCanvas(type, w = 300) { const k = type + '|' + w; return PACKC[k] |
 async function packCanvas0(type, w = 300) {
   const k = type + w; if (PACKCANVAS[k]) return PACKCANVAS[k]
   await fontsReady
-  const L = PACKLOOK[type] || PACKLOOK.standard, H = Math.round(w * 1.54), c = document.createElement('canvas'); c.width = w; c.height = H
-  const x = c.getContext('2d'), s = w / 300
-  x.scale(s, s); const W = 300, HH = 462
-  const rr = (X, Y, ww, hh, r) => { x.beginPath(); x.roundRect(X, Y, ww, hh, r) }
-  const g = x.createLinearGradient(0, 0, W, HH); L.c.forEach((col, i) => g.addColorStop(i / (L.c.length - 1), col))
-  rr(0, 0, W, HH, 14); x.fillStyle = g; x.fill()
-  x.save(); rr(0, 0, W, HH, 14); x.clip()
-  // character art in the window
-  const f = featured(type)
-  try { const img = await getArt(f); const ar = img.width / img.height; let dh = 340, dw = dh * ar; if (dw < W) { dw = W; dh = W / ar }; x.save(); x.beginPath(); x.rect(0, 56, W, 330); x.clip(); x.drawImage(img, (W - dw) / 2, 50, dw, dh); x.restore() } catch { }
-  // foil crimp bands
-  for (const [y, hh] of [[0, 56], [386, 76]]) {
-    const b = x.createLinearGradient(0, y, W, y + hh); b.addColorStop(0, L.c[0]); b.addColorStop(.5, '#ffffff'); b.addColorStop(1, L.c[1]); x.globalAlpha = .9; x.fillStyle = b; x.fillRect(0, y, W, hh); x.globalAlpha = 1
-    x.fillStyle = 'rgba(0,0,0,.18)'; for (let X = 0; X < W; X += 8) x.fillRect(X, y + (y ? 0 : hh - 8), 4, 8)
+  const L = PACKLOOK[type] || PACKLOOK.standard, H = Math.round(w * 1.6), c = document.createElement('canvas'); c.width = w; c.height = H
+  const x = c.getContext('2d'), sc = w / 300; x.scale(sc, sc); const W = 300, HH = 480
+  const finish = type === 'premium' ? 'gold' : type === 'standard' ? 'chrome' : 'series'
+  const metal = finish === 'gold' ? ['#fff4c0', '#e8b23a', '#8a5a08', '#ffe9a0', '#b8820a'] : finish === 'chrome' ? ['#ffffff', '#b8c4d8', '#5a6478', '#e8eef8', '#8a96aa'] : [L.c[4] || L.c[0], L.c[0], L.c[2], L.c[0], L.c[1]]
+  // ---- wrapper silhouette with serrated crimp edges ----
+  const CR = 26, teeth = 22, tw = W / teeth
+  const shape = () => { x.beginPath(); x.moveTo(0, CR); for (let i = 0; i <= teeth; i++) x.lineTo(i * tw, i % 2 ? 0 : 7); x.lineTo(W, CR); x.lineTo(W, HH - CR); for (let i = teeth; i >= 0; i--) x.lineTo(i * tw, i % 2 ? HH : HH - 7); x.lineTo(0, HH - CR); x.closePath() }
+  x.save(); shape(); x.clip()
+  // base colour field
+  const bg = x.createLinearGradient(0, 0, W * .4, HH); bg.addColorStop(0, L.c[0]); bg.addColorStop(.45, L.c[1]); bg.addColorStop(1, L.c[3]); x.fillStyle = bg; x.fillRect(0, 0, W, HH)
+  // light burst behind the characters
+  const lb = x.createRadialGradient(W / 2, 200, 10, W / 2, 200, 260); lb.addColorStop(0, 'rgba(255,255,255,.75)'); lb.addColorStop(.25, 'rgba(255,255,255,.18)'); lb.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = lb; x.fillRect(0, 0, W, HH)
+  x.save(); x.globalAlpha = .1; x.strokeStyle = '#fff'; x.lineWidth = 1; for (let i = 0; i < 48; i++) { const ag = i / 48 * Math.PI * 2; x.beginPath(); x.moveTo(W / 2, 200); x.lineTo(W / 2 + Math.cos(ag) * 500, 200 + Math.sin(ag) * 500); x.stroke() } x.restore()
+  // ---- character collage: 3 best cards ----
+  const pool = packPool(type).slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
+  const picks = []; for (const cd of pool) { if (!picks.some(p => p.name === cd.name)) picks.push(cd); if (picks.length === 3) break }
+  const draw = async (cd, cx, cw, chh, top, alpha, dark) => {
+    try {
+      const img = await getArt(cd), ar = img.width / img.height; let dh = chh, dw = dh * ar; if (dw < cw) { dw = cw; dh = cw / ar }
+      x.save(); x.beginPath(); x.rect(cx - cw / 2, top, cw, chh); x.clip(); x.globalAlpha = alpha
+      x.drawImage(img, cx - dw * (cd.fx ?? .5), top - Math.max(0, (dh - chh) * Math.min(1, (cd.fy ?? .22) * 1.1)), dw, dh)
+      if (dark) { x.globalCompositeOperation = 'source-atop'; x.fillStyle = 'rgba(0,0,0,' + dark + ')'; x.fillRect(cx - cw / 2, top, cw, chh) }
+      x.restore()
+    } catch { }
   }
-  x.fillStyle = 'rgba(255,255,255,.18)'; for (let i = 0; i < 9; i++) { x.beginPath(); x.arc(30 + i * 30, 26, 9, 0, 7); x.fill() }
-  // halftone + sheen
-  x.fillStyle = 'rgba(0,0,0,.18)'; for (let y = 60; y < 384; y += 12) for (let X = (y / 12 % 2) * 6; X < W; X += 12) { x.beginPath(); x.arc(X, y, 1.8, 0, 7); x.fill() }
-  const sh = x.createLinearGradient(0, 0, W, HH); sh.addColorStop(.3, 'rgba(255,255,255,0)'); sh.addColorStop(.45, 'rgba(255,255,255,.28)'); sh.addColorStop(.55, 'rgba(255,255,255,0)'); x.fillStyle = sh; x.fillRect(0, 0, W, HH)
-  // title
-  x.textAlign = 'center'; x.shadowColor = 'rgba(0,0,0,.7)'; x.shadowOffsetY = 4
-  const tg = x.createLinearGradient(0, 300, 0, 380); tg.addColorStop(0, '#fff'); tg.addColorStop(1, '#ffe27a')
-  x.fillStyle = tg; x.save(); x.translate(W / 2, 0); fitFont(x, L.t[0], 66, 270); x.fillText(L.t[0], 0, 340); fitFont(x, L.t[1], 66, 270); x.fillText(L.t[1], 0, 392); x.restore()
-  x.shadowColor = 'transparent'; x.font = '800 13px "Sofia Sans"'; x.fillStyle = '#fff'; x.fillText('ANIME ULTIMATE TEAM · 5 CARDS', W / 2, 440)
-  x.fillStyle = 'rgba(0,0,0,.7)'; rr(W - 58, 12, 46, 24, 6); x.fill(); x.fillStyle = '#fff'; x.font = '900 13px "Sofia Sans"'; x.fillText(L.set, W - 35, 29)
+  // side cards angled, centre card in front with fades
+  if (picks[1]) { x.save(); x.translate(70, 230); x.rotate(-.12); x.translate(-70, -230); await draw(picks[1], 70, 150, 260, 92, 1, .28); x.restore() }
+  if (picks[2]) { x.save(); x.translate(230, 230); x.rotate(.12); x.translate(-230, -230); await draw(picks[2], 230, 150, 260, 92, 1, .28); x.restore() }
+  if (picks[0]) {
+    await draw(picks[0], W / 2, 190, 300, 70, 1, 0)
+    // soft fade on the centre card edges so it melts into the collage
+    for (const [x0, dir] of [[W / 2 - 95, 1], [W / 2 + 95, -1]]) { const fg = x.createLinearGradient(x0, 0, x0 + dir * 26, 0); fg.addColorStop(0, L.c[1]); fg.addColorStop(1, 'rgba(0,0,0,0)'); x.globalAlpha = .9; x.fillStyle = fg; x.fillRect(Math.min(x0, x0 + dir * 26), 70, 26, 300); x.globalAlpha = 1 }
+  }
+  // bottom colour flood for the logo block
+  const bf = x.createLinearGradient(0, 270, 0, HH); bf.addColorStop(0, 'rgba(0,0,0,0)'); bf.addColorStop(.35, L.c[2] + 'cc'); bf.addColorStop(1, L.c[3]); x.fillStyle = bf; x.fillRect(0, 270, W, HH - 270)
+  // ---- foil: holo shimmer (premium/series) + diagonal sheen ----
+  x.save(); x.globalCompositeOperation = 'overlay'; x.globalAlpha = finish === 'chrome' ? .18 : .32
+  const hb = x.createLinearGradient(0, 0, W, HH); ['#ff5ab0', '#ffd95a', '#5affb0', '#5ac8ff', '#b88cff', '#ff5ab0', '#ffd95a', '#5affb0'].forEach((cc, i, A) => hb.addColorStop(i / (A.length - 1), cc)); x.fillStyle = hb; x.fillRect(0, 0, W, HH); x.restore()
+  const sh = x.createLinearGradient(0, 0, W, HH); sh.addColorStop(.28, 'rgba(255,255,255,0)'); sh.addColorStop(.4, 'rgba(255,255,255,.35)'); sh.addColorStop(.46, 'rgba(255,255,255,0)'); sh.addColorStop(.6, 'rgba(255,255,255,0)'); sh.addColorStop(.64, 'rgba(255,255,255,.18)'); sh.addColorStop(.7, 'rgba(255,255,255,0)'); x.fillStyle = sh; x.fillRect(0, 0, W, HH)
+  // pillow shading: darker at the sides, highlight down the middle
+  const pl = x.createLinearGradient(0, 0, W, 0); pl.addColorStop(0, 'rgba(0,0,0,.45)'); pl.addColorStop(.12, 'rgba(0,0,0,0)'); pl.addColorStop(.5, 'rgba(255,255,255,.06)'); pl.addColorStop(.88, 'rgba(0,0,0,0)'); pl.addColorStop(1, 'rgba(0,0,0,.45)'); x.fillStyle = pl; x.fillRect(0, 0, W, HH)
+  // ---- metallic crimp bands ----
+  const band = (y, h) => { const mg = x.createLinearGradient(0, y, 0, y + h); metal.forEach((cc, i) => mg.addColorStop(i / (metal.length - 1), cc)); x.fillStyle = mg; x.fillRect(0, y, W, h); x.fillStyle = 'rgba(0,0,0,.22)'; for (let X = 2; X < W; X += 6) x.fillRect(X, y + 3, 2, h - 6); x.fillStyle = 'rgba(255,255,255,.5)'; x.fillRect(0, y + (y ? 0 : h - 2), W, 2) }
+  band(0, CR + 4); band(HH - CR - 4, CR + 4)
+  // tear notch hint
+  x.fillStyle = 'rgba(0,0,0,.35)'; x.beginPath(); x.moveTo(0, CR + 10); x.lineTo(10, CR + 16); x.lineTo(0, CR + 22); x.fill()
+  // ---- logo block ----
+  x.textAlign = 'center'
+  // brand ribbon
+  const rg = x.createLinearGradient(60, 0, 240, 0); metal.slice(0, 3).forEach((cc, i) => rg.addColorStop(i / 2, cc)); x.fillStyle = rg
+  x.beginPath(); x.moveTo(70, 318); x.lineTo(230, 318); x.lineTo(222, 338); x.lineTo(78, 338); x.closePath(); x.fill()
+  x.fillStyle = '#0a0612'; x.font = '900 12px "Sofia Sans"'; x.fillText('ANIME  ULTIMATE  TEAM', W / 2, 332)
+  // big title, two lines, outlined
+  const title = (t, y, sz) => { x.save(); x.translate(W / 2, y); fitFont(x, t, sz, 270); x.lineJoin = 'round'; x.lineWidth = 9; x.strokeStyle = '#0a0612'; x.strokeText(t, 0, 0); const tg = x.createLinearGradient(0, -sz, 0, 4); tg.addColorStop(0, '#ffffff'); tg.addColorStop(.55, metal[0]); tg.addColorStop(1, metal[1]); x.fillStyle = tg; x.fillText(t, 0, 0); x.restore() }
+  title(L.t[0], 388, 58); title(L.t[1], 436, 50)
+  // set badge + card count
+  x.fillStyle = 'rgba(0,0,0,.65)'; rr2(x, W - 66, CR + 12, 52, 22, 5); x.fill(); x.fillStyle = '#fff'; x.font = '900 12px "Sofia Sans"'; x.fillText(L.set + ' · S1', W - 40, CR + 27)
+  x.fillStyle = 'rgba(0,0,0,.65)'; rr2(x, 14, CR + 12, 58, 22, 5); x.fill(); x.fillStyle = '#fff'; x.fillText('5 CARDS', 43, CR + 27)
+  if (finish === 'gold') { x.fillStyle = '#ffd23a'; x.font = 'italic 900 13px "Sofia Sans Extra Condensed"'; x.fillText('★ EPIC+ GUARANTEED ★', W / 2, HH - CR - 14) }
   x.restore()
+  // outer rim highlight
+  shape(); x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 1.5; x.stroke()
   return PACKCANVAS[k] = c
 }
+function rr2(x, X, Y, w, h, r) { x.beginPath(); x.roundRect(X, Y, w, h, r) }
 const packEl = (type, w) => { const cv = document.createElement('canvas'); packCanvas(type, w).then(src => { cv.width = src.width; cv.height = src.height; cv.getContext('2d').drawImage(src, 0, 0) }); return cv }
 
 // ================= router + transitions =================
