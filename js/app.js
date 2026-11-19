@@ -177,7 +177,7 @@ const packEl = (type, w) => { const cv = document.createElement('canvas'); packC
 
 // ================= router + transitions =================
 const TABS = ['home', 'cards', 'team', 'market', 'shop', 'battle']
-const TITLES = { home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
+const TITLES = { achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
 let CUR = null, CURARG = null, curEl = null
 const PAGES = {}
 function go(name, arg, opts = {}) {
@@ -722,6 +722,7 @@ function wonderPick(w) {
 
 // ================= MISSIONS =================
 PAGES.missions = (el) => {
+  { const n = (ST.ach || []).filter(a => a.done && !a.claimed).length, b = h('button', 'btn gold block', `ACHIEVEMENTS${n ? ' · ' + n + ' TO CLAIM' : ''}`); b.style.margin = '4px 0 14px'; b.onclick = () => go('achieve'); el.append(b) }
   const L = ST.level
   const lv = h('div', 'panel pad'); lv.innerHTML = `<div class="lvlcard"><span class="big">${L.lv}</span><div style="flex:1"><span class="eyebrow">PLAYER LEVEL</span><div class="bar" style="margin:8px 0 6px"><i style="width:${L.cur / L.need * 100}%"></i></div><small class="muted" style="font-weight:800">${L.cur} / ${L.need} XP · open packs, trade and finish missions to level up</small></div></div>`
   el.append(lv)
@@ -1064,14 +1065,15 @@ TITLES.players = 'PLAYERS'
 PAGES.players = async el => {
   const meP = ACC.me()
   const head = h('div', 'phead')
-  head.innerHTML = `<div class="pav">${(meP.profile?.name || '?')[0].toUpperCase()}</div><div class="pme"><span class="eyebrow">SIGNED IN AS</span><b>${meP.profile?.name || ''}</b></div>`
+  { const me = myPub(); head.innerHTML = `${avatarHTML(me)}<div class="pme"><span class="eyebrow">SIGNED IN AS</span><b>${me.name}</b>${titleHTML(me)}</div>` }
+  { const ed = h('button', 'btn gold sm', 'EDIT PROFILE'); ed.onclick = profileEdit; head.append(ed); const ab = h('button', 'btn violet sm', 'ACHIEVEMENTS'); ab.onclick = () => go('achieve'); head.append(ab) }
   const so = h('button', 'btn dark sm', 'SIGN OUT'); so.onclick = () => { if (confirm('Sign out of this device?')) ACC.signOut() }; head.append(so)
   el.append(head)
   const seg = segmented(['LEADERBOARD', 'FRIENDS', 'TRADES', 'FIND PLAYER'], PS.tab, i => { PS.tab = i; rerender() }); seg.style.marginTop = '14px'; el.append(seg)
   const body = h('div', 'plist'); el.append(body)
   const row = (p, i) => {
     const r = h('button', 'prow' + (p.uid === meP.uid ? ' me' : ''))
-    r.innerHTML = `${i != null ? `<span class="rk">${i + 1}</span>` : ''}<div class="pav sm">${(p.name || '?')[0].toUpperCase()}</div><div class="pi"><b>${p.name}</b><small>LV ${p.level || 1} · ${p.cards || 0} cards · ${p.cleared || 0}/10 story · ${p.pvpWins || 0} PvP wins</small></div><span class="pr">${p.rating || '–'}<small>TEAM</small></span>`
+    r.innerHTML = `${i != null ? `<span class="rk">${i + 1}</span>` : ''}${avatarHTML(p, 'sm')}<div class="pi"><b>${p.name}</b>${titleHTML(p)}<small>LV ${p.level || 1} · ${p.cards || 0} cards · ${p.cleared || 0}/10 story · ${p.pvpWins || 0} PvP wins</small></div><span class="pr">${p.rating || '–'}<small>TEAM</small></span>`
     r.onclick = () => playerSheet(p); return r
   }
   body.innerHTML = '<div class="muted" style="padding:20px;text-align:center;font-weight:800">Loading…</div>'
@@ -1099,7 +1101,7 @@ PAGES.players = async el => {
 function playerSheet(p) {
   const meP = ACC.me(), mine = p.uid === meP.uid, isF = (meP.profile.friends || []).includes(p.uid)
   openModal(sh => {
-    sh.append(h('div', 'psheet', `<div class="pav lg">${p.name[0].toUpperCase()}</div><h2>${p.name}</h2><span class="muted" style="font-weight:800">LEVEL ${p.level || 1}</span>
+    sh.append(h('div', 'psheet', `${avatarHTML(p, 'lg')}<h2>${p.name}</h2>${titleHTML(p)}<span class="muted" style="font-weight:800">LEVEL ${p.level || 1}</span>
       <div class="pst"><div><b>${p.cards || 0}</b><span>CARDS</span></div><div><b>${p.packs || 0}</b><span>PACKS</span></div><div><b>${p.cleared || 0}/10</b><span>STORY</span></div><div><b>${p.pvpWins || 0}</b><span>PVP WINS</span></div><div><b>${p.rating || '–'}</b><span>TEAM</span></div></div>`))
     const sc = (p.showcase || []).map(k => BYKEY[k]).filter(Boolean), tm = (p.team || []).map(k => BYKEY[k]).filter(Boolean)
     if (sc.length) { sh.append(h('div', 'sec', '<h3>SHOWCASE</h3>')); const g = h('div', 'cardgrid'); sc.forEach(c => { const b = h('div', 'cg'); b.append(cardImg(c, 240)); g.append(b) }); sh.append(g) }
@@ -1378,6 +1380,51 @@ function tradeSheet(p) {
       catch { await act('tradeRefund', { offer: pick.offer, coins: pick.coins }); toast('Could not send the request. Your offer was returned.', 'err'); send.disabled = false }
     }
   })
+}
+
+// ================= PROFILE CARD =================
+function avatarHTML(p, size = '') { const c = p && p.avatar && BYKEY[p.avatar], bd = p && p.border ? ' bd-' + p.border : ''; return c ? `<div class="pav av${size ? ' ' + size : ''}${bd}" style="--art:url('${c.url}');--fx:${Math.round((c.fx ?? .5) * 100)}%;--fy:${Math.round((c.fy ?? .22) * 100)}%"></div>` : `<div class="pav${size ? ' ' + size : ''}${bd}">${((p && p.name) || '?')[0].toUpperCase()}</div>` }
+function titleHTML(p) { return p && p.title ? `<span class="ptitle2">${p.title}</span>` : '' }
+function myPub() { const m = ACC.me ? ACC.me() : null, eq = P.eq || {}, cos = ST.cos || {}; return { name: (m && m.profile && m.profile.name) || 'You', avatar: P.avatar, border: eq.border || '', title: eq.title ? (cos[eq.title] || {}).name : '' } }
+function profileEdit() {
+  openModal(sh => {
+    sh.append(h('div', 'wi-head', '<span class="eyebrow">プロフィール · EDIT PROFILE</span><h2>Your profile card</h2>'))
+    const prev = h('div', 'pcard-prev'); sh.append(prev)
+    const drawPrev = () => { const me = myPub(); prev.innerHTML = `${avatarHTML(me, 'lg')}<div><b>${me.name}</b>${titleHTML(me)}</div>` }
+    drawPrev()
+    // titles
+    const cos = ST.cos, mine = P.cos || [], eq = P.eq || {}
+    sh.append(h('div', 'sec', '<h3>TITLE</h3>'))
+    const tg = h('div', 'chips'); tg.style.flexWrap = 'wrap'
+    const none = h('button', 'chip' + (!eq.title ? ' on' : ''), 'No title'); none.onclick = async () => { await act('equip', { slot: 'title', id: null }); profileEdit() }; tg.append(none)
+    for (const id of mine.filter(i => cos[i] && cos[i].type === 'title')) { const b = h('button', 'chip' + (eq.title === id ? ' on' : ''), cos[id].name); b.onclick = async () => { await act('equip', { slot: 'title', id }); profileEdit() }; tg.append(b) }
+    sh.append(tg)
+    if (!mine.some(i => cos[i] && cos[i].type === 'title')) sh.append(h('p', 'muted', '<small style="font-weight:700">Earn titles from achievements and the Season Pass premium track.</small>'))
+    // avatar
+    sh.append(h('div', 'sec', '<h3>AVATAR CARD</h3><span class="muted" style="font-weight:700;font-size:12px">pick any card you own</span>'))
+    const q = h('input', 'field'); q.placeholder = 'Search your cards'; sh.append(q)
+    const g = h('div', 'cardgrid tpick'); sh.append(g)
+    const draw = () => { const qq = q.value.trim().toLowerCase(); g.innerHTML = ''; for (const c of owned().filter(c => !qq || (c.name + ' ' + c.ver).toLowerCase().includes(qq)).sort((a, b) => b.ovr - a.ovr).slice(0, 30)) { const b = h('button', 'cg' + (P.avatar === c.key ? ' sel' : '')); b.append(cardImg(eff(c), 200)); b.onclick = async () => { await act('avatar', { key: c.key }); drawPrev(); draw() }; g.append(b) } }
+    q.oninput = draw; draw()
+    sh.append(h('p', 'muted', '<small style="font-weight:700">Avatar borders, card frames and opener styles are in the Locker on the Season Pass page.</small>'))
+  })
+}
+// ================= ACHIEVEMENTS =================
+PAGES.achieve = (el) => {
+  const L = ST.ach, done = L.filter(a => a.claimed).length, ready = L.filter(a => a.done && !a.claimed).length
+  el.append(h('section', 'bhero', `<div><span class="sh-tag">実績 · ACHIEVEMENTS</span><h2>ACHIEVEMENTS</h2><p>Permanent goals across the whole game. Each one pays out once, and many unlock a profile title.</p></div><div class="bstat"><b>${done}</b><span>/ ${L.length} DONE${ready ? ' · ' + ready + ' TO CLAIM' : ''}</span></div>`))
+  for (const g of [...new Set(L.map(a => a.g))]) {
+    el.append(h('div', 'sec', `<h3>${g}</h3>`))
+    const box = h('div', 'ach-grid')
+    for (const a of L.filter(x => x.g === g).sort((x, y) => (y.done && !y.claimed) - (x.done && !x.claimed) || x.claimed - y.claimed)) {
+      const R = a.rw, rw = [R.coins && fmt(R.coins) + ' coins', R.shards && '◆' + R.shards, R.pack && ST.packs[R.pack].name, R.title && 'Title: ' + R.title].filter(Boolean).join(' · ')
+      const c = h('div', 'ach' + (a.claimed ? ' got' : a.done ? ' ready' : ''), `<b>${a.name}</b><small>${a.d}</small><i><s style="width:${a.p / a.need * 100}%"></s></i><span>${a.need > 1000 ? fmt(a.p) + ' / ' + fmt(a.need) : a.p + ' / ' + a.need}</span><em>${rw}</em>`)
+      if (a.done && !a.claimed) { const b = h('button', 'btn gold sm', 'CLAIM'); b.onclick = async () => { const r = await act('achClaim', { id: a.id }); if (r.error) return; if (r.rw.pack) openPack(r.rw.pack); else rerender() }; c.append(b) }
+      else if (a.claimed) c.append(h('span', 'ach-ok', '✓ CLAIMED'))
+      box.append(c)
+    }
+    el.append(box)
+  }
 }
 
 // ================= LOCKER (cosmetics) =================

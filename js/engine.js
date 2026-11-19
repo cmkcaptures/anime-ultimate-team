@@ -23,7 +23,7 @@ async function cloudSave() {
 function summary() {
   const P = S.profile, own = Object.keys(P.club.cards).filter(k => byKey(k)), team = P.team.filter(k => k && byKey(k))
   return { level: levelOf(P.xp || 0).lv, cards: own.length, packs: P.club.packs || 0, cleared: (P.battle && P.battle.cleared) || 0, wins: (P.battle && P.battle.wins) || 0, losses: (P.battle && P.battle.losses) || 0,
-    pvpWins: (P.battle && P.battle.pvpW) || 0, title: P.eq && P.eq.title ? COSMETICS[P.eq.title]?.name || '' : '', border: (P.eq && P.eq.border) || '', rivals: Object.fromEntries(Object.entries(P.rivals || {}).map(([k, v]) => [k, [v.w, v.l]])), bossScore: P.boss && P.boss.day === Math.floor(Date.now() / 864e5) ? P.boss.day * 1e9 + P.boss.best : 0, rating: team.length ? Math.round(team.reduce((n, k) => n + byKey(k).ovr, 0) / team.length) : 0, team, showcase: (P.showcase || []).filter(k => byKey(k)) }
+    pvpWins: (P.battle && P.battle.pvpW) || 0, title: P.eq && P.eq.title ? (COSMETICS[P.eq.title]?.name || (achList().find(x => 'title_ach_' + x.id === P.eq.title) || {}).rw?.title || '') : '', avatar: P.avatar || '', achN: Object.keys(P.ach || {}).length, border: (P.eq && P.eq.border) || '', rivals: Object.fromEntries(Object.entries(P.rivals || {}).map(([k, v]) => [k, [v.w, v.l]])), bossScore: P.boss && P.boss.day === Math.floor(Date.now() / 864e5) ? P.boss.day * 1e9 + P.boss.best : 0, rating: team.length ? Math.round(team.reduce((n, k) => n + byKey(k).ovr, 0) / team.length) : 0, team, showcase: (P.showcase || []).filter(k => byKey(k)) }
 }
 function setSync(s) { document.documentElement.dataset.sync = s }
 
@@ -192,6 +192,35 @@ function bossP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (
 // ---------- LOGIN STREAK ----------
 const LOGIN_RW = [{ coins: 1000 }, { coins: 1500 }, { pack: 'silver' }, { coins: 2500 }, { shards: 300 }, { pack: 'standard' }, { pack: 'premium' }]
 function loginP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.login) P.login = { last: 0, streak: 0 }; const L = P.login; if (L.last && d - L.last > 1) L.streak = 0; return { L, d, can: L.last !== d, next: L.last !== d ? (L.streak % 7) : ((L.streak - 1) % 7) } }
+// ---------- ACHIEVEMENTS ----------
+const ANIME_NAMES = { DBZ: 'Dragon Ball', NAR: 'Naruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', JJBA: 'JoJo', HXH: 'Hunter x Hunter', BLE: 'Bleach', CSM: 'Chainsaw Man', FT: 'Fairy Tail', FF: 'Fire Force', YGO: 'Yu-Gi-Oh!', TG: 'Tokyo Ghoul' }
+function achList() {
+  const P = S.profile, own = k => !!P.club.cards[k], C = CARDS.filter(c => !c.season), B = P.battle || {}, n = Object.keys(P.club.cards).filter(k => byKey(k)).length
+  const has = r => C.some(c => c.r === r && own(c.key)), cnt = r => C.filter(c => c.r === r && own(c.key)).length
+  const L = [
+    { id: 'col25', g: 'COLLECTION', name: 'Collector', d: 'Own 25 different cards', p: n, need: 25, rw: { coins: 2000 } },
+    { id: 'col100', g: 'COLLECTION', name: 'Hoarder', d: 'Own 100 different cards', p: n, need: 100, rw: { coins: 8000, shards: 300 } },
+    { id: 'colall', g: 'COLLECTION', name: 'Completionist', d: 'Own every card in the game', p: C.filter(c => own(c.key)).length, need: C.length, rw: { coins: 50000, title: 'Completionist' } },
+    { id: 'myth5', g: 'COLLECTION', name: 'Mythic Hunter', d: 'Own 5 Mythic cards', p: cnt('M'), need: 5, rw: { coins: 10000, title: 'Mythic Hunter' } },
+    { id: 'rainbow', g: 'COLLECTION', name: 'Over the Rainbow', d: 'Pull a Rainbow Secret card', p: has('X') ? 1 : 0, need: 1, rw: { coins: 15000, title: 'Rainbow Pull' } },
+    { id: 'packs100', g: 'COLLECTION', name: 'Pack Addict', d: 'Open 100 packs', p: P.club.packs || 0, need: 100, rw: { coins: 5000, pack: 'premium' } },
+    { id: 'win25', g: 'BATTLE', name: 'Fighter', d: 'Win 25 battles', p: B.wins || 0, need: 25, rw: { coins: 3000 } },
+    { id: 'win100', g: 'BATTLE', name: 'Warlord', d: 'Win 100 battles', p: B.wins || 0, need: 100, rw: { coins: 10000, title: 'Warlord' } },
+    { id: 'story', g: 'BATTLE', name: 'Story Complete', d: 'Clear all 10 story stages', p: B.cleared || 0, need: 10, rw: { coins: 5000 } },
+    { id: 'tower25', g: 'BATTLE', name: 'Halfway Up', d: 'Clear Tower floor 25', p: (P.tower && P.tower.best) || 0, need: 25, rw: { coins: 6000, shards: 300 } },
+    { id: 'tower50', g: 'BATTLE', name: 'Top of the Tower', d: 'Clear Tower floor 50', p: (P.tower && P.tower.best) || 0, need: 50, rw: { coins: 25000, title: 'Tower Master' } },
+    { id: 'arcs', g: 'BATTLE', name: 'Arc Hunter', d: 'Complete 5 Story Arcs', p: Object.values(P.arcs || {}).filter(x => x >= 3).length, need: 5, rw: { coins: 12000, title: 'Arc Hunter' } },
+    { id: 'diamond', g: 'BATTLE', name: 'Diamond Hands', d: 'Reach Diamond in Ranked', p: P.rank ? P.rank.best : 0, need: 4, rw: { coins: 10000, title: 'Diamond' } },
+    { id: 'legend', g: 'BATTLE', name: 'Living Legend', d: 'Reach Legend in Ranked', p: P.rank ? P.rank.best : 0, need: 6, rw: { coins: 30000, title: 'Legend' } },
+    { id: 'boss100k', g: 'BATTLE', name: 'Boss Breaker', d: 'Deal 100,000 damage to a Daily Boss in one fight', p: Math.max(P.bossBestEver || 0, (P.boss && P.boss.best) || 0), need: 100000, rw: { coins: 8000, title: 'Boss Breaker' } },
+    { id: 'pvp10', g: 'SOCIAL', name: 'Rival', d: 'Win 10 battles against other players', p: B.pvpW || 0, need: 10, rw: { coins: 5000, title: 'Duelist' } },
+    { id: 'streak7', g: 'SOCIAL', name: 'Dedicated', d: 'Reach a 7-day login streak', p: P.login ? P.login.streak : 0, need: 7, rw: { coins: 5000, title: 'Dedicated' } },
+    { id: 'master', g: 'SOCIAL', name: 'Mastery', d: 'Get a card to Mastery 4', p: Math.max(0, ...Object.values(P.mast || {}).map(mastLv)) - 1, need: 4, rw: { coins: 6000, title: 'Master' } },
+  ]
+  for (const a of Object.keys(ANIME_NAMES)) { const s = C.filter(c => c.anime === a); if (s.length < 5) continue; L.push({ id: 'set_' + a, g: 'SERIES SETS', name: ANIME_NAMES[a] + ' Master', d: 'Own every ' + ANIME_NAMES[a] + ' card', p: s.filter(c => own(c.key)).length, need: s.length, rw: { coins: 4000 + s.length * 300, title: ANIME_NAMES[a] + ' Master' } }) }
+  const got = P.ach || {}
+  return L.map(x => ({ ...x, p: Math.min(x.p, x.need), done: x.p >= x.need, claimed: !!got[x.id] }))
+}
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
@@ -442,7 +471,7 @@ function act(a) {
       { const M = P.mast || (P.mast = {}); const ups = []; for (const k of P.team.filter(Boolean)) { const before = mastLv(M[k] || 0); M[k] = (M[k] || 0) + (a.won ? 25 : 10); const after = mastLv(M[k]); for (let l = before + 1; l <= after; l++) { if (MAST_RW[l - 1]) P.coins += MAST_RW[l - 1]; ups.push(cardName(k) + ' Mastery ' + l) } } if (ups.length) notice('Mastery up: ' + ups.join(', '), 'ok') }
       if (a.mode === 'boss') {
         const Bo = bossP(), BD = bossToday(); if (Bo.tries >= BOSS_TRIES) return { error: 'No boss attempts left today.' }
-        Bo.tries++; const dmg = Math.max(0, Math.min(2e6, Math.round(+a.dmg || 0))); Bo.total += dmg; const prev = Bo.best; Bo.best = Math.max(Bo.best, dmg); addXP(30)
+        Bo.tries++; const dmg = Math.max(0, Math.min(2e6, Math.round(+a.dmg || 0))); Bo.total += dmg; const prev = Bo.best; Bo.best = Math.max(Bo.best, dmg); P.bossBestEver = Math.max(P.bossBestEver || 0, dmg); addXP(30)
         const got = []; for (let i = 0; i < BOSS_RW.length; i++) { const r = BOSS_RW[i]; if (Bo.best >= r.at && !Bo.got.includes(i)) { Bo.got.push(i); if (r.coins) P.coins += r.coins; if (r.shards) P.shards = (P.shards || 0) + r.shards; if (r.pack) P.pending[r.pack] = (P.pending[r.pack] || 0) + 1; got.push(r.label) } }
         return { msg: `${dmg.toLocaleString()} damage to the boss${dmg > prev ? ' · NEW BEST' : ''}${got.length ? ' · Unlocked: ' + got.join(', ') : ''}` }
       }
@@ -522,10 +551,19 @@ function act(a) {
       S2[tr].push(t); if (R.coins) P.coins += R.coins; if (R.shards) P.shards = (P.shards || 0) + R.shards; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1
       return { msg: 'Claimed: ' + (R.pick ? cardName(a.key) : R.label), rw: R }
     }
+    case 'achClaim': {
+      const x = achList().find(z => z.id === a.id)
+      if (!x) return { error: 'Unknown achievement.' }; if (!x.done) return { error: 'Not done yet.' }; if (x.claimed) return { error: 'Already claimed.' }
+      ;(P.ach = P.ach || {})[x.id] = Date.now(); const R = x.rw
+      if (R.coins) P.coins += R.coins; if (R.shards) P.shards = (P.shards || 0) + R.shards; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1
+      if (R.title) { const id = 'title_ach_' + x.id; (P.cos = P.cos || []).includes(id) || P.cos.push(id) }
+      addXP(30); return { msg: `Achievement: ${x.name}!${R.title ? ' New title: ' + R.title : ''}`, rw: R }
+    }
+    case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }
     case 'equip': {
       const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
       if (a.id && !(P.cos || []).includes(a.id)) return { error: 'You have not unlocked that yet.' }
-      (P.eq = P.eq || {})[ty] = a.id || null; return {}
+      ;(P.eq = P.eq || {})[ty] = a.id || null; return {}
     }
     case 'claim': {
       const r = rewards().find(r => r.id === a.id); if (!r) return { error: 'Reward not found.' }
@@ -544,7 +582,7 @@ function state() {
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now(),
-    cos: COSMETICS, pass: (() => { const S2 = passP(); return { ...S2, theme: theme(), shown: seasonShown(), seasonCards: seasonCards().map(c => c.key), tier: Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER)), into: S2.xp % PASS_TIER, per: PASS_TIER, max: PASS_TIERS, cost: PASS_COST, ends: (seasonNo() + 1) * 28 * 864e5, rw: Array.from({ length: PASS_TIERS }, (_, i) => [passReward('f', i + 1), passReward('p', i + 1)]) } })(),
+    cos: { ...COSMETICS, ...Object.fromEntries(achList().filter(x => x.rw.title).map(x => ['title_ach_' + x.id, { type: 'title', name: x.rw.title, d: 'Achievement: ' + x.name }])) }, ach: achList(), pass: (() => { const S2 = passP(); return { ...S2, theme: theme(), shown: seasonShown(), seasonCards: seasonCards().map(c => c.key), tier: Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER)), into: S2.xp % PASS_TIER, per: PASS_TIER, max: PASS_TIERS, cost: PASS_COST, ends: (seasonNo() + 1) * 28 * 864e5, rw: Array.from({ length: PASS_TIERS }, (_, i) => [passReward('f', i + 1), passReward('p', i + 1)]) } })(),
     ranked: (() => { const R = rankP(), i = rankOf(R.pts); return { ...R, tier: i, ranks: RANKS, ends: (seasonNo() + 1) * 28 * 864e5 } })(),
     boss: (() => { const BD = bossToday(); return BD ? { ...BD, me: bossP() } : null })(),
     login: (() => { const { L, can, next } = loginP(); return { streak: L.streak, can, next, rw: LOGIN_RW } })(),

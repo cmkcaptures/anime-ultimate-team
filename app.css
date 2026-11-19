@@ -2628,3 +2628,23 @@ body[data-opener=opener_rivals] .op2 .o2-bg { background: linear-gradient(115deg
   #arena.bc .ar-side .ar-bench { opacity: .9; transform: scale(.85) }
   .ftag, .mtag { font-size: 12px !important; padding: 2px 8px !important }
 }
+
+/* ================= PROFILE CARD + ACHIEVEMENTS ================= */
+.pav { flex: 0 0 auto }
+.pav.av { background: var(--art) var(--fx) var(--fy) / 260% no-repeat !important; color: transparent !important; box-shadow: 0 0 0 3px #fff !important }
+.pav.bd-border_rivals { box-shadow: 0 0 0 3px #fff, -3px 0 0 5px #ff3b5c, 3px 0 0 5px #2a7bff !important }
+.ptitle2 { display: inline-block; margin: 2px 0 0 0; padding: 2px 8px; border-radius: 7px; background: linear-gradient(115deg, #ffe14a, #ff9a00); color: #3a1a00; font: 800 10px var(--eUI); letter-spacing: .1em; text-transform: uppercase; box-shadow: 0 0 0 2px #fff }
+.prow .pi b + .ptitle2 { margin-left: 6px; vertical-align: 2px }
+.psheet .ptitle2 { margin: 4px 0 6px; font-size: 12px }
+.phead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap }
+.phead .pme { flex: 1; display: grid; gap: 2px }
+.pcard-prev { display: flex; align-items: center; gap: 16px; padding: 14px; margin: 6px 0 10px; border-radius: 16px; background: #0a0420; box-shadow: 0 0 0 2px rgba(255,255,255,.7) }
+.pcard-prev b { display: block; font: 800 26px var(--eD); color: #fff }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-bottom: 14px }
+.ach { position: relative; display: grid; gap: 5px; padding: 14px 16px; border-radius: 16px; background: linear-gradient(160deg, #3a2a7a, var(--eN)); box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(26,11,58,.55) }
+.ach b { font: 800 20px var(--eD); color: #fff } .ach small { font: 600 12px var(--eUI); color: rgba(255,255,255,.8) }
+.ach i { display: block; height: 10px; border-radius: 6px; background: #0a0420; box-shadow: 0 0 0 2px rgba(255,255,255,.6); overflow: hidden } .ach s { display: block; height: 100%; background: repeating-linear-gradient(115deg, #ffe14a 0 8px, #ffb000 8px 16px) }
+.ach span { font: 800 11px var(--eUI); color: rgba(255,255,255,.7) } .ach em { font: 700 12px var(--eUI); font-style: normal; color: var(--eY) }
+.ach.ready { box-shadow: 0 0 0 3px var(--eY), 0 6px 0 3px #8a3a00 } .ach.got { opacity: .55 }
+.ach .btn { margin-top: 4px } .ach-ok { color: #5fe0b0 !important }
+.ptitle2 { justify-self: start; width: max-content }
