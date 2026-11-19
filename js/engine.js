@@ -65,6 +65,17 @@ function banner() {
   const ends = (wk + 1) * 7 * 864e5 - 3 * 864e5
   return { id: 'b' + wk, name: 'FEATURED BANNER', cost: BANNER_COST, featured: [f1.key, f2.key], ends, pityMythic: PITY_MYTHIC, pityFeatured: PITY_FEATURED }
 }
+const SHARD_GET = { C: 5, U: 10, R: 25, E: 60, L: 150, M: 300, X: 600 }, SHARD_COST = { C: 40, U: 80, R: 200, E: 500, L: 1500, M: 3000, X: 6000 }
+const RK = r => 'CURELMX'.indexOf(r)
+// challenges: trade cards in for rewards. per = times per day
+const SBCS = [
+  { id: 'starter', name: 'Starter Squad', d: 'Any 5 cards.', n: 5, per: 3, rw: { pack: 'silver' } },
+  { id: 'story', name: 'Same Story', d: '3 cards from the same anime.', n: 3, same: 1, per: 1, rw: { pack: 'standard' } },
+  { id: 'rising', name: 'Rising Stars', d: '4 cards, Rare or better.', n: 4, minR: 'R', per: 1, rw: { pack: 'jumbo' } },
+  { id: 'cross', name: 'Crossover', d: '5 cards from 5 different anime, Rare or better.', n: 5, minR: 'R', distinct: 1, per: 1, rw: { coins: 4000, shards: 150 } },
+  { id: 'elite', name: 'Elite Trade', d: '3 cards, Epic or better.', n: 3, minR: 'E', per: 1, rw: { pack: 'premium' } },
+  { id: 'legend', name: 'Legend Exchange', d: '2 cards, Legendary or better.', n: 2, minR: 'L', per: 1, rw: { pack: 'premium', shards: 600 } },
+]
 const FREE_EVERY = 12 * 3600e3, FREE_MAX = 2, LIGHT_EVERY = 6 * 3600e3, LIGHT_MAX = 3
 const PP_PER_PACK = 5, PP_COST = { C: 35, U: 70, R: 150, E: 450, L: 1400, M: 2400, X: 4000 }
 function value(c, lvl = 0) {
@@ -249,6 +260,35 @@ function act(a) {
       const got = quickSell(c, e.lvl || 0); P.coins += got; e.n--; if (e.n <= 0) delete P.club.cards[a.key]
       return { msg: `Quick sold for ${got.toLocaleString()} coins.` }
     }
+    case 'shred': {
+      const list = a.all ? Object.keys(P.club.cards) : [a.key]; let got = 0, cnt = 0
+      for (const k of list) { const e = own(k), c = byKey(k); if (!e || !c) continue; const x = Math.min(e.n - 1, spare(k)); if (x < 1) continue; e.n -= x; got += x * SHARD_GET[c.r]; cnt += x }
+      if (!cnt) return { error: 'No spare duplicates to shred.' }
+      P.shards = (P.shards || 0) + got; return { msg: `Shredded ${cnt} duplicate${cnt > 1 ? 's' : ''} for ${got.toLocaleString()} shards.` }
+    }
+    case 'craft': {
+      const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
+      const cost = SHARD_COST[c.r]; if ((P.shards || 0) < cost) return { error: `You need ${cost.toLocaleString()} shards.` }
+      P.shards -= cost; giveCard(a.key); P.last = [a.key]; addXP(10); return { msg: `Crafted ${cardName(a.key)}.` }
+    }
+    case 'sbc': {
+      const q = SBCS.find(x => x.id === a.id); if (!q) return { error: 'Unknown challenge.' }
+      const day = Math.floor(Date.now() / 864e5), D = P.sbc && P.sbc.day === day ? P.sbc : (P.sbc = { day, done: {} })
+      if ((D.done[q.id] || 0) >= q.per) return { error: 'Done for today. It resets at midnight UTC.' }
+      const keys = a.keys || []; if (keys.length !== q.n) return { error: `Needs exactly ${q.n} cards.` }
+      const use = {}; for (const k of keys) use[k] = (use[k] || 0) + 1
+      for (const k in use) { const c = byKey(k); if (!c || spare(k) < use[k]) return { error: 'You can only use cards you own that are not in your team.' } }
+      const cs = keys.map(byKey)
+      if (q.minR && cs.some(c => RK(c.r) < RK(q.minR))) return { error: 'Some cards are below the required rarity.' }
+      if (q.same && new Set(cs.map(c => c.anime)).size !== 1) return { error: 'All cards must be from the same anime.' }
+      if (q.distinct && new Set(cs.map(c => c.anime)).size !== q.n) return { error: 'Every card must be from a different anime.' }
+      for (const k in use) { const e = own(k); e.n -= use[k]; if (e.n <= 0) delete P.club.cards[k] }
+      D.done[q.id] = (D.done[q.id] || 0) + 1; addXP(25)
+      if (q.rw.pack) P.pending[q.rw.pack] = (P.pending[q.rw.pack] || 0) + 1
+      if (q.rw.coins) P.coins += q.rw.coins
+      if (q.rw.shards) P.shards = (P.shards || 0) + q.rw.shards
+      return { msg: `${q.name} complete!`, rw: q.rw }
+    }
     case 'awaken': {
       const e = own(a.key); if (!e) return { error: 'You do not own that card.' }
       if ((e.lvl || 0) >= 5) return { error: 'Already fully awakened.' }
@@ -323,7 +363,7 @@ function state() {
   rollFree()
   const P = S.profile
   const out = {
-    profile: P, notices: S.notices, packs: PACKS, banner: banner(), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST,
+    profile: P, notices: S.notices, packs: PACKS, banner: banner(), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now()

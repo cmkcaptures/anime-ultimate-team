@@ -397,11 +397,13 @@ async function cardDetail(key) {
       add('green', lvl >= 5 ? 'MAX ★' : `AWAKEN ★${lvl + 1}`, !(e.n > 1 && lvl < 5), async () => { await act('awaken', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       add('gold', 'SELL ON MARKET', spare < 1, () => listSheet(key))
       add('dark', `QUICK SELL ${fmt(ST.quick[key])}`, spare < 1, async () => { await act('quickSell', { key }); if (club()[key]) cardDetail(key); else closeModal(); if (CUR === 'cards') rerender() })
+      if (e.n > 1) add('dark', `SHRED ${e.n - 1} → ◆${fmt((e.n - 1) * ST.shardGet[c.r])}`, spare < 1, async () => { await act('shred', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       d.append(a)
       if (e.n > 1) d.append(h('span', 'muted', `<small style="font-weight:700">Awakening uses a duplicate. It adds a star and market value; rating and stats stay the same.</small>`))
     } else {
       const b = h('button', 'btn block', 'FIND ON MARKET'); b.onclick = () => { MS.q = c.name.toLowerCase(); MS.view = 'results'; go('market') }; d.append(b)
     }
+    { const cost = ST.shardCost[c.r], cb = h('button', 'btn block dark', `CRAFT FOR ◆${fmt(cost)} SHARDS <small>(you have ${fmt(P.shards || 0)})</small>`); cb.disabled = (P.shards || 0) < cost; cb.onclick = async () => { const r = await act('craft', { key }); if (!r.error) cardDetail(key) }; d.append(cb) }
     sh.append(d)
   })
 }
@@ -613,6 +615,7 @@ function transferTargets(el) {
 PAGES.shop = (el) => {
   bannerBlock(el)
   shopHero(el)
+  sbcBlock(el)
   el.append(h('div', 'sec', `<h3>PACK POINT EXCHANGE</h3><span class="cur"><i class="pp-i"></i>${fmt(P.pp || 0)}</span>`))
   el.append(h('p', 'muted', '<small style="font-weight:700">Every pack you open gives 5 pack points. Spend them on the exact card you want.</small>'))
   const g = h('div', 'ppgrid')
@@ -1135,4 +1138,43 @@ async function multiOpen(type, n) {
   }
   const fin = () => { FXC.dispose(); document.body.classList.remove('in-opener'); ov.remove(); go('shop') }
   ov.querySelector('.mo-done').onclick = fin
+}
+
+// ================= SHARDS + CHALLENGES =================
+const RKA = r => 'CURELMX'.indexOf(r)
+function rwText(rw) { return [rw.pack && (ST.packs[rw.pack] || {}).name, rw.coins && fmt(rw.coins) + ' coins', rw.shards && '◆' + fmt(rw.shards) + ' shards'].filter(Boolean).join(' + ') }
+function dupCount() { let n = 0, s = 0; for (const k in club()) { const c = BYKEY[k], e = club()[k]; if (!c) continue; const x = Math.min(e.n - 1, e.n - (P.team.includes(k) ? 1 : 0)); if (x > 0) { n += x; s += x * ST.shardGet[c.r] } } return { n, s } }
+function sbcBlock(el) {
+  const dc = dupCount()
+  el.append(h('div', 'sec', `<h3>CHALLENGES</h3><span class="cur shard-c">◆ ${fmt(P.shards || 0)}</span>`))
+  const sb = h('div', 'shred-bar', `<div><b>DUPLICATES → SHARDS</b><span>${dc.n ? `${dc.n} spare duplicates worth ◆${fmt(dc.s)}` : 'No spare duplicates right now'}. Spend shards on any exact card from its card page.</span></div>`)
+  const sbtn = h('button', 'btn gold', 'SHRED ALL'); sbtn.disabled = !dc.n; sbtn.onclick = async () => { const r = await act('shred', { all: 1 }); if (!r.error) rerender() }
+  sb.append(sbtn); el.append(sb)
+  const g = h('div', 'sbc-grid')
+  for (const q of ST.sbcs) {
+    const b = h('button', 'sbc' + (q.left < 1 ? ' done' : ''), `<span class="sbc-n">${q.n} CARDS${q.minR ? ' · ' + TIER[q.minR].name.toUpperCase() + '+' : ''}</span><b>${q.name}</b><p>${q.d}</p><div class="sbc-rw"><span>REWARD</span>${rwText(q.rw)}</div><small>${q.left < 1 ? 'DONE TODAY' : q.left + ' left today'}</small>`)
+    b.onclick = () => sbcSheet(q); g.append(b)
+  }
+  el.append(g)
+}
+function sbcFill(q, lastCopies) {
+  const units = []
+  for (const k in club()) { const c = BYKEY[k], e = club()[k]; if (!c || (q.minR && RKA(c.r) < RKA(q.minR))) continue; const sp = e.n - (P.team.includes(k) ? 1 : 0), x = lastCopies ? sp : Math.min(sp, e.n - 1); for (let i = 0; i < x; i++) units.push(c) }
+  units.sort((a, b) => (ST.values[a.key] || 0) - (ST.values[b.key] || 0))
+  if (q.same) { const by = {}; for (const c of units) (by[c.anime] = by[c.anime] || []).push(c); let best = null; for (const a in by) { const L = by[a].slice(0, q.n); if (L.length === q.n) { const v = L.reduce((s, c) => s + (ST.values[c.key] || 0), 0); if (!best || v < best.v) best = { L, v } } } return best ? best.L : [] }
+  if (q.distinct) { const seen = new Set(), L = []; for (const c of units) if (!seen.has(c.anime)) { seen.add(c.anime); L.push(c) } return L.length >= q.n ? L.slice(0, q.n) : [] }
+  return units.length >= q.n ? units.slice(0, q.n) : []
+}
+function sbcSheet(q, last = false) {
+  const pick = sbcFill(q, last)
+  openModal(sh => {
+    sh.append(h('div', 'wi-head', `<span class="eyebrow">CHALLENGE · ${q.left < 1 ? 'DONE TODAY' : q.left + ' LEFT TODAY'}</span><h2>${q.name}</h2><p class="muted" style="font-weight:800">${q.d} Reward: ${rwText(q.rw)}</p>`))
+    const tg = h('label', 'sbc-tog', `<input type="checkbox" ${last ? 'checked' : ''}> Allow using my last copy of a card`); tg.querySelector('input').onchange = e => sbcSheet(q, e.target.checked); sh.append(tg)
+    if (!pick.length) { sh.append(h('p', 'muted', `<b>You don't have enough ${last ? 'spare' : 'duplicate'} cards for this yet.${last ? '' : ' Try allowing last copies.'}</b>`)); return }
+    sh.append(h('p', 'muted', '<small style="font-weight:700">Auto-picked your cheapest cards that fit. These cards will be used up:</small>'))
+    const g = h('div', 'cardgrid wi-grid'); for (const c of pick) { const b = h('div', 'cg'); b.append(cardImg(eff(c), 200)); g.append(b) } sh.append(g)
+    const go2 = h('button', 'btn gold block big', `SUBMIT · GET ${rwText(q.rw).toUpperCase()}`); go2.disabled = q.left < 1
+    go2.onclick = async () => { const r = await act('sbc', { id: q.id, keys: pick.map(c => c.key) }); if (!r.error) { closeModal(); if (r.rw.pack) openPack(r.rw.pack); else rerender() } }
+    sh.append(go2)
+  }, true)
 }
