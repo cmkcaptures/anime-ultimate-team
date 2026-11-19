@@ -737,7 +737,7 @@ export function startBattle(stage) {
   async function end(won) {
     B.over = true; controls()
     await wait(500)
-    const r = stage.pvp ? await X.act('pvp', { won, name: stage.name }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0) } : { stage: stage.n, won })
+    const r = stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0) } : { stage: stage.n, won })
     sfx(won ? 'claim' : 'error')
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')

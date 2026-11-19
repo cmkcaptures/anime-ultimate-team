@@ -23,7 +23,7 @@ async function cloudSave() {
 function summary() {
   const P = S.profile, own = Object.keys(P.club.cards).filter(k => byKey(k)), team = P.team.filter(k => k && byKey(k))
   return { level: levelOf(P.xp || 0).lv, cards: own.length, packs: P.club.packs || 0, cleared: (P.battle && P.battle.cleared) || 0, wins: (P.battle && P.battle.wins) || 0, losses: (P.battle && P.battle.losses) || 0,
-    pvpWins: (P.battle && P.battle.pvpW) || 0, bossScore: P.boss && P.boss.day === Math.floor(Date.now() / 864e5) ? P.boss.day * 1e9 + P.boss.best : 0, rating: team.length ? Math.round(team.reduce((n, k) => n + byKey(k).ovr, 0) / team.length) : 0, team, showcase: (P.showcase || []).filter(k => byKey(k)) }
+    pvpWins: (P.battle && P.battle.pvpW) || 0, rivals: Object.fromEntries(Object.entries(P.rivals || {}).map(([k, v]) => [k, [v.w, v.l]])), bossScore: P.boss && P.boss.day === Math.floor(Date.now() / 864e5) ? P.boss.day * 1e9 + P.boss.best : 0, rating: team.length ? Math.round(team.reduce((n, k) => n + byKey(k).ovr, 0) / team.length) : 0, team, showcase: (P.showcase || []).filter(k => byKey(k)) }
 }
 function setSync(s) { document.documentElement.dataset.sync = s }
 
@@ -168,6 +168,9 @@ function bossToday() {
   return { day, key: c.key, hpMult: BOSS_HP, tries: BOSS_TRIES, rw: BOSS_RW, ends: (day + 1) * 864e5, ab: { ...ab, name: c.mv || 'BOSS ATTACK' } }
 }
 function bossP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.boss || P.boss.day !== d) P.boss = { day: d, tries: 0, best: 0, total: 0, got: [] }; return P.boss }
+// ---------- LOGIN STREAK ----------
+const LOGIN_RW = [{ coins: 1000 }, { coins: 1500 }, { pack: 'silver' }, { coins: 2500 }, { shards: 300 }, { pack: 'standard' }, { pack: 'premium' }]
+function loginP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.login) P.login = { last: 0, streak: 0 }; const L = P.login; if (L.last && d - L.last > 1) L.streak = 0; return { L, d, can: L.last !== d, next: L.last !== d ? (L.streak % 7) : ((L.streak - 1) % 7) } }
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
@@ -406,9 +409,12 @@ function act(a) {
     }
     case 'pvp': {
       P.battle = P.battle || { cleared: 0, wins: 0, losses: 0 }
+      if (a.uid) { const R = (P.rivals = P.rivals || {}), r = R[a.uid] || (R[a.uid] = { name: a.name, w: 0, l: 0 }); r.name = a.name || r.name; a.won ? r.w++ : r.l++ }
       if (!a.won) { P.battle.pvpL = (P.battle.pvpL || 0) + 1; addXP(10); return {} }
-      P.battle.pvpW = (P.battle.pvpW || 0) + 1; P.coins += 2500; addXP(50)
-      return { msg: `You beat ${a.name || 'that player'}'s team! +2,500 coins.` }
+      const day = Math.floor(Date.now() / 864e5); if (!P.pvpDay || P.pvpDay.d !== day) P.pvpDay = { d: day, n: 0 }; P.pvpDay.n++
+      const pay = P.pvpDay.n <= 3 ? 2500 : 300
+      P.battle.pvpW = (P.battle.pvpW || 0) + 1; P.coins += pay; addXP(50)
+      return { msg: `You beat ${a.name || 'that player'}'s team! +${pay.toLocaleString()} coins${pay < 2500 ? ' (full rewards for your first 3 PvP wins each day)' : ''}.` }
     }
     case 'battle': {
       // mastery for every fighter in your team
@@ -463,6 +469,26 @@ function act(a) {
       if (first) { P.battle.cleared = n; if (PK[n]) { P.pending[PK[n]] = (P.pending[PK[n]] || 0) + 1; extra = ` and a ${PK[n] === 'premium' ? 'Premium' : 'Legends'} pack` } }
       return { msg: `Stage ${n} ${first ? 'cleared' : 'won'}! +${coins.toLocaleString()} coins${extra}.` }
     }
+    case 'loginClaim': {
+      const { L, d, can, next } = loginP(); if (!can) return { error: 'Already claimed today. Come back tomorrow!' }
+      const R = LOGIN_RW[next]; L.last = d; L.streak++
+      if (R.coins) P.coins += R.coins; if (R.shards) P.shards = (P.shards || 0) + R.shards; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1
+      addXP(20); return { msg: `Day ${next + 1} reward claimed!`, rw: R }
+    }
+    case 'tradeEscrow': {
+      const offer = a.offer || [], coins = Math.max(0, Math.round(+a.coins || 0)); if (P.coins < coins) return { error: 'Not enough coins.' }
+      const use = {}; for (const k of offer) use[k] = (use[k] || 0) + 1
+      for (const k in use) if (spare(k) < use[k]) return { error: 'You can only offer cards you own that are not in your team.' }
+      for (const k in use) { const o = own(k); o.n -= use[k]; if (o.n <= 0) delete P.club.cards[k] } P.coins -= coins; return {}
+    }
+    case 'tradeRefund': { for (const k of a.offer || []) if (byKey(k)) giveCard(k); P.coins += Math.max(0, Math.round(+a.coins || 0)); return { msg: 'A trade request was declined. Your offer was returned.' } }
+    case 'tradeGive': {
+      if (spare(a.key) < 1) return { error: "You don't have a spare copy of that card (it may be your last or in your team)." }
+      const o = own(a.key); o.n--; if (o.n <= 0) delete P.club.cards[a.key]
+      for (const k of a.offer || []) if (byKey(k)) giveCard(k); P.coins += Math.max(0, Math.round(+a.coins || 0)); addXP(20)
+      return { msg: 'Trade complete!' }
+    }
+    case 'tradeReceive': { if (byKey(a.key)) giveCard(a.key); P.last = [a.key]; addXP(20); return { msg: `Trade complete! You got ${cardName(a.key)}.` } }
     case 'passBuy': { const S2 = passP(); if (S2.prem) return { error: 'Already unlocked.' }; if (P.coins < PASS_COST) return { error: `You need ${PASS_COST.toLocaleString()} coins.` }; P.coins -= PASS_COST; S2.prem = true; return { msg: 'Premium Pass unlocked!' } }
     case 'passClaim': {
       const S2 = passP(), t = +a.tier, tr = a.track === 'p' ? 'p' : 'f'; if (!(t >= 1 && t <= PASS_TIERS)) return { error: 'Unknown tier.' }
@@ -493,6 +519,7 @@ function state() {
     pass: (() => { const S2 = passP(); return { ...S2, tier: Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER)), into: S2.xp % PASS_TIER, per: PASS_TIER, max: PASS_TIERS, cost: PASS_COST, ends: (seasonNo() + 1) * 28 * 864e5, rw: Array.from({ length: PASS_TIERS }, (_, i) => [passReward('f', i + 1), passReward('p', i + 1)]) } })(),
     ranked: (() => { const R = rankP(), i = rankOf(R.pts); return { ...R, tier: i, ranks: RANKS, ends: (seasonNo() + 1) * 28 * 864e5 } })(),
     boss: (() => { const BD = bossToday(); return BD ? { ...BD, me: bossP() } : null })(),
+    login: (() => { const { L, can, next } = loginP(); return { streak: L.streak, can, next, rw: LOGIN_RW } })(),
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = value(c, e ? e.lvl || 0 : 0); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }

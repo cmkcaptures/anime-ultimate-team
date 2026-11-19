@@ -89,3 +89,9 @@ export async function addFriend(uid) { if (uid === USER.uid) return; await F.upd
 export async function removeFriend(uid) { await F.updateDoc(F.doc(db, 'profiles', USER.uid), { friends: F.arrayRemove(uid) }); PROFILE.friends = (PROFILE.friends || []).filter(x => x !== uid) }
 export async function friends() { return (await Promise.all((PROFILE.friends || []).map(profile))).filter(Boolean) }
 export async function signOut() { await A.signOut(auth); location.reload() }
+
+// ---- trades between friends (collection 'trades') ----
+export async function tradeCreate(t) { const r = await F.addDoc(F.collection(db, 'trades'), { ...t, from: USER.uid, fromName: PROFILE.name, status: 'open', at: Date.now() }); return r.id }
+export async function tradesIn() { const q = F.query(F.collection(db, 'trades'), F.where('to', '==', USER.uid)); return (await F.getDocs(q)).docs.map(d => ({ id: d.id, ...d.data() })) }
+export async function tradesOut() { const q = F.query(F.collection(db, 'trades'), F.where('from', '==', USER.uid)); return (await F.getDocs(q)).docs.map(d => ({ id: d.id, ...d.data() })) }
+export async function tradeSet(id, status) { await F.updateDoc(F.doc(db, 'trades', id), { status, upd: Date.now() }) }

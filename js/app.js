@@ -253,9 +253,11 @@ PAGES.home = (el) => {
     q('FREE PACK', '無料', F.charges ? F.charges + ' ready' : `<span data-until="${F.next}"></span>`, async () => { if (!ST.free.charges) return go('shop'); const r = await act('freePack'); if (!r.error) openPack('standard') }, F.charges > 0),
     q('WONDER PICK', 'ワンダー', W.charges + '/' + W.max + ' energy', () => go('wonder'), W.charges > 0),
     q('SEASON PASS', 'パス', ST.pass ? 'Tier ' + ST.pass.tier : '', () => go('pass')),
+    q('DAILY LOGIN', 'ログイン', ST.login.can ? 'Day ' + (ST.login.next + 1) + ' ready!' : ST.login.streak + ' day streak', () => loginSheet(), ST.login.can),
     q('PLAYERS', 'ランキング', 'Leaderboard', () => go('players')),
   )
   el.append(qs)
+  if (ST.login.can && !window.__loginShown) { window.__loginShown = 1; setTimeout(loginSheet, 700) }
   el.append(showcaseBlock())
   const recent = (P.last || []).map(k => BYKEY[k]).filter(Boolean).map(eff)
   const sec = h('div', 'sec', `<h3>LAST PULLS</h3><button class="link">MY CARDS ›</button>`); sec.querySelector('button').onclick = () => go('cards'); el.append(sec)
@@ -1062,7 +1064,7 @@ PAGES.players = async el => {
   head.innerHTML = `<div class="pav">${(meP.profile?.name || '?')[0].toUpperCase()}</div><div class="pme"><span class="eyebrow">SIGNED IN AS</span><b>${meP.profile?.name || ''}</b></div>`
   const so = h('button', 'btn dark sm', 'SIGN OUT'); so.onclick = () => { if (confirm('Sign out of this device?')) ACC.signOut() }; head.append(so)
   el.append(head)
-  const seg = segmented(['LEADERBOARD', 'FRIENDS', 'FIND PLAYER'], PS.tab, i => { PS.tab = i; rerender() }); seg.style.marginTop = '14px'; el.append(seg)
+  const seg = segmented(['LEADERBOARD', 'FRIENDS', 'TRADES', 'FIND PLAYER'], PS.tab, i => { PS.tab = i; rerender() }); seg.style.marginTop = '14px'; el.append(seg)
   const body = h('div', 'plist'); el.append(body)
   const row = (p, i) => {
     const r = h('button', 'prow' + (p.uid === meP.uid ? ' me' : ''))
@@ -1076,9 +1078,10 @@ PAGES.players = async el => {
       const list = await ACC.leaderboard(PS.sort); body.innerHTML = ''; body.append(sorts)
       list.forEach((p, i) => body.append(row(p, i)))
       if (!list.length) body.append(h('div', 'empty', '<b>No players yet</b>Share the link with your mates.'))
+    } else if (PS.tab === 2) { await tradesTab(body)
     } else if (PS.tab === 1) {
       const list = await ACC.friends(); body.innerHTML = ''
-      list.forEach(p => body.append(row(p)))
+      list.forEach(p => { const r = row(p), rv = (P.rivals || {})[p.uid]; if (rv) r.querySelector('.pi small').insertAdjacentHTML('beforeend', ` · <b style="color:var(--eY)">you ${rv.w}–${rv.l}</b>`); body.append(r) })
       if (!list.length) body.append(h('div', 'empty', '<b>No friends yet</b>Find a player by name and add them.'))
     } else {
       body.innerHTML = ''
@@ -1098,14 +1101,19 @@ function playerSheet(p) {
     const sc = (p.showcase || []).map(k => BYKEY[k]).filter(Boolean), tm = (p.team || []).map(k => BYKEY[k]).filter(Boolean)
     if (sc.length) { sh.append(h('div', 'sec', '<h3>SHOWCASE</h3>')); const g = h('div', 'cardgrid'); sc.forEach(c => { const b = h('div', 'cg'); b.append(cardImg(c, 240)); g.append(b) }); sh.append(g) }
     if (tm.length) { sh.append(h('div', 'sec', '<h3>TEAM</h3>')); const g = h('div', 'cardgrid'); tm.forEach(c => { const b = h('div', 'cg'); b.append(cardImg(c, 240)); g.append(b) }); sh.append(g) }
+    if (!mine) {
+      const my = (P.rivals || {})[p.uid] || { w: 0, l: 0 }, th = (p.rivals || {})[meP.uid] || [0, 0]
+      sh.append(h('div', 'rivalbox', `<span class="eyebrow">RIVALRY</span><div class="rv"><div><b>${my.w}–${my.l}</b><small>WHEN YOU CHALLENGE THEM</small></div><i>VS</i><div><b>${th[0]}–${th[1]}</b><small>WHEN THEY CHALLENGE YOU</small></div></div>`))
+    }
     const acts = h('div', 'grid2'); acts.style.marginTop = '16px'
     if (!mine) {
       const fb = h('button', 'btn ' + (isF ? 'dark' : 'violet'), isF ? 'REMOVE FRIEND' : 'ADD FRIEND')
       fb.onclick = async () => { isF ? await ACC.removeFriend(p.uid) : await ACC.addFriend(p.uid); toast(isF ? 'Removed from friends.' : p.name + ' added to friends.'); closeModal(); rerender() }
       const bb = h('button', 'btn gold', 'BATTLE THEIR TEAM'); bb.disabled = tm.length < 6 || P.team.filter(Boolean).length < 6
       bb.title = tm.length < 6 ? 'They need a full team of 6.' : 'Your team needs 6 fighters.'
-      bb.onclick = () => { closeModal(); startBattle({ n: 0, pvp: true, name: p.name, rating: p.rating || 85, level: 4, team: p.team }) }
-      acts.append(fb, bb)
+      bb.onclick = () => { closeModal(); startBattle({ n: 0, pvp: true, uid: p.uid, name: p.name, rating: p.rating || 85, level: 4, team: p.team }) }
+      const tr = h('button', 'btn green', 'REQUEST A CARD'); tr.onclick = () => tradeSheet(p)
+      acts.append(fb, bb, tr)
       if (tm.length < 6) sh.append(h('p', 'muted', '<small style="font-weight:700">They need a full team of 6 before you can battle them.</small>'))
     }
     sh.append(acts)
@@ -1276,4 +1284,88 @@ function passPick(t, r) {
     for (const c of POOL.filter(c => c.r === r).sort((a, b) => b.ovr - a.ovr)) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 200)); b.onclick = async () => { const x = await act('passClaim', { track: 'p', tier: t, key: c.key }); if (!x.error) { closeModal(); rerender() } }; g.append(b) }
     sh.append(g)
   }, true)
+}
+
+// ================= LOGIN STREAK =================
+function lrwText(R) { return R.coins ? fmt(R.coins) + ' coins' : R.shards ? '◆' + R.shards + ' shards' : ST.packs[R.pack].name }
+function loginSheet() {
+  const L = ST.login
+  openModal(sh => {
+    sh.append(h('div', 'wi-head', `<span class="eyebrow">ログインボーナス · DAILY LOGIN</span><h2>${L.can ? 'DAY ' + (L.next + 1) : L.streak + ' DAY STREAK'}</h2><p class="muted" style="font-weight:700">Log in every day. Miss a day and the streak starts again at Day 1. Day 7 is a Premium Drop.</p>`))
+    const g = h('div', 'lg-grid')
+    L.rw.forEach((R, i) => {
+      const done = L.can ? i < L.next : i <= L.next, today = L.can && i === L.next
+      g.append(h('div', 'lg-d' + (done ? ' done' : '') + (today ? ' today' : '') + (i === 6 ? ' big' : ''), `<small>DAY ${i + 1}</small><b>${lrwText(R)}</b><span>${done ? '✓' : today ? 'TODAY' : ''}</span>`))
+    })
+    sh.append(g)
+    const b = h('button', 'btn gold block big', L.can ? 'CLAIM DAY ' + (L.next + 1) : 'COME BACK TOMORROW'); b.disabled = !L.can
+    b.onclick = async () => { const r = await act('loginClaim'); if (r.error) return; closeModal(); if (r.rw.pack) openPack(r.rw.pack); else rerender() }
+    sh.append(b)
+  })
+}
+// ================= TRADES =================
+async function processTrades() {
+  try {
+    for (const t of await ACC.tradesOut()) {
+      if (t.status === 'accepted') { const r = await act('tradeReceive', { key: t.want }); if (!r.error) await ACC.tradeSet(t.id, 'done') }
+      else if (t.status === 'declined') { const r = await act('tradeRefund', { offer: t.offer, coins: t.coins }); if (!r.error) await ACC.tradeSet(t.id, 'refunded') }
+    }
+  } catch { }
+}
+setTimeout(processTrades, 4000)
+async function tradesTab(body) {
+  await processTrades()
+  const inc = (await ACC.tradesIn()).filter(t => t.status === 'open'), out = (await ACC.tradesOut()).filter(t => t.status === 'open')
+  body.innerHTML = ''
+  const desc = t => `${(t.offer || []).map(k => BYKEY[k] ? BYKEY[k].name : '?').join(', ') || ''}${t.coins ? ((t.offer || []).length ? ' + ' : '') + fmt(t.coins) + ' coins' : ''}`
+  body.append(h('div', 'sec', '<h3>REQUESTS FOR YOUR CARDS</h3>'))
+  if (!inc.length) body.append(h('div', 'empty', '<b>No requests</b>When a friend asks for one of your cards it shows up here.'))
+  for (const t of inc) {
+    const c = BYKEY[t.want], e = club()[t.want], spare = e ? e.n - (P.team.includes(t.want) ? 1 : 0) : 0
+    const r = h('div', 'trow'); const im = cardImg(eff(c), 200); r.append(im)
+    r.append(h('div', 'tinfo', `<b>${t.fromName} wants ${c.name}</b><small>${c.ver}</small><span>They offer: ${desc(t) || 'nothing'}</span>${spare < 1 ? '<em>You need a spare copy (not your last, not in your team) to accept.</em>' : ''}`))
+    const bx = h('div', 'tbtns'), ok = h('button', 'btn gold sm', 'ACCEPT'), no = h('button', 'btn dark sm', 'DECLINE'); ok.disabled = spare < 1
+    ok.onclick = async () => { const x = await act('tradeGive', { key: t.want, offer: t.offer, coins: t.coins }); if (x.error) return; await ACC.tradeSet(t.id, 'accepted'); rerender() }
+    no.onclick = async () => { await ACC.tradeSet(t.id, 'declined'); toast('Request declined.'); rerender() }
+    bx.append(ok, no); r.append(bx); body.append(r)
+  }
+  body.append(h('div', 'sec', '<h3>YOUR REQUESTS</h3>'))
+  if (!out.length) body.append(h('div', 'empty', '<b>None open</b>Open a friend\'s profile and tap Request a card.'))
+  for (const t of out) {
+    const c = BYKEY[t.want], r = h('div', 'trow'); r.append(cardImg(eff(c), 200))
+    r.append(h('div', 'tinfo', `<b>You asked ${t.toName} for ${c.name}</b><small>${c.ver}</small><span>You offered: ${desc(t) || 'nothing'}. Waiting for them.</span>`))
+    const bx = h('div', 'tbtns'), cx = h('button', 'btn dark sm', 'CANCEL')
+    cx.onclick = async () => { await ACC.tradeSet(t.id, 'declined'); await processTrades(); rerender() }
+    bx.append(cx); r.append(bx); body.append(r)
+  }
+}
+function tradeSheet(p) {
+  const pick = { want: null, offer: [], coins: 0 }
+  openModal(sh => {
+    sh.append(h('div', 'wi-head', `<span class="eyebrow">TRADE REQUEST</span><h2>Ask ${p.name} for a card</h2><p class="muted" style="font-weight:700">Pick the card you want and what you'll give for it. Your offer is held until they accept or decline.</p>`))
+    const sum = h('div', 'tsum'); sh.append(sum)
+    const q = h('input', 'field'); q.placeholder = 'Search the card you want'; sh.append(q)
+    const g1 = h('div', 'cardgrid tpick'); sh.append(g1)
+    sh.append(h('div', 'sec', '<h3>YOUR OFFER</h3><span class="muted" style="font-weight:700;font-size:12px">spare cards, up to 3</span>'))
+    const g2 = h('div', 'cardgrid tpick'); sh.append(g2)
+    const cw = h('label', 'tp-f', '<span>COINS</span>'), ci = h('input', 'field'); ci.inputMode = 'numeric'; ci.placeholder = '0'; ci.oninput = () => { pick.coins = Math.max(0, Math.min(P.coins, +ci.value || 0)); draw() }; cw.append(ci); sh.append(cw)
+    const send = h('button', 'btn gold block big', 'SEND REQUEST'); send.style.marginTop = '14px'; sh.append(send)
+    const spareList = owned().filter(c => { const e = club()[c.key]; return e.n - (P.team.includes(c.key) ? 1 : 0) >= 1 && e.n > 1 })
+    function draw() {
+      sum.innerHTML = `<b>Want:</b> ${pick.want ? BYKEY[pick.want].name + ' · ' + BYKEY[pick.want].ver : 'pick a card'} &nbsp; <b>Offer:</b> ${pick.offer.map(k => BYKEY[k].name).join(', ') || 'no cards'}${pick.coins ? ' + ' + fmt(pick.coins) + ' coins' : ''}`
+      send.disabled = !pick.want || (!pick.offer.length && !pick.coins)
+      const qq = q.value.trim().toLowerCase(); g1.innerHTML = ''
+      for (const c of POOL.filter(c => !qq || (c.name + ' ' + c.ver).toLowerCase().includes(qq)).sort((a, b) => b.ovr - a.ovr).slice(0, 18)) { const bt = h('button', 'cg' + (pick.want === c.key ? ' sel' : '')); bt.append(cardImg(eff(c), 200)); bt.onclick = () => { pick.want = c.key; draw() }; g1.append(bt) }
+      g2.innerHTML = ''
+      if (!spareList.length) g2.append(h('div', 'empty', '<b>No spare duplicates</b>You can still offer coins.'))
+      for (const c of spareList) { const on = pick.offer.includes(c.key), bt = h('button', 'cg' + (on ? ' sel' : '')); bt.append(cardImg(eff(c), 200)); bt.onclick = () => { if (on) pick.offer = pick.offer.filter(k => k !== c.key); else if (pick.offer.length < 3) pick.offer.push(c.key); draw() }; g2.append(bt) }
+    }
+    q.oninput = draw; draw()
+    send.onclick = async () => {
+      send.disabled = true
+      const x = await act('tradeEscrow', { offer: pick.offer, coins: pick.coins }); if (x.error) { send.disabled = false; return }
+      try { await ACC.tradeCreate({ to: p.uid, toName: p.name, want: pick.want, offer: pick.offer, coins: pick.coins }); toast('Request sent to ' + p.name + '!'); closeModal() }
+      catch { await act('tradeRefund', { offer: pick.offer, coins: pick.coins }); toast('Could not send the request. Your offer was returned.', 'err'); send.disabled = false }
+    }
+  })
 }
