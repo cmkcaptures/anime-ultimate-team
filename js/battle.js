@@ -11,6 +11,9 @@ export function initBattle(ctx) { X = ctx }
 const RING = ['ki', 'curse', 'chak', 'haki', 'mana', 'quirk', 'ego', 'breath', 'nen', 'magic', 'devil', 'stand', 'ghoul', 'reiatsu', 'kaiju', 'psychic', 'flame', 'hero']
 const tOf = c => c.t || 'ki'
 export const beats = (a, b) => RING[(RING.indexOf(a) + 1) % RING.length] === b
+// series synergy: 3+ fighters from one series boost the whole team's damage
+export const SYN = { 3: 4, 4: 6, 5: 8, 6: 10 }
+export function synergy(cards) { const n = {}; for (const c of cards) if (c) n[c.anime] = (n[c.anime] || 0) + 1; let best = null; for (const a in n) if (!best || n[a] > n[best]) best = a; const k = best ? n[best] : 0; return { anime: best, n: k, bonus: SYN[Math.min(6, k)] || 0 } }
 const matchup = (att, def) => beats(tOf(att.card), tOf(def.card)) ? 1.3 : beats(tOf(def.card), tOf(att.card)) ? .8 : 1
 const tcol = c => (TYPE[tOf(c)] || TYPE.ki).c[0]
 const tname = c => (TYPE[tOf(c)] || TYPE.ki).en
@@ -391,6 +394,7 @@ export function startBattle(stage) {
       if (e.copyStat) { const best = Math.max(...foe.team.map(g => Math.max(g.pwr, g.ki, g.def))); f.pwr = Math.max(f.pwr, best) }
     }
   }
+  for (const sd of [B.you, B.ai]) { const sy = synergy(sd.team.map(f => f.card)); if (sy.bonus) { sd.teamDmg = (sd.teamDmg || 0) + sy.bonus; sd.syn = sy } }
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
   sealNow()
   refill(B.you); refill(B.ai)

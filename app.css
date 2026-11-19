@@ -2093,3 +2093,19 @@ body[data-page=shop] .btn.dark.big { background: rgba(0,0,0,.4) !important; box-
 .bct-s .bk i { width: 14px !important; height: 6px !important; transform: none !important }
 .bct-vs b { font-size: 30px !important } .bct-vs { min-width: 70px }
 @media (max-width: 760px) { .bct-s { height: 56px !important; gap: 8px !important } .bct-s .bp { width: 46px !important; height: 56px !important } .bct-s .bh { height: 14px !important } .bct-s .bnum { font-size: 12px !important } .bct-s .bn b { font-size: 14px !important } }
+
+/* team builder */
+.synrow { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.08) }
+.synrow b { font: 800 15px 'Barlow Condensed', sans-serif; letter-spacing: .08em; color: #ffcc00 } .synrow span { font: 600 12px Inter; color: #c9bff0 }
+.tb-targets { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin }
+.tb-t { flex: 0 0 auto; display: grid; gap: 3px; text-align: left; padding: 10px 14px; border: 0; background: #2a1a5e; color: #fff; cursor: pointer; border-left: 3px solid transparent; max-width: 230px }
+.tb-t b { font: 800 14px 'Barlow Condensed', sans-serif; letter-spacing: .08em; white-space: nowrap } .tb-t small { font: 600 11px Inter; color: #c9bff0 }
+.tb-t:hover { background: #352270 } .tb-t.on { background: #ffcc00; color: #1a0f3a } .tb-t.on small { color: #3a2a7a }
+.tb-t.hot { border-left-color: #ffcc00 }
+.tb-tip { margin-top: 8px; padding: 10px 12px; background: #2a1a5e; font: 600 13px/1.5 Inter; color: #d8ccff } .tb-tip b { color: #fff }
+.syn-tag { position: absolute; z-index: 3; left: 50%; bottom: 4px; transform: translateX(-50%); padding: 2px 8px; background: #ffcc00; color: #1a0f3a; font: 800 10px Inter; letter-spacing: .1em; pointer-events: none }
+.cg { position: relative }
+.tp-bar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0 12px }
+.tp-f { display: grid; gap: 4px } .tp-f span { font: 700 10px Inter; letter-spacing: .14em; color: #9a8cd0 }
+.tp-f select { width: 100%; padding: 8px 10px; background: #2a1a5e; color: #fff; border: 0; font: 600 13px Inter }
+@media (max-width: 600px) { .tp-bar { grid-template-columns: 1fr } }

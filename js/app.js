@@ -1,5 +1,5 @@
 import { createFX } from './fx2d.js'
-import { initBattle, battlePage, startBattle } from './battle.js'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN } from './battle.js'
 import * as ACC from './account.js'
 import { sfx, sfxOn } from './sfx.js'
 // ANIME ULTIMATE TEAM — app shell + pages
@@ -433,17 +433,58 @@ function teamStats() {
   const chem = Math.round(links.reduce((a, l) => a + Math.max(0, l), 0) / 4 * 70 + benchMatch / 3 * 30)
   return { rating, chem, links, count: cs.length }
 }
+const TB = { target: 'best', series: 'ALL', role: 'ALL', rar: 'ALL' }
+const typeOfA = a => (ANIME[a] || {}).type || 'ki'
+function buildTargets() {
+  const own = owned(), cnt = {}; for (const c of own) cnt[c.anime] = (cnt[c.anime] || 0) + 1
+  const T = [{ id: 'best', label: 'BEST OVERALL', sub: 'Highest power, with synergy if it pays off' }]
+  if (ST.event) T.push({ id: 'vs:' + ST.event.anime, label: '⚡ EVENT · ' + ANAME(ST.event.anime).toUpperCase(), sub: 'Counter this week\'s event enemies', hot: 1 })
+  for (const arc of ST.arcs || []) if (((P.arcs || {})[arc.id] || 0) < 3 && POOL.some(c => c.anime === arc.anime)) T.push({ id: 'vs:' + arc.anime, label: 'ARC · ' + arc.name.toUpperCase(), sub: 'Counter ' + ANAME(arc.anime) + ' fighters' })
+  for (const a of Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x])) if (cnt[a] >= 3) T.push({ id: 'series:' + a, label: ANAME(a).toUpperCase() + ' TEAM', sub: cnt[a] + ' owned · up to +' + (SYN[Math.min(6, cnt[a])] || 0) + '% synergy' })
+  return T.filter((t, i, L) => L.findIndex(u => u.id === t.id) === i)
+}
+function scoreFor(c, target) {
+  let v = c.ovr
+  if (target.startsWith('vs:')) { const ea = target.slice(3), et = typeOfA(ea); if (beats(c.t || typeOfA(c.anime), et)) v += 8; if (beats(et, c.t || typeOfA(c.anime))) v -= 6; const e = (c.pas || {}).e || {}; if (e.vsAnime === ea) v += 12 }
+  return v
+}
+function autoTeam(target) {
+  const own = owned().slice(); if (!own.length) return null
+  let pick
+  if (target.startsWith('series:')) { const a = target.slice(7); pick = own.filter(c => c.anime === a).sort((x, y) => y.ovr - x.ovr).slice(0, 6); pick = pick.concat(own.filter(c => !pick.includes(c)).sort((x, y) => y.ovr - x.ovr)).slice(0, 6) }
+  else {
+    const sorted = own.sort((x, y) => scoreFor(y, target) - scoreFor(x, target)), val = L => L.reduce((n, c) => n + scoreFor(c, target), 0) / L.length * (1 + synergy(L).bonus / 100)
+    pick = sorted.slice(0, 6); let best = val(pick)
+    for (const a of new Set(own.map(c => c.anime))) { const S = sorted.filter(c => c.anime === a).slice(0, 6); if (S.length < 3) continue; for (let k = 3; k <= S.length; k++) { const L = S.slice(0, k).concat(sorted.filter(c => c.anime !== a)).slice(0, 6); const v = val(L); if (v > best) { best = v; pick = L } } }
+  }
+  pick.sort((x, y) => scoreFor(y, target) - scoreFor(x, target))
+  const lead = pick[0], rest = pick.slice(1).sort((x, y) => ((y.faction === lead.faction) * 2 + (y.anime === lead.anime)) - ((x.faction === lead.faction) * 2 + (x.anime === lead.anime)) || scoreFor(y, target) - scoreFor(x, target))
+  const T = [lead, ...rest].map(c => c.key); while (T.length < 6) T.push(null); return T
+}
 PAGES.team = (el) => {
-  const st = teamStats()
-  const head = h('div', 'panel pad'); head.innerHTML = `<div class="collhead"><div class="stat"><b>${st.rating || '--'}</b><span>RATING</span></div><div class="stat"><b>${st.chem}%</b><span>CHEMISTRY</span></div><div class="stat"><b>${st.count}/6</b><span>CARDS</span></div></div><div class="bar" style="margin-top:12px"><i style="width:${st.chem}%"></i></div>`
+  const st = teamStats(), sy = synergy(P.team.map(k => k && BYKEY[k]))
+  const head = h('div', 'panel pad'); head.innerHTML = `<div class="collhead"><div class="stat"><b>${st.rating || '--'}</b><span>RATING</span></div><div class="stat"><b>${st.chem}%</b><span>CHEMISTRY</span></div><div class="stat"><b style="color:${sy.bonus ? 'var(--gold)' : 'inherit'}">${sy.bonus ? '+' + sy.bonus + '%' : '—'}</b><span>SERIES SYNERGY</span></div><div class="stat"><b>${st.count}/6</b><span>CARDS</span></div></div>
+    <div class="synrow">${sy.n >= 2 ? `<b>${sy.n}× ${ANAME(sy.anime).toUpperCase()}</b>` : '<b>NO SERIES SYNERGY YET</b>'}<span>3 from one series +4% team damage · 4 → +6% · 5 → +8% · all 6 → +10%</span></div>`
   el.append(head)
+  // build-for panel
+  const targets = buildTargets(); if (!targets.find(t => t.id === TB.target)) TB.target = 'best'
+  el.append(h('div', 'sec', '<h3>AUTO BUILD</h3><span class="muted" style="font-weight:700;font-size:12px">pick what the team is for</span>'))
+  const tg = h('div', 'tb-targets')
+  for (const t of targets) { const b = h('button', 'tb-t' + (TB.target === t.id ? ' on' : '') + (t.hot ? ' hot' : ''), `<b>${t.label}</b><small>${t.sub}</small>`); b.onclick = () => { TB.target = t.id; rerender() }; tg.append(b) }
+  el.append(tg)
+  if (TB.target.startsWith('vs:')) { const ea = TB.target.slice(3), et = typeOfA(ea), good = Object.keys(TYPE).filter(t => beats(t, et)), bad = Object.keys(TYPE).filter(t => beats(et, t)); el.append(h('div', 'tb-tip', `Enemies are <b>${ANAME(ea)}</b> (${(TYPE[et] || {}).en || et} type). Strong against them: <b>${good.map(t => TYPE[t].en).join(', ') || '—'}</b>. Avoid: <b>${bad.map(t => TYPE[t].en).join(', ') || '—'}</b>. Cards with a passive built for ${ANAME(ea)} get top priority.`)) }
+  const row = h('div', 'grid2'); row.style.margin = '10px 0 4px'
+  const auto = h('button', 'btn gold', 'AUTO BUILD'), clear = h('button', 'btn dark', 'CLEAR')
+  auto.onclick = async () => { const T = autoTeam(TB.target); if (!T) return toast('Open some packs first.', 'err'); await act('team', { team: T }); rerender() }
+  clear.onclick = async () => { await act('team', { team: [null, null, null, null, null, null] }); rerender() }
+  row.append(auto, clear); el.append(row)
   const slots = (from, to, title) => {
     el.append(h('div', 'sec', `<h3>${title}</h3>`))
     const g = h('div', 'teamslots')
     for (let i = from; i < to; i++) {
       const k = P.team[i], c = k && BYKEY[k], b = h('button', 'tslot tap', c ? '' : '+')
       b.append(h('span', 'r', i === 0 ? 'LEADER' : i < 3 ? 'STARTER' : 'BENCH'))
-      if (c) b.append(cardImg(eff(c), 240))
+      if (c) { b.append(cardImg(eff(c), 240)); if (sy.n >= 3 && c.anime === sy.anime) b.append(h('span', 'syn-tag', 'SYNERGY')) }
       b.onclick = () => teamPicker(i); g.append(b)
     }
     el.append(g)
@@ -453,27 +494,25 @@ PAGES.team = (el) => {
   st.links.forEach((l, i) => chem.append(h('div', 'stat', `<b style="font-size:18px;color:${l === 2 ? 'var(--green)' : l === 1 ? 'var(--gold)' : l === 0 ? 'var(--red)' : 'var(--ink3)'}">${l < 0 ? 'EMPTY' : L[l]}</b><span>${i === 0 ? 'LEADER ↔ STARTER' : 'STARTER ↔ STARTER'}</span>`)))
   el.append(chem)
   slots(3, 6, 'BENCH')
-  const row = h('div', 'grid2'); row.style.marginTop = '16px'
-  const auto = h('button', 'btn violet', 'AUTO BUILD'), clear = h('button', 'btn dark', 'CLEAR')
-  auto.onclick = async () => {
-    const own = owned().sort((a, b) => b.ovr - a.ovr); if (!own.length) return toast('Open some packs first.', 'err')
-    const lead = own[0], rest = own.slice(1), sc = c => c.ovr + (c.faction === lead.faction ? 12 : c.anime === lead.anime ? 6 : 0)
-    rest.sort((a, b) => sc(b) - sc(a)); const st2 = rest.slice(0, 2), oth = rest.slice(2).sort((a, b) => (b.anime === lead.anime) - (a.anime === lead.anime) || b.ovr - a.ovr)
-    const T = [lead, ...st2, ...oth.slice(0, 3)].map(c => c ? c.key : null); while (T.length < 6) T.push(null)
-    await act('team', { team: T }); rerender()
-  }
-  clear.onclick = async () => { await act('team', { team: [null, null, null, null, null, null] }); rerender() }
-  row.append(auto, clear); el.append(row)
-  el.append(h('p', 'muted', '<small style="font-weight:700;line-height:1.5;display:block;margin-top:12px">Starters next to each other link up: same faction is the strongest link, same series is next. Bench cards from your leader\'s series add chemistry too. Battles are coming soon.</small>'))
 }
 function teamPicker(slot) {
   openModal(sh => {
     sh.append(h('div', 'sec', `<h3>${slot === 0 ? 'PICK YOUR LEADER' : slot < 3 ? 'PICK A STARTER' : 'PICK A BENCH CARD'}</h3>`))
     if (P.team[slot]) { const rm = h('button', 'ghost', 'Remove this card'); rm.onclick = async () => { const T = P.team.slice(); T[slot] = null; await act('team', { team: T }); closeModal(); rerender() }; sh.append(rm) }
-    const g = h('div', 'cardgrid'), list = owned().filter(c => !P.team.includes(c.key)).sort((a, b) => b.ovr - a.ovr)
-    if (!list.length) g.append(h('div', 'empty', '<b>No spare cards</b>Open packs to get more.'))
-    for (const c of list) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 240)); b.onclick = async () => { const T = P.team.slice(); T[slot] = c.key; await act('team', { team: T }); closeModal(); rerender() }; g.append(b) }
-    sh.append(g)
+    const avail = owned().filter(c => !P.team.includes(c.key)), teamAnime = synergy(P.team.map((k, i) => i !== slot && k && BYKEY[k])).anime
+    const sel = (lbl, key, opts) => { const w = h('label', 'tp-f', `<span>${lbl}</span>`), s2 = document.createElement('select'); for (const [v, t] of opts) { const o = new Option(t, v); if (TB[key] === v) o.selected = true; s2.append(o) } s2.onchange = () => { TB[key] = s2.value; draw() }; w.append(s2); return w }
+    const series = [...new Set(avail.map(c => c.anime))].sort((a, b) => ANAME(a).localeCompare(ANAME(b)))
+    const bar = h('div', 'tp-bar')
+    bar.append(sel('SERIES', 'series', [['ALL', 'All series'], ...(teamAnime ? [['TEAM', 'Matches team (' + ANAME(teamAnime) + ')']] : []), ...series.map(a => [a, ANAME(a)])]), sel('ROLE', 'role', [['ALL', 'All roles'], ...['FIGHTER', 'ASSASSIN', 'TANK', 'SUPPORT', 'SHOOTER', 'STRIKER'].filter(r => avail.some(c => c.role === r)).map(r => [r, r])]), sel('RARITY', 'rar', [['ALL', 'All rarities'], ...ORDER.slice().reverse().filter(r => avail.some(c => c.r === r)).map(r => [r, TIER[r].name])]))
+    sh.append(bar)
+    const g = h('div', 'cardgrid'); sh.append(g)
+    function draw() {
+      g.innerHTML = ''
+      const list = avail.filter(c => (TB.series === 'ALL' || (TB.series === 'TEAM' ? c.anime === teamAnime : c.anime === TB.series)) && (TB.role === 'ALL' || c.role === TB.role) && (TB.rar === 'ALL' || c.r === TB.rar)).sort((a, b) => scoreFor(b, TB.target) - scoreFor(a, TB.target))
+      if (!list.length) g.append(h('div', 'empty', '<b>No cards match</b>Change the filters above.'))
+      for (const c of list) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 240)); if (teamAnime && c.anime === teamAnime) b.append(h('span', 'syn-tag', 'SYNERGY')); b.onclick = async () => { const T = P.team.slice(); T[slot] = c.key; await act('team', { team: T }); closeModal(); rerender() }; g.append(b) }
+    }
+    draw()
   })
 }
 
