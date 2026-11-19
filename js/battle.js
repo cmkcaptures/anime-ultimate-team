@@ -327,10 +327,10 @@ export function startBattle(stage) {
   if (!youFirst && PE(act(B.ai)).stopFirst) B.you.skip = 1
 
   const AR = stage.arena && ARENAS[stage.arena] ? stage.arena : ARENA_KEYS[Math.floor(Math.random() * ARENA_KEYS.length)]
-  const ov = h('div', 'th-' + AR); ov.id = 'arena'
-  ov.innerHTML = `<div class="env"><i class="e-sky"></i><i class="e-far"></i><i class="e-near"></i><i class="e-amb"></i><i class="e-vig"></i></div><div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
+  const ov = h('div', 'bc th-' + AR); ov.id = 'arena'
+  ov.innerHTML = `<div class="bcs"><div class="bcs-wall"></div><div class="bcs-rig r1">${'<i></i>'.repeat(14)}</div><div class="bcs-rig r2">${'<i></i>'.repeat(10)}</div><i class="bcs-spot s1"></i><i class="bcs-spot s2"></i><i class="bcs-spot s3"></i><div class="bcs-crowd"></div><div class="bcs-board"><span>ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · </span></div><div class="bcs-floor"><i class="ln"></i><i class="cc"></i><i class="ccd"></i></div><div class="bcs-haze"></div></div><div class="env"><i class="e-sky"></i><i class="e-far"></i><i class="e-near"></i><i class="e-amb"></i><i class="e-vig"></i></div><div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
     <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto">AUTO</button><span class="ar-stage">${stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
-    <div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
+    <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t"></small></div><div class="bct-s ai"></div></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
     <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
@@ -346,6 +346,24 @@ export function startBattle(stage) {
   const IMG = new Map()
   const img = (f, w) => { const im = new Image(); im.alt = f.card.name; im.draggable = false; const k = f.key + w; if (!IMG.has(k)) IMG.set(k, thumbURL(f.card, w)); IMG.get(k).then(u => im.src = u); return im }
 
+  function bcHud(side, s) {
+    const f = act(s), el = $a('.bct-s.' + side), pct = f.hp / f.max * 100
+    if (el.dataset.k !== f.key) {
+      el.dataset.k = f.key
+      el.innerHTML = `<div class="bp" style="background-image:url('${f.card.url}');background-position:${Math.round((f.card.fx ?? .5) * 100)}% ${Math.round((f.card.fy ?? .22) * 100)}%"></div><div class="bi"><div class="bn"><b>${f.card.name}</b><small>${f.card.ver}</small></div><div class="bh"><i class="gh"></i><i class="fg"></i></div><div class="bm"><span class="be"></span><span class="bk"></span><span class="bpas"></span></div></div><div class="bnum"></div>`
+      el.classList.remove('in'); void el.offsetWidth; el.classList.add('in')
+      el.querySelector('.gh').style.width = el.querySelector('.fg').style.width = pct + '%'
+    }
+    const fg = el.querySelector('.fg'), gh = el.querySelector('.gh'), was = parseFloat(fg.style.width) || 100
+    fg.style.width = pct + '%'; setTimeout(() => { gh.style.width = pct + '%' }, 450)
+    if (pct < was - .1) { el.classList.remove('dmgd'); void el.offsetWidth; el.classList.add('dmgd') }
+    el.classList.toggle('low', pct < 30)
+    el.querySelector('.bnum').textContent = f.hp.toLocaleString()
+    el.querySelector('.be').innerHTML = `⚡ <b>${s.ki}</b>/${KI_MAX}`
+    el.querySelector('.bk').innerHTML = s.team.map(g => `<i class="${g.ko ? 'ko' : ''}"></i>`).join('')
+    el.querySelector('.bpas').innerHTML = ov.querySelector('.ar-plate.' + side + ' .pp').innerHTML
+    $a('.bct-t').textContent = 'TURN ' + B.turn
+  }
   function hud(side, s) {
     const f = act(s), el = $a(`.ar-side.${side} .ar-hud`)
     el.innerHTML = `<div class="hn"><b>${f.card.name}</b><small>${f.card.ver}</small></div>
@@ -397,7 +415,7 @@ export function startBattle(stage) {
     $a('.ar-end').disabled = !my
     $a('.ar-turn').textContent = 'TURN ' + B.turn
   }
-  function draw() { hud('ai', B.ai); hud('you', B.you); field('ai', B.ai); field('you', B.you); controls() }
+  function draw() { hud('ai', B.ai); hud('you', B.you); field('ai', B.ai); field('you', B.you); controls(); bcHud('ai', B.ai); bcHud('you', B.you) }
 
   function inspect(f, side, onSwitch) {
     if (B.busy && !onSwitch) { }
@@ -478,7 +496,7 @@ export function startBattle(stage) {
     if (big) { ov.classList.remove('punch'); void ov.offsetWidth; ov.classList.add('punch'); setTimeout(() => ov.classList.remove('punch'), 420); FXC.screen('#ffffff', ev.art === 'ultimate' ? .35 : .18, .25) }
     setTimeout(() => atk.classList.remove('dash', 'dashbig'), 700)
     ST3 && ST3.hit(other, big)
-    shake(ev.art === 'ultimate' ? 3 : big ? 2 : 1)
+    shake(ev.art === 'ultimate' ? 3 : big ? 2 : 1); if (big || ev.art === 'ultimate') { ov.classList.remove('hitstop'); void ov.offsetWidth; ov.classList.add('hitstop'); setTimeout(() => ov.classList.remove('hitstop'), 160) }
     for (const x of ev.hits) {
       const isActive = x.t === act(B[other])
       const tgt = isActive ? tgtEl : $a(`.ar-side.${other} .ar-bench`)
@@ -501,7 +519,7 @@ export function startBattle(stage) {
     const foe = B[other]
     if (act(foe).ko) {
       sfx('bko'); shake(3); { const [kx, ky] = ctr(tgtEl); FXC.ko(kx, ky) } ST3 && ST3.ko(other); log(`${act(foe).card.name} is knocked out!`)
-      $a(`.ar-side.${other} .ar-active`).classList.add('kod'); await wait(700); $a(`.ar-side.${other} .ar-active`).classList.remove('kod')
+      $a(`.ar-side.${other} .ar-active`).classList.add('kod'); { const k = document.createElement('div'); k.className = 'bc-ko ' + other; k.innerHTML = `<b>K.O.</b><small>${act(foe).card.name}</small>`; ov.append(k); ov.classList.add('slowmo'); setTimeout(() => { k.remove(); ov.classList.remove('slowmo') }, 1500) } await wait(1200); $a(`.ar-side.${other} .ar-active`).classList.remove('kod')
       if (!nextAlive(foe)) return end(other === 'ai')
       if (other === 'you') { await pickReplacement() } else { log(`Enemy sends out ${act(foe).card.name}`); sfx('nav') }
       draw(); await wait(400)
