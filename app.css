@@ -2530,3 +2530,5 @@ body[data-page=shop] .ptile.on * { color: #fff !important } body[data-page=shop]
 .bl-row b { font: 800 26px var(--eD); color: var(--eY) } .bl-row span { font: 800 16px var(--eUI); color: #fff } .bl-row em { font: 800 22px var(--eD); font-style: normal; color: #ff6b8a }
 .bl-row.top { background: linear-gradient(160deg, #ffe14a, #ff9a00) } .bl-row.top b, .bl-row.top span, .bl-row.top em { color: #fff; -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill; text-shadow: 0 2px 0 #8a3a00 }
 @media (max-width: 700px) { .bosshero { grid-template-columns: 1fr; text-align: center; padding: 18px } .bh-art { width: 60%; justify-self: center } .bh-info h2 { font-size: 48px } }
+#nav { grid-template-columns: repeat(6, 1fr) !important } @media (max-width: 999px) { #nav button span { font-size: 9.5px !important; letter-spacing: .04em } #nav button.on { margin: 8px 1px } }
+#top .cur, #top button, #top .chips2 > * { clip-path: none !important; transform: none !important; border-radius: 19px !important; box-shadow: 0 0 0 3px #fff !important; background: var(--eN) !important } #top .cur::before, #top .cur::after { display: none !important }

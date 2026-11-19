@@ -174,7 +174,7 @@ function rr2(x, X, Y, w, h, r) { x.beginPath(); x.roundRect(X, Y, w, h, r) }
 const packEl = (type, w) => { const cv = document.createElement('canvas'); packCanvas(type, w).then(src => { cv.width = src.width; cv.height = src.height; cv.getContext('2d').drawImage(src, 0, 0) }); return cv }
 
 // ================= router + transitions =================
-const TABS = ['home', 'cards', 'team', 'market', 'shop']
+const TABS = ['home', 'cards', 'team', 'market', 'shop', 'battle']
 const TITLES = { home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
 let CUR = null, CURARG = null, curEl = null
 const PAGES = {}
@@ -193,7 +193,7 @@ function go(name, arg, opts = {}) {
   PAGES[name](el, arg)
   el.classList.add('in'); setTimeout(() => el.classList.remove('in'), 900)
   $('#ptitle').textContent = TITLES[name] || ''
-  const tab = TABS.includes(name) ? name : name === 'pack' || name === 'results' || name === 'wonder' || name === 'missions' ? (name === 'missions' ? null : 'home') : null
+  const tab = TABS.includes(name) ? name : name === 'pass' ? 'battle' : name === 'pack' || name === 'results' || name === 'wonder' || name === 'missions' ? (name === 'missions' ? null : 'home') : null
   document.querySelectorAll('#nav button').forEach((b, i) => { const on = b.dataset.go === tab; b.classList.toggle('on', on); if (on) { $('#navPill').style.setProperty('--i', i); $('#navPill').style.setProperty('--py', b.offsetTop + 'px') } })
   $('#fab').hidden = name !== 'home'
 }
