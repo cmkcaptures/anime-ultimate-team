@@ -1936,3 +1936,4 @@ body[data-page=shop] .btn.dark.big { background: rgba(0,0,0,.4) !important; box-
 .wk { --oc: #ffcc00 }
 .wk-line, .wk-name { max-width: 92vw } .wk-line span { display: block; white-space: normal; font-size: clamp(28px, 6vw, 72px) }
 .wk-sil { -webkit-mask-image: radial-gradient(closest-side, #000 70%, transparent); mask-image: radial-gradient(closest-side, #000 70%, transparent) }
+.mo > canvas { z-index: 45 !important } .mo .wk { z-index: 44 }

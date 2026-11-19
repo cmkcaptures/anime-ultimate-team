@@ -1132,6 +1132,7 @@ async function multiOpen(type, n) {
   // reveal worst first, best last; Epic+ pause with an impact
   for (let i = els.length - 1; i >= 0; i--) {
     const e = els[i], rk = TIER[all[i].r].rank
+    if (!skip && rk >= 4) { e.scrollIntoView({ block: 'center' }); try { await walkout(ov, FXC, all[i], rk) } catch { return } }
     e.classList.add('up')
     if (!skip && rk >= 3) { const r = e.getBoundingClientRect(); FXC.hit(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), rk >= 5 ? 2 : rk >= 4 ? 1.5 : 1); if (rk >= 4) FXC.rays(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), 12, 500, 1); sfx('reveal', rk); await wait(rk >= 5 ? 900 : rk >= 4 ? 600 : 260) }
     else if (!skip) await wait(45)
