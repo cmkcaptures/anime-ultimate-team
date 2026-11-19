@@ -49,7 +49,8 @@ const PACKS = {
   MHA: { name: 'Hero Academia Pack', cost: 2500, anime: 'MHA' },
   BC: { name: 'Black Clover Pack', cost: 2500, anime: 'BC' },
   DS: { name: 'Demon Slayer Pack', cost: 2500, anime: 'DS' },
-  BL: { name: 'Blue Lock Pack', cost: 2500, anime: 'BL' },
+  BLE: { name: 'Bleach Pack', cost: 2500, anime: 'BLE' },
+  FF: { name: 'Fire Force Pack', cost: 2500, anime: 'FF' },
   HXH: { name: 'Hunter x Hunter Pack', cost: 2500, anime: 'HXH' },
   FT: { name: 'Fairy Tail Pack', cost: 2500, anime: 'FT' },
   JJBA: { name: 'JoJo Pack', cost: 2500, anime: 'JJBA' },
@@ -234,11 +235,14 @@ const ARCS = [
   { id: 'op', anime: 'OP', name: 'Onigashima Raid', bad: ['KING', 'GOL D. ROGER'] },
   { id: 'dbz', anime: 'DBZ', name: 'Tournament of Power', bad: ['BROLY', 'GOKU BLACK'] },
   { id: 'jjba', anime: 'JJBA', name: 'Golden Wind Finale', bad: ['DIAVOLO', 'KIRA', 'DIEGO'] },
-  { id: 'ble', anime: 'BLE', name: 'Thousand-Year Blood War', bad: ['YHWACH', 'AIZEN'] },
-  { id: 'hxh', anime: 'HXH', name: 'Heavens Arena', bad: ['HISOKA'] },
+  { id: 'ble', anime: 'BLE', name: 'Thousand-Year Blood War', bad: ['YHWACH', 'AIZEN', 'ULQUIORRA', 'GRIMMJOW'] },
+  { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', bad: ['MERUEM', 'NEFERPITOU', 'SHAIAPOUF', 'HISOKA'] },
+  { id: 'bc', anime: 'BC', name: 'Spade Kingdom Raid', bad: ['ZAGRED'] },
+  { id: 'ft', anime: 'FT', name: 'Alvarez Empire War', bad: ['ZEREF', 'ACNOLOGIA'] },
+  { id: 'ff', anime: 'FF', name: 'The Great Cataclysm', bad: ['THE EVANGELIST', 'HAUMEA', 'SHO'] },
 ]
 const ARC_CH = [{ name: 'Chapter 1', level: 2, boost: 1, coins: 2000 }, { name: 'Chapter 2', level: 3, boost: 1.12, coins: 3000 }, { name: 'Final Boss', level: 5, boost: 1.3, coins: 5000 }]
-const EVENT_ANIME = ['JJK', 'DS', 'DBZ', 'OP', 'NAR', 'MHA', 'JJBA', 'HXH', 'BLE']
+const EVENT_ANIME = ['JJK', 'DS', 'DBZ', 'OP', 'NAR', 'MHA', 'JJBA', 'HXH', 'BLE', 'BC', 'FT', 'FF']
 function eventNow() { const wk = Math.floor((Date.now() / 864e5 + 3) / 7), a = EVENT_ANIME[wk % EVENT_ANIME.length]; return { id: 'e' + wk, anime: a, pack: PACKS[a] ? a : 'standard', ends: (wk + 1) * 7 * 864e5 - 3 * 864e5, tiers: [{ name: 'Normal', level: 2, boost: 1, coins: 1500 }, { name: 'Hard', level: 4, boost: 1.2, coins: 3000 }, { name: 'Nightmare', level: 5, boost: 1.45, coins: 5000, pack: true }] } }
 
 // ---------------- rewards / missions ----------------
