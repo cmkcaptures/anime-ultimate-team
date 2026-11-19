@@ -1736,3 +1736,14 @@ body.in-opener #app, body.in-opener #backdrop { visibility: hidden }
 #arena .ar-bench.can-swap .bslot:not(.ko) { box-shadow: 0 0 0 2px #22d8ff, 0 8px 14px rgba(0,0,0,.55) !important }
 .o2-top { z-index: 90 !important } .o2-done { z-index: 90 !important; position: fixed !important; bottom: 5vh !important }
 @media (max-width: 760px) { #opener.lineup .o2-stage { top: 40% !important } .o2-lc { width: 19% } }
+@media (max-width: 760px) {
+  #arena .ar-hand { height: 118px !important; gap: 4px !important }
+  .art2 { width: 74px !important; height: 110px !important; margin: 0 !important; transform: none !important }
+  .art2 .plate { height: 30px !important } .art2 .pic { bottom: 32px !important } .art2 .plate b { font-size: 11px !important }
+  .art2 .gem { width: 22px !important; height: 26px !important; top: 6px !important; left: 4px !important } .art2 .gem b { font-size: 14px !important }
+  .art2 .sym { width: 32px !important; height: 32px !important; margin: -16px !important }
+  #arena .ar-ctrl { grid-template-columns: auto 1fr auto !important; grid-template-areas: "hand hand hand" "ki . btns" !important; padding: 0 10px 10px !important; gap: 4px !important }
+  #arena .mat .ar-side.you .ar-active { grid-row: 2 !important } #arena .mat .ar-side.you .ar-bench { grid-row: 1 !important }
+  #arena .ar-plate.you { display: none !important }
+  #arena .mat-in { bottom: 2px !important }
+}
