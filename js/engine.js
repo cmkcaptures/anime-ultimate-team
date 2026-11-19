@@ -51,6 +51,16 @@ const PACKS = {
   JJBA: { name: 'JoJo Pack', cost: 2500, anime: 'JJBA' },
   CSM: { name: 'Chainsaw Man Pack', cost: 2500, anime: 'CSM' },
 }
+// weekly banner: 2 featured Legendary+ cards, rotates every Monday, same for everyone
+const BANNER_COST = 3000, PITY_MYTHIC = 80, PITY_FEATURED = 160
+function banner() {
+  const wk = Math.floor((Date.now() / 864e5 + 3) / 7), top = CARDS.filter(c => 'LMX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
+  if (!top.length) return null
+  const rnd = n => { let x = Math.sin(wk * 9301 + n * 49297) * 233280; return x - Math.floor(x) }
+  const f1 = top[Math.floor(rnd(1) * top.length)], rest = top.filter(c => c.anime !== f1.anime), f2 = (rest.length ? rest : top)[Math.floor(rnd(2) * (rest.length || top.length))]
+  const ends = (wk + 1) * 7 * 864e5 - 3 * 864e5
+  return { id: 'b' + wk, name: 'FEATURED BANNER', cost: BANNER_COST, featured: [f1.key, f2.key], ends, pityMythic: PITY_MYTHIC, pityFeatured: PITY_FEATURED }
+}
 const FREE_EVERY = 12 * 3600e3, FREE_MAX = 2
 const PP_PER_PACK = 5, PP_COST = { C: 35, U: 70, R: 150, E: 450, L: 1400, M: 2400, X: 4000 }
 function value(c, lvl = 0) {
@@ -198,13 +208,15 @@ function act(a) {
       P.free.charges--; P.pending.standard = (P.pending.standard || 0) + 1; return {}
     }
     case 'buyPack': {
-      const pk = PACKS[a.pack]; if (!pk) return { error: 'Unknown pack.' }
-      if (P.coins < pk.cost) return { error: `You need ${pk.cost.toLocaleString()} coins for this pack.` }
-      P.coins -= pk.cost; P.pending[a.pack] = (P.pending[a.pack] || 0) + 1; return {}
+      const B = a.pack === 'banner' ? banner() : null, pk = B ? { cost: B.cost } : PACKS[a.pack]; if (!pk) return { error: 'Unknown pack.' }
+      const n = a.count === 10 ? 10 : 1, cost = n === 10 ? Math.round(pk.cost * 10 * .9) : pk.cost
+      if (P.coins < cost) return { error: `You need ${cost.toLocaleString()} coins.` }
+      P.coins -= cost; P.pending[a.pack] = (P.pending[a.pack] || 0) + n; return {}
     }
     case 'openPack': {
       if (!(P.pending[a.pack] > 0)) return { error: 'No unopened pack of that type.' }
-      P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = []; P.pp = Math.min(2500, (P.pp || 0) + PP_PER_PACK); addXP(40)
+      P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = [];
+      if (a.pack === 'banner') { const B = banner(), pt = P.pity || (P.pity = {}), pr = pt[B.id] || (pt[B.id] = { n: 0, m: 0, f: 0 }); pr.n++; pr.m++; pr.f++; for (const k of a.keys || []) { const c = byKey(k); if (c && 'MX'.includes(c.r)) pr.m = 0; if (B.featured.includes(k)) pr.f = 0 } } P.pp = Math.min(2500, (P.pp || 0) + PP_PER_PACK); addXP(40)
       for (const k of a.keys || []) { const c = byKey(k); if (!c) continue; giveCard(k); P.last.push(k); const rk = 'CURELMX'.indexOf(c.r); if (rk >= 3) bump('epic'); if (rk >= 4) bump('legend') }
       return {}
     }
@@ -305,7 +317,7 @@ function state() {
   rollFree()
   const P = S.profile
   const out = {
-    profile: P, notices: S.notices, packs: PACKS, rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST,
+    profile: P, notices: S.notices, packs: PACKS, banner: banner(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST,
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now()

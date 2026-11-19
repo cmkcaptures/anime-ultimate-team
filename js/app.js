@@ -607,6 +607,7 @@ function transferTargets(el) {
 
 // ================= SHOP + PACK POINTS =================
 PAGES.shop = (el) => {
+  bannerBlock(el)
   shopHero(el)
   el.append(h('div', 'sec', `<h3>PACK POINT EXCHANGE</h3><span class="cur"><i class="pp-i"></i>${fmt(P.pp || 0)}</span>`))
   el.append(h('p', 'muted', '<small style="font-weight:700">Every pack you open gives 5 pack points. Spend them on the exact card you want.</small>'))
@@ -713,7 +714,29 @@ const PACKODDS = {
   premium: { odds: { C: 22, U: 34, R: 27, E: 12.5, L: 3.6, M: .75, X: .15 }, guarantee: 'E' },
   series: { odds: { C: 46, U: 30, R: 15, E: 6.3, L: 2.1, M: .5, X: .1 } },
 }
+function rollBannerKeys(n) {
+  const B = ST.banner, odds = PACKODDS.standard.odds, pr = ((P.pity || {})[B.id]) || { m: 0, f: 0 }
+  let m = pr.m, f = pr.f, out = []
+  const byTier = r => POOL.filter(c => c.r === r)
+  for (let p = 0; p < n; p++) {
+    const pack = []
+    for (let i = 0; i < 5; i++) {
+      let t = Math.random() * 100, tier = 'C'; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) if ((t -= odds[k]) < 0) { tier = k; break }
+      let c = null
+      const feat = B.featured.map(k => BYKEY[k]).filter(Boolean)
+      if (i === 4 && f + 1 >= B.pityFeatured) c = feat[Math.floor(Math.random() * feat.length)]
+      else if (i === 4 && m + 1 >= B.pityMythic && !'MX'.includes(tier)) tier = 'M'
+      if (!c) { const ft = feat.filter(x => x.r === tier); if (ft.length && Math.random() < .5) c = ft[Math.floor(Math.random() * ft.length)] }
+      if (!c) { const L = byTier(tier); c = L[Math.floor(Math.random() * L.length)] || POOL[0] }
+      pack.push(c)
+    }
+    m++; f++; if (pack.some(c => 'MX'.includes(c.r))) m = 0; if (pack.some(c => B.featured.includes(c.key))) f = 0
+    out.push(pack.sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr))
+  }
+  return out
+}
 function rollPackKeys(type) {
+  if (type === 'banner') return rollBannerKeys(1)[0]
   const info = (ST.packs && ST.packs[type]) || {}, def = PACKODDS[type] || (info.anime ? PACKODDS.series : PACKODDS.standard)
   const pool = info.anime ? POOL.filter(c => c.anime === info.anime) : POOL
   const rollT = () => { let r = Math.random() * 100; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) { if ((r -= def.odds[k]) < 0) return k } return 'C' }
@@ -1056,4 +1079,51 @@ function packContents(t) {
       sh.append(g)
     }
   }, true)
+}
+
+// ================= BANNER + x10 =================
+function bannerBlock(el) {
+  const B = ST.banner; if (!B) return
+  const feat = B.featured.map(k => BYKEY[k]).filter(Boolean), pr = ((P.pity || {})[B.id]) || { m: 0, f: 0 }, pend = P.pending.banner || 0
+  const w = h('section', 'bnr')
+  w.style.setProperty('--bart1', `url("${feat[0].url}")`); if (feat[1]) w.style.setProperty('--bart2', `url("${feat[1].url}")`)
+  w.innerHTML = `<div class="bnr-art a1"></div><div class="bnr-art a2"></div><div class="bnr-shade"></div>
+    <div class="bnr-info"><span class="bnr-tag">LIMITED BANNER</span><h2>${feat.map(c => c.name).join(' &amp; ')}</h2>
+      <p>Featured: ${feat.map(c => '<b>' + c.name + ' · ' + c.ver + '</b>').join(' and ')}. When you hit their rarity, there's a 50% chance it's them.</p>
+      <div class="bnr-time">Ends in <b class="timer" data-until="${B.ends - SKEW}"></b></div>
+      <div class="bnr-pity"><div><span>MYTHIC+ GUARANTEED</span><i><s style="width:${Math.min(100, pr.m / B.pityMythic * 100)}%"></s></i><b>${pr.m}/${B.pityMythic}</b></div>
+        <div><span>FEATURED GUARANTEED</span><i><s style="width:${Math.min(100, pr.f / B.pityFeatured * 100)}%"></s></i><b>${pr.f}/${B.pityFeatured}</b></div></div>
+      <div class="bnr-buy"></div></div>
+    <div class="bnr-cards"></div>`
+  const cards = w.querySelector('.bnr-cards'); feat.forEach((c, i) => { const b = h('button', 'bnr-card c' + i); b.append(cardImg(c, 360)); b.onclick = () => cardDetail(c.key); cards.append(b) })
+  const bb = w.querySelector('.bnr-buy')
+  const one = h('button', 'btn gold big', `<span>PULL ×1</span><b><i class="coin-i"></i>${fmt(B.cost)}</b>`); one.disabled = P.coins < B.cost && !pend
+  one.onclick = async () => { if (pend) return openPack('banner'); const x = await act('buyPack', { pack: 'banner' }); if (!x.error) openPack('banner') }
+  const ten = h('button', 'btn gold big', `<span>PULL ×10</span><b><i class="coin-i"></i>${fmt(Math.round(B.cost * 9))}</b>`); ten.disabled = P.coins < B.cost * 9
+  ten.onclick = async () => { const x = await act('buyPack', { pack: 'banner', count: 10 }); if (!x.error) multiOpen('banner', 10) }
+  bb.append(one, ten); if (pend) bb.append(h('span', 'bnr-pend', pend + ' unopened'))
+  el.append(w)
+}
+async function multiOpen(type, n) {
+  if (document.getElementById('opener')) return
+  const packs = type === 'banner' ? rollBannerKeys(n) : Array.from({ length: n }, () => rollPackKeys(type))
+  for (const pk of packs) { const r = await act('openPack', { pack: type, keys: pk.map(c => c.key) }); if (r.error) break }
+  const all = packs.flat().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
+  const urls = await Promise.all(all.map(c => thumbURL(c, 260)))
+  const ov = h('div', 'mo'); ov.id = 'opener'
+  ov.innerHTML = `<div class="mo-bg"></div><div class="mo-head"><b>${n}× PULL</b><span>${all.length} cards</span><button class="o2-skip">REVEAL ALL</button></div><div class="mo-grid"></div><button class="btn gold mo-done">CONTINUE</button>`
+  document.body.append(ov); document.body.classList.add('in-opener')
+  const grid = ov.querySelector('.mo-grid'), FXC = createFX(ov)
+  const els = all.map((c, i) => { const e = h('div', 'mo-c', `<div class="in"><div class="f"></div><div class="b"></div></div>`); e.dataset.tier = c.r; e.style.setProperty('--rc', tierCol(c.r)); const im = new Image(); im.src = urls[i]; e.querySelector('.f').append(im); grid.append(e); return e })
+  let skip = false; ov.querySelector('.o2-skip').onclick = () => { skip = true }
+  sfx('deal'); await wait(400)
+  // reveal worst first, best last; Epic+ pause with an impact
+  for (let i = els.length - 1; i >= 0; i--) {
+    const e = els[i], rk = TIER[all[i].r].rank
+    e.classList.add('up')
+    if (!skip && rk >= 3) { const r = e.getBoundingClientRect(); FXC.hit(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), rk >= 5 ? 2 : rk >= 4 ? 1.5 : 1); if (rk >= 4) FXC.rays(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), 12, 500, 1); sfx('reveal', rk); await wait(rk >= 5 ? 900 : rk >= 4 ? 600 : 260) }
+    else if (!skip) await wait(45)
+  }
+  const fin = () => { FXC.dispose(); document.body.classList.remove('in-opener'); ov.remove(); go('shop') }
+  ov.querySelector('.mo-done').onclick = fin
 }
