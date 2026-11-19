@@ -1816,3 +1816,19 @@ body[data-page=shop] .ptitle::before { display: none !important }
 body[data-page=shop] #top { background: var(--snap-bg) !important } body[data-page=shop] #top::after { display: none !important }
 @media (max-width: 760px) { body[data-page=shop] .shero { padding: 20px 16px !important } body[data-page=shop] .sh-strip { grid-template-columns: repeat(2, 1fr) !important } }
 @media (min-width: 1000px) { #nav .pill { top: 0 !important; transform: translateY(var(--py, 110px)) !important } }
+/* ===== shop hero v4: full-bleed banner ===== */
+body[data-page=shop] .shero { position: relative; display: grid !important; grid-template-columns: 1.1fr .9fr !important; align-items: center; min-height: 480px !important; padding: 0 0 0 48px !important; margin: -26px -36px 0; border-radius: 0 !important; background: none !important; overflow: hidden }
+body[data-page=shop] .shero::before { content: ""; position: absolute; inset: 0; z-index: -2; background: var(--hart) var(--hfx) var(--hfy) / cover no-repeat; transform: scale(1.04); filter: saturate(1.15) }
+body[data-page=shop] .shero::after { display: block !important; content: ""; position: absolute; inset: 0; z-index: -1; border: 0; padding: 0; -webkit-mask: none; mask: none; opacity: 1;
+  background: linear-gradient(90deg, var(--snap-bg) 0%, var(--snap-bg) 30%, rgba(26,15,58,.82) 48%, rgba(26,15,58,.15) 75%, rgba(26,15,58,.35) 100%), linear-gradient(180deg, transparent 60%, var(--snap-bg) 100%) }
+body[data-page=shop] .sh-info { order: 1; z-index: 2; padding: 40px 0 }
+body[data-page=shop] .sh-pack { order: 2; min-height: 480px !important; z-index: 2 }
+body[data-page=shop] .sh-tilt { width: 240px !important; transform: rotate(6deg) }
+body[data-page=shop] .sh-tilt canvas { box-shadow: -20px 30px 60px rgba(0,0,0,.6) !important }
+body[data-page=shop] .sh-info h2 { font-size: clamp(64px, 7.5vw, 112px) !important; line-height: .86 !important; text-shadow: 0 6px 30px rgba(0,0,0,.5) !important }
+body[data-page=shop] .sh-odds { display: none !important }
+body[data-page=shop] .sh-per b { background: rgba(0,0,0,.35) !important; font-size: 12px !important; padding: 6px 12px !important }
+body[data-page=shop] .sh-buy { margin-top: 10px !important }
+body[data-page=shop] .btn.big { height: 60px !important; border-radius: 10px !important }
+body[data-page=shop] .btn.dark.big { background: rgba(0,0,0,.4) !important; box-shadow: inset 0 0 0 2px rgba(255,255,255,.25) !important }
+@media (max-width: 760px) { body[data-page=shop] .shero { grid-template-columns: 1fr !important; padding: 0 16px !important; margin: -6px -16px 0 } body[data-page=shop] .sh-pack { order: 0; min-height: 300px !important } body[data-page=shop] .sh-tilt { width: 170px !important } body[data-page=shop] .shero::after { background: linear-gradient(180deg, rgba(26,15,58,.2), var(--snap-bg) 60%) } }

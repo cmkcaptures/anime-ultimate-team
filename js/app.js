@@ -900,7 +900,7 @@ function shopHero(el) {
   const types = Object.keys(ST.packs).filter(t => packPool(t).length)
   if (!types.includes(SHOPSEL)) SHOPSEL = types[0]
   const t = SHOPSEL, pk = ST.packs[t], L = PACKLOOK[t] || PACKLOOK.standard, pend = P.pending[t] || 0, odds = packOdds(t)
-  const hero = h('section', 'shero'); hero.style.setProperty('--p1', L.c[0]); hero.style.setProperty('--p2', L.c[1]); hero.style.setProperty('--p3', L.c[2])
+  const hero = h('section', 'shero'); { const fa = featured(t); hero.style.setProperty('--hart', `url("${fa.url}")`); hero.style.setProperty('--hfx', Math.round((fa.fx ?? .5) * 100) + '%'); hero.style.setProperty('--hfy', Math.round((fa.fy ?? .22) * 100) + '%') } hero.style.setProperty('--p1', L.c[0]); hero.style.setProperty('--p2', L.c[1]); hero.style.setProperty('--p3', L.c[2])
   hero.innerHTML = `<div class="sh-bg"></div><div class="sh-stripe"></div>
     <div class="sh-pack"><div class="sh-tilt"></div><div class="sh-floor"></div></div>
     <div class="sh-info">
