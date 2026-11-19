@@ -275,10 +275,82 @@ function enemyTeam(stage) {
   return out.sort((a, b) => b.ovr - a.ovr)
 }
 
+let MODE = 'story'
+const mastL = k => { const x = (X.P.mast || {})[k] || 0, T = X.ST().mastT || [0, 60, 180, 400, 750]; return T.filter(t => x >= t).length - 1 }
+function teamFrom(main, rating) {
+  const used = new Set(main.map(c => c.key)), out = main.slice(0, 6)
+  const rest = X.POOL.filter(c => !used.has(c.key)).sort((a, b) => Math.abs(a.ovr - rating) - Math.abs(b.ovr - rating))
+  while (out.length < 6 && rest.length) out.push(rest.splice(Math.floor(Math.random() * Math.min(10, rest.length)), 1)[0])
+  return out.map(c => c.key)
+}
+function modeTabs(el) {
+  const { h } = X, t = h('div', 'mtabs')
+  for (const [k, n] of [['story', 'STORY'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
+    const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
+  }
+  el.append(t)
+}
+function go2(stage) { seenTutorial() ? startBattle(stage) : tutorial(() => startBattle(stage)) }
+function towerPage(el, ok) {
+  const { h, P } = X, best = (P.tower && P.tower.best) || 0, T = X.ST().tower
+  el.append(h('section', 'bhero', `<div><span class="sh-tag">TOWER</span><h2>THE TOWER</h2><p>50 floors. Every floor is harder than the last, and past floor 25 enemies get stronger stats. Your progress is saved, so climb at your own pace. Big rewards every 10 floors.</p></div><div class="bstat"><b>${best}</b><span>/ 50 FLOORS</span></div>`))
+  const list = h('div', 'stages tower')
+  for (let n = Math.min(50, best + 1); n >= 1; n--) {
+    const f = T[n - 1], done = n <= best, r = h('button', 'stage' + (done ? ' done' : '') + (f.pack ? ' milestone' : ''))
+    r.innerHTML = `<span class="sn">${String(n).padStart(2, '0')}</span><div class="si"><b>Floor ${n}</b><small>Enemy rating ~${f.rating} · AI level ${f.level}${f.boost > 1 ? ' · +' + Math.round((f.boost - 1) * 100) + '% enemy HP' : ''}</small></div><div class="sr">${done ? '<em>CLEARED</em>' : ''}<span><i class="coin-i"></i>${(done ? 200 : f.coins).toLocaleString()}</span>${f.pack && !done ? `<span class="pk">+ ${X.ST().packs[f.pack].name.toUpperCase()}</span>` : ''}</div>`
+    r.disabled = !ok; r.onclick = () => go2({ mode: 'tower', id: n, label: 'Tower · Floor ' + n, name: 'Floor ' + n, rating: f.rating, level: f.level, boost: f.boost, arena: ARENA_KEYS[n % ARENA_KEYS.length] })
+    list.append(r)
+  }
+  { const nx = [10, 20, 30, 40, 50].find(m => m > best); if (nx) el.append(h('p', 'muted', `<b>Next milestone: Floor ${nx}</b> · ${X.ST().packs[T[nx - 1].pack].name}`)) }
+  el.append(list)
+}
+function arcsPage(el, ok) {
+  const { h, P } = X, ST = X.ST(), A = P.arcs || {}
+  el.append(h('section', 'bhero', `<div><span class="sh-tag">STORY ARCS</span><h2>STORY ARCS</h2><p>Relive the big fights. Each arc has three chapters against that anime's fighters, ending with its villains as a powered-up final boss. Clearing an arc gives a Premium Drop and ◆1,000 shards.</p></div><div class="bstat"><b>${ST.arcs.filter(a => (A[a.id] || 0) >= 3).length}</b><span>/ ${ST.arcs.length} ARCS</span></div>`))
+  const g = h('div', 'arcs')
+  for (const arc of ST.arcs) {
+    const pool = X.POOL.filter(c => c.anime === arc.anime); if (!pool.length) continue
+    const done = A[arc.id] || 0, boss = pool.filter(c => arc.bad.includes(c.name)).sort((a, b) => b.ovr - a.ovr)[0] || pool[0]
+    const card = h('div', 'arc' + (done >= 3 ? ' done' : ''))
+    card.style.setProperty('--art', `url("${boss.url}")`)
+    card.innerHTML = `<div class="arc-art"></div><div class="arc-info"><small>${X.ANAME(arc.anime)}</small><b>${arc.name}</b><span>${done >= 3 ? 'ARC COMPLETE' : done + ' / 3 chapters'}</span><div class="arc-ch"></div></div>`
+    const chs = card.querySelector('.arc-ch')
+    ST.arcCh.forEach((C, i) => {
+      const b = h('button', 'btn ' + (i === 2 ? 'gold' : 'dark') + ' sm', `${i < done ? '✓ ' : ''}${C.name}`); b.disabled = !ok || i > done
+      b.onclick = () => {
+        const bad = pool.filter(c => arc.bad.includes(c.name)).sort((a, b) => b.ovr - a.ovr), good = pool.filter(c => !arc.bad.includes(c.name)).sort((a, b) => a.ovr - b.ovr)
+        const main = i === 2 ? bad.concat(good.reverse()) : i === 1 ? good.slice(-3).concat(bad.slice(-1), good) : good.concat(bad.slice(-1))
+        go2({ mode: 'arc', id: arc.id + ':' + i, label: arc.name + ' · ' + C.name, name: arc.name, level: C.level, boost: C.boost, team: teamFrom([...new Set(main)], 78 + i * 7) })
+      }
+      chs.append(b)
+    })
+    g.append(card)
+  }
+  el.append(g)
+}
+function eventPage(el, ok) {
+  const { h } = X, E = X.ST().event, pool = X.POOL.filter(c => c.anime === E.anime).sort((a, b) => b.ovr - a.ovr)
+  const hero = h('section', 'bhero evhero', `<div><span class="sh-tag">LIMITED EVENT · ENDS IN <b class="timer" data-until="${E.ends}"></b></span><h2>${X.ANAME(E.anime).toUpperCase()} WEEK</h2><p>This week's fights are all ${X.ANAME(E.anime)}. Clear each difficulty once a day for coins; Nightmare also gives a ${X.ST().packs[E.pack].name}. A new anime takes over every Monday.</p></div>`)
+  if (pool[0]) hero.style.setProperty('--art', `url("${pool[0].url}")`)
+  el.append(hero)
+  const list = h('div', 'stages')
+  E.tiers.forEach((T, i) => {
+    const done = E.done[i], r = h('button', 'stage' + (done ? ' done' : ''))
+    r.innerHTML = `<span class="sn">${['I', 'II', 'III'][i]}</span><div class="si"><b>${T.name}</b><small>AI level ${T.level}${T.boost > 1 ? ' · +' + Math.round((T.boost - 1) * 100) + '% enemy HP' : ''}</small></div><div class="sr">${done ? '<em>DONE TODAY</em>' : ''}<span><i class="coin-i"></i>${(done ? 200 : T.coins).toLocaleString()}</span>${T.pack && !done ? `<span class="pk">+ ${X.ST().packs[E.pack].name.toUpperCase()}</span>` : ''}</div>`
+    r.disabled = !ok; r.onclick = () => go2({ mode: 'event', id: i, label: X.ANAME(E.anime) + ' Week · ' + T.name, name: T.name, level: T.level, boost: T.boost, team: teamFrom(pool.slice(), 82 + i * 6) })
+    list.append(r)
+  })
+  el.append(list)
+}
 export function battlePage(el) {
   const { h, P } = X
   const prog = (P.battle && P.battle.cleared) || 0
   const team = P.team.filter(Boolean)
+  modeTabs(el)
+  if (MODE !== 'story') {
+    if (team.length < 6) { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
+    return (MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
+  }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)
   { const t = h('button', 'btn dark', '📖 HOW TO PLAY'); t.style.marginTop = '12px'; t.onclick = () => tutorial(); el.append(t) }
@@ -305,6 +377,7 @@ export function startBattle(stage) {
   const yours = P.team.filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
+  if (stage.boost && stage.boost !== 1) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boost); for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * (1 + (stage.boost - 1) * .6)) }
   for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) {
     for (const f of me.team) {
       const e = PE(f)
@@ -329,7 +402,7 @@ export function startBattle(stage) {
   const AR = stage.arena && ARENAS[stage.arena] ? stage.arena : ARENA_KEYS[Math.floor(Math.random() * ARENA_KEYS.length)]
   const ov = h('div', 'bc th-' + AR); ov.id = 'arena'
   ov.innerHTML = `<div class="bcs"><div class="bcs-wall"></div><div class="bcs-rig r1">${'<i></i>'.repeat(14)}</div><div class="bcs-rig r2">${'<i></i>'.repeat(10)}</div><i class="bcs-spot s1"></i><i class="bcs-spot s2"></i><i class="bcs-spot s3"></i><div class="bcs-crowd"></div><div class="bcs-board"><span>ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · </span></div><div class="bcs-floor"><i class="ln"></i><i class="cc"></i><i class="ccd"></i></div><div class="bcs-haze"></div></div><div class="env"><i class="e-sky"></i><i class="e-far"></i><i class="e-near"></i><i class="e-amb"></i><i class="e-vig"></i></div><div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
-    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto">AUTO</button><span class="ar-stage">${stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
+    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto">AUTO</button><span class="ar-stage">${stage.label ? stage.label.toUpperCase() : stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
     <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t"></small></div><div class="bct-s ai"></div></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
@@ -350,7 +423,7 @@ export function startBattle(stage) {
     const f = act(s), el = $a('.bct-s.' + side), pct = f.hp / f.max * 100
     if (el.dataset.k !== f.key) {
       el.dataset.k = f.key
-      el.innerHTML = `<div class="bp" style="background-image:url('${f.card.url}');background-position:${Math.round((f.card.fx ?? .5) * 100)}% ${Math.round((f.card.fy ?? .22) * 100)}%"></div><div class="bi"><div class="bn"><b>${f.card.name}</b><small>${f.card.ver}</small></div><div class="bh"><i class="gh"></i><i class="fg"></i></div><div class="bm"><span class="be"></span><span class="bk"></span><span class="bpas"></span></div></div><div class="bnum"></div>`
+      el.innerHTML = `<div class="bp" style="background-image:url('${f.card.url}');background-position:${Math.round((f.card.fx ?? .5) * 100)}% ${Math.round((f.card.fy ?? .22) * 100)}%"></div><div class="bi"><div class="bn"><b>${f.card.name}</b>${side === 'you' && mastL(f.key) > 0 ? `<em class="ml">M${mastL(f.key)}</em>` : ''}<small>${f.card.ver}</small></div><div class="bh"><i class="gh"></i><i class="fg"></i></div><div class="bm"><span class="be"></span><span class="bk"></span><span class="bpas"></span></div></div><div class="bnum"></div>`
       el.classList.remove('in'); void el.offsetWidth; el.classList.add('in')
       el.querySelector('.gh').style.width = el.querySelector('.fg').style.width = pct + '%'
     }
@@ -592,7 +665,7 @@ export function startBattle(stage) {
   async function end(won) {
     B.over = true; controls()
     await wait(500)
-    const r = stage.pvp ? await X.act('pvp', { won, name: stage.name }) : await X.act('battle', { stage: stage.n, won })
+    const r = stage.pvp ? await X.act('pvp', { won, name: stage.name }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won } : { stage: stage.n, won })
     sfx(won ? 'claim' : 'error')
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')

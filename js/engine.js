@@ -113,7 +113,39 @@ function rollFree() { rollCharge(S.profile.free, FREE_EVERY, FREE_MAX); rollChar
 const notice = (text, kind = 'info') => { S.notices.push({ text, kind, t: Date.now() }); if (S.notices.length > 30) S.notices.shift() }
 const cardName = k => { const c = byKey(k); return c ? `${c.name} (${c.ver})` : 'card' }
 const giveCard = (k, lvl = 0) => { const now = Date.now(), e = S.profile.club.cards[k] || (S.profile.club.cards[k] = { n: 0, first: now, lvl: 0 }); e.n++; e.last = now; e.lvl = Math.max(e.lvl || 0, lvl || 0); return e }
-const addXP = n => { S.profile.xp = (S.profile.xp || 0) + n }
+const addXP = n => { const P = S.profile; P.xp = (P.xp || 0) + n; passP().xp += n * 3 }
+// ---------- SEASON PASS: 4-week seasons, 50 tiers, 300 pass XP per tier ----------
+const PASS_TIER = 300, PASS_TIERS = 50, PASS_COST = 25000
+const seasonNo = () => Math.floor(Date.now() / 864e5 / 28)
+function passP() { const P = S.profile, n = seasonNo(); if (!P.pass || P.pass.season !== n) P.pass = { season: n, xp: 0, prem: false, f: [], p: [] }; return P.pass }
+function passReward(track, t) {
+  if (track === 'f') { if (t === 50) return { pack: 'premium', label: 'Premium Drop' }; if (t % 10 === 0) return { pack: 'jumbo', label: 'Jumbo Gold' }; if (t % 5 === 0) return { pack: 'standard', label: 'Gold Pack' }; return { coins: 300 + t * 20, label: (300 + t * 20).toLocaleString() + ' coins' } }
+  if (t === 50) return { pick: 'M', label: 'Pick any Mythic' }
+  if (t === 25) return { pick: 'L', label: 'Pick any Legendary' }
+  if (t % 10 === 0) return { pack: 'lightning', label: 'Lightning Pack' }
+  if (t % 5 === 0) return { pack: 'premium', label: 'Premium Drop' }
+  if (t % 2 === 0) return { shards: 100 + t * 6, label: '◆' + (100 + t * 6) + ' shards' }
+  return { coins: 800 + t * 40, label: (800 + t * 40).toLocaleString() + ' coins' }
+}
+// ---------- MASTERY ----------
+const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
+const mastLv = x => MAST.filter(t => x >= t).length
+// ---------- TOWER / ARCS / EVENTS ----------
+const towerFloor = n => ({ rating: Math.min(99, 68 + Math.round(n * .6)), level: Math.min(5, 1 + Math.floor(n / 10)), boost: 1 + Math.max(0, n - 25) * .02, coins: 300 + n * 40, pack: n % 10 === 0 ? (n === 50 ? 'lightning' : n >= 30 ? 'premium' : 'jumbo') : null })
+const ARCS = [
+  { id: 'jjk', anime: 'JJK', name: 'Shibuya Incident', bad: ['SUKUNA', 'MAHITO & NANAMI', 'MAHORAGA', 'HIGURUMA'] },
+  { id: 'ds', anime: 'DS', name: 'Entertainment District', bad: ['GYUTARO', 'DOMA', 'AKAZA', 'HANTENGU'] },
+  { id: 'mha', anime: 'MHA', name: 'Paranormal Liberation War', bad: ['SHIGARAKI', 'DABI'] },
+  { id: 'nar', anime: 'NAR', name: "Pain's Assault", bad: ['PAIN'] },
+  { id: 'op', anime: 'OP', name: 'Onigashima Raid', bad: ['KING', 'GOL D. ROGER'] },
+  { id: 'dbz', anime: 'DBZ', name: 'Tournament of Power', bad: ['BROLY', 'GOKU BLACK'] },
+  { id: 'jjba', anime: 'JJBA', name: 'Golden Wind Finale', bad: ['DIAVOLO', 'KIRA', 'DIEGO'] },
+  { id: 'ble', anime: 'BLE', name: 'Thousand-Year Blood War', bad: ['YHWACH', 'AIZEN'] },
+  { id: 'hxh', anime: 'HXH', name: 'Heavens Arena', bad: ['HISOKA'] },
+]
+const ARC_CH = [{ name: 'Chapter 1', level: 2, boost: 1, coins: 2000 }, { name: 'Chapter 2', level: 3, boost: 1.12, coins: 3000 }, { name: 'Final Boss', level: 5, boost: 1.3, coins: 5000 }]
+const EVENT_ANIME = ['JJK', 'DS', 'DBZ', 'OP', 'NAR', 'MHA', 'JJBA', 'HXH', 'BLE']
+function eventNow() { const wk = Math.floor((Date.now() / 864e5 + 3) / 7), a = EVENT_ANIME[wk % EVENT_ANIME.length]; return { id: 'e' + wk, anime: a, pack: PACKS[a] ? a : 'standard', ends: (wk + 1) * 7 * 864e5 - 3 * 864e5, tiers: [{ name: 'Normal', level: 2, boost: 1, coins: 1500 }, { name: 'Hard', level: 4, boost: 1.2, coins: 3000 }, { name: 'Nightmare', level: 5, boost: 1.45, coins: 5000, pack: true }] } }
 
 // ---------------- rewards / missions ----------------
 const NAMES = { DBZ: 'Dragon Ball', NAR: 'Naruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'My Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', HXH: 'Hunter x Hunter', FT: 'Fairy Tail', CSM: 'Chainsaw Man', JJBA: 'JoJo', TG: 'Tokyo Ghoul', BLE: 'Bleach', K8: 'Kaiju No. 8', MOB: 'Mob Psycho 100', FF: 'Fire Force', OPM: 'One Punch Man', KGB: 'Kagurabachi', YGO: 'Yu-Gi-Oh!', DAN: 'Dandadan', SL: 'Solo Leveling' }
@@ -338,6 +370,33 @@ function act(a) {
       return { msg: `You beat ${a.name || 'that player'}'s team! +2,500 coins.` }
     }
     case 'battle': {
+      // mastery for every fighter in your team
+      { const M = P.mast || (P.mast = {}); const ups = []; for (const k of P.team.filter(Boolean)) { const before = mastLv(M[k] || 0); M[k] = (M[k] || 0) + (a.won ? 25 : 10); const after = mastLv(M[k]); for (let l = before + 1; l <= after; l++) { if (MAST_RW[l - 1]) P.coins += MAST_RW[l - 1]; ups.push(cardName(k) + ' Mastery ' + l) } } if (ups.length) notice('Mastery up: ' + ups.join(', '), 'ok') }
+      if (a.mode === 'tower') {
+        P.tower = P.tower || { best: 0 }; const n = +a.id; if (n !== P.tower.best + 1 && !(n <= P.tower.best)) return { error: 'Floor locked.' }
+        if (!a.won) { addXP(10); return {} }
+        const T = towerFloor(n), first = n > P.tower.best; addXP(first ? 50 : 15)
+        if (!first) { P.coins += 200; return { msg: 'Floor ' + n + ' replayed. +200 coins.' } }
+        P.tower.best = n; P.coins += T.coins; if (T.pack) P.pending[T.pack] = (P.pending[T.pack] || 0) + 1
+        return { msg: `Floor ${n} cleared! +${T.coins.toLocaleString()} coins${T.pack ? ' and a ' + PACKS[T.pack].name : ''}.` }
+      }
+      if (a.mode === 'arc') {
+        const [id, ch] = String(a.id).split(':'), arc = ARCS.find(x => x.id === id), c = +ch; if (!arc || !ARC_CH[c]) return { error: 'Unknown chapter.' }
+        const A = (P.arcs = P.arcs || {}), done = A[id] || 0; if (c > done) return { error: 'Chapter locked.' }
+        if (!a.won) { addXP(10); return {} }
+        addXP(40); if (c < done) { P.coins += 300; return { msg: 'Chapter replayed. +300 coins.' } }
+        A[id] = c + 1; P.coins += ARC_CH[c].coins; let extra = ''
+        if (c === 2) { P.pending.premium = (P.pending.premium || 0) + 1; P.shards = (P.shards || 0) + 1000; extra = ', a Premium Drop and ◆1,000 shards' }
+        return { msg: `${arc.name}: ${ARC_CH[c].name} cleared! +${ARC_CH[c].coins.toLocaleString()} coins${extra}.` }
+      }
+      if (a.mode === 'event') {
+        const E = eventNow(), t = +a.id, T = E.tiers[t]; if (!T) return { error: 'Unknown event fight.' }
+        const day = Math.floor(Date.now() / 864e5), D = P.ev && P.ev.day === day ? P.ev : (P.ev = { day, done: {} })
+        if (!a.won) { addXP(10); return {} }
+        addXP(40); if (D.done[t]) { P.coins += 200; return { msg: 'Already claimed today. +200 coins.' } }
+        D.done[t] = 1; P.coins += T.coins; if (T.pack) P.pending[E.pack] = (P.pending[E.pack] || 0) + 1
+        return { msg: `${T.name} cleared! +${T.coins.toLocaleString()} coins${T.pack ? ' and a ' + PACKS[E.pack].name : ''}.` }
+      }
       const STG = [0, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7500, 10000, 15000], PK = { 5: 'standard', 8: 'premium', 10: 'premium' }
       const n = +a.stage; if (!(n >= 1 && n <= 10)) return { error: 'Unknown stage.' }
       P.battle = P.battle || { cleared: 0, wins: 0, losses: 0 }
@@ -349,6 +408,16 @@ function act(a) {
       let extra = ''
       if (first) { P.battle.cleared = n; if (PK[n]) { P.pending[PK[n]] = (P.pending[PK[n]] || 0) + 1; extra = ` and a ${PK[n] === 'premium' ? 'Premium' : 'Legends'} pack` } }
       return { msg: `Stage ${n} ${first ? 'cleared' : 'won'}! +${coins.toLocaleString()} coins${extra}.` }
+    }
+    case 'passBuy': { const S2 = passP(); if (S2.prem) return { error: 'Already unlocked.' }; if (P.coins < PASS_COST) return { error: `You need ${PASS_COST.toLocaleString()} coins.` }; P.coins -= PASS_COST; S2.prem = true; return { msg: 'Premium Pass unlocked!' } }
+    case 'passClaim': {
+      const S2 = passP(), t = +a.tier, tr = a.track === 'p' ? 'p' : 'f'; if (!(t >= 1 && t <= PASS_TIERS)) return { error: 'Unknown tier.' }
+      if (Math.floor(S2.xp / PASS_TIER) < t) return { error: 'Tier not reached yet.' }; if (tr === 'p' && !S2.prem) return { error: 'Unlock the Premium Pass first.' }
+      if (S2[tr].includes(t)) return { error: 'Already claimed.' }
+      const R = passReward(tr, t)
+      if (R.pick) { const c = byKey(a.key); if (!c || c.r !== R.pick) return { error: 'Pick a ' + (R.pick === 'M' ? 'Mythic' : 'Legendary') + ' card.' }; giveCard(a.key); P.last = [a.key] }
+      S2[tr].push(t); if (R.coins) P.coins += R.coins; if (R.shards) P.shards = (P.shards || 0) + R.shards; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1
+      return { msg: 'Claimed: ' + (R.pick ? cardName(a.key) : R.label), rw: R }
     }
     case 'claim': {
       const r = rewards().find(r => r.id === a.id); if (!r) return { error: 'Reward not found.' }
@@ -366,7 +435,9 @@ function state() {
     profile: P, notices: S.notices, packs: PACKS, banner: banner(), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
-    wonder: S.wonder, now: Date.now()
+    wonder: S.wonder, now: Date.now(),
+    pass: (() => { const S2 = passP(); return { ...S2, tier: Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER)), into: S2.xp % PASS_TIER, per: PASS_TIER, max: PASS_TIERS, cost: PASS_COST, ends: (seasonNo() + 1) * 28 * 864e5, rw: Array.from({ length: PASS_TIERS }, (_, i) => [passReward('f', i + 1), passReward('p', i + 1)]) } })(),
+    mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = value(c, e ? e.lvl || 0 : 0); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
   return JSON.parse(JSON.stringify(out))

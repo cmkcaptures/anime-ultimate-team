@@ -388,6 +388,7 @@ async function cardDetail(key) {
     d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}${lvl ? ' · ★' + lvl : ''}`))
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
     d.append(h('div', 'movebox', `<b style="color:${TYPE[c.t].c[2]}">${TYPE[c.t].en} · ${c.mv}</b><p>${c.tx.join(' ')}</p>`))
+    if (e) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
     if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
     d.append(h('span', 'eyebrow', `MARKET VALUE ~ ${fmt(ST.values[key])} COINS`))
     if (e) {
@@ -1015,7 +1016,7 @@ document.addEventListener('click', e => { const b = e.target.closest('button'); 
 // ================= BATTLE =================
 PAGES.battle = el => battlePage(el)
 TITLES.battle = 'BATTLE'
-initBattle({ h, $, cardImg, eff, get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
+initBattle({ h, $, cardImg, eff, ST: () => ST, get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
 
 // ================= PLAYERS (accounts, leaderboard, friends, PvP) =================
 const PS = { tab: 0, sort: 'level' }
@@ -1206,4 +1207,38 @@ async function walkout(ov, FXC, c, rk) {
   sil.classList.add('lit'); sfx('reveal', rk); FXC.hit(cx, cy, fin, 1.8); FXC.rays(cx, cy, fin, 18, 1000, 1.4)
   info.innerHTML = `<div class="wk-name">${c.name}</div>`; await W(1300)
   wk.classList.add('out'); await W(380); wk.remove()
+}
+
+// ================= SEASON PASS =================
+PAGES.pass = (el) => {
+  const S = ST.pass
+  const hero = h('section', 'bhero passhero', `<div><span class="sh-tag">SEASON ${Math.max(1, S.season - 740)} · ENDS IN <b class="timer" data-until="${S.ends - SKEW}"></b></span><h2>SEASON PASS</h2><p>Earn pass XP from everything: battles, packs, challenges, the Tower, arcs and events. Free rewards for everyone; the Premium track adds packs, shards, a Legendary pick at tier 25 and a Mythic pick at tier 50.</p>
+    <div class="pbar"><b>TIER ${S.tier}</b><i><s style="width:${S.tier >= S.max ? 100 : S.into / S.per * 100}%"></s></i><span>${S.tier >= S.max ? 'MAX' : S.into + ' / ' + S.per + ' XP'}</span></div></div>`)
+  if (!S.prem) { const b = h('button', 'btn gold big', `<span>UNLOCK PREMIUM</span><b><i class="coin-i"></i>${fmt(S.cost)}</b>`); b.disabled = P.coins < S.cost; b.onclick = async () => { const r = await act('passBuy'); if (!r.error) rerender() }; hero.querySelector('div').append(b) }
+  else hero.querySelector('div').append(h('span', 'pass-own', 'PREMIUM UNLOCKED'))
+  el.append(hero)
+  const back = h('button', 'btn dark', '‹ BACK TO BATTLE'); back.onclick = () => go('battle'); el.append(back)
+  const tr = h('div', 'ptrack')
+  const cell = (t, k, R) => {
+    const claimed = S[k].includes(t), reach = S.tier >= t, lock = k === 'p' && !S.prem
+    const b = h('button', 'pcell ' + k + (claimed ? ' got' : reach && !lock ? ' ready' : '') + (R.pack || R.pick ? ' big' : ''), `<small>${k === 'p' ? 'PREMIUM' : 'FREE'}</small><b>${R.label}</b><span>${claimed ? '✓ CLAIMED' : lock ? 'LOCKED' : reach ? 'CLAIM' : 'TIER ' + t}</span>`)
+    b.disabled = claimed || !reach || lock
+    b.onclick = async () => {
+      if (R.pick) return passPick(t, R.pick)
+      const r = await act('passClaim', { track: k, tier: t }); if (r.error) return
+      if (r.rw && r.rw.pack) openPack(r.rw.pack); else rerender()
+    }
+    return b
+  }
+  S.rw.forEach(([f, p], i) => { const col = h('div', 'pcol' + (S.tier >= i + 1 ? ' on' : '')); col.append(h('div', 'pt', String(i + 1)), cell(i + 1, 'f', f), cell(i + 1, 'p', p)); tr.append(col) })
+  el.append(tr)
+  setTimeout(() => { const c = tr.children[Math.max(0, S.tier - 2)]; if (c) tr.scrollLeft = c.offsetLeft - 20 }, 50)
+}
+function passPick(t, r) {
+  openModal(sh => {
+    sh.append(h('div', 'wi-head', `<span class="eyebrow">SEASON PASS · TIER ${t}</span><h2>Pick any ${r === 'M' ? 'Mythic' : 'Legendary'}</h2>`))
+    const g = h('div', 'cardgrid wi-grid')
+    for (const c of POOL.filter(c => c.r === r).sort((a, b) => b.ovr - a.ovr)) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 200)); b.onclick = async () => { const x = await act('passClaim', { track: 'p', tier: t, key: c.key }); if (!x.error) { closeModal(); rerender() } }; g.append(b) }
+    sh.append(g)
+  }, true)
 }
