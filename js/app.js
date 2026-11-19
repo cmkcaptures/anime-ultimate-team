@@ -33,6 +33,7 @@ async function act(type, data = {}) {
 let lastCoins = null
 function applyState(s) {
   ST = s; P = s.profile
+  { const eq = P.eq || {}; document.body.dataset.frame = eq.frame || ''; document.body.dataset.opener = eq.opener || ''; const sp = document.getElementById('sideProfile'); if (sp) sp.dataset.border = eq.border || '' }
   for (const n of s.notices || []) toast(n.text, n.kind === 'sold' ? 'gold' : 'ok')
   $('#coinVal').textContent = fmt(P.coins); $('#ppVal').textContent = fmt(P.pp || 0)
   if (lastCoins !== null && lastCoins !== P.coins) sfx(P.coins > lastCoins ? 'coin' : 'buy')
@@ -98,7 +99,8 @@ const PACKLOOK = {
   JJBA: { t: ['BIZARRE', 'STANDS'], c: ['#ffd23a', '#c03dff', '#4a0a8a', '#12042a', '#ff5ad1'], set: 'JJ' },
   CSM: { t: ['CHAINSAW', 'DEVILS'], c: ['#ffb000', '#ff3d00', '#7a0a1a', '#1a0408', '#ff3d9a'], set: 'CS' },
 }
-const packPool = type => { const a = ST.packs[type] && ST.packs[type].anime; return a ? POOL.filter(c => c.anime === a) : POOL }
+const PACKABLE = () => POOL.filter(c => !c.season)
+const packPool = type => { const a = ST.packs[type] && ST.packs[type].anime; return a ? PACKABLE().filter(c => c.anime === a) : PACKABLE() }
 const featured = type => packPool(type).slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)[type === 'premium' ? 1 : 0] || POOL[0]
 const PACKCANVAS = {}
 const PACKC = {}
@@ -398,7 +400,8 @@ async function cardDetail(key) {
     } else {
       const b = h('button', 'btn block', 'FIND ON MARKET'); b.onclick = () => { MS.q = c.name.toLowerCase(); MS.view = 'results'; go('market') }; d.append(b)
     }
-    { const cost = ST.shardCost[c.r], cb = h('button', 'btn block dark', `CRAFT FOR ◆${fmt(cost)} SHARDS <small>(you have ${fmt(P.shards || 0)})</small>`); cb.disabled = (P.shards || 0) < cost; cb.onclick = async () => { const r = await act('craft', { key }); if (!r.error) cardDetail(key) }; d.append(cb) }
+    if (c.season) d.append(h('span', 'season-tag', `SEASON ${c.season} EXCLUSIVE · Season Pass only`))
+    else { const cost = ST.shardCost[c.r], cb = h('button', 'btn block dark', `CRAFT FOR ◆${fmt(cost)} SHARDS <small>(you have ${fmt(P.shards || 0)})</small>`); cb.disabled = (P.shards || 0) < cost; cb.onclick = async () => { const r = await act('craft', { key }); if (!r.error) cardDetail(key) }; d.append(cb) }
     sh.append(d)
   })
 }
@@ -657,7 +660,7 @@ PAGES.shop = (el) => {
   el.append(h('div', 'sec', `<h3>PACK POINT EXCHANGE</h3><span class="cur"><i class="pp-i"></i>${fmt(P.pp || 0)}</span>`))
   el.append(h('p', 'muted', '<small style="font-weight:700">Every pack you open gives 5 pack points. Spend them on the exact card you want.</small>'))
   const g = h('div', 'ppgrid')
-  for (const c of POOL.slice().sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr)) {
+  for (const c of PACKABLE().sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr)) {
     const cost = ST.ppCost[c.r], b = h('button', 'cg' + ((P.pp || 0) < cost ? ' dimmed' : ''))
     b.append(cardImg(c, 240), h('span', 'cost', `<i></i>${cost}`)); if ((P.pp || 0) < cost) b.style.opacity = .55
     b.onclick = () => openModal(sh => {
@@ -766,7 +769,7 @@ const PACKODDS = {
 function rollBannerKeys(n) {
   const B = ST.banner, odds = PACKODDS.standard.odds, pr = ((P.pity || {})[B.id]) || { m: 0, f: 0 }
   let m = pr.m, f = pr.f, out = []
-  const byTier = r => POOL.filter(c => c.r === r)
+  const byTier = r => PACKABLE().filter(c => c.r === r)
   for (let p = 0; p < n; p++) {
     const pack = []
     for (let i = 0; i < 5; i++) {
@@ -1254,17 +1257,24 @@ async function walkout(ov, FXC, c, rk) {
 
 // ================= SEASON PASS =================
 PAGES.pass = (el) => {
-  const S = ST.pass
-  const hero = h('section', 'bhero passhero', `<div><span class="sh-tag">SEASON ${Math.max(1, S.season - 740)} · ENDS IN <b class="timer" data-until="${S.ends - SKEW}"></b></span><h2>SEASON PASS</h2><p>Earn pass XP from everything: battles, packs, challenges, the Tower, arcs and events. Free rewards for everyone; the Premium track adds packs, shards, a Legendary pick at tier 25 and a Mythic pick at tier 50.</p>
+  const S = ST.pass, TH = S.theme
+  const hero = h('section', 'bhero passhero', `<div><span class="sh-tag">SEASON ${S.shown} · ${TH.name} · ENDS IN <b class="timer" data-until="${S.ends - SKEW}"></b></span><h2>${TH.name === 'SEASON ' + S.shown ? 'SEASON PASS' : TH.name}</h2><small class="th-jp">${TH.jp} · ${TH.tag || 'Season Pass'}</small><p>Earn pass XP from everything: battles, packs, challenges, the Tower, arcs and events. The free track has this season's exclusive cards, never sold in packs. Premium adds cosmetics (card frames, titles, avatar borders, opener styles), packs, shards, a Legendary pick at 25 and a Mythic pick at 50.</p>
     <div class="pbar"><b>TIER ${S.tier}</b><i><s style="width:${S.tier >= S.max ? 100 : S.into / S.per * 100}%"></s></i><span>${S.tier >= S.max ? 'MAX' : S.into + ' / ' + S.per + ' XP'}</span></div></div>`)
   if (!S.prem) { const b = h('button', 'btn gold big', `<span>UNLOCK PREMIUM</span><b><i class="coin-i"></i>${fmt(S.cost)}</b>`); b.disabled = P.coins < S.cost; b.onclick = async () => { const r = await act('passBuy'); if (!r.error) rerender() }; hero.querySelector('div').append(b) }
   else hero.querySelector('div').append(h('span', 'pass-own', 'PREMIUM UNLOCKED'))
+  hero.style.setProperty('--t1', TH.c1); hero.style.setProperty('--t2', TH.c2); hero.classList.add('themed')
   el.append(hero)
+  { const sc = S.seasonCards.map(k => BYKEY[k]).filter(Boolean)
+    const box = h('section', 'season-cards'); box.append(h('div', 'sec', `<h3>SEASON ${S.shown} EXCLUSIVES</h3><span class="muted" style="font-weight:700;font-size:12px">free track only · never in packs</span>`))
+    const g = h('div', 'cardgrid')
+    if (!sc.length) g.append(h('div', 'empty', '<b>Exclusive cards coming soon</b>New ' + TH.name.toLowerCase() + ' cards will appear here and on the free track.'))
+    sc.forEach(c => { const b = h('button', 'cg' + (club()[c.key] ? '' : ' miss')); b.append(cardImg(eff(c), 220)); b.onclick = () => cardDetail(c.key); g.append(b) }); box.append(g); el.append(box) }
+  el.append(lockerBlock())
   const back = h('button', 'btn dark', '‹ BACK TO BATTLE'); back.onclick = () => go('battle'); el.append(back)
   const tr = h('div', 'ptrack')
   const cell = (t, k, R) => {
     const claimed = S[k].includes(t), reach = S.tier >= t, lock = k === 'p' && !S.prem
-    const b = h('button', 'pcell ' + k + (claimed ? ' got' : reach && !lock ? ' ready' : '') + (R.pack || R.pick ? ' big' : ''), `<small>${k === 'p' ? 'PREMIUM' : 'FREE'}</small><b>${R.label}</b><span>${claimed ? '✓ CLAIMED' : lock ? 'LOCKED' : reach ? 'CLAIM' : 'TIER ' + t}</span>`)
+    const b = h('button', 'pcell ' + k + (claimed ? ' got' : reach && !lock ? ' ready' : '') + (R.pack || R.pick || R.card || R.cos ? ' big' : '') + (R.card ? ' sc' : '') + (R.cos ? ' cos' : ''), `<small>${k === 'p' ? 'PREMIUM' : 'FREE'}</small><b>${R.label}</b><span>${claimed ? '✓ CLAIMED' : lock ? 'LOCKED' : reach ? 'CLAIM' : 'TIER ' + t}</span>`)
     b.disabled = claimed || !reach || lock
     b.onclick = async () => {
       if (R.pick) return passPick(t, R.pick)
@@ -1368,4 +1378,18 @@ function tradeSheet(p) {
       catch { await act('tradeRefund', { offer: pick.offer, coins: pick.coins }); toast('Could not send the request. Your offer was returned.', 'err'); send.disabled = false }
     }
   })
+}
+
+// ================= LOCKER (cosmetics) =================
+function lockerBlock() {
+  const C = ST.cos, mine = P.cos || [], eq = P.eq || {}, box = h('section', 'locker')
+  box.append(h('div', 'sec', '<h3>LOCKER</h3><span class="muted" style="font-weight:700;font-size:12px">cosmetics from the premium track</span>'))
+  const g = h('div', 'lk-grid'), NAMES = { frame: 'CARD FRAME', title: 'TITLE', border: 'AVATAR BORDER', opener: 'PACK OPENER' }
+  for (const [id, c] of Object.entries(C)) {
+    const have = mine.includes(id), on = eq[c.type] === id
+    const b = h('button', 'lk' + (have ? '' : ' locked') + (on ? ' on' : ''), `<i class="lk-ic lk-${id}"></i><small>${NAMES[c.type]}</small><b>${c.name}</b><span>${on ? 'EQUIPPED' : have ? 'TAP TO EQUIP' : 'LOCKED · PREMIUM'}</span>`)
+    b.disabled = !have; b.onclick = async () => { const r = await act('equip', { slot: c.type, id: on ? null : id }); if (!r.error) rerender() }
+    g.append(b)
+  }
+  box.append(g); return box
 }

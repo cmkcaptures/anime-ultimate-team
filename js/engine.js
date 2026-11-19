@@ -23,7 +23,7 @@ async function cloudSave() {
 function summary() {
   const P = S.profile, own = Object.keys(P.club.cards).filter(k => byKey(k)), team = P.team.filter(k => k && byKey(k))
   return { level: levelOf(P.xp || 0).lv, cards: own.length, packs: P.club.packs || 0, cleared: (P.battle && P.battle.cleared) || 0, wins: (P.battle && P.battle.wins) || 0, losses: (P.battle && P.battle.losses) || 0,
-    pvpWins: (P.battle && P.battle.pvpW) || 0, rivals: Object.fromEntries(Object.entries(P.rivals || {}).map(([k, v]) => [k, [v.w, v.l]])), bossScore: P.boss && P.boss.day === Math.floor(Date.now() / 864e5) ? P.boss.day * 1e9 + P.boss.best : 0, rating: team.length ? Math.round(team.reduce((n, k) => n + byKey(k).ovr, 0) / team.length) : 0, team, showcase: (P.showcase || []).filter(k => byKey(k)) }
+    pvpWins: (P.battle && P.battle.pvpW) || 0, title: P.eq && P.eq.title ? COSMETICS[P.eq.title]?.name || '' : '', border: (P.eq && P.eq.border) || '', rivals: Object.fromEntries(Object.entries(P.rivals || {}).map(([k, v]) => [k, [v.w, v.l]])), bossScore: P.boss && P.boss.day === Math.floor(Date.now() / 864e5) ? P.boss.day * 1e9 + P.boss.best : 0, rating: team.length ? Math.round(team.reduce((n, k) => n + byKey(k).ovr, 0) / team.length) : 0, team, showcase: (P.showcase || []).filter(k => byKey(k)) }
 }
 function setSync(s) { document.documentElement.dataset.sync = s }
 
@@ -58,7 +58,7 @@ const PACKS = {
 // weekly banner: 2 featured Legendary+ cards, rotates every Monday, same for everyone
 const BANNER_COST = 3000, PITY_MYTHIC = 80, PITY_FEATURED = 160
 function banner() {
-  const wk = Math.floor((Date.now() / 864e5 + 3) / 7), top = CARDS.filter(c => 'LMX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
+  const wk = Math.floor((Date.now() / 864e5 + 3) / 7), top = CARDS.filter(c => !c.season && 'LMX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
   if (!top.length) return null
   const rnd = n => { let x = Math.sin(wk * 9301 + n * 49297) * 233280; return x - Math.floor(x) }
   const f1 = top[Math.floor(rnd(1) * top.length)], rest = top.filter(c => c.anime !== f1.anime), f2 = (rest.length ? rest : top)[Math.floor(rnd(2) * (rest.length || top.length))]
@@ -116,9 +116,30 @@ const giveCard = (k, lvl = 0) => { const now = Date.now(), e = S.profile.club.ca
 const addXP = n => { const P = S.profile; P.xp = (P.xp || 0) + n; passP().xp += n * 3 }
 // ---------- SEASON PASS: 4-week seasons, 50 tiers, 300 pass XP per tier ----------
 const PASS_TIER = 300, PASS_TIERS = 50, PASS_COST = 25000
+// season themes, keyed by the season number players see (Season 2 = first themed season)
+const SEASON_OFFSET = 740
+const THEMES = {
+  2: { name: 'RIVALS', jp: 'ライバル', c1: '#ff3b5c', c2: '#2a7bff', tag: 'Iconic rivals face off' },
+}
+const seasonShown = () => Math.max(1, seasonNo() - SEASON_OFFSET)
+const theme = () => THEMES[seasonShown()] || { name: 'SEASON ' + seasonShown(), jp: 'シーズン', c1: '#ffcc00', c2: '#7b2ff2', tag: '' }
+const seasonCards = () => CARDS.filter(c => c.season === seasonShown()).sort((a, b) => 'CURELMX'.indexOf(a.r) - 'CURELMX'.indexOf(b.r) || a.ovr - b.ovr)
+// cosmetics unlocked on the premium track, per theme
+const COSMETICS = {
+  frame_rivals: { type: 'frame', name: 'Rivals Frame', d: 'Red and blue split border on every card' },
+  title_rival: { type: 'title', name: 'Rival', d: 'Profile title' },
+  border_rivals: { type: 'border', name: 'Rivals Ring', d: 'Avatar border' },
+  opener_rivals: { type: 'opener', name: 'Clash Opener', d: 'Red vs blue pack opening' },
+  title_eternal: { type: 'title', name: 'Eternal Rival', d: 'Profile title' },
+  frame_rivals_gold: { type: 'frame', name: 'Rivals Gold Frame', d: 'Animated gold rival border' },
+}
+const PREM_COS = { 5: 'title_rival', 15: 'border_rivals', 20: 'frame_rivals', 35: 'opener_rivals', 45: 'title_eternal', 50: 'frame_rivals_gold' }
 const seasonNo = () => Math.floor(Date.now() / 864e5 / 28)
 function passP() { const P = S.profile, n = seasonNo(); if (!P.pass || P.pass.season !== n) P.pass = { season: n, xp: 0, prem: false, f: [], p: [] }; return P.pass }
+function freeCardTiers() { const L = seasonCards(), n = L.length; const m = {}; L.forEach((c, i) => { let t = Math.round(PASS_TIERS * (i + 1) / n); while (m[t] && t > 1) t--; m[t] = c.key }); return m }
 function passReward(track, t) {
+  if (track === 'f') { const fc = freeCardTiers()[t]; if (fc) { const c = byKey(fc); return { card: fc, label: c.name + ' · ' + c.ver, season: 1 } } }
+  if (track === 'p' && PREM_COS[t] && theme().name === 'RIVALS') { const id = PREM_COS[t], C = COSMETICS[id]; return { cos: id, label: C.name, d: C.d } }
   if (track === 'f') { if (t === 50) return { pack: 'premium', label: 'Premium Drop' }; if (t % 10 === 0) return { pack: 'jumbo', label: 'Jumbo Gold' }; if (t % 5 === 0) return { pack: 'standard', label: 'Gold Pack' }; return { coins: 300 + t * 20, label: (300 + t * 20).toLocaleString() + ' coins' } }
   if (t === 50) return { pick: 'M', label: 'Pick any Mythic' }
   if (t === 25) return { pick: 'L', label: 'Pick any Legendary' }
@@ -153,7 +174,7 @@ function rankP() {
 const BOSS_TRIES = 3, BOSS_HP = 45
 const BOSS_RW = [{ at: 10000, label: '1,000 coins', coins: 1000 }, { at: 25000, label: 'Gold Pack', pack: 'standard' }, { at: 50000, label: '2,500 coins + ◆200', coins: 2500, shards: 200 }, { at: 90000, label: 'Premium Drop', pack: 'premium' }, { at: 150000, label: 'Lightning Pack', pack: 'lightning' }]
 function bossToday() {
-  const day = Math.floor(Date.now() / 864e5), top = CARDS.filter(c => 'MX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
+  const day = Math.floor(Date.now() / 864e5), top = CARDS.filter(c => !c.season && 'MX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
   if (!top.length) return null
   let x = Math.sin(day * 7919) * 10000; x -= Math.floor(x)
   const c = top[Math.floor(x * top.length)]
@@ -227,13 +248,13 @@ const WEIGHT = { C: 30, U: 25, R: 18, E: 12, L: 8, M: 4, X: 1.5 }
 const PACK_ODDS = { C: 48, U: 30, R: 14, E: 5.6, L: 1.9, M: .42, X: .08 }
 const pick = a => a[Math.floor(Math.random() * a.length)]
 function weightedCard(w = WEIGHT) {
-  const all = cards(); if (!all.length) return null
+  const all = cards().filter(c => !c.season); if (!all.length) return null
   let r = Math.random() * all.reduce((a, c) => a + w[c.r], 0)
   for (const c of all) if ((r -= w[c.r]) < 0) return c
   return all[0]
 }
 function aiPack() {
-  const all = cards(), out = []
+  const all = cards().filter(c => !c.season), out = []
   for (let i = 0; i < 5; i++) { let r = Math.random() * 100, t = 'C'; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) if ((r -= PACK_ODDS[k]) < 0) { t = k; break } const l = all.filter(c => c.r === t); out.push((l.length ? pick(l) : weightedCard()).key) }
   if (Math.random() < .2) out[Math.floor(Math.random() * 5)] = (weightedCard({ C: 0, U: 0, R: 10, E: 5, L: 1.2, M: .25, X: .05 }) || {}).key
   return out.filter(Boolean)
@@ -260,7 +281,7 @@ function placeBid(l, who, amount) {
   if (l.exp - Date.now() < 30000) l.exp = Date.now() + 30000
 }
 function tick(noSave) {
-  const M = S.market, now = Date.now(), all = cards()
+  const M = S.market, now = Date.now(), all = cards().filter(c => !c.season)
   for (const c of all) { const d = M.demand[c.key] || 1; M.demand[c.key] = Math.max(.7, Math.min(1.6, d * (1 + (Math.random() - .5) * .06))) }
   for (const l of [...M.listings]) if (l.exp <= now) {
     if (l.bid) settle(l, 'bid')
@@ -495,9 +516,16 @@ function act(a) {
       if (Math.floor(S2.xp / PASS_TIER) < t) return { error: 'Tier not reached yet.' }; if (tr === 'p' && !S2.prem) return { error: 'Unlock the Premium Pass first.' }
       if (S2[tr].includes(t)) return { error: 'Already claimed.' }
       const R = passReward(tr, t)
+      if (R.card) { giveCard(R.card); P.last = [R.card] }
+      if (R.cos) { const cs = P.cos || (P.cos = []); if (!cs.includes(R.cos)) cs.push(R.cos); const ty = COSMETICS[R.cos].type, eq = P.eq || (P.eq = {}); if (!eq[ty]) eq[ty] = R.cos }
       if (R.pick) { const c = byKey(a.key); if (!c || c.r !== R.pick) return { error: 'Pick a ' + (R.pick === 'M' ? 'Mythic' : 'Legendary') + ' card.' }; giveCard(a.key); P.last = [a.key] }
       S2[tr].push(t); if (R.coins) P.coins += R.coins; if (R.shards) P.shards = (P.shards || 0) + R.shards; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1
       return { msg: 'Claimed: ' + (R.pick ? cardName(a.key) : R.label), rw: R }
+    }
+    case 'equip': {
+      const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
+      if (a.id && !(P.cos || []).includes(a.id)) return { error: 'You have not unlocked that yet.' }
+      (P.eq = P.eq || {})[ty] = a.id || null; return {}
     }
     case 'claim': {
       const r = rewards().find(r => r.id === a.id); if (!r) return { error: 'Reward not found.' }
@@ -516,7 +544,7 @@ function state() {
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now(),
-    pass: (() => { const S2 = passP(); return { ...S2, tier: Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER)), into: S2.xp % PASS_TIER, per: PASS_TIER, max: PASS_TIERS, cost: PASS_COST, ends: (seasonNo() + 1) * 28 * 864e5, rw: Array.from({ length: PASS_TIERS }, (_, i) => [passReward('f', i + 1), passReward('p', i + 1)]) } })(),
+    cos: COSMETICS, pass: (() => { const S2 = passP(); return { ...S2, theme: theme(), shown: seasonShown(), seasonCards: seasonCards().map(c => c.key), tier: Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER)), into: S2.xp % PASS_TIER, per: PASS_TIER, max: PASS_TIERS, cost: PASS_COST, ends: (seasonNo() + 1) * 28 * 864e5, rw: Array.from({ length: PASS_TIERS }, (_, i) => [passReward('f', i + 1), passReward('p', i + 1)]) } })(),
     ranked: (() => { const R = rankP(), i = rankOf(R.pts); return { ...R, tier: i, ranks: RANKS, ends: (seasonNo() + 1) * 28 * 864e5 } })(),
     boss: (() => { const BD = bossToday(); return BD ? { ...BD, me: bossP() } : null })(),
     login: (() => { const { L, can, next } = loginP(); return { streak: L.streak, can, next, rw: LOGIN_RW } })(),

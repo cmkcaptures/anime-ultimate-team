@@ -2579,3 +2579,33 @@ html body .mo.mo { background: linear-gradient(115deg, #ff8a1f 0 26%, #7b2ff2 26
 .tsum { margin: 4px 0 12px; padding: 10px 14px; border-radius: 12px; background: #0a0420; box-shadow: 0 0 0 2px rgba(255,255,255,.6); font: 600 13px var(--eUI); color: #fff } .tsum b { color: var(--eY) }
 .tpick { max-height: 340px; overflow-y: auto; padding: 6px } .tpick .cg.sel { outline: 4px solid var(--eY); outline-offset: 2px; border-radius: 10px }
 @media (max-width: 600px) { .trow { grid-template-columns: 64px 1fr } .trow img { width: 64px } .tbtns { grid-column: span 2; grid-template-columns: 1fr 1fr } .lg-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) } .lg-d.big { grid-column: span 3 } }
+
+/* ================= SEASONS + COSMETICS ================= */
+.passhero.themed { background: linear-gradient(115deg, var(--t1) 0 30%, var(--t2) 70%) !important }
+.passhero.themed::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 47%, rgba(255,255,255,.9) 49.5%, rgba(255,255,255,.9) 50.5%, transparent 53%), repeating-linear-gradient(115deg, rgba(255,255,255,.07) 0 12px, transparent 12px 32px); opacity: .85 }
+.passhero.themed > * { position: relative }
+.passhero.themed h2 { -webkit-text-stroke: 2px #0a0420; paint-order: stroke fill; text-shadow: 0 6px 0 #0a0420 }
+.passhero.themed p { color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,.6) }
+.th-jp { display: block; margin: -4px 0 8px; font: 900 14px var(--eJ); letter-spacing: .1em; color: #fff; text-shadow: 0 2px 0 #0a0420 }
+.season-cards { margin-top: 10px }
+.season-tag { display: block; width: 100%; text-align: center; padding: 10px; border-radius: 12px; background: linear-gradient(115deg, #ff3b5c, #2a7bff); box-shadow: 0 0 0 3px #fff; font: 800 14px var(--eUI); color: #fff; letter-spacing: .06em }
+.pcell.sc { background: linear-gradient(160deg, #ff3b5c, #2a7bff) !important } .pcell.sc b { color: #fff !important }
+.pcell.cos b { color: #ff9ad0 !important }
+.lk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; margin-bottom: 18px }
+.lk { position: relative; display: grid; gap: 4px; justify-items: center; text-align: center; padding: 14px 10px; border: 0; border-radius: 16px; cursor: pointer; color: #fff; background: linear-gradient(160deg, #3a2a7a, var(--eN)); box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(26,11,58,.55) }
+.lk.locked { opacity: .55; cursor: default } .lk.on { background: linear-gradient(160deg, #ffe14a, #ff9a00); box-shadow: 0 0 0 4px #fff, 0 6px 0 4px #8a3a00 }
+.lk small { font: 800 10px var(--eUI); letter-spacing: .12em; color: var(--eY) } .lk.on small, .lk.on span { color: #3a1a00 } .lk b { font: 800 18px var(--eD) } .lk span { font: 800 10px var(--eUI); letter-spacing: .1em; color: rgba(255,255,255,.7) }
+.lk-ic { width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(115deg, #ff3b5c 49%, #2a7bff 51%); box-shadow: 0 0 0 3px #fff }
+.lk-ic.lk-frame_rivals_gold { background: linear-gradient(115deg, #ffe14a, #ff9a00, #fff4c0, #ff9a00); animation: lkshine 2s linear infinite; background-size: 200% 100% }
+.lk-ic[class*=title] { border-radius: 8px; height: 28px; width: 90px; margin: 14px 0 }
+.lk-ic.lk-border_rivals { border-radius: 50% }
+@keyframes lkshine { to { background-position: 200% 0 } }
+/* equipped card frames: every card image */
+body[data-frame=frame_rivals] .cg img, body[data-frame=frame_rivals] .tslot img, body[data-frame=frame_rivals] .recent img { border-radius: 10px; box-shadow: 0 0 0 3px #fff, 0 0 0 6px transparent, -4px 0 0 3px #ff3b5c, 4px 0 0 3px #2a7bff !important }
+body[data-frame=frame_rivals_gold] .cg img, body[data-frame=frame_rivals_gold] .tslot img, body[data-frame=frame_rivals_gold] .recent img { border-radius: 10px; box-shadow: 0 0 0 3px #ffe14a, 0 0 14px 3px rgba(255,204,0,.6) !important; animation: frglow 2.4s ease-in-out infinite }
+@keyframes frglow { 50% { box-shadow: 0 0 0 3px #fff4c0, 0 0 22px 6px rgba(255,204,0,.8) } }
+/* avatar border */
+#sideProfile[data-border=border_rivals] .lvl, #sideProfile[data-border=border_rivals] [class*=badge], #sideProfile[data-border=border_rivals] .spr > :first-child { box-shadow: 0 0 0 3px #fff, -3px 0 0 4px #ff3b5c, 3px 0 0 4px #2a7bff !important }
+/* pack opener style */
+body[data-opener=opener_rivals] .op2 .o2-bg { background: linear-gradient(115deg, #ff3b5c 0 49%, #fff 49% 51%, #2a7bff 51%) !important }
+.season-cards .empty { grid-column: 1 / -1 }
