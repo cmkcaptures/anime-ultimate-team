@@ -554,6 +554,7 @@ export function startBattle(stage) {
     if (e.emperor) a0.hp = Math.max(1, a0.hp - Math.round(a0.max * .03))
     if (a0.burnT > 0) { a0.hp = Math.max(1, a0.hp - Math.round(a0.max * a0.burn / 100)); a0.burnT-- }
     if (e.guardAuto) a0.guard = 1
+    if (e.energyTurn) s.ki = Math.min(KI_MAX, s.ki + e.energyTurn)
     if (e.haki) { const o = act(foe); if (o && o.card.ovr < a0.card.ovr) foe.ki = Math.max(0, foe.ki - e.haki) }
     for (const f of s.team) { const fe = PE(f); if (fe.teamHeal && !f.ko) for (const g of s.team) if (!g.ko) g.hp = Math.min(g.max, g.hp + Math.round(g.max * fe.teamHeal / 100)) }
     if (e.specDraw && Math.random() * 100 < e.specDraw) { s.hand[0] = 'special' }
