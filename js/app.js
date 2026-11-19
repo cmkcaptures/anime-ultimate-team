@@ -236,14 +236,14 @@ PAGES.home = (el) => {
   const mn = h('div', 'lb-menu')
   const art = c => c ? `style="--art:url('${c.url}');--fx:${Math.round((c.fx ?? .5) * 100)}%;--fy:${Math.round((c.fy ?? .22) * 100)}%"` : ''
   const pick = f => POOL.filter(f).sort((a, b) => b.ovr - a.ovr)[0]
-  const mb = (cls, jp, title, sub, c, fn, badge) => { const b = h('button', 'lb-b ' + cls, `<i class="lb-im" ${art(c)}></i>${badge ? `<span class="lb-new">${badge}</span>` : ''}<span class="lb-tx"><small>${jp}</small><b>${title}</b>${sub ? `<em>${sub}</em>` : ''}</span>`); b.onclick = fn; return b }
+  const mb = (cls, jp, title, sub, c, fn, badge) => { const b = h('button', 'lb-b ' + cls, `<i class="lb-im" ${art(c)}></i><i class="lb-gl"></i><i class="lb-wm">${jp}</i>${badge ? `<span class="lb-new">${badge}</span>` : ''}<span class="lb-tx"><small>${jp}</small><b>${title}</b>${sub ? `<em>${sub}</em>` : ''}</span>`); b.onclick = fn; return b }
   const owned1 = (P.team || []).map(k => BYKEY[k]).find(Boolean)
   mn.append(
     mb('main', 'バトル', 'BATTLE', 'Story · Tower · Arcs · Event', pick(c => c.anime === 'DBZ') || feat, () => go('battle'), ST.event ? 'EVENT LIVE' : ''),
-    mb('', '召喚', 'SUMMON', B ? 'Limited banner' : 'Packs', feat, () => go('shop'), 'NEW'),
-    mb('', 'チーム', 'TEAM', teamSub(), owned1 || pick(c => c.anime === 'FT'), () => go('team')),
-    mb('', 'コレクション', 'CARDS', Object.keys(club()).length + ' owned', pick(c => c.anime === 'BLE'), () => go('cards')),
-    mb('', 'マーケット', 'MARKET', 'Live auctions', pick(c => c.anime === 'MHA'), () => go('market')),
+    mb('c-sum', '召喚', 'SUMMON', B ? 'Limited banner' : 'Packs', feat, () => go('shop'), 'NEW'),
+    mb('c-team', 'チーム', 'TEAM', teamSub(), owned1 || pick(c => c.anime === 'FT'), () => go('team')),
+    mb('c-cards', 'コレクション', 'CARDS', Object.keys(club()).length + ' owned', pick(c => c.anime === 'BLE'), () => go('cards')),
+    mb('c-mkt', 'マーケット', 'MARKET', 'Live auctions', pick(c => c.anime === 'MHA'), () => go('market')),
   )
   lob.append(fc, mn); el.append(lob)
   // quick strip: free packs, wonder pick, pass, players
