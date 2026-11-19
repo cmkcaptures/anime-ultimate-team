@@ -2222,3 +2222,53 @@ body[data-page=shop] .btn.dark.big { background: rgba(0,0,0,.4) !important; box-
 .lb-new { z-index: 5; box-shadow: 0 0 0 2px #fff; border-radius: 8px }
 .lb-menu { gap: 24px 20px }
 .lb-b:not(.main) .lb-tx b { font-size: 29px } .lb-b:not(.main) .lb-tx { max-width: 46% }
+/* ================= THEME E: buttons v2 everywhere ================= */
+/* shared glossy sticker surface */
+.btn, .lb-q, .mtab, .tb-t, .stage, .sbc, .ptile, .chip, .pcell, .tile { isolation: isolate }
+.btn::before, .lb-q::before, .mtab::before, .tb-t::before, .stage::before, .sbc::before, .pcell::before {
+  content: "" !important; display: block !important; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,.3) 0, rgba(255,255,255,.06) 40%, transparent 42%), repeating-linear-gradient(115deg, rgba(255,255,255,.08) 0 10px, transparent 10px 26px) !important; animation: none !important; opacity: 1 !important; transform: none !important }
+/* .btn colour sets */
+.btn { --b1: #3ab8ff; --b2: #1460d8; --bs: #062a6a; background: linear-gradient(160deg, var(--b1), var(--b2)) !important; color: #fff !important;
+  box-shadow: 0 0 0 3px #fff, 0 7px 0 3px var(--eN) !important; border-radius: 14px !important; -webkit-text-stroke: 1px var(--bs); paint-order: stroke fill; text-shadow: 0 2px 0 var(--bs) !important; font: 800 16px var(--eD) !important; letter-spacing: .08em !important; position: relative; overflow: hidden }
+.btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 0 3px #fff, 0 8px 0 3px var(--eN) !important }
+.btn:active:not(:disabled) { transform: translateY(6px) !important; box-shadow: 0 0 0 3px #fff, 0 1px 0 3px var(--eN) !important }
+.btn.gold { --b1: #ffe14a; --b2: #ff9a00; --bs: #8a3a00; color: #fff !important }
+.btn.gold:active:not(:disabled) { box-shadow: 0 0 0 3px #fff, 0 1px 0 3px var(--eN) !important }
+.btn.dark { --b1: #3a2a7a; --b2: #1a0b3a; --bs: #0a0420 }
+.btn.violet { --b1: #a46bff; --b2: #5a1fd0; --bs: #26085e }
+.btn.green { --b1: #2fe0b0; --b2: #0d9a7a; --bs: #04402f }
+.btn.red, .btn.danger { --b1: #ff6b8a; --b2: #d8183e; --bs: #5a0618 }
+.btn:disabled { filter: grayscale(.75) brightness(.8) }
+.btn b, .btn span, .btn small { -webkit-text-stroke: 0; position: relative }
+/* quick tiles, mode tabs, targets, stage rows, challenges */
+.lb-q, .tb-t, .sbc, .stage { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; border-radius: 16px !important; box-shadow: 0 0 0 3px #fff, 0 7px 0 3px rgba(26,11,58,.6) !important; position: relative; overflow: hidden; transition: transform .08s, box-shadow .08s }
+.lb-q:active, .tb-t:active, .sbc:active, .stage:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 0 0 3px #fff, 0 2px 0 3px rgba(26,11,58,.6) !important }
+.lb-q.hot { background: linear-gradient(160deg, #ff6b9a, #d8185e) !important }
+.lb-q b, .stage .si b, .sbc b { text-shadow: 0 2px 0 var(--eN) }
+.tb-t.on { background: linear-gradient(160deg, #ffe14a, #ff9a00) !important; color: #fff !important }
+.tb-t.on b { -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill; text-shadow: 0 2px 0 #8a3a00 } .tb-t.on small { color: #fff !important; text-shadow: 0 1px 0 #8a3a00 }
+.stage.done { background: linear-gradient(160deg, #2fe0b0, #0d9a7a) !important }
+.stage.locked, .stage:disabled { filter: grayscale(.7) brightness(.75) }
+.sbc { border-left: 0 !important }
+.mtab { position: relative; overflow: hidden; clip-path: none !important; border-radius: 12px !important; background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; color: #fff !important; box-shadow: 0 0 0 3px #fff, 0 5px 0 3px rgba(26,11,58,.6) !important; margin: 4px 3px 10px }
+.mtab.on { background: linear-gradient(160deg, #ffe14a, #ff9a00) !important; -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill; text-shadow: 0 2px 0 #8a3a00 }
+.mtab:last-child { background: linear-gradient(160deg, #ff6b9a, #d8185e) !important }
+.mtabs { padding: 4px 4px 2px !important; overflow-x: auto }
+.pcell { position: relative; overflow: hidden; border-radius: 14px !important; box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(26,11,58,.6) !important }
+.chip { box-shadow: 0 0 0 2px #fff !important; background: var(--eN) !important; color: #fff !important }
+.chip.on, .chip[aria-pressed=true] { background: linear-gradient(180deg, #ffe14a, #ff9a00) !important; color: #2a1200 !important }
+.seg { background: var(--eN) !important; box-shadow: 0 0 0 3px #fff !important }
+.bhero, .shero, .bnr, .shred-bar, .tb-tip, .mastbox, .synrow { border-radius: 20px !important; box-shadow: 0 0 0 3px #fff, 0 8px 0 3px rgba(26,11,58,.55) !important; background-color: var(--eN) }
+.bhero { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; position: relative; overflow: hidden }
+.bhero h2 { font-family: var(--eD) !important; font-style: normal !important; text-shadow: 0 4px 0 #0a0420 }
+.stage .si b { font-family: var(--eD) !important; font-style: normal !important; font-size: 22px !important }
+body[data-page=shop] .sec h3 { font-family: var(--eD) !important }
+body[data-page] #app { background: linear-gradient(115deg, var(--eO) 0 26%, var(--eP) 26%) !important }
+body[data-page=shop] #app::before, body[data-page=shop] #app::after { display: block !important; background: repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 14px, transparent 14px 46px) !important; opacity: 1 !important }
+body[data-page=shop] #top { background: transparent !important }
+@media (min-width: 1000px) {
+  #nav .pill { display: none !important }
+  #nav button.on { background: linear-gradient(180deg, #ffe14a, var(--eY2)) !important; box-shadow: 0 5px 0 #b36b00 !important }
+  #nav button.on svg { color: var(--eN) }
+}
