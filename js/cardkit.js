@@ -36,6 +36,7 @@ export const ANIME = {
   YGO: { name: 'YU-GI-OH!', tag: 'YGO', type: 'psychic' },
   DAN: { name: 'DANDADAN', tag: 'DAN', type: 'psychic' },
   SL: { name: 'SOLO LEVELING', tag: 'SL', type: 'devil' },
+  DN: { name: 'DEATH NOTE', tag: 'DN', type: 'psychic' },
 }
 export const TYPE = {
   ki: { c: ['#ff7a00', '#b80018', '#ffd400'], en: 'AURA' },
