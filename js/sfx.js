@@ -68,6 +68,22 @@ const S = {
   bswitch() { const t = A.currentTime, b = bus(.06); noise(t, .18, .1, b, { type: 'bandpass', f: 900, to: 2000, q: 1, a: .05 }) },
   bko() { const t = A.currentTime, b = bus(.2); tone('sine', 70, t, 1, .45, b, { to: 28, glide: .8 }); noise(t, .6, .22, b, { type: 'lowpass', f: 700, to: 80 }) },
   bturn() { const t = A.currentTime, b = bus(.04); tone('sine', 520, t, .06, .04, b) },
+  // ---- extra impact + UI ----
+  crit() { const t = A.currentTime, b = bus(.2); noise(t, .05, .3, b, { type: 'highpass', f: 4000 }); tone('square', 1800, t, .08, .05, b, { to: 900, lp: 5000 }); tone('sine', 120, t, .4, .4, b, { to: 40, glide: .3 }) },
+  whoosh() { const t = A.currentTime, b = bus(.25); noise(t, .5, .22, b, { type: 'bandpass', f: 300, to: 4000, q: 1.5, a: .35 }) },
+  heal() { const t = A.currentTime, b = bus(.4); [72, 76, 79, 84].forEach((n, i) => tone('sine', N(n), t + i * .06, .5, .05, b)) },
+  hover() { const t = A.currentTime, b = bus(0); tone('sine', 1500, t, .025, .02, b) },
+  orb(level) { const t = A.currentTime, b = bus(.5), d = 1.1; tone('sine', N(36 + level * 3), t, d, .12, b, { a: .3 }); tone('sawtooth', N(48 + level * 3), t, d, .03, b, { a: .5, lp: 900 }); noise(t, d, .06, b, { type: 'bandpass', f: 500 + level * 300, to: 3000, q: 4, a: d * .8 }); return d },
+  crack(level) { const t = A.currentTime, b = bus(.45); noise(t, .08, .4, b, { type: 'highpass', f: 2500 }); tone('sine', 200, t, .5, .35, b, { to: 50, glide: .4 }); [0, 7, 12].forEach((s, i) => bell(72 + level * 2 + s, t + .05 + i * .04, .07, b, .9)) },
+  fanfare(rank) {
+    const t = A.currentTime, b = bus(.45), r = rank >= 6 ? 63 : rank >= 5 ? 62 : 60
+    boom(t, .5, b)
+    const prog = [[r, r + 4, r + 7], [r + 5, r + 9, r + 12], [r + 7, r + 11, r + 14], [r + 12, r + 16, r + 19]]
+    prog.forEach((ch, i) => { pad(ch, t + i * .32, .5 + (i === 3 ? 1.6 : 0), .03, b, 3000); tone('square', N(ch[2] + 12), t + i * .32, .25 + (i === 3 ? .8 : 0), .03, b, { lp: 3500 }) })
+    ;[0, 4, 7, 12, 16, 19, 24].forEach((s, i) => bell(r + 24 + s, t + 1 + i * .05, .06, b, 1.4))
+  },
+  win() { const t = A.currentTime, b = bus(.4); [[60, 64, 67], [65, 69, 72], [67, 71, 74], [72, 76, 79]].forEach((ch, i) => { pad(ch, t + i * .18, i === 3 ? 1.6 : .3, .035, b, 3200); tone('square', N(ch[2] + 12), t + i * .18, i === 3 ? .9 : .16, .035, b, { lp: 3000 }) }); boom(t + .54, .3, b) },
+  lose() { const t = A.currentTime, b = bus(.4); [[64, 67, 71], [62, 65, 69], [60, 63, 67]].forEach((ch, i) => pad(ch, t + i * .35, i === 2 ? 1.6 : .4, .035, b, 1600)); tone('sine', 82, t + .7, 1.4, .2, b, { to: 55 }) },
   reveal(rank) {
     const t = A.currentTime, b = bus(.45)
     if (rank <= 1) { bell(rank ? 81 : 76, t, .1, b, .6); return }
@@ -81,6 +97,44 @@ const S = {
     run.forEach((s, i) => bell(root + 24 + s, t + .12 + i * .055, .07, b, 1.4))
   },
 }
+
+// ================= MUSIC (generative, Web Audio) =================
+let MUS = true; try { MUS = localStorage.getItem('aut-music') !== 'off' } catch { }
+let MG = null, mTimer = null, mTrack = null, mStep = 0, mNext = 0
+const TRACKS = {
+  // chill lobby: Am - F - C - G, laid-back lo-fi groove
+  menu: { bpm: 84, chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], bass: [45, 41, 36, 43], kick: [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0], snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], hat: .55, lead: [0, 2, 4, 2, 7, 4, 2, 0], leadEvery: 4, vol: .5, lp: 1600 },
+  // battle: driving minor, faster, punchy
+  battle: { bpm: 132, chords: [[50, 53, 57], [46, 50, 53], [48, 52, 55], [45, 49, 52]], bass: [38, 34, 36, 33], kick: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0], snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1], hat: .9, lead: [0, 3, 7, 10, 7, 3, 5, 7], leadEvery: 2, vol: .45, lp: 2600 },
+}
+function mBus() { if (MG) return MG; MG = A.createGain(); MG.gain.value = 0; MG.connect(OUT); return MG }
+function mTick() {
+  const T = TRACKS[mTrack]; if (!T || !A) return
+  const sp = 60 / T.bpm / 4 // 16th notes
+  while (mNext < A.currentTime + .25) {
+    const s = mStep % 16, bar = Math.floor(mStep / 16) % 4, t = mNext, g = MG
+    const ch = T.chords[bar]
+    if (s === 0) { for (const n of ch) for (const dt of [-6, 6]) tone('sawtooth', N(n), t, sp * 15, .016 * T.vol, g, { a: .08, detune: dt, lp: T.lp, q: .4 }) }
+    if (s % 4 === 0) tone('triangle', N(T.bass[bar]), t, sp * 3, .11 * T.vol, g, { lp: 500 })
+    if (T.kick[s]) { tone('sine', 110, t, .22, .3 * T.vol, g, { to: 40, glide: .12 }) }
+    if (T.snare[s]) noise(t, .12, .11 * T.vol, g, { type: 'bandpass', f: 1800, q: .8 })
+    if (s % 2 === 0 || T.hat > .8) noise(t, .03, (s % 4 === 2 ? .05 : .03) * T.hat * T.vol, g, { type: 'highpass', f: 7000 })
+    if (s % T.leadEvery === 0 && Math.floor(mStep / 64) % 2 === 1) { const ln = T.lead[(s / T.leadEvery) % T.lead.length], root = ch[0] + 12; tone('square', N(root + ln), t, sp * T.leadEvery * .9, .018 * T.vol, g, { lp: 2400 }) }
+    mStep++; mNext += sp
+  }
+}
+export function music(track) {
+  mTrack = track || mTrack
+  if (!MUS || !mTrack) { if (MG) MG.gain.setTargetAtTime(0, A.currentTime, .3); clearInterval(mTimer); mTimer = null; return }
+  const a = ctx(); if (!a) return
+  if (a.state === 'suspended') a.resume()
+  mBus(); MG.gain.cancelScheduledValues(a.currentTime); MG.gain.setTargetAtTime(.0001, a.currentTime, .05)
+  setTimeout(() => { mStep = 0; mNext = A.currentTime + .1; MG.gain.setTargetAtTime(.9, A.currentTime, .6) }, 250)
+  if (!mTimer) mTimer = setInterval(mTick, 90)
+}
+export function musicOn(v) { if (v !== undefined) { MUS = !!v; try { localStorage.setItem('aut-music', MUS ? 'on' : 'off') } catch { } music() } return MUS }
+// start the menu music on the first tap (browsers block audio before that)
+addEventListener('pointerdown', () => { if (!mTimer && MUS) music(document.body.classList.contains('in-battle') ? 'battle' : 'menu') }, { once: true, capture: true })
 
 export function sfx(name, ...args) {
   if (!ON) return 0

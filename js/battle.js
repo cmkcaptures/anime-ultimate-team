@@ -1,7 +1,7 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
 import { TIER, TYPE, thumbURL } from './cardkit.js'
-import { sfx, sfxOn } from './sfx.js'
+import { sfx, sfxOn, music } from './sfx.js'
 import { createFX } from './fx2d.js'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
@@ -466,7 +466,7 @@ export function startBattle(stage) {
     <div class="ar-mid"><div class="ar-log"></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
     <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
-  document.body.append(ov); document.body.classList.add('in-battle')
+  document.body.append(ov); document.body.classList.add('in-battle'); music('battle')
   const $a = s => ov.querySelector(s)
   let ST3 = null
   const FXC = createFX(ov)
@@ -584,6 +584,7 @@ export function startBattle(stage) {
     const b = document.createElement('i'); b.className = 'beam' + (wide ? ' wide' : ''); b.style.cssText = `left:${x1}px;top:${y1}px;width:${len}px;transform:rotate(${ang}rad);--sc:${col}`; FX().append(b); setTimeout(() => b.remove(), 650)
   }
   function cutin(card, move, sub, col, ult, uname) {
+    sfx('whoosh')
     const foe = sub === 'ENEMY', c = document.createElement('div'); c.className = 'cut2' + (ult ? ' ult' : '') + (foe ? ' foe' : '')
     c.style.setProperty('--cc', col)
     c.innerHTML = `<div class="c2-dim"></div><div class="c2-light"></div><div class="c2-line l1"></div><div class="c2-line l2"></div>
@@ -637,7 +638,7 @@ export function startBattle(stage) {
       const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : '') + (x.mu > 1 ? ' adv' : ''); n.innerHTML = `<b>${x.dmg.toLocaleString()}</b>`; n.style.animationDelay = (ev.hits.indexOf(x) * .09) + 's'
       const r = tgt.getBoundingClientRect(); n.style.left = (r.left + r.width / 2) + 'px'; n.style.top = (r.top + r.height * .35) + 'px'
       ov.append(n); setTimeout(() => n.remove(), 1100)
-      if (isActive && x.crit) floatTag(tgt, 'CRITICAL!', 'crit')
+      if (isActive && x.crit) { floatTag(tgt, 'CRITICAL!', 'crit'); sfx('crit') }
       else if (isActive && x.mu > 1) floatTag(tgt, 'SUPER EFFECTIVE', 'adv')
       else if (isActive && x.mu < 1) floatTag(tgt, 'RESISTED', 'weak')
     }
@@ -682,7 +683,7 @@ export function startBattle(stage) {
   $a('.ar-end').onclick = () => endTurn()
   $a('.ar-quit').onclick = () => { if (B.over || confirm('Quit this battle? It counts as a loss.')) close() }
   function close() {
-    if (stage.pvp) { FXC.dispose(); document.body.classList.remove('in-battle'); B.closed = true; ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('players'); return } FXC.dispose(); document.body.classList.remove('in-battle'); B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
+    if (stage.pvp) { FXC.dispose(); document.body.classList.remove('in-battle'); music('menu'); B.closed = true; ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('players'); return } FXC.dispose(); document.body.classList.remove('in-battle'); music('menu'); B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
 
   async function aiPhase() {
     if (stage.boss && B.turn >= 12 && !B.over) { log('Time up! The boss retreats.'); return end(false) }
@@ -738,7 +739,7 @@ export function startBattle(stage) {
     B.over = true; controls()
     await wait(500)
     const r = stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0) } : { stage: stage.n, won })
-    sfx(won ? 'claim' : 'error')
+    sfx(stage.boss ? 'claim' : won ? 'win' : 'lose')
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
     box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : won ? (r.msg || 'Stage cleared.') : 'Your team was knocked out. Tweak your lineup and try again.'}</p>

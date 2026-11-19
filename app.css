@@ -2648,3 +2648,6 @@ body[data-opener=opener_rivals] .op2 .o2-bg { background: linear-gradient(115deg
 .ach.ready { box-shadow: 0 0 0 3px var(--eY), 0 6px 0 3px #8a3a00 } .ach.got { opacity: .55 }
 .ach .btn { margin-top: 4px } .ach-ok { color: #5fe0b0 !important }
 .ptitle2 { justify-self: start; width: max-content }
+
+.sndbtn.mus.off { opacity: .5 } .sndbtn.mus.off svg { opacity: .6 }
+.sndbtn svg { width: 18px; height: 18px }

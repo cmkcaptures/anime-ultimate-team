@@ -1,7 +1,7 @@
 import { createFX } from './fx2d.js'
 import { initBattle, battlePage, startBattle, synergy, beats, SYN } from './battle.js'
 import * as ACC from './account.js'
-import { sfx, sfxOn } from './sfx.js'
+import { sfx, sfxOn, music, musicOn } from './sfx.js'
 // ANIME ULTIMATE TEAM — app shell + pages
 import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js'
 
@@ -1052,6 +1052,10 @@ document.addEventListener('click', e => { const b = e.target.closest('button'); 
   const draw = () => { t.innerHTML = sfxOn() ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>'; t.title = sfxOn() ? 'Sound on' : 'Sound off' }
   t.onclick = () => { sfxOn(!sfxOn()); draw(); sfx('click') }; draw()
   document.querySelector('.chips2')?.prepend(t)
+  const m = document.createElement('button'); m.className = 'cur sndbtn mus'; m.setAttribute('aria-label', 'Music on or off')
+  const mdraw = () => { m.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 17.5A2.5 2.5 0 1 1 6.5 15H9V5l11-2v12.5a2.5 2.5 0 1 1-2.5-2.5H20V7L11 8.6v8.9Z"/></svg>'; m.classList.toggle('off', !musicOn()) }
+  m.onclick = () => { musicOn(!musicOn()); mdraw() }; mdraw()
+  t.after(m)
 }
 
 // ================= BATTLE =================
@@ -1237,16 +1241,16 @@ async function walkout(ov, FXC, c, rk) {
   let fast = false; wk.onclick = () => { fast = true }
   const W = async ms => { await wait(fast ? ms * .2 : ms); if (!ov.isConnected) throw 0 }
   const cx = innerWidth / 2, cy = innerHeight * .45, orb = wk.querySelector('.wk-orb')
-  wk.style.setProperty('--oc', cols[0]); await W(30); wk.classList.add('on'); sfx('charge', 4)
+  wk.style.setProperty('--oc', cols[0]); await W(30); wk.classList.add('on'); sfx('orb', 0)
   FXC.gather(cx, cy, cols[0], 1.1, 50); await W(1200)
   for (let i = 1; i < cols.length; i++) {
     orb.classList.remove('crack'); void orb.offsetWidth; orb.classList.add('crack')
     wk.style.setProperty('--oc', cols[i]); if (i === 2) wk.classList.add('rb')
-    FXC.hit(cx, cy, cols[i], 1.6); FXC.screen(i === 2 ? '#ffffff' : cols[i], .45, .35); FXC.gather(cx, cy, cols[i], 1.3, 50); sfx('charge', 4 + i)
+    FXC.hit(cx, cy, cols[i], 1.6); FXC.screen(i === 2 ? '#ffffff' : cols[i], .45, .35); FXC.gather(cx, cy, cols[i], 1.3, 50); sfx('crack', i)
     ov.classList.remove('shk2'); void ov.offsetWidth; ov.classList.add('shk2')
     await W(1150)
   }
-  sfx('reveal', rk); FXC.hit(cx, cy, fin, 2.6); FXC.screen('#ffffff', .85, .5); FXC.rays(cx, cy, fin, 26, 1300, 1.7); wk.classList.add('burst')
+  sfx('fanfare', rk); FXC.hit(cx, cy, fin, 2.6); FXC.screen('#ffffff', .85, .5); FXC.rays(cx, cy, fin, 26, 1300, 1.7); wk.classList.add('burst')
   await W(650)
   const info = wk.querySelector('.wk-info')
   for (const t of [ANAME(c.anime), c.faction + ' · ' + c.role, c.ver]) { info.innerHTML = `<div class="wk-line"><span>${t}</span><i></i></div>`; sfx('soft'); await W(950) }
