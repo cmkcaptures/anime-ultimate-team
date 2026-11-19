@@ -129,6 +129,12 @@ export function drawCard(x, d) {
       const fg = o.createLinearGradient(0, 0, 0, ch2); fg.addColorStop(0, 'rgba(0,0,0,0)'); fg.addColorStop(.08, '#000'); fg.addColorStop(.88, '#000'); fg.addColorStop(1, 'rgba(0,0,0,0)'); o.fillStyle = fg; o.fillRect(0, 0, cw2, ch2)
       x.drawImage(off, 0, y2)
     }
+  } else if (zf < 1) { // zoomed out: blurred cover behind, the art centred on top with soft side edges
+    const f0 = x.filter, cw0 = dw / zf, ch0 = dh / zf; x.filter = (f0 === 'none' ? '' : f0 + ' ') + 'blur(18px) brightness(.5)'; x.drawImage(img, Math.min(0, W / 2 - fxp * cw0), Math.min(0, Math.max(AH - ch0, AH * .42 - fyp * ch0)), cw0, ch0); x.filter = f0
+    const ox2 = (W - dw) / 2, oy2 = Math.min(0, Math.max(AH - dh, AH * .42 - fyp * dh))
+    const off = document.createElement('canvas'); off.width = Math.ceil(dw); off.height = Math.ceil(dh); const o = off.getContext('2d'); o.drawImage(img, 0, 0, dw, dh); o.globalCompositeOperation = 'destination-in'
+    const g = o.createLinearGradient(0, 0, dw, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.07, '#000'); g.addColorStop(.93, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)'); o.fillStyle = g; o.fillRect(0, 0, dw, dh)
+    x.drawImage(off, ox2, oy2)
   } else x.drawImage(img, ox, oy, dw, dh)
   x.filter = 'none'
   if (real) { } else if (d.r === 'X') {
@@ -250,7 +256,7 @@ export function drawCard(x, d) {
 // ---- small card images for menus, cached per card + awakening level ----
 const THUMBS = {}
 const bucket = w => w <= 260 ? 260 : w <= 440 ? 440 : 560
-const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.mv, c.total].join('|')
+const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.z, c.mv, c.total].join('|')
 // one render at a time, yielding to the browser between cards so scrolling stays smooth
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
