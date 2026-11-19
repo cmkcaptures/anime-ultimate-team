@@ -2319,3 +2319,44 @@ body[data-page=shop] #top { background: transparent !important }
 .tb-targets { padding: 8px 6px 14px !important; gap: 14px !important }
 .tslot .r { color: #fff !important }
 .teamslots { background: none !important; box-shadow: none !important; padding: 14px 4px 6px !important }
+/* ================= THEME E: Shop ================= */
+body[data-page=shop] .bnr, body[data-page=shop] .shero { margin: 8px 0 30px !important; border-radius: 24px !important; overflow: hidden; box-shadow: 0 0 0 4px #fff, 0 10px 0 4px rgba(26,11,58,.6) !important; min-height: 400px !important }
+body[data-page=shop] .bnr h2, body[data-page=shop] .sh-info h2 { font-family: var(--eD) !important; font-style: normal !important; color: #fff !important; -webkit-text-stroke: 2px var(--eN); paint-order: stroke fill; text-shadow: 0 6px 0 var(--eN) !important; letter-spacing: .01em }
+body[data-page=shop] .bnr-tag, body[data-page=shop] .sh-tag { background: var(--ePink) !important; color: #fff !important; border-radius: 10px !important; box-shadow: 0 0 0 2px #fff !important; font: 800 11px var(--eUI) !important; letter-spacing: .1em }
+body[data-page=shop] .bnr-pity i, body[data-page=shop] .bar { background: #0a0420 !important; box-shadow: 0 0 0 2px #fff !important; border-radius: 8px !important; height: 12px !important }
+body[data-page=shop] .bnr-pity s { background: repeating-linear-gradient(115deg, #ffe14a 0 8px, #ffb000 8px 16px) !important; border-radius: 6px }
+body[data-page=shop] .btn.big { height: 62px !important; border-radius: 16px !important; font-size: 20px !important }
+body[data-page=shop] .btn.big b { margin-left: 12px; padding: 6px 12px; border-radius: 10px; background: rgba(0,0,0,.28) !important; -webkit-text-stroke: 0; text-shadow: none !important; font: 800 16px var(--eUI) }
+body[data-page=shop] .btn.dark.big { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 7px 0 3px rgba(10,4,32,.7) !important }
+body[data-page=shop] .sh-per b, body[data-page=shop] .sh-info .pill, body[data-page=shop] .sh-info span[class*=chip] { border-radius: 10px !important; box-shadow: 0 0 0 2px rgba(255,255,255,.8) !important; background: var(--eN) !important }
+body[data-page=shop] .ptile { position: relative; overflow: hidden; background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; border-radius: 18px !important; box-shadow: 0 0 0 3px #fff, 0 7px 0 3px rgba(26,11,58,.6) !important; transition: transform .1s !important }
+body[data-page=shop] .ptile::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,.22), transparent 40%), repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 10px, transparent 10px 26px) }
+body[data-page=shop] .ptile:hover { background: linear-gradient(160deg, #4a36a0, #241050) !important; transform: translateY(-4px) !important; box-shadow: 0 0 0 3px #fff, 0 11px 0 3px rgba(26,11,58,.6) !important }
+body[data-page=shop] .ptile.on { background: linear-gradient(160deg, #ffe14a, #ff9a00) !important; box-shadow: 0 0 0 4px #fff, 0 9px 0 4px #8a3a00 !important; transform: translateY(-4px) !important }
+body[data-page=shop] .ptile.on b, body[data-page=shop] .ptile.on .pt-name { color: #fff !important; -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill; text-shadow: 0 2px 0 #8a3a00 }
+body[data-page=shop] .ptile b, body[data-page=shop] .pt-name { font-family: var(--eD) !important; font-style: normal !important; font-size: 18px !important }
+body[data-page=shop] .ppgrid { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 8px 0 3px rgba(26,11,58,.55) !important; border-radius: 22px !important; padding: 22px !important }
+body[data-page=shop] .ppgrid .cg .cost { background: linear-gradient(180deg, #ffe14a, #ff9a00) !important; color: #2a1200 !important; box-shadow: 0 0 0 2px #fff !important; border-radius: 8px !important }
+/* ================= THEME E: Market ================= */
+.searchform label { font: 900 11px var(--eJ) !important; letter-spacing: .14em; color: var(--eY) !important }
+.stepper { border-radius: 14px !important; background: #fff !important; box-shadow: 0 0 0 3px var(--eN), 0 5px 0 3px rgba(26,11,58,.5) !important; overflow: hidden }
+.stepper input { color: var(--eN) !important; font: 800 18px var(--eUI) !important; background: transparent !important }
+.stepper button { background: linear-gradient(180deg, #ffe14a, #ff9a00) !important; color: #2a1200 !important; font: 800 22px var(--eUI) !important; border: 0 !important }
+.stepper .lbl { color: var(--eP) !important; font: 800 11px var(--eUI) !important }
+.ghost { color: #fff !important; font: 800 13px var(--eUI) !important; text-decoration: underline; text-underline-offset: 3px }
+.lrow, .listing, .mkrow, .tl-row { border-radius: 16px !important; background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(26,11,58,.55) !important }
+body[data-page=shop] .btn, body[data-page=shop] .btn span { color: #fff !important }
+body[data-page=shop] .bnr-buy { display: flex !important; flex-wrap: wrap; gap: 14px !important }
+body[data-page=shop] .ptile.on * { color: #fff !important } body[data-page=shop] .ptile.on .pt-cost, body[data-page=shop] .ptile.on small { text-shadow: 0 1px 0 #8a3a00 }
+.mhero { border-radius: 22px !important; background: linear-gradient(160deg, #2fe0b0, #0d9a7a) !important; box-shadow: 0 0 0 4px #fff, 0 9px 0 4px #04402f !important; overflow: hidden; isolation: isolate }
+.mhero .mh-bg { background: repeating-linear-gradient(115deg, rgba(255,255,255,.08) 0 12px, transparent 12px 32px) !important; opacity: 1 !important }
+.mhero .mh-grid { display: none !important }
+.mhero::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,.22), transparent 40%) }
+.mhero h2 { font: 800 60px/.9 var(--eD) !important; font-style: normal !important; color: #fff !important; -webkit-text-stroke: 2px #04402f; paint-order: stroke fill; text-shadow: 0 6px 0 #04402f !important; background: none !important; -webkit-text-fill-color: #fff !important }
+.mhero p { color: #fff !important; font: 700 14px var(--eUI) !important; text-shadow: 0 1px 0 #04402f }
+.mhero .sh-tag { background: var(--ePink) !important; color: #fff !important; border-radius: 10px !important; box-shadow: 0 0 0 2px #fff !important }
+.mh-stats > div { border-radius: 14px !important; background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(4,64,47,.7) !important; clip-path: none !important }
+.mh-stats b { font: 800 36px/1 var(--eD) !important; font-style: normal !important; color: var(--eY) !important; text-shadow: 0 3px 0 #0a0420 }
+.mh-stats span { font: 800 10px var(--eUI) !important; color: #fff !important; letter-spacing: .12em }
+.mticker { border-radius: 14px !important; background: var(--eN) !important; box-shadow: 0 0 0 3px #fff !important; margin: 16px 0 !important }
+.mticker b { color: var(--eY) !important }
