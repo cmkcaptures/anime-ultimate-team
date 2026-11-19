@@ -2076,3 +2076,20 @@ body[data-page=shop] .btn.dark.big { background: rgba(0,0,0,.4) !important; box-
 .pcell.ready { background: #ffcc00; color: #1a0f3a; animation: pready 1.2s ease-in-out infinite alternate } .pcell.ready small, .pcell.ready span, .pcell.ready b { color: #1a0f3a }
 @keyframes pready { to { filter: brightness(1.12) } }
 .pcell.got { opacity: .45 } .pcell:disabled { cursor: default }
+/* broadcast bar v2: clean */
+.bct { top: 52px !important; gap: 14px !important }
+.bct-s { height: 72px !important; padding: 0 16px 0 0 !important; gap: 14px !important; clip-path: none !important; background: rgba(12,7,30,.92) !important; border-top: 0 !important; box-shadow: inset 0 -3px 0 var(--c), 0 10px 30px rgba(0,0,0,.5) }
+.bct-s.ai { padding: 0 0 0 16px !important }
+.bct-s .bp { width: 72px !important; height: 72px !important; border: 0 !important; background-size: 240% !important }
+.bct-s .bi { gap: 7px !important }
+.bct-s .bn b { font-size: 21px !important }
+.bct-s .bn small { font-size: 11px; letter-spacing: .08em; text-transform: uppercase }
+.bct-s .bh, .bct-s.ai .bh { height: 20px !important; transform: none !important; background: rgba(255,255,255,.07) !important; box-shadow: none !important }
+.bct-s .bh .fg { background: var(--c) !important }
+.bct-s.low .bh .fg { background: #ff3a4a !important }
+.bct-s .bnum { position: absolute; top: 0; bottom: 0; right: 8px; display: flex; align-items: center; min-width: 0 !important; font: 800 16px 'Barlow Condensed', sans-serif !important; letter-spacing: .04em; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.8); z-index: 1 }
+.bct-s.ai .bnum { right: auto; left: 8px }
+.bct-s .bm { gap: 14px !important; font-size: 12px !important }
+.bct-s .bk i { width: 14px !important; height: 6px !important; transform: none !important }
+.bct-vs b { font-size: 30px !important } .bct-vs { min-width: 70px }
+@media (max-width: 760px) { .bct-s { height: 56px !important; gap: 8px !important } .bct-s .bp { width: 46px !important; height: 56px !important } .bct-s .bh { height: 14px !important } .bct-s .bnum { font-size: 12px !important } .bct-s .bn b { font-size: 14px !important } }

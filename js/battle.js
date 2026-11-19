@@ -423,7 +423,7 @@ export function startBattle(stage) {
     const f = act(s), el = $a('.bct-s.' + side), pct = f.hp / f.max * 100
     if (el.dataset.k !== f.key) {
       el.dataset.k = f.key
-      el.innerHTML = `<div class="bp" style="background-image:url('${f.card.url}');background-position:${Math.round((f.card.fx ?? .5) * 100)}% ${Math.round((f.card.fy ?? .22) * 100)}%"></div><div class="bi"><div class="bn"><b>${f.card.name}</b>${side === 'you' && mastL(f.key) > 0 ? `<em class="ml">M${mastL(f.key)}</em>` : ''}<small>${f.card.ver}</small></div><div class="bh"><i class="gh"></i><i class="fg"></i></div><div class="bm"><span class="be"></span><span class="bk"></span><span class="bpas"></span></div></div><div class="bnum"></div>`
+      el.innerHTML = `<div class="bp" style="background-image:url('${f.card.url}');background-position:${Math.round((f.card.fx ?? .5) * 100)}% ${Math.round((f.card.fy ?? .22) * 100)}%"></div><div class="bi"><div class="bn"><b>${f.card.name}</b>${side === 'you' && mastL(f.key) > 0 ? `<em class="ml">M${mastL(f.key)}</em>` : ''}<small>${f.card.ver}</small></div><div class="bh"><i class="gh"></i><i class="fg"></i><span class="bnum"></span></div><div class="bm"><span class="be"></span><span class="bk"></span></div></div>`
       el.classList.remove('in'); void el.offsetWidth; el.classList.add('in')
       el.querySelector('.gh').style.width = el.querySelector('.fg').style.width = pct + '%'
     }
@@ -434,7 +434,7 @@ export function startBattle(stage) {
     el.querySelector('.bnum').textContent = f.hp.toLocaleString()
     el.querySelector('.be').innerHTML = `⚡ <b>${s.ki}</b>/${KI_MAX}`
     el.querySelector('.bk').innerHTML = s.team.map(g => `<i class="${g.ko ? 'ko' : ''}"></i>`).join('')
-    el.querySelector('.bpas').innerHTML = ov.querySelector('.ar-plate.' + side + ' .pp').innerHTML
+    
     $a('.bct-t').textContent = 'TURN ' + B.turn
   }
   function hud(side, s) {
