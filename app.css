@@ -2489,3 +2489,29 @@ body[data-page=shop] .ptile.on * { color: #fff !important } body[data-page=shop]
   .bct { top: 44px !important }
   .seg button { font-size: 13px !important; letter-spacing: .04em !important; white-space: nowrap }
 }
+
+/* ================= RANKED ================= */
+.rkhero { --rk: #ffcc33; position: relative; display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center; padding: 26px 30px; margin: 4px 0 14px; border-radius: 24px; background: linear-gradient(160deg, #3a2a7a, var(--eN)); box-shadow: 0 0 0 4px #fff, 0 10px 0 4px rgba(26,11,58,.6); overflow: hidden; isolation: isolate }
+.rkhero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(45% 80% at 12% 50%, color-mix(in srgb, var(--rk) 45%, transparent), transparent 70%), repeating-linear-gradient(115deg, rgba(255,255,255,.05) 0 12px, transparent 12px 32px) }
+.rk-badge { position: relative; width: 170px; aspect-ratio: 1; display: grid; place-content: center; text-align: center }
+.rk-badge i { position: absolute; inset: 0; background: linear-gradient(160deg, color-mix(in srgb, var(--rk) 70%, #fff), var(--rk) 50%, color-mix(in srgb, var(--rk) 50%, #000)); clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); filter: drop-shadow(0 0 0 #fff); box-shadow: inset 0 0 0 6px #fff }
+.rk-badge::before { content: ""; position: absolute; inset: -6px; background: #fff; clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%) }
+.rk-badge::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.4), transparent 45%); clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%) }
+.rk-badge b { position: relative; z-index: 2; font: 800 30px/1 var(--eD); color: #fff; -webkit-text-stroke: 1.5px var(--eN); paint-order: stroke fill; text-shadow: 0 3px 0 var(--eN) }
+.rk-badge small { position: relative; z-index: 2; margin-top: 4px; font: 800 12px var(--eUI); color: #fff; text-shadow: 0 1px 0 var(--eN) }
+.rk-info small { font: 800 11px var(--eUI); letter-spacing: .1em; color: var(--eY) }
+.rk-info h2 { margin: 4px 0 12px; font: 800 64px/.9 var(--eD); color: #fff; -webkit-text-stroke: 2px #0a0420; paint-order: stroke fill; text-shadow: 0 6px 0 #0a0420 }
+.rk-bar { height: 16px; border-radius: 9px; background: #0a0420; box-shadow: 0 0 0 2px #fff; overflow: hidden }
+.rk-bar i { display: block; height: 100%; background: repeating-linear-gradient(115deg, var(--rk) 0 10px, color-mix(in srgb, var(--rk) 70%, #000) 10px 20px) }
+.rk-info p { margin: 8px 0 12px; font: 700 14px var(--eUI); color: #fff } .rk-info p b { color: var(--rk) }
+.rk-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px }
+.rk-stats span { display: grid; padding: 8px 14px; border-radius: 12px; background: #0a0420; box-shadow: 0 0 0 2px rgba(255,255,255,.7); font: 800 10px var(--eUI); letter-spacing: .12em; color: rgba(255,255,255,.75) }
+.rk-stats b { font: 800 24px/1 var(--eD); color: #fff; letter-spacing: .02em }
+.rk-go { min-width: 260px; font-size: 26px !important }
+.rk-tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-top: 6px }
+.rk-t { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 16px 10px; border-radius: 18px; background: linear-gradient(160deg, #3a2a7a, var(--eN)); box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(26,11,58,.55) }
+.rk-t i { width: 54px; aspect-ratio: 1; background: linear-gradient(160deg, color-mix(in srgb, var(--rk) 70%, #fff), var(--rk)); clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%) }
+.rk-t b { font: 800 22px var(--eD); color: #fff } .rk-t small { font: 700 11px var(--eUI); color: var(--eY) } .rk-t span { font: 700 12px/1.4 var(--eUI); color: rgba(255,255,255,.8) }
+.rk-t.on { box-shadow: 0 0 0 4px var(--eY), 0 6px 0 4px #8a3a00; transform: translateY(-4px) }
+.rk-t:not(.got) { opacity: .7 }
+@media (max-width: 700px) { .rkhero { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 20px } .rk-badge { width: 130px } .rk-info h2 { font-size: 48px } .rk-stats { justify-content: center } .rk-go { min-width: 0; width: 100% } }

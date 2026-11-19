@@ -288,12 +288,40 @@ function teamFrom(main, rating) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['story', 'STORY'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
+  for (const [k, n] of [['story', 'STORY'], ['ranked', 'RANKED'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
 }
 function go2(stage) { seenTutorial() ? startBattle(stage) : tutorial(() => startBattle(stage)) }
+const RK_COL = ['#d0884a', '#c8d4e8', '#ffcc33', '#5fe0d0', '#7fc8ff', '#c38cff', '#ff5fa2']
+const RIVALS = ['Kenji', 'Aiko', 'Ren', 'Yuki', 'Haru', 'Sora', 'Mika', 'Daichi', 'Rin', 'Kaito', 'Nao', 'Hikari', 'Takeshi', 'Emi', 'Riku', 'Akira']
+function rankedPage(el, ok) {
+  const { h } = X, R = X.ST().ranked, i = R.tier, cur = R.ranks[i], nxt = R.ranks[i + 1], col = RK_COL[i]
+  const pct = nxt ? Math.round((R.pts - cur.at) / (nxt.at - cur.at) * 100) : 100
+  const hero = h('section', 'rkhero')
+  hero.style.setProperty('--rk', col)
+  hero.innerHTML = `<div class="rk-badge"><i></i><b>${cur.name.toUpperCase()}</b><small>${R.pts.toLocaleString()} PTS</small></div>
+    <div class="rk-info"><small>ランクマッチ · SEASON ENDS IN <b class="timer" data-until="${R.ends}"></b></small><h2>RANKED</h2>
+      <div class="rk-bar"><i style="width:${pct}%"></i></div><p>${nxt ? `${(nxt.at - R.pts).toLocaleString()} points to <b>${nxt.name}</b>` : 'Top rank reached. Hold it until the season ends.'}</p>
+      <div class="rk-stats"><span><b>${R.w}</b>WINS</span><span><b>${R.l}</b>LOSSES</span><span><b>${R.streak}</b>STREAK</span><span><b>${R.ranks[R.best].name}</b>BEST</span></div></div>`
+  const go = h('button', 'btn gold big rk-go', 'FIND MATCH'); go.disabled = !ok
+  go.onclick = () => {
+    const rating = 74 + i * 4 + Math.min(3, Math.floor(R.streak / 2)), level = Math.min(5, 1 + Math.ceil(i * .7)), name = RIVALS[Math.floor(Math.random() * RIVALS.length)]
+    go2({ mode: 'ranked', id: 0, label: 'Ranked · ' + cur.name + ' · vs ' + name, name, rating, level, boost: i >= 5 ? 1.1 : 1, arena: ARENA_KEYS[Math.floor(Math.random() * ARENA_KEYS.length)] })
+  }
+  hero.querySelector('.rk-info').append(go)
+  el.append(hero)
+  el.append(h('p', 'muted', '<small style="font-weight:700">Win: +30 points, plus up to +20 for a win streak, and 400 coins. Loss: −20 points, but you never drop out of a tier once you reach it. Opponents get tougher the higher you climb.</small>'))
+  el.append(h('div', 'sec', '<h3>SEASON REWARDS</h3><span class="muted" style="font-weight:700;font-size:12px">based on the best rank you reach</span>'))
+  const g = h('div', 'rk-tiers')
+  R.ranks.forEach((r, j) => {
+    const w = r.rw, ps = X.ST().packs
+    const t = h('div', 'rk-t' + (j === i ? ' on' : '') + (j <= R.best ? ' got' : ''), `<i style="--rk:${RK_COL[j]}"></i><b>${r.name}</b><small>${r.at.toLocaleString()}+ pts</small><span>${w.coins.toLocaleString()} coins${w.pack ? '<br>' + ps[w.pack].name : ''}${w.shards ? '<br>◆' + w.shards.toLocaleString() : ''}</span>`)
+    g.append(t)
+  })
+  el.append(g)
+}
 function towerPage(el, ok) {
   const { h, P } = X, best = (P.tower && P.tower.best) || 0, T = X.ST().tower
   el.append(h('section', 'bhero', `<div><span class="sh-tag">TOWER</span><h2>THE TOWER</h2><p>50 floors. Every floor is harder than the last, and past floor 25 enemies get stronger stats. Your progress is saved, so climb at your own pace. Big rewards every 10 floors.</p></div><div class="bstat"><b>${best}</b><span>/ 50 FLOORS</span></div>`))
@@ -352,7 +380,7 @@ export function battlePage(el) {
   modeTabs(el)
   if (MODE !== 'story') {
     if (team.length < 6) { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
-    return (MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
+    return (MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
   }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)

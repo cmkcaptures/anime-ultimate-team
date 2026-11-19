@@ -127,6 +127,28 @@ function passReward(track, t) {
   if (t % 2 === 0) return { shards: 100 + t * 6, label: '◆' + (100 + t * 6) + ' shards' }
   return { coins: 800 + t * 40, label: (800 + t * 40).toLocaleString() + ' coins' }
 }
+// ---------- RANKED LADDER ----------
+const RANKS = [
+  { id: 'bronze', name: 'Bronze', at: 0, rw: { coins: 3000 } },
+  { id: 'silver', name: 'Silver', at: 300, rw: { coins: 6000, pack: 'standard' } },
+  { id: 'gold', name: 'Gold', at: 700, rw: { coins: 10000, pack: 'jumbo' } },
+  { id: 'plat', name: 'Platinum', at: 1200, rw: { coins: 15000, pack: 'premium' } },
+  { id: 'diamond', name: 'Diamond', at: 1800, rw: { coins: 22000, pack: 'premium', shards: 800 } },
+  { id: 'master', name: 'Master', at: 2500, rw: { coins: 30000, pack: 'lightning', shards: 1500 } },
+  { id: 'legend', name: 'Legend', at: 3300, rw: { coins: 50000, pack: 'lightning', shards: 3000 } },
+]
+const rankOf = pts => { let i = 0; RANKS.forEach((r, j) => { if (pts >= r.at) i = j }); return i }
+function rankP() {
+  const P = S.profile, n = seasonNo()
+  if (!P.rank) P.rank = { season: n, pts: 0, best: 0, w: 0, l: 0, streak: 0 }
+  if (P.rank.season !== n) {
+    const R = RANKS[P.rank.best || 0], w = R.rw
+    if (P.rank.w + P.rank.l > 0) { P.coins += w.coins; if (w.pack) P.pending[w.pack] = (P.pending[w.pack] || 0) + 1; if (w.shards) P.shards = (P.shards || 0) + w.shards; notice(`Ranked season over! You finished ${R.name}: +${w.coins.toLocaleString()} coins${w.pack ? ' and a ' + PACKS[w.pack].name : ''}.`, 'gold') }
+    const keep = Math.max(0, RANKS[Math.max(0, rankOf(P.rank.pts) - 2)].at)
+    P.rank = { season: n, pts: keep, best: rankOf(keep), w: 0, l: 0, streak: 0 }
+  }
+  return P.rank
+}
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
@@ -372,6 +394,13 @@ function act(a) {
     case 'battle': {
       // mastery for every fighter in your team
       { const M = P.mast || (P.mast = {}); const ups = []; for (const k of P.team.filter(Boolean)) { const before = mastLv(M[k] || 0); M[k] = (M[k] || 0) + (a.won ? 25 : 10); const after = mastLv(M[k]); for (let l = before + 1; l <= after; l++) { if (MAST_RW[l - 1]) P.coins += MAST_RW[l - 1]; ups.push(cardName(k) + ' Mastery ' + l) } } if (ups.length) notice('Mastery up: ' + ups.join(', '), 'ok') }
+      if (a.mode === 'ranked') {
+        const R = rankP(), before = rankOf(R.pts)
+        if (a.won) { R.w++; R.streak = Math.max(1, R.streak + 1); const gain = 30 + Math.min(20, (R.streak - 1) * 5); R.pts += gain; P.coins += 400; addXP(35); const now = rankOf(R.pts); R.best = Math.max(R.best, now)
+          return { msg: `Ranked win! +${gain} points${R.streak > 1 ? ' (' + R.streak + ' win streak)' : ''}${now > before ? ' · PROMOTED TO ' + RANKS[now].name.toUpperCase() : ''} · +400 coins`, rank: { gain, promo: now > before } } }
+        R.l++; R.streak = 0; const floor = RANKS[before].at, loss = 20; R.pts = Math.max(floor, R.pts - loss); addXP(10)
+        return { msg: `Ranked loss. -${loss} points (you can't drop below ${RANKS[before].name}).`, rank: { gain: -loss } }
+      }
       if (a.mode === 'tower') {
         P.tower = P.tower || { best: 0 }; const n = +a.id; if (n !== P.tower.best + 1 && !(n <= P.tower.best)) return { error: 'Floor locked.' }
         if (!a.won) { addXP(10); return {} }
@@ -437,6 +466,7 @@ function state() {
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now(),
     pass: (() => { const S2 = passP(); return { ...S2, tier: Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER)), into: S2.xp % PASS_TIER, per: PASS_TIER, max: PASS_TIERS, cost: PASS_COST, ends: (seasonNo() + 1) * 28 * 864e5, rw: Array.from({ length: PASS_TIERS }, (_, i) => [passReward('f', i + 1), passReward('p', i + 1)]) } })(),
+    ranked: (() => { const R = rankP(), i = rankOf(R.pts); return { ...R, tier: i, ranks: RANKS, ends: (seasonNo() + 1) * 28 * 864e5 } })(),
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = value(c, e ? e.lvl || 0 : 0); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
