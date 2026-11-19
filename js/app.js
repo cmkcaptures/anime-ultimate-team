@@ -830,9 +830,9 @@ async function openPack(type) {
     if (e.classList.contains('facedown')) {
       await new Promise(res => e.onclick = res); e.onclick = null; hint.textContent = ''
       const [cx, cy] = C()
-      if (rk >= 4) { // cinematic pull
-        ov.classList.add('cine'); sfx('charge', rk); e.classList.add('charge'); FXC.gather(cx, cy, col, rk >= 6 ? 1.3 : 1, 40); shake(1)
-        await wait(rk >= 6 ? 1500 : rk >= 5 ? 1200 : 950)
+      if (rk >= 4) { // walkout + orb
+        try { await walkout(ov, FXC, c, rk) } catch { return }
+        ov.classList.add('cine'); e.classList.add('charge'); shake(1); await wait(300)
       } else { sfx('charge', rk); e.classList.add('charge'); FXC.gather(cx, cy, col, .45, 16); await wait(480) }
       sfx('reveal', rk); e.classList.remove('charge', 'facedown'); e.classList.add('reveal')
       FXC.hit(cx, cy, col, rk >= 6 ? 2.4 : rk >= 5 ? 2 : rk >= 4 ? 1.7 : 1.2); FXC.screen(rk >= 6 ? '#ffffff' : col, rk >= 4 ? .5 : .25, .4); shake(rk >= 4 ? 3 : 2)
@@ -1177,4 +1177,32 @@ function sbcSheet(q, last = false) {
     go2.onclick = async () => { const r = await act('sbc', { id: q.id, keys: pick.map(c => c.key) }); if (!r.error) { closeModal(); if (r.rw.pack) openPack(r.rw.pack); else rerender() } }
     sh.append(go2)
   }, true)
+}
+
+// ================= WALKOUT (Legendary+) =================
+async function walkout(ov, FXC, c, rk) {
+  const cols = ['L', 'M', 'X'].filter(r => TIER[r].rank <= rk).map(tierCol), fin = cols[cols.length - 1]
+  const wk = h('div', 'wk', `<div class="wk-bg"></div><div class="wk-beams">${'<i></i>'.repeat(11)}</div><div class="wk-orb"><i></i></div><div class="wk-sil"></div><div class="wk-info"></div><div class="wk-tap">TAP TO SPEED UP</div>`)
+  const cv = ov.querySelector('canvas'); cv ? cv.before(wk) : ov.append(wk)
+  let fast = false; wk.onclick = () => { fast = true }
+  const W = async ms => { await wait(fast ? ms * .2 : ms); if (!ov.isConnected) throw 0 }
+  const cx = innerWidth / 2, cy = innerHeight * .45, orb = wk.querySelector('.wk-orb')
+  wk.style.setProperty('--oc', cols[0]); await W(30); wk.classList.add('on'); sfx('charge', 4)
+  FXC.gather(cx, cy, cols[0], 1.1, 50); await W(1200)
+  for (let i = 1; i < cols.length; i++) {
+    orb.classList.remove('crack'); void orb.offsetWidth; orb.classList.add('crack')
+    wk.style.setProperty('--oc', cols[i]); if (i === 2) wk.classList.add('rb')
+    FXC.hit(cx, cy, cols[i], 1.6); FXC.screen(i === 2 ? '#ffffff' : cols[i], .45, .35); FXC.gather(cx, cy, cols[i], 1.3, 50); sfx('charge', 4 + i)
+    ov.classList.remove('shk2'); void ov.offsetWidth; ov.classList.add('shk2')
+    await W(1150)
+  }
+  sfx('reveal', rk); FXC.hit(cx, cy, fin, 2.6); FXC.screen('#ffffff', .85, .5); FXC.rays(cx, cy, fin, 26, 1300, 1.7); wk.classList.add('burst')
+  await W(650)
+  const info = wk.querySelector('.wk-info')
+  for (const t of [ANAME(c.anime), c.faction + ' · ' + c.role, c.ver]) { info.innerHTML = `<div class="wk-line"><span>${t}</span><i></i></div>`; sfx('soft'); await W(950) }
+  info.innerHTML = ''
+  const sil = wk.querySelector('.wk-sil'); sil.style.backgroundImage = `url("${c.url}")`; sil.classList.add('in'); await W(1000)
+  sil.classList.add('lit'); sfx('reveal', rk); FXC.hit(cx, cy, fin, 1.8); FXC.rays(cx, cy, fin, 18, 1000, 1.4)
+  info.innerHTML = `<div class="wk-name">${c.name}</div>`; await W(1300)
+  wk.classList.add('out'); await W(380); wk.remove()
 }
