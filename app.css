@@ -2406,3 +2406,86 @@ body[data-page=shop] .ptile.on * { color: #fff !important } body[data-page=shop]
 .ar-result h2 { font-family: var(--eD) !important; font-style: normal !important; -webkit-text-stroke: 2px var(--eN); paint-order: stroke fill; text-shadow: 0 6px 0 var(--eN) !important }
 .op2 .o2-count:empty { display: none }
 #arena.bc .ar-stage { flex: 0 0 auto !important; width: auto !important; margin-left: auto !important }
+/* ================= THEME E: pop-ups ================= */
+#modal { background: rgba(26,11,58,.72) !important }
+#modal .sheet { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 4px #fff, 0 -6px 0 4px rgba(10,4,32,.4) !important; border-radius: 28px 28px 0 0 !important; position: relative; isolation: isolate }
+#modal .sheet::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit; background: linear-gradient(180deg, rgba(255,255,255,.1), transparent 25%), repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 12px, transparent 12px 34px) }
+@media (min-width: 760px) { #modal:not(.full) { align-items: center; justify-items: center } #modal:not(.full) .sheet { width: min(640px, 92%); border-radius: 28px !important; box-shadow: 0 0 0 4px #fff, 0 10px 0 4px rgba(10,4,32,.6) !important } }
+#modal.full .sheet { border-radius: 24px !important; margin: 14px }
+#modal .grab { background: #fff !important; opacity: .8 }
+.detail h2, .wi-head h2, #modal .sec h3 { font: 800 42px/.95 var(--eD) !important; font-style: normal !important; color: #fff; -webkit-text-stroke: 1.5px #0a0420; paint-order: stroke fill; text-shadow: 0 4px 0 #0a0420 }
+.detail .ver { padding: 3px 12px; border-radius: 8px; background: var(--ePink); color: #fff !important; box-shadow: 0 0 0 2px #fff; font: 800 12px var(--eUI) !important }
+.detail .marks span, .detail .eyebrow, .eyebrow { font: 800 11px var(--eUI) !important; letter-spacing: .14em }
+.kv div { border-radius: 12px !important; background: #0a0420 !important; box-shadow: 0 0 0 2px rgba(255,255,255,.7) !important }
+.kv div { font: 800 18px var(--eD) !important; color: #fff }
+.kv small { font: 800 10px var(--eUI) !important; color: var(--eY) !important }
+.movebox { border-radius: 16px !important; background: #0a0420 !important; box-shadow: 0 0 0 2px rgba(255,255,255,.7) !important }
+.movebox b { font: 800 20px var(--eD) !important; font-style: normal !important }
+.movebox.pasbox { background: linear-gradient(160deg, #ffe14a, #ff9a00) !important; box-shadow: 0 0 0 3px #fff, 0 5px 0 3px #8a3a00 !important }
+.movebox.pasbox b { color: #fff !important; -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill; text-shadow: 0 2px 0 #8a3a00 }
+.movebox.pasbox p { color: #3a1a00 !important; font-weight: 700 !important }
+.mastbox { padding: 12px 14px !important }
+.detail .acts { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 6px 0 }
+.wi-tier { padding: 8px 12px; margin: 14px 0 8px; border-radius: 12px; background: #0a0420; box-shadow: 0 0 0 2px rgba(255,255,255,.7) }
+.wi-tier b { font: 800 18px var(--eD) !important }
+.tp-f select { border-radius: 12px !important; background: #0a0420 !important; box-shadow: 0 0 0 2px #fff !important; font: 700 14px var(--eUI) !important }
+.sbc-tog { padding: 8px 12px; border-radius: 12px; background: #0a0420; box-shadow: 0 0 0 2px rgba(255,255,255,.6) }
+.insp { background: rgba(26,11,58,.8) !important }
+.insp-card, .insp-info { border-radius: 20px !important }
+.insp-info { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 8px 0 3px rgba(10,4,32,.6) !important; padding: 18px !important }
+.insp-info h3 { font: 800 34px/1 var(--eD) !important; font-style: normal !important; -webkit-text-stroke: 1px #0a0420; paint-order: stroke fill; text-shadow: 0 3px 0 #0a0420 }
+.tut-card { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; border-radius: 24px !important; box-shadow: 0 0 0 4px #fff, 0 10px 0 4px rgba(10,4,32,.6) !important }
+.tut-card h3 { font-family: var(--eD) !important; font-style: normal !important }
+.detail .mastbox { width: 100%; box-sizing: border-box; background: #0a0420 !important; box-shadow: 0 0 0 2px rgba(255,255,255,.7) !important }
+/* ================= THEME E: misc pages ================= */
+.mrow, .prow, .wentry, .phead, .psheet, .wpick { border-radius: 16px !important; background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important; box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(26,11,58,.55) !important; border: 0 !important; position: relative; overflow: hidden }
+.mrow::before, .prow::before, .wentry::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 40%) }
+.mrow b, .prow b { font-family: var(--eD) !important; font-style: normal !important; font-size: 19px !important; letter-spacing: .02em }
+.mrow .bar, .panel .bar { height: 10px !important; border-radius: 6px !important; background: #0a0420 !important; box-shadow: 0 0 0 2px rgba(255,255,255,.7) }
+.mrow .bar i, .panel .bar i { background: repeating-linear-gradient(115deg, #ffe14a 0 8px, #ffb000 8px 16px) !important; border-radius: 6px }
+.mrow .rew { border-radius: 10px !important; background: #0a0420 !important; box-shadow: 0 0 0 2px rgba(255,255,255,.6) !important }
+.mrow .btn.green { --b1: #ffe14a; --b2: #ff9a00; --bs: #8a3a00 }
+.mrow.done, .mrow.claimed { opacity: .55 }
+.mrow { margin-bottom: 14px !important }
+.panel .bigl, .panel .lvlbig { font-family: var(--eD) !important }
+.wcard { border-radius: 14px !important; box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(26,11,58,.55) !important }
+.cards5 .cg img, .wpick .cg img { border-radius: 10px; box-shadow: 0 0 0 2px #fff }
+.prow:hover { transform: translateY(-2px) }
+.prow .rank, .prow .rk { font: 800 26px var(--eD) !important; color: var(--eY) !important }
+.pass-own { border-radius: 12px; box-shadow: 0 0 0 2px #fff }
+.pbar i { border-radius: 6px; box-shadow: 0 0 0 2px #fff } .pbar s { background: repeating-linear-gradient(115deg, #ffe14a 0 8px, #ffb000 8px 16px) !important }
+.pt { font-family: var(--eD) !important }
+.pcol.on .pt { color: #fff !important; -webkit-text-stroke: 1px #8a3a00; paint-order: stroke fill; text-shadow: 0 2px 0 #8a3a00; border-color: var(--eY) !important }
+.pcell.p { box-shadow: 0 0 0 3px var(--eY), 0 6px 0 3px rgba(26,11,58,.6) !important; background: linear-gradient(160deg, #4a2a9a, #241050) !important }
+.pcell { background: linear-gradient(160deg, #3a2a7a, var(--eN)) !important }
+.pcell.ready { background: linear-gradient(160deg, #ffe14a, #ff9a00) !important }
+.arc { border-radius: 20px !important; box-shadow: 0 0 0 4px #fff, 0 8px 0 4px rgba(26,11,58,.6) !important }
+.arc-info b { font-family: var(--eD) !important; -webkit-text-stroke: 1px #0a0420; paint-order: stroke fill; text-shadow: 0 3px 0 #0a0420 }
+.evhero::before { opacity: .5 !important }
+.sh-tag { border-radius: 10px !important; background: var(--ePink) !important; color: #fff !important; box-shadow: 0 0 0 2px #fff !important; clip-path: none !important }
+.mrow.done { opacity: 1 !important; box-shadow: 0 0 0 3px var(--eY), 0 6px 0 3px #8a3a00 !important }
+.mrow.claimed { opacity: .5 !important }
+#pages .mrow .btn, #pages .rew .btn { background: linear-gradient(160deg, #ffe14a, #ff9a00) !important; color: #fff !important; -webkit-text-stroke: 1px #8a3a00; text-shadow: 0 2px 0 #8a3a00 !important; box-shadow: 0 0 0 2px #fff, 0 4px 0 2px #8a3a00 !important; border: 0 !important }
+#pages .mrow .bar i { background: repeating-linear-gradient(115deg, #ffe14a 0 8px, #ffb000 8px 16px) !important }
+.ptrack { padding: 18px 8px 22px !important; gap: 14px !important }
+/* phone fixes */
+#nav .pill { display: none !important }
+#nav button.on { background: linear-gradient(180deg, #ffe14a, var(--eY2)) !important; box-shadow: 0 4px 0 #b36b00 !important; border-radius: 16px !important; margin: 8px 3px }
+#nav button.on svg { color: var(--eN) !important }
+@media (max-width: 999px) {
+  .ptitle { display: none !important }
+  #top { gap: 8px !important } #top .chips2 { margin-left: auto; gap: 6px !important } #top .cur { font-size: 13px !important; padding: 0 10px 0 4px !important }
+  .lb-b .lb-im { width: 44% } .lb-b::after { left: calc(56% + 10% - 3px) !important }
+  .lb-b:not(.main) .lb-tx { max-width: 58% } .lb-b:not(.main) .lb-tx b { font-size: 24px !important } .lb-tx small { font-size: 10px !important; white-space: nowrap } .lb-tx em { font-size: 11px !important }
+  .lb-b.main .lb-im { width: 48% } .lb-b.main .lb-tx { max-width: 60% } .lb-b.main .lb-tx b { font-size: 50px !important } .lb-b.main::after { left: calc(52% + 10.6% - 3px) !important }
+  .lb-wm { font-size: 40px !important }
+  .lb-menu { gap: 18px 14px !important }
+}
+@media (max-width: 760px) {
+  #arena.bc .ar-top { gap: 6px !important; padding: 8px 8px !important; flex-wrap: nowrap; overflow: hidden }
+  #arena.bc .ar-top button { padding: 5px 8px !important; font-size: 11px !important; margin-right: 0 !important; flex-direction: row !important; height: auto !important; min-height: 0 !important; white-space: nowrap }
+  #arena.bc .ar-top button svg, #arena.bc .ar-mute svg { display: none }
+  #arena.bc .ar-stage { display: none !important }
+  .bct { top: 44px !important }
+  .seg button { font-size: 13px !important; letter-spacing: .04em !important; white-space: nowrap }
+}
