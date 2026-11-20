@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp8q80o'
-import { sfx, sfxOn, music } from './sfx.js?v=mwp8q80o'
-import { createFX } from './fx2d.js?v=mwp8q80o'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp8wppe'
+import { sfx, sfxOn, music } from './sfx.js?v=mwp8wppe'
+import { createFX } from './fx2d.js?v=mwp8wppe'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -131,13 +131,15 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (ea.opener && !att.opened) { m += ea.opener / 100; att.opened = 1 }
   if (A && A.teamDmg) m += A.teamDmg / 100
   if (ed.vuln) m += ed.vuln / 100
+  if (ea.wheel) m += Math.min(32, 8 * att.hitsTaken) / 100
   dmg *= m
   if (pa.dmg) dmg *= 1 + pa.dmg / 100
   if (pd.dr) dmg *= 1 - pd.dr / 100
   if (ed.dr) dmg *= 1 - ed.dr / 100
   if (ed.adapt) dmg *= 1 - Math.min(ed.adaptMax || 30, ed.adapt * def.hitsTaken) / 100
+  if (ed.wheel) { const seen = def.wheelSeen || (def.wheelSeen = {}); dmg *= 1 - Math.min(48, 12 * def.hitsTaken) / 100; if (seen[kind]) dmg *= .8; else seen[kind] = 1; if (def.hitsTaken < 4) pasNote(def, def.hitsTaken === 3 ? 'FULLY ADAPTED' : 'WHEEL TURNS · ' + (def.hitsTaken + 1)) }
   if (def.fort) dmg *= .7
-  const pierceAll = pierce || ea.pierce || (kind === 'strike' && ea.pierceStrike) || (kind === 'special' && ea.pierceSpec)
+  const pierceAll = pierce || ea.pierce || (ea.wheel && att.hitsTaken >= 4) || (kind === 'strike' && ea.pierceStrike) || (kind === 'special' && ea.pierceSpec)
   if (def.guard) { if (!pierceAll) dmg *= ed.guardStrong ? 1 - ed.guardStrong / 100 : .5; def.guard = 0 }
   dmg = Math.max(1, Math.round(dmg))
   if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) pasNote(def, 'SHIELD') }
