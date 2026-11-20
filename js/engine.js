@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwphr0sq'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpicosr'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -404,6 +404,291 @@ const CAMPAIGN = [
         ['ARMIN', 'Then we follow it. All of us.'],
         ['NARUTO', 'Yeah. Whatever\'s waiting on the other side, we face it together.']] },
   ] },
+  { id: 2, name: 'The Leaf Trembles', sub: 'Chapter 2 · Naruto × Attack on Titan', boss: 'Story/2c088316237c31915117f8d596539829.jpg', stages: [
+    { n: 1, name: 'Footsteps in the Leaf', rating: 0, coins: 1500,
+      enemy: ['EREN#94', 'EREN#87', 'BERTHOLDT', 'EREN#68', 'EREN#67', 'REINER'],
+      scene: [
+        ['MINATO', 'The ground hasn\'t stopped shaking since dawn. Something enormous is walking through the Forest of Death.'],
+        ['MIGHT GUY', 'Walls. Walls with faces. And they are walking towards Konoha!'],
+        ['ARMIN', 'We followed it through the rift. That\'s the Rumbling. Every one of those is a Colossal Titan.'],
+        ['NARUTO', 'Eren! I can see him standing on top of the big one. EREN! TALK TO ME!'],
+        ['EREN', '...']],
+      outro: [
+        ['MINATO', 'We slowed them. Only slowed them. They don\'t bleed, they don\'t tire, and they don\'t stop.'],
+        ['MIKASA', 'He didn\'t even look at me.'],
+        ['KAKASHI', 'He\'s not marching on Konoha. Look at the path. He\'s heading for the old valley. Where the God Tree once stood.']] },
+    { n: 2, name: 'The Uchiha Gambit', rating: 0, coins: 1800,
+      enemy: ['SASUKE', 'ITACHI#87', 'ITACHI#83', 'SHISUI'],
+      scene: [
+        ['SASUKE', 'We end this quietly. Shisui\'s eye, one genjutsu, and Eren stops walking.'],
+        ['ITACHI', 'Kotoamatsukami would rewrite his will. It would also take away the only thing he has left that is his own.'],
+        ['SASUKE', 'Then we take it. That\'s cleaner than a war.'],
+        ['NARUTO', 'You were gonna do it without telling anyone? That\'s exactly what Eren did to his friends!'],
+        ['SASUKE', 'Then stop me, Naruto. Like always.']],
+      outro: [
+        ['SHISUI', 'He\'s right, Sasuke. A will that\'s rewritten isn\'t saved. It\'s just erased.'],
+        ['ITACHI', 'Forgive me. I keep trying to protect people by deciding for them.'],
+        ['SASUKE', '...Fine. We do it your way, idiot. But if it fails, I won\'t hesitate.']] },
+    { n: 3, name: 'The Tree Remembers', rating: 0, coins: 2200,
+      enemy: ['MADARA#94', 'OBITO#93', 'MADARA#78', 'OBITO#85', 'ZEKE#88'],
+      scene: [
+        ['HAGOROMO', 'Children of two worlds, listen. Long ago, a single tree took root. Its seeds fell in more than one place.'],
+        ['ARMIN', 'The source of all living things. Ymir touched it in the forest. That\'s where the Titans came from.'],
+        ['HAGOROMO', 'And my mother ate its fruit. That is where chakra came from. Your Titans and our chakra are the same power, split apart.'],
+        ['MADARA', 'Which means whoever reaches the root first gets both. Thank you, old man. You saved us the search.'],
+        ['ZEKE', 'Paths and chakra together. Every living thing, at peace. Isn\'t that what we all wanted?']],
+      outro: [
+        ['OBITO', 'Stop... Madara, something is pulling on the root from the other side.'],
+        ['MADARA', 'Impossible. Nothing should be left on the other side.'],
+        ['HAGOROMO', '...Mother.']] },
+    { n: 4, name: 'Mother of All Chakra', rating: 0, coins: 2600,
+      enemy: ['KAGUYA#94', 'MADARA#94', 'OBITO#93', 'ZEKE#88', 'HAGOROMO'],
+      scene: [
+        ['KAGUYA', 'All this noise. Footsteps that shake the earth, a voice crying through the Paths. You woke me.'],
+        ['NARUTO', 'Kaguya?! We sealed you!'],
+        ['KAGUYA', 'You sealed me in one world. Someone tore open the walls between them. The Founder\'s call was simply loud enough to follow.'],
+        ['KAKASHI', 'Someone tore them open? Eren did that.'],
+        ['KAGUYA', 'The boy? No. He only knocked. I didn\'t open this door, little ninja. I was invited.']],
+      outro: [
+        ['HAGOROMO', 'She has taken Madara and Obito\'s chakra. And she is reaching for the Coordinate.'],
+        ['ARMIN', 'If she gets the Founding Titan, she gets every Titan and every Eldian alive.'],
+        ['MIKASA', 'Then we reach Eren first.']] },
+    { n: 5, name: 'Two Founders', rating: 0, coins: 3000,
+      enemy: ['YMIR', 'YMIR & ZEKE', 'REINER', 'ANNIE', 'LARA TYBUR', 'ZEKE#81'],
+      scene: [
+        ['YMIR', 'She is pulling us. I can feel her hands on the Paths.'],
+        ['REINER', 'My body won\'t listen. Get away from me, all of you!'],
+        ['ANNIE', 'She\'s using us like Eren did. Like Marley did. Same chains, new master.'],
+        ['MIKASA', 'Then I\'ll cut the chain. Eren, if you can hear me, you\'re not alone in there.'],
+        ['EREN', 'Mikasa...?']],
+      outro: [
+        ['EREN', 'I saw every path. In every one, she wins if I stay on this road.'],
+        ['EREN', 'I wanted freedom so badly I never asked who opened the door for me.'],
+        ['NARUTO', 'Then stop running and fight with us. That\'s the one path you never tried.'],
+        ['EREN', '...Yeah. Let\'s end her.']] },
+    { n: 6, name: 'BOSS · The Progenitor', boss: 1, rating: 0, coins: 5000,
+      enemy: ['KAGUYA', 'MADARA#94', 'OBITO#93', 'ZEKE#88', 'YMIR'],
+      scene: [
+        ['KAGUYA', 'Two Founders. Two worlds. One root. Everything returns to me.'],
+        ['EREN', 'Not this time. I stopped the Rumbling. Every step of it ends with you.'],
+        ['NARUTO', 'Sasuke! Eren! Everybody! All at once!'],
+        ['SASUKE', 'Try to keep up.'],
+        ['MIKASA', 'Together, Eren.']],
+      outro: [
+        ['KAGUYA', 'Sealed again... but it doesn\'t matter. The walls are broken. They will stay broken.'],
+        ['HAGOROMO', 'The rift is spreading faster than before. Something on the other side is pulling it wider.'],
+        ['BEERUS', '(far away) Hmm. Someone is breaking the multiverse. How rude. Whis, find out who.']] },
+  ] },
+  { id: 3, name: 'Gods of Destruction', sub: 'Chapter 3 · Dragon Ball', boss: 'Story/e51d1520ff0dc755ba7f4d396c1f2542.jpg', stages: [
+    { n: 1, name: 'A Bored God', rating: 0, coins: 2000,
+      enemy: ['BEERUS', 'GOKU BLACK#88', 'BROLY', 'JIREN'],
+      scene: [
+        ['GOKU', 'Hey Vegeta, did you feel that? It\'s like the whole sky just hiccupped.'],
+        ['VEGETA', 'Of course I felt it. That rift dumped a forest and three Titans into my wife\'s garden.'],
+        ['BEERUS', 'Worlds are leaking into each other. It\'s messy. It\'s ugly. I\'m going to destroy all of them and start fresh.'],
+        ['GOKU', 'Hold on, Lord Beerus! There are people in those worlds!'],
+        ['BEERUS', 'Then you have until I finish my pudding to give me a better idea.']],
+      outro: [
+        ['BEERUS', 'Fine. You have a little time. If you can find who is cracking the walls, I won\'t erase everything.'],
+        ['GOKU', 'Deal! ...Uh, how do we find them?'],
+        ['VEGETA', 'Follow the biggest, angriest power level. That\'s always how it works.']] },
+    { n: 2, name: 'The Legendary Rift', rating: 0, coins: 2400,
+      enemy: ['BROLY', 'JIREN', 'GOKU BLACK#88', 'BROLY'],
+      scene: [
+        ['GOHAN', 'Dad! A rift opened right over the wasteland. Something came through screaming!'],
+        ['BROLY', 'KAKAROT!'],
+        ['VEGETA', 'Broly. Of course it\'s Broly. And Jiren behind him? Who keeps sending us the worst possible guests?'],
+        ['JIREN', 'I was pulled here against my will. Strength is the only thing I trust. Show me yours.']],
+      outro: [
+        ['JIREN', 'This was not my fight. Someone sent me through deliberately. They wanted us to tear each other apart.'],
+        ['GOKU', 'Someone\'s using the rifts like doors. On purpose.'],
+        ['GOHAN', 'Then where does the door lead from?']] },
+    { n: 3, name: 'Rose in the Ashes', rating: 0, coins: 2800,
+      enemy: ['GOKU BLACK#88', 'GOKU BLACK', 'BROLY', 'JIREN'],
+      scene: [
+        ['GOKU BLACK', 'Son Goku. We meet again, in a world even more broken than the last one.'],
+        ['GOKU', 'Black?! We beat you!'],
+        ['GOKU BLACK', 'In one timeline. But now there are no timelines. Only rifts. And I hold the key to every one of them.'],
+        ['VEGETA', 'A key. Who would hand YOU a key?']],
+      outro: [
+        ['GOKU BLACK', 'A voice. A beautiful voice from a throne no one is allowed to see.'],
+        ['GOKU BLACK', 'It said mortals had ruined enough worlds. I agreed.'],
+        ['GOKU', 'Then we take that key off you.']] },
+    { n: 4, name: 'Fusion Dance', rating: 0, coins: 3200,
+      enemy: ['GOKU BLACK', 'BROLY', 'JIREN', 'BEERUS'],
+      scene: [
+        ['BEERUS', 'Enough. If you mortals can\'t stop him, I will erase this world with him in it.'],
+        ['VEGETA', 'You\'d kill everyone just to stop one man?'],
+        ['BEERUS', 'I\'m a god of destruction. It\'s literally the job description.'],
+        ['GOKU', 'Vegeta. Only one thing\'s strong enough to stop both of them.'],
+        ['VEGETA', 'Don\'t you dare say it... fine. FUSION!']],
+      outro: [
+        ['GOGETA', 'Hmph. Two minds, one body, zero patience.'],
+        ['BEERUS', '...Alright. That was entertaining. I\'ll hold off. For now.']] },
+    { n: 5, name: 'The Key Between Worlds', rating: 0, coins: 3600,
+      enemy: ['GOKU BLACK', 'GOKU BLACK#88', 'BROLY', 'JIREN', 'BEERUS'],
+      scene: [
+        ['GOKU BLACK', 'Do you understand yet? Each world you save is another world for mortals to ruin.'],
+        ['GOHAN', 'And who decided that? You? Or the voice?'],
+        ['GOKU BLACK', 'The voice only showed me the truth. Someone has to sit on the throne above every world.'],
+        ['VEGETA', 'Then that someone is about to lose their favourite puppet.']],
+      outro: [
+        ['GOKU BLACK', 'You can\'t stop it. The rifts are already spreading into every world.'],
+        ['GOKU', 'Then why are you running?'],
+        ['GOKU BLACK', 'I\'m not running. I\'m going ahead.']] },
+    { n: 6, name: 'BOSS · Rift Walker', boss: 1, rating: 0, coins: 6000,
+      enemy: ['GOKU BLACK', 'BROLY', 'JIREN', 'BEERUS', 'GOKU BLACK#88'],
+      scene: [
+        ['GOKU BLACK', 'Behold. The power of every world I have walked through. Rosé, sharpened by a thousand rifts.'],
+        ['GOKU', 'You talk too much.'],
+        ['VEGETA', 'For once, Kakarot, we agree.'],
+        ['BEERUS', 'Go on, then. Impress me.']],
+      outro: [
+        ['GOKU BLACK', 'Laugh while you can. The next world is already bleeding. A king of curses and a king of demons... and they are about to meet.'],
+        ['WHIS', '(appearing) The rift he escaped through leads to a world of cursed energy. And the trail is... sun-shaped.'],
+        ['GOKU', 'Sun-shaped?'],
+        ['WHIS', 'Someone is signing their work.']] },
+  ] },
+  { id: 4, name: 'Curse of the Crimson Moon', sub: 'Chapter 4 · Jujutsu Kaisen × Demon Slayer', boss: 'Story/muzan final form.jpg', stages: [
+    { n: 1, name: 'Demons in Shibuya', rating: 0, coins: 2400,
+      enemy: ['AKAZA', 'DOMA', 'GYUTARO', 'HANTENGU', 'KAIGAKU'],
+      scene: [
+        ['ITADORI', 'Since when do curses have pupils with kanji in them?'],
+        ['TANJIRO', 'Those aren\'t curses. They\'re demons. Upper Moons. They followed the rift into your world.'],
+        ['AKAZA', 'A world with no sun? A world full of strong fighters? This is paradise.'],
+        ['MEGUMI', 'Great. As if we didn\'t have enough problems.']],
+      outro: [
+        ['TANJIRO', 'They\'re not hunting people randomly. They\'re searching for something.'],
+        ['YUTA', 'Or someone. Strong cursed energy pulls them like moths.'],
+        ['ITADORI', '...Sukuna.']] },
+    { n: 2, name: 'Flame Hashira', rating: 0, coins: 2600,
+      enemy: ['RENGOKU', 'GIYU', 'SHINOBU', 'MITSURI', 'OBANAI', 'TENGEN'],
+      scene: [
+        ['RENGOKU', 'Jujutsu sorcerers! You hide a demon inside your own body?'],
+        ['ITADORI', 'It\'s complicated. Sukuna\'s not a demon, he\'s a curse! There\'s a difference!'],
+        ['GIYU', 'There isn\'t.'],
+        ['TANJIRO', 'Wait! Everyone, please! He\'s been fighting it the whole time, just like Nezuko!']],
+      outro: [
+        ['RENGOKU', 'Your heart burns bright, young sorcerer. I was wrong to judge you.'],
+        ['SHINOBU', 'Then we have the same enemy. Good. That makes this much simpler.'],
+        ['GOJO', '(walking in) Hey, hey. Did I miss the part where everyone teams up? I love that part.']] },
+    { n: 3, name: 'Two Kings', rating: 0, coins: 3000,
+      enemy: ['SUKUNA', 'MUZAN', 'KOKUSHIBO', 'URAUME', 'GETO'],
+      scene: [
+        ['SUKUNA', 'So. The coward who hides from the sun has come to my world.'],
+        ['MUZAN', 'And the king of curses lives inside a child. How far you have fallen.'],
+        ['GETO', 'Gentlemen. Kings shouldn\'t fight. Kings should rule. Together, nothing in either world could stop you.'],
+        ['GOJO', 'Ugh. Geto\'s doing the speech again. Okay, Shibuya, round two.']],
+      outro: [
+        ['GETO', 'Gojo Satoru, you were always the problem. That\'s why I brought this.'],
+        ['GOJO', 'Wait. The Prison Realm? Not again—'],
+        ['YUTA', 'GOJO-SENSEI!'],
+        ['TANJIRO', 'He\'s gone. They sealed him.']] },
+    { n: 4, name: 'Without the Strongest', rating: 0, coins: 3400,
+      enemy: ['KOKUSHIBO', 'AKAZA', 'DOMA', 'MAHITO & NANAMI', 'GETO', 'URAUME'],
+      scene: [
+        ['YUTA', 'Gojo-sensei isn\'t coming back this time. It\'s on us now.'],
+        ['RENGOKU', 'Then we set our hearts ablaze! Every one of us!'],
+        ['KOKUSHIBO', 'Without your strongest... you are just children holding swords.'],
+        ['TANJIRO', 'Children holding swords have beaten you before.']],
+      outro: [
+        ['URAUME', 'You don\'t understand. Lord Muzan doesn\'t want an alliance. He never did.'],
+        ['ITADORI', 'What are you talking about?'],
+        ['URAUME', 'He\'s going to eat him. He\'s going to eat Sukuna.']] },
+    { n: 5, name: 'The Betrayal', rating: 0, coins: 3800,
+      enemy: ['MUZAN', 'SUKUNA', 'KOKUSHIBO', 'AKAZA', 'DOMA'],
+      scene: [
+        ['SUKUNA', 'Muzan. What do you think you are doing with that blood?'],
+        ['MUZAN', 'The sun burns me. Curses don\'t burn. With your cursed energy, I become something the sun can\'t touch.'],
+        ['SUKUNA', 'You dare?!'],
+        ['MUZAN', 'I was promised this. A world without sunlight, and a king to devour. The letters said so.']],
+      outro: [
+        ['MUZAN', 'Ahh. Yes. This is what it feels like to be complete.'],
+        ['TANJIRO', 'Letters? Who sent you letters, Muzan?!'],
+        ['MUZAN', 'Every one was sealed with a sun. Ironic, don\'t you think?']] },
+    { n: 6, name: 'BOSS · Demon King', boss: 1, rating: 0, coins: 6500,
+      enemy: ['MUZAN', 'KOKUSHIBO', 'AKAZA', 'DOMA', 'SUKUNA'],
+      scene: [
+        ['MUZAN', 'Behold the Demon King. Cursed energy in my blood. The night will never end again.'],
+        ['YUTA', 'Rika. Full strength. No holding back.'],
+        ['RENGOKU', 'Every Hashira! Every sorcerer! Now!'],
+        ['TANJIRO', 'This ends with the sunrise, Muzan. In every world.']],
+      outro: [
+        ['MUZAN', 'You... broke the seal on the Prison Realm with my own blood...'],
+        ['GOJO', '(stepping out, stretching) Sorry I\'m late. Did I miss the boss fight? Aw, I did.'],
+        ['TANJIRO', 'The letters. They came from one place. A world with a red sea and a city in the sky.'],
+        ['GOJO', 'Then let\'s go knock on the throne room door.']] },
+  ] },
+  { id: 5, name: 'The Empty Throne', sub: 'Chapter 5 · One Piece · Every World Unites', boss: 'Story/Imu.jpg', stages: [
+    { n: 1, name: 'Into the New World', rating: 0, coins: 2800,
+      enemy: ['AKAINU', 'KING', 'BLACKBEARD', 'ROCKS D. XEBEC'],
+      scene: [
+        ['LUFFY', 'Woah! There\'s a guy with a chainsaw dog and a dude made of blue fire on my ship!'],
+        ['GOJO', 'Hi. We\'re here to punch a god. You seem like the type who\'d want in.'],
+        ['LUFFY', 'Punch a god? I already did that! ...Wait, a different one? I\'M IN!'],
+        ['AKAINU', 'Pirates and outsiders. The Marines will bury you all in the sea.']],
+      outro: [
+        ['LAW', 'The Marines didn\'t care about us. They were stalling. Guarding the road to Mary Geoise.'],
+        ['NARUTO', 'Then that\'s where we go.']] },
+    { n: 2, name: 'The Emperor\'s Bargain', rating: 0, coins: 3200,
+      enemy: ['BLACKBEARD', 'BIG MOM', 'KAIDO', 'KING'],
+      scene: [
+        ['BLACKBEARD', 'Zehahaha! Heroes from every world, all lined up for me! Do you know what one of your powers is worth?'],
+        ['SHANKS', 'Teach. You\'re selling to both sides again.'],
+        ['BLACKBEARD', 'Of course! The throne pays very, very well.'],
+        ['LUFFY', 'You\'re working for them?!']],
+      outro: [
+        ['BLACKBEARD', 'Working for them? No. I want the throne for myself. I\'ll let you weaken them first.'],
+        ['SHANKS', 'Always the opportunist. Luffy, don\'t trust a word from him.']] },
+    { n: 3, name: 'The Red Line', rating: 0, coins: 3600,
+      enemy: ['AKAINU', 'KING', 'BIG MOM', 'KAIDO', 'ROCKS D. XEBEC'],
+      scene: [
+        ['EREN', 'I can feel it through the Paths. Something above the clouds, pulling every rift towards itself.'],
+        ['GOKU', 'Yeah. And its power level is... weird. It\'s like it\'s borrowing from everywhere.'],
+        ['VEGETA', 'Stealing, you mean.'],
+        ['ROCKS D. XEBEC', 'You children think you can climb the Red Line? I tried that once. It didn\'t end well.']],
+      outro: [
+        ['ROCKS D. XEBEC', 'Go on, then. Show the throne what I couldn\'t. Topple it.'],
+        ['LUFFY', 'That\'s the plan!']] },
+    { n: 4, name: 'Mary Geoise', rating: 0, coins: 4000,
+      enemy: ['IMU#94', 'AKAINU', 'BLACKBEARD', 'KING', 'BIG MOM'],
+      scene: [
+        ['TANJIRO', 'This city smells... wrong. Like the sun, but cold.'],
+        ['ITACHI', 'The sun seal. It\'s carved into every wall here.'],
+        ['IMU', 'Welcome. You have come so far. Every world, every hero. Exactly as I planned.'],
+        ['NARUTO', 'You?! You opened the doors? You called Kaguya? You sent Black and Muzan?'],
+        ['IMU', 'I gave each of them what they wanted most. And in return, each of them broke a world for me.']],
+      outro: [
+        ['IMU', 'Did you not wonder why every villain wanted a throne? I only ever offered one.'],
+        ['GOJO', 'So that\'s the trick. Everyone fights for the throne, and the one already on it wins.'],
+        ['IMU', 'Now come. Kneel before the empty throne.']] },
+    { n: 5, name: 'Every World Unites', rating: 0, coins: 4500,
+      enemy: ['IMU', 'BLACKBEARD', 'AKAINU', 'ROCKS D. XEBEC', 'KAIDO', 'BIG MOM'],
+      scene: [
+        ['IMU', 'Kaguya\'s chakra. The Founder\'s Coordinate. Black\'s divinity. Muzan\'s night. I have taken them all.'],
+        ['EREN', 'Then we give you something you don\'t have.'],
+        ['NARUTO', 'Friends from every world, standing together. You can\'t steal that.'],
+        ['GOKU', 'Ha! That sounded cool. Let\'s go!'],
+        ['LUFFY', 'EVERYBODY! FREE THE WORLDS!']],
+      outro: [
+        ['BLACKBEARD', 'Zehahaha... I think I\'ll be leaving now.'],
+        ['IMU', 'You think this is my full strength? I haven\'t even stood up from the throne.']] },
+    { n: 6, name: 'FINAL BOSS · The Empty Throne', boss: 1, rating: 0, coins: 8000,
+      enemy: ['IMU', 'BLACKBEARD', 'AKAINU', 'ROCKS D. XEBEC', 'KAIDO', 'BIG MOM'],
+      scene: [
+        ['IMU', 'Every history erased. Every world rewritten. I will sit above all of them, alone.'],
+        ['LUFFY', 'Sounds lonely. And boring. I\'d rather have friends.'],
+        ['GOJO', 'Nah, I\'d win.'],
+        ['EREN', 'For freedom.'],
+        ['NARUTO', 'Believe it!'],
+        ['LUFFY', 'GEAR... FIVE!']],
+      outro: [
+        ['IMU', 'Impossible... a laughing fool...'],
+        ['LUFFY', 'Shishishi! The throne\'s empty again!'],
+        ['HAGOROMO', 'The rifts are closing. Every world is returning to its place.'],
+        ['GOJO', 'Hm. Not every rift. Look. That one\'s still open.'],
+        ['ICHIGO', '(from the other side) Hey! Is anyone over there?! Something just came out of the rift into Soul Society!']] },
+  ] },
 ]
 const CAMP_CHEST = [{ at: 9, coins: 5000, pack: 'jumbo' }, { at: 18, coins: 10000, pack: 'premium', shards: 2000 }]
 function campP() { const P = S.profile; return P.camp || (P.camp = { stars: {}, chests: [] }) }
@@ -680,7 +965,7 @@ function act(a) {
       }
       if (a.mode === 'camp') {
         const [ci, si] = String(a.id).split(':').map(Number), ch = CAMPAIGN.find(c => c.id === ci), st = ch && ch.stages.find(s => s.n === si); if (!st) return { error: 'Unknown stage.' }
-        const C = campP(), key = ci + ':' + si, prev = si === 1 || (C.stars[ci + ':' + (si - 1)] || 0) > 0; if (!prev) return { error: 'Stage locked.' }
+        const C = campP(), key = ci + ':' + si, prev = si === 1 ? (ci === 1 || (C.stars[(ci - 1) + ':6'] || 0) > 0) : (C.stars[ci + ':' + (si - 1)] || 0) > 0; if (!prev) return { error: 'Stage locked.' }
         if (!a.won) { addXP(10); return {} }
         const got = 1 + ((a.ko || 0) <= 1 ? 1 : 0) + ((a.turns || 99) <= 12 ? 1 : 0), had = C.stars[key] || 0; C.stars[key] = Math.max(had, got); addXP(had ? 20 : 60)
         if (had) { P.coins += 300; return { msg: '★'.repeat(got) + ' Stage replayed. +300 coins.' } }
@@ -801,7 +1086,7 @@ function act(a) {
       if (L.every(o => o.claimed || o.id === x.id)) { P.pending.premium = (P.pending.premium || 0) + 1; return { msg: 'All done! +' + x.rw.toLocaleString() + ' coins and a Premium Drop for finishing Getting Started.' } }
       return { msg: '+' + x.rw.toLocaleString() + ' coins' }
     }
-    case 'campChest': { const C = campP(), i = +a.i, R = CAMP_CHEST[i]; if (!R) return { error: 'Unknown chest.' }; const tot = Object.values(C.stars).reduce((n, v) => n + v, 0); if (tot < R.at) return { error: 'Need ' + R.at + ' stars.' }; if (C.chests.includes(i)) return { error: 'Already opened.' }
+    case 'campChest': { const C = campP(), ci = +a.c || 1, ii = +a.i, i = ci === 1 ? ii : ci * 10 + ii, R = CAMP_CHEST[ii]; if (!R) return { error: 'Unknown chest.' }; const tot = Object.entries(C.stars).filter(([k]) => k.startsWith(ci + ':')).reduce((n, [, v]) => n + v, 0); if (tot < R.at) return { error: 'Need ' + R.at + ' stars.' }; if (C.chests.includes(i)) return { error: 'Already opened.' }
       C.chests.push(i); P.coins += R.coins; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1; if (R.shards) P.shards = (P.shards || 0) + R.shards; return { msg: 'Chest opened: +' + R.coins.toLocaleString() + ' coins and a ' + PACKS[R.pack].name + (R.shards ? ' and ◆' + R.shards.toLocaleString() + ' shards' : '') + '.' } }
     case 'awk': {
       const c = byKey(a.key), o = c && P.club.cards[a.key], N = AWK.find(n => n.id === a.node); if (!o || !N) return { error: 'Unknown card or node.' }

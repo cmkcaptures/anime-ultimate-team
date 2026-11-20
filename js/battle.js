@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwphr0sq'
-import { sfx, sfxOn, music } from './sfx.js?v=mwphr0sq'
-import { createFX } from './fx2d.js?v=mwphr0sq'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpicosr'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpicosr'
+import { createFX } from './fx2d.js?v=mwpicosr'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -546,22 +546,24 @@ function campPage(el, ok) {
   { let pend = null; try { pend = JSON.parse(sessionStorage.getItem('campOutro') || 'null') } catch { }
     if (pend) { sessionStorage.removeItem('campOutro'); const C0 = X.ST().campP || { stars: {} }; const ch0 = X.ST().camp.find(c => c.id === pend.c), st0 = ch0 && ch0.stages.find(s => s.n === pend.s)
       if (st0 && st0.outro && (C0.stars[pend.c + ':' + pend.s] || 0) > 0 && !pend.had) setTimeout(() => scene(st0.outro, 'AFTER · ' + st0.name, null, () => X.go('battle')), 300) } }
-  const { h } = X, ST = X.ST(), C = ST.campP || { stars: {}, chests: [] }, tot = Object.values(C.stars).reduce((n, v) => n + v, 0)
+  const { h } = X, ST = X.ST(), C = ST.campP || { stars: {}, chests: [] }
   for (const ch of ST.camp) {
+    const tot = Object.entries(C.stars).filter(([k]) => k.startsWith(ch.id + ':')).reduce((n, [, v]) => n + v, 0), unlocked = ch.id === 1 || (C.stars[(ch.id - 1) + ':6'] || 0) > 0
+    if (!unlocked) { el.append(h('section', 'bhero camp-hero camp-locked', `<div><span class="sh-tag">${ch.sub.toUpperCase()}</span><h2>🔒 ${ch.name.toUpperCase()}</h2><p>Beat the Chapter ${ch.id - 1} boss to unlock.</p></div>`)); continue }
     const boss = X.POOL.find(c => c.key === ch.boss)
-    el.append(h('section', 'bhero camp-hero', `<div><span class="sh-tag">${ch.sub.toUpperCase()}</span><h2>${ch.name.toUpperCase()}</h2><p>The skies are cracking and the worlds are merging. Clear each stage to unlock the next. Win with at most 1 fighter KO'd and within 12 turns for 3 stars. The boss drops <b>${boss ? boss.name + ' · ' + boss.ver : 'a Mythic'}</b>.</p></div><div class="bstat"><b>${tot}</b><span>/ ${ch.stages.length * 3} STARS</span></div>`))
+    el.append(h('section', 'bhero camp-hero', `<div><span class="sh-tag">${ch.sub.toUpperCase()}</span><h2>${ch.name.toUpperCase()}</h2><p>Clear each stage to unlock the next. Win with at most 1 fighter KO'd and within 12 turns for 3 stars. The boss drops <b>${boss ? boss.name + ' · ' + boss.ver : 'a Mythic'}</b>.</p></div><div class="bstat"><b>${tot}</b><span>/ ${ch.stages.length * 3} STARS</span></div>`))
     const chests = h('div', 'camp-chests')
-    ST.campChest.forEach((R, i) => { const open = C.chests.includes(i), b = h('button', 'btn ' + (open ? 'dark' : tot >= R.at ? 'gold' : 'dark') + ' sm', open ? '✓ CHEST ' + R.at + '★' : '🎁 ' + R.at + '★ CHEST'); b.disabled = open || tot < R.at; b.onclick = async () => { const r = await X.act('campChest', { i }); if (!r.error) X.go('battle') }; chests.append(b) })
+    ST.campChest.forEach((R, i) => { const cid = ch.id === 1 ? i : ch.id * 10 + i, open = C.chests.includes(cid), b = h('button', 'btn ' + (open ? 'dark' : tot >= R.at ? 'gold' : 'dark') + ' sm', open ? '✓ CHEST ' + R.at + '★' : '🎁 ' + R.at + '★ CHEST'); b.disabled = open || tot < R.at; b.onclick = async () => { const r = await X.act('campChest', { c: ch.id, i }); if (!r.error) X.go('battle') }; chests.append(b) })
     el.append(chests)
     const list = h('div', 'camp-list')
     ch.stages.forEach(st => {
-      const key = ch.id + ':' + st.n, s = C.stars[key] || 0, open = st.n === 1 || (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
+      const key = ch.id + ':' + st.n, s = C.stars[key] || 0, open = st.n === 1 ? unlocked : (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
       const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${[...new Set(st.enemy.map(x => x.split('#')[0]))].join(', ')}</em></span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
       row.disabled = !ok || !open
       { const cb = cxBtn(() => campTeam(st.enemy).map(k => X.BYKEY[k]), ch.id + '-' + st.n + ' · ' + st.name); cb.classList.add('cx-on-row'); const wrap = h('div', 'cx-wrap'); wrap.append(row, cb); list.append(wrap) }
       row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
         try { sessionStorage.setItem('campOutro', JSON.stringify({ c: ch.id, s: st.n, had: s > 0 })) } catch { }
-        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: st.boss ? 1.25 : 1 + st.n * .03, team: campTeam(st.enemy) })
+        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: (st.boss ? 1.25 : 1 + st.n * .03) + (ch.id - 1) * .06, team: campTeam(st.enemy) })
       })
     })
     el.append(list)

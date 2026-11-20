@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwphr0sq'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwphr0sq'
-import * as ACC from './account.js?v=mwphr0sq'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwphr0sq'
+import { createFX } from './fx2d.js?v=mwpicosr'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpicosr'
+import * as ACC from './account.js?v=mwpicosr'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpicosr'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwphr0sq'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwpicosr'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -424,7 +424,7 @@ async function cardDetail(key) {
     } else {
       const b = h('button', 'btn block', 'FIND ON MARKET'); b.onclick = () => { MS.q = c.name.toLowerCase(); MS.view = 'results'; go('market') }; d.append(b)
     }
-    if (c.season) d.append(h('span', 'season-tag', `SEASON ${c.season} EXCLUSIVE · Season Pass only`))
+    if (c.season) d.append(h('span', 'season-tag', c.season === 99 ? 'STORY EXCLUSIVE · Campaign boss reward' : `SEASON ${c.season} EXCLUSIVE · Season Pass only`))
     else { const cost = ST.shardCost[c.r], cb = h('button', 'btn block dark', `CRAFT FOR ◆${fmt(cost)} SHARDS <small>(you have ${fmt(P.shards || 0)})</small>`); cb.disabled = (P.shards || 0) < cost; cb.onclick = async () => { const r = await act('craft', { key }); if (!r.error) cardDetail(key) }; d.append(cb) }
     sh.append(d)
   })

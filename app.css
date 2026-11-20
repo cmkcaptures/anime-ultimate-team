@@ -2994,3 +2994,5 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 }
 .tp-swap { margin: 8px 0 12px } .tp-swap small { display: block; margin-bottom: 6px; font: 800 11px var(--eUI, Inter); letter-spacing: .14em; color: #ffcc00 }
 .tp-swrow { display: flex; flex-wrap: wrap; gap: 6px } .tp-sw { display: grid; padding: 6px 12px; border: 0; border-radius: 10px; background: #3a2a7a; color: #fff; cursor: pointer; text-align: left; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.25) } .tp-sw em { font: 800 9px var(--eUI, Inter); font-style: normal; letter-spacing: .12em; color: #c8b8ff } .tp-sw b { font: 800 14px var(--eD, 'Barlow Condensed') }
+
+.camp-locked { opacity: .55; filter: grayscale(.6) }
