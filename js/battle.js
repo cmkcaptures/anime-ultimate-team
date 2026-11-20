@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp92dps'
-import { sfx, sfxOn, music } from './sfx.js?v=mwp92dps'
-import { createFX } from './fx2d.js?v=mwp92dps'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp9qpwd'
+import { sfx, sfxOn, music } from './sfx.js?v=mwp9qpwd'
+import { createFX } from './fx2d.js?v=mwp9qpwd'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -157,12 +157,14 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (ea.recoil) att.hp = Math.max(1, att.hp - Math.round(att.max * ea.recoil / 100))
   // knockouts, with survive / revive passives
   if (def.hp === 0 && !def.ko) {
+    if (ea.noSurvive && (def.endure > 0 || def.revive > 0 || (ed.ablaze && !def.ablazeUsed))) { def.endure = 0; def.revive = 0; def.ablazeUsed = 1; pasNote(att, 'NO SECOND CHANCES') }
     if (def.endure > 0) { def.endure--; def.hp = 1; pasNote(def, 'ENDURED'); if (ed.endureRage) def.rage = (def.rage || 0) + ed.endureRage; if (ed.endureEnergy && D) D.ki = Math.min(KI_MAX, D.ki + ed.endureEnergy) }
-    else if (D && D.angel && D.angel !== def) { D.angel.angelUsed = 1; D.angel = null; def.hp = 1; pasNote(def, 'SAVED') }
+    else if (!ea.noSurvive && D && D.angel && D.angel !== def) { D.angel.angelUsed = 1; D.angel = null; def.hp = 1; pasNote(def, 'SAVED') }
     else if (ed.ablaze && !def.ablazeUsed && def.hp / def.max < .3) { def.ablazeUsed = 1; def.hp = 1; pasNote(def, 'HEART ABLAZE') }
-    else if (def.revive > 0) { def.hp = Math.round(def.max * def.revive / 100); def.revive = 0; pasNote(def, 'REVIVED') }
+    else if (def.revive > 0) { def.hp = Math.round(def.max * def.revive / 100); def.revive = 0; if (ed.jackpot) { def.rage = (def.rage || 0) + ed.jackpot; pasNote(def, 'JACKPOT! FULLY HEALED') } else pasNote(def, 'REVIVED') }
     else { def.ko = true; att.kos++; if (ea.arise) att.arise = (att.arise || 0) + ea.arise; if (ea.koHeal) att.hp = Math.min(att.max, att.hp + Math.round(att.max * ea.koHeal / 100)) }
   }
+  if (ea.jackpot && !att.ko && Math.random() < .12) { att.hp = Math.min(att.max, att.hp + Math.round(att.max * .25)); pasNote(att, 'JACKPOT ROLL · +25% HP') }
   att.attacks++
   return { dmg, crit, mu }
 }
