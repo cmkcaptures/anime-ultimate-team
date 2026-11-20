@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpijtg4'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpillsl'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -651,7 +651,7 @@ const CAMPAIGN = [
         ['ROCKS D. XEBEC', 'Go on, then. Show the throne what I couldn\'t. Topple it.'],
         ['LUFFY', 'That\'s the plan!']] },
     { n: 4, name: 'Mary Geoise', rating: 0, coins: 4000,
-      enemy: ['IMU#94', 'AKAINU', 'BLACKBEARD', 'KING', 'BIG MOM'],
+      enemy: ['IMU', 'AKAINU', 'BLACKBEARD', 'KING', 'BIG MOM'],
       scene: [
         ['TANJIRO', 'This city smells... wrong. Like the sun, but cold.'],
         ['ITACHI', 'The sun seal. It\'s carved into every wall here.'],
@@ -1169,6 +1169,7 @@ async function boot() {
   try { const S2 = passP(), m = freeCardTiers(), reached = Math.floor(S2.xp / PASS_TIER); for (const [t, k] of Object.entries(m)) if ((S2.f.includes(+t) || reached >= +t && S2.f.length) && !S.profile.club.cards[k] && S2.f.includes(+t)) giveCard(k) } catch (x) { console.warn(x) }
   S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
   for (const [k, o] of Object.entries(S.profile.club.cards)) if (!o.ser && byKey(k)) o.ser = rollSerial(k)
+  { const P = S.profile, o = P.club.cards['Mythic/imu.jpg']; if (o) { const n = (o.n || 1) + Math.max(0, (o.dia || 3) - 3), sh = 4000 * n; P.shards = (P.shards || 0) + sh; delete P.club.cards['Mythic/imu.jpg']; P.team = P.team.map(k => k === 'Mythic/imu.jpg' ? null : k); notice('Mythic Imu was retired. You got ◆' + sh.toLocaleString() + ' shards.', 'ok') } }
   if (!S.profile.prog2) { const P = S.profile; let refund = 0
     for (const [k, o] of Object.entries(P.club.cards)) { const c = byKey(k), awk = o.awk || []
       if (c) for (const id of awk) { const N = AWK.find(x => x.id === id); if (N) refund += N.sh * (AWK_SH[c.r] || 0) }
