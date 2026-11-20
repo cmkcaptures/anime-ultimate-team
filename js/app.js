@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwp8icwh'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS } from './battle.js?v=mwp8icwh'
-import * as ACC from './account.js?v=mwp8icwh'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp8icwh'
+import { createFX } from './fx2d.js?v=mwp8q80o'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS } from './battle.js?v=mwp8q80o'
+import * as ACC from './account.js?v=mwp8q80o'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp8q80o'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp8icwh'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp8q80o'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -849,7 +849,8 @@ async function openPack(type) {
   const shake = n => { ov.classList.remove('shk1', 'shk2', 'shk3'); void ov.offsetWidth; ov.classList.add('shk' + n); setTimeout(() => ov.classList.remove('shk' + n), 600) }
   let skipping = false
   $o('.o2-skip').onclick = () => { skipping = true; finish() }
-  function finish() { FXC.dispose(); document.body.classList.remove('in-opener'); ov.classList.add('out'); setTimeout(() => ov.remove(), 350); go('results') }
+  let finished = false
+  function finish() { if (finished) return; finished = true; try { FXC.dispose() } catch { }; document.body.classList.remove('in-opener'); ov.classList.add('out'); setTimeout(() => ov.remove(), 350); go('results') }
 
   // ---- 1) the pack ----
   const pc = await packCanvas(type, 400), purl = pc.toDataURL('image/jpeg', .9)
@@ -1206,7 +1207,7 @@ async function multiOpen(type, n) {
   const grid = ov.querySelector('.mo-grid'), FXC = createFX(ov)
   const els = all.map((c, i) => { const e = h('div', 'mo-c', `<div class="in"><div class="f"></div><div class="b"></div></div>`); e.dataset.tier = c.r; e.style.setProperty('--rc', tierCol(c.r)); const im = new Image(); im.src = urls[i]; e.querySelector('.f').append(im); grid.append(e); return e })
   let skip = false, closed = false; ov.querySelector('.o2-skip').onclick = () => { skip = true }
-  const fin = e => { if (e) { e.preventDefault(); e.stopPropagation() } if (closed) return; closed = true; skip = true; ov.style.display = 'none'; doneB.style.display = 'none'; requestAnimationFrame(() => setTimeout(() => { try { FXC.dispose() } catch { } document.body.classList.remove('in-opener'); ov.remove(); doneB.remove(); document.querySelectorAll('#opener').forEach(o => o.remove()); go('shop') }, 30)) }
+  const fin = e => { if (e) { e.preventDefault(); e.stopPropagation() } if (closed) return; closed = true; skip = true; ov.style.display = 'none'; doneB.style.display = 'none'; setTimeout(() => { try { FXC.dispose() } catch { } document.body.classList.remove('in-opener'); ov.remove(); doneB.remove(); document.querySelectorAll('#opener, body > .mo-done').forEach(o => o.remove()); go('shop') }, 20) }
   const doneB = ov.querySelector('.mo-done'); document.body.append(doneB); doneB.onclick = fin; doneB.onpointerup = fin
   sfx('deal'); await wait(400)
   // reveal worst first, best last; Epic+ pause with an impact
