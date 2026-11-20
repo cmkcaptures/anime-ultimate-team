@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpj0rz3'
-import { sfx, sfxOn, music } from './sfx.js?v=mwpj0rz3'
-import { createFX } from './fx2d.js?v=mwpj0rz3'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpjhbjv'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpjhbjv'
+import { createFX } from './fx2d.js?v=mwpjhbjv'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -760,7 +760,9 @@ export function startBattle(stage) {
     { const bn0 = $a(`.ar-side.${side} .ar-bench`); bn0.classList.toggle('can-swap', side === 'you' && !B.you.switched && !B.busy && !B.over) }
     ov.querySelector('.ar-plate.' + side + ' .pk').innerHTML = s.team.map(g => `<i class="${g.ko ? 'ko' : ''}"></i>`).join('')
     { const p = passives(s), chips = []; if (p.heal) chips.push(`<b class="pc heal">+${p.heal}% HEAL</b>`); if (p.dr) chips.push(`<b class="pc dr">-${p.dr}% DMG TAKEN</b>`); if (p.dmg) chips.push(`<b class="pc dmg">+${p.dmg}% DMG</b>`); if (p.crit) chips.push(`<b class="pc crit">+${p.crit}% CRIT</b>`); if (p.gauge) chips.push(`<b class="pc gg">+${p.gauge}% ULT/TURN</b>`); ov.querySelector('.ar-plate.' + side + ' .pp').innerHTML = chips.join('') }
-    const bn = $a(`.ar-side.${side} .ar-bench`); bn.innerHTML = ''
+    const bn = $a(`.ar-side.${side} .ar-bench`), bkey = s.active + '|' + s.team.map(g => g.key + (g.ko ? 'x' : '')).join(',')
+    if (bn.dataset.k === bkey) { let j = 0; s.team.forEach((g, i) => { if (i === s.active) return; const el = bn.children[j++], bar = el && el.querySelector('i'); if (bar) bar.style.width = (g.hp / g.max * 100) + '%' }); return }
+    bn.dataset.k = bkey; bn.innerHTML = ''
     s.team.forEach((g, i) => {
       if (i === s.active) return
       const b = document.createElement('button'); b.className = 'bslot' + (g.ko ? ' ko' : ''); b.append(img(g, 160))
@@ -772,8 +774,10 @@ export function startBattle(stage) {
   function controls() {
     const s = B.you, my = !B.busy && !B.over
     $a('.ar-ki').innerHTML = `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`
-    const hand = $a('.ar-hand'); hand.innerHTML = ''
-    const f = act(s), rc = X.tierCol(f.card.r), fx = Math.round((f.card.fx ?? .5) * 100), fy = Math.round((f.card.fy ?? .22) * 100)
+    const hand = $a('.ar-hand'), f = act(s), hkey = f.key + '|' + s.hand.join(',')
+    if (hand.dataset.k === hkey && hand.children.length === s.hand.length) { s.hand.forEach((a, i) => { const d = ARTS[a], el = hand.children[i]; el.disabled = !my || s.ki < d.cost || (a === 'burst' && s.ki < 2) }) }
+    else { hand.dataset.k = hkey; hand.innerHTML = ''
+    const rc = X.tierCol(f.card.r), fx = Math.round((f.card.fx ?? .5) * 100), fy = Math.round((f.card.fy ?? .22) * 100)
     const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['ENERGY', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'], burst: ['TACTIC', '#ff3b6b', '#ffd0dc'], senzu: ['ITEM', '#3aa83a', '#d8ffb0'], cylinder: ['ITEM', '#c8102e', '#ffd23a'], charge: ['TACTIC', '#ff9a00', '#ffe2a8'], transfer: ['TACTIC', '#3ab8ff', '#c8ecff'], heal: ['TACTIC', '#2fe0b0', '#c8fff0'], cleanse: ['TACTIC', '#a46bff', '#e8d8ff'] }
     s.hand.forEach((a, i) => {
       const d = ARTS[a], sp = a === 'special', [kind, c1, c2] = KIND[a], b = document.createElement('button')
@@ -786,7 +790,7 @@ export function startBattle(stage) {
       b.disabled = !my || s.ki < d.cost || (a === 'burst' && s.ki < 2)
       b.onclick = () => doArt(i)
       hand.append(b)
-    })
+    }) }
     const u = $a('.ar-ult'); u.disabled = !my || s.gauge < GAUGE_MAX; u.classList.toggle('ready', s.gauge >= GAUGE_MAX)
     u.style.setProperty('--g', s.gauge / GAUGE_MAX); u.querySelector('small').textContent = s.gauge >= GAUGE_MAX ? ultOf(f.card)[0] : Math.floor(s.gauge) + '%'; u.title = ultOf(f.card).join(': ')
     $a('.ar-end').disabled = !my
@@ -881,7 +885,7 @@ export function startBattle(stage) {
       const tgt = isActive ? tgtEl : $a(`.ar-side.${other} .ar-bench`)
       tgt.classList.remove('hurt'); void tgt.offsetWidth; tgt.classList.add('hurt')
       { const [hx, hy] = ctr(tgt); FXC.hit(hx, hy, x.crit ? '#ff5a6a' : big ? '#ffc840' : col, !isActive ? .7 : ev.art === 'ultimate' ? 2.3 : big ? 1.6 : ev.art === 'blast' ? 1.15 : .9) }
-      const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : '') + (x.mu > 1 ? ' adv' : ''); n.innerHTML = `<b>${x.dmg.toLocaleString()}</b>`; n.style.animationDelay = (ev.hits.indexOf(x) * .09) + 's'
+      const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : '') + (x.mu > 1 ? ' adv' : ''); n.innerHTML = (x.crit ? '<small>CRITICAL!</small>' : '') + `<b>${x.dmg.toLocaleString()}</b>`; if (x.crit) { const fl = document.createElement('div'); fl.className = 'critflash'; ov.append(fl); setTimeout(() => fl.remove(), 260) } n.style.animationDelay = (ev.hits.indexOf(x) * .09) + 's'
       const r = tgt.getBoundingClientRect(); n.style.left = (r.left + r.width / 2) + 'px'; n.style.top = (r.top + r.height * .35) + 'px'
       ov.append(n); setTimeout(() => n.remove(), 1100)
       if (isActive && x.crit) { floatTag(tgt, 'CRITICAL!', 'crit'); sfx('crit') }
@@ -993,6 +997,7 @@ export function startBattle(stage) {
     sfx(stage.boss ? 'claim' : won ? 'win' : 'lose')
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
+    if (won) { const cf = document.createElement('div'); cf.className = 'confetti'; cf.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="--x:${Math.random() * 100}%;--d:${(Math.random() * .8).toFixed(2)}s;--h:${Math.round(Math.random() * 360)};--r:${Math.round(Math.random() * 720 - 360)}deg"></i>`).join(''); ov.append(cf); setTimeout(() => cf.remove(), 4000) }
     box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : won ? (r.msg || 'Stage cleared.') : 'Your team was knocked out. Tweak your lineup and try again.'}</p>
       <div class="rs-body"><div class="rs-mvp"><span>MVP</span><div class="rs-card"></div><b>${mvp.card.name}</b><small>${mvp.dealt.toLocaleString()} DMG · ${mvp.kos} KO</small></div>
       <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/6</b><span>SURVIVED</span></div></div></div>`
@@ -1012,9 +1017,15 @@ export function startBattle(stage) {
     const t = document.createElement('div'); t.className = 'arena-title'; t.innerHTML = `<small>ARENA</small><b>${name}</b><span>${sub}</span>`; ov.append(t); setTimeout(() => t.remove(), 2300)
   })
   draw()
-  if (B.you.combos) setTimeout(() => { for (const [i, cb] of B.you.combos.entries()) setTimeout(() => banner(cb.n, 'TEAM COMBO · +6% DAMAGE', '#ffcc00'), i * 1400) }, 2600)
-  if (youFirst) { log(`You move first (${act(B.you).card.name} is faster)`) }
-  else { log(`${act(B.ai).card.name} is faster · enemy moves first`); setTimeout(aiPhase, 900) }
+  const kick = () => { if (youFirst) { log(`You move first (${act(B.you).card.name} is faster)`) } else { log(`${act(B.ai).card.name} is faster · enemy moves first`); setTimeout(aiPhase, 600) } }
+  { // VS intro: both leaders slam in with their leader skills (tap to skip)
+    const L = s => { const f = s.team[0], ld = f.card.lead; return `<div class="vsi-card"><div class="vsi-img"></div><b>${f.card.name}</b><small>${ld ? 'LEADER · ' + ld.cats.map(k => X.ANAME(k) || k).join(' / ') + ' +' + ld.pct + '%' : 'NO LEADER SKILL'}</small><em>${s.leadN || 0}/${s.team.length} BOOSTED</em></div>` }
+    const o = document.createElement('div'); o.className = 'vsi'; o.innerHTML = `<div class="vsi-l you">${L(B.you)}</div><div class="vsi-vs">VS</div><div class="vsi-l ai">${L(B.ai)}</div><div class="vsi-tap">${stage.label || ''}</div>`
+    o.querySelector('.you .vsi-img').append(img(B.you.team[0], 300)); o.querySelector('.ai .vsi-img').append(img(B.ai.team[0], 300))
+    ov.append(o); sfx('whoosh'); setTimeout(() => sfx('crack'), 520)
+    let gone = false; const done = () => { if (gone) return; gone = true; o.classList.add('out'); setTimeout(() => { o.remove(); kick() }, 320) }
+    o.onclick = done; setTimeout(done, 2100)
+  }
 }
 
 // ---------------- tutorial ----------------
