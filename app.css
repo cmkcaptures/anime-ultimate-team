@@ -2837,3 +2837,7 @@ html, body { max-width: 100vw; overflow-x: hidden; touch-action: manipulation; -
 #opener.mo { overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-bottom: 110px !important }
 .mo-done { z-index: 999 !important; bottom: calc(20px + env(safe-area-inset-bottom, 0)) !important }
 body > .mo-done { position: fixed !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999 !important }
+/* real screen height (iPhone app mode gets 100vh/dvh wrong) */
+html, body { background: #2a1258 }
+#app { height: var(--apph, 100dvh) !important }
+@media (display-mode: standalone), (display-mode: fullscreen) { #app { height: var(--apph, 100vh) !important } }
