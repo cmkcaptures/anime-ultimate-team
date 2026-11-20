@@ -1191,18 +1191,19 @@ async function multiOpen(type, n) {
   document.body.append(ov); document.body.classList.add('in-opener')
   const grid = ov.querySelector('.mo-grid'), FXC = createFX(ov)
   const els = all.map((c, i) => { const e = h('div', 'mo-c', `<div class="in"><div class="f"></div><div class="b"></div></div>`); e.dataset.tier = c.r; e.style.setProperty('--rc', tierCol(c.r)); const im = new Image(); im.src = urls[i]; e.querySelector('.f').append(im); grid.append(e); return e })
-  let skip = false; ov.querySelector('.o2-skip').onclick = () => { skip = true }
+  let skip = false, closed = false; ov.querySelector('.o2-skip').onclick = () => { skip = true }
+  const fin = () => { if (closed) return; closed = true; skip = true; try { FXC.dispose() } catch { } document.body.classList.remove('in-opener'); ov.remove(); doneB.remove(); document.querySelectorAll('#opener').forEach(o => o.remove()); go('shop') }
+  const doneB = ov.querySelector('.mo-done'); document.body.append(doneB); doneB.onclick = fin
   sfx('deal'); await wait(400)
   // reveal worst first, best last; Epic+ pause with an impact
   for (let i = els.length - 1; i >= 0; i--) {
     const e = els[i], rk = TIER[all[i].r].rank
-    if (!skip && rk >= 4) { e.scrollIntoView({ block: 'center' }); try { await walkout(ov, FXC, all[i], rk) } catch { return } }
+    if (!skip && rk >= 4) { e.scrollIntoView({ block: 'center' }); try { await walkout(ov, FXC, all[i], rk) } catch { skip = true } if (closed) return }
     e.classList.add('up')
     if (!skip && rk >= 3) { const r = e.getBoundingClientRect(); FXC.hit(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), rk >= 5 ? 2 : rk >= 4 ? 1.5 : 1); if (rk >= 4) FXC.rays(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), 12, 500, 1); sfx('reveal', rk); await wait(rk >= 5 ? 900 : rk >= 4 ? 600 : 260) }
     else if (!skip) await wait(45)
   }
-  const fin = () => { FXC.dispose(); document.body.classList.remove('in-opener'); ov.remove(); go('shop') }
-  ov.querySelector('.mo-done').onclick = fin
+
 }
 
 // ================= SHARDS + CHALLENGES =================
