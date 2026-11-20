@@ -2951,3 +2951,7 @@ html { background: #2a1258 !important; min-height: 100% }
 img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 @keyframes rbGlow { 0% { box-shadow: 0 0 0 2px #ff5ab0, 0 0 16px #ff5ab0 } 25% { box-shadow: 0 0 0 2px #ffd95a, 0 0 16px #ffd95a } 50% { box-shadow: 0 0 0 2px #5affb0, 0 0 16px #5affb0 } 75% { box-shadow: 0 0 0 2px #5ac8ff, 0 0 16px #5ac8ff } 100% { box-shadow: 0 0 0 2px #ff5ab0, 0 0 16px #ff5ab0 } }
 @keyframes rbText { to { background-position: 200% 0 } } @keyframes rbBox { 50% { box-shadow: 0 0 0 2px #fff, 0 0 22px rgba(90,200,255,.7) } }
+
+/* ================= LEADER SKILLS ================= */
+.leadbox { box-shadow: inset 0 0 0 2px #ffcc00 !important } .leadbox b { color: #ffcc00 !important }
+.catrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 } .catrow span { padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.12); font: 800 11px var(--eUI, Inter); color: #fff; letter-spacing: .06em }

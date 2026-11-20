@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwpgq2on'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon } from './battle.js?v=mwpgq2on'
-import * as ACC from './account.js?v=mwpgq2on'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpgq2on'
+import { createFX } from './fx2d.js?v=mwpgybpc'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpgybpc'
+import * as ACC from './account.js?v=mwpgybpc'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpgybpc'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwpgq2on'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwpgybpc'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -408,6 +408,8 @@ async function cardDetail(key) {
     if (e) d.append(progBox(key, c))
     if (false) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
     if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
+    if (c.lead) d.append(h('div', 'movebox leadbox', `<b>👑 LEADER SKILL</b><p>${leadText(c.lead)}</p>`))
+    d.append(h('div', 'catrow', [ANAME(c.anime), ...(c.cat || [])].map(x => `<span>${x}</span>`).join('')))
     d.append(h('span', 'eyebrow', `MARKET VALUE ~ ${fmt(ST.values[key])} COINS`))
     if (e) {
       const a = h('div', 'acts')
@@ -481,13 +483,13 @@ function autoTeam(target) {
   const T = [lead, ...rest].map(c => c.key); while (T.length < 6) T.push(null); return T
 }
 PAGES.team = (el) => {
-  const st = teamStats(), sy = synergy(P.team.map(k => k && BYKEY[k]))
+  const st = teamStats(), sy = { n: 0 }, TC = P.team.map(k => k && BYKEY[k] && eff(BYKEY[k])), LI = leaderInfo(TC.filter(Boolean).length ? [TC[0], ...TC.slice(1)] : [])
   const lead = BYKEY[P.team[0]]
   const head = h('section', 'thead2')
   head.innerHTML = `${lead ? `<div class="ch-card" style="--art:url('${lead.url}');--fx:${Math.round((lead.fx ?? .5) * 100)}%;--fy:${Math.round((lead.fy ?? .22) * 100)}%"><i></i><span>LEADER · ${lead.name}</span></div>` : ''}
     <div class="ch-main"><small>チーム</small><h2>MY TEAM</h2>
-      <div class="ch-stats"><div class="s3"><b>${st.rating || '--'}</b><span>RATING</span></div><div class="s2"><b>${st.chem}%</b><span>CHEMISTRY</span></div><div class="s1"><b>${sy.bonus ? '+' + sy.bonus + '%' : '—'}</b><span>SYNERGY</span></div><div class="s4"><b>${st.count}/6</b><span>CARDS</span></div></div>
-      <div class="synrow">${sy.n >= 2 ? `<b>${sy.n}× ${ANAME(sy.anime).toUpperCase()}</b>` : '<b>NO SERIES SYNERGY YET</b>'}<span>3 from one series +4% team damage · 4 → +6% · 5 → +8% · all 6 → +10%</span></div></div>`
+      <div class="ch-stats"><div class="s3"><b>${st.rating || '--'}</b><span>RATING</span></div><div class="s2"><b>${LI.lead ? LI.n + '/' + st.count : '—'}</b><span>LEADER BOOST</span></div><div class="s1"><b>${LI.lead ? '+' + LI.lead.pct + '%' : '—'}</b><span>HP BOOST</span></div><div class="s4"><b>${st.count}/6</b><span>CARDS</span></div></div>
+      <div class="synrow">${LI.lead ? `<b>LEADER SKILL · ${leadText(LI.lead)}</b><span>Fighters sharing a category with your leader (slot 1) get the boost. ${LI.n} of ${st.count} boosted.</span>` : '<b>NO LEADER YET</b><span>Put a card in slot 1. Its Leader Skill boosts every fighter that shares a category with it.</span>'}</div></div>`
   el.append(head)
   teamBuilderPanel(el)
 
@@ -497,7 +499,7 @@ PAGES.team = (el) => {
     for (let i = from; i < to; i++) {
       const k = P.team[i], c = k && BYKEY[k], b = h('button', 'tslot tap', c ? '' : '+')
       b.append(h('span', 'r', i === 0 ? 'LEADER' : i < 3 ? 'STARTER' : 'BENCH'))
-      if (c) { b.append(cardImg(eff(c), 240)); if (sy.n >= 3 && c.anime === sy.anime) b.append(h('span', 'syn-tag', 'SYNERGY')) }
+      if (c) { b.append(cardImg(eff(c), 240)); if (LI.lead && leadHits(LI.lead, c)) b.append(h('span', 'syn-tag', i === 0 ? 'LEADER' : 'BOOSTED')) }
       b.onclick = () => teamPicker(i); g.append(b)
     }
     el.append(g)
@@ -525,7 +527,7 @@ function teamPicker(slot) {
       g.innerHTML = ''
       const list = avail.filter(c => (TB.series === 'ALL' || (TB.series === 'TEAM' ? c.anime === teamAnime : c.anime === TB.series)) && (TB.role === 'ALL' || c.role === TB.role) && (TB.rar === 'ALL' || c.r === TB.rar)).sort((a, b) => scoreFor(b, TB.target) - scoreFor(a, TB.target))
       if (!list.length) g.append(h('div', 'empty', '<b>No cards match</b>Change the filters above.'))
-      for (const c of list) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 240)); if (teamAnime && c.anime === teamAnime) b.append(h('span', 'syn-tag', 'SYNERGY')); b.onclick = async () => { const T = P.team.slice(); T[slot] = c.key; await act('team', { team: T }); closeModal(); rerender() }; g.append(b) }
+      for (const c of list) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 240)); if (slot !== 0 && P.team[0] && BYKEY[P.team[0]] && leadHits(BYKEY[P.team[0]].lead, c)) b.append(h('span', 'syn-tag', 'BOOSTED')); b.onclick = async () => { const T = P.team.slice(); T[slot] = c.key; await act('team', { team: T }); closeModal(); rerender() }; g.append(b) }
     }
     draw()
   })
@@ -1653,13 +1655,13 @@ const GUIDE = [
   ['🎴', 'WHAT IS THIS GAME?', 'Collect anime fighters as cards, build a team of 6, and battle. Every card is a real moment from an anime (like Goku at the Spirit Bomb), with its own stats, move and a unique passive called a <b>Moment</b>.', 'cards'],
   ['💎', 'RARITIES', 'Common → Uncommon → Rare → Epic → Legendary → Mythic → <b>Rainbow Secret</b> (the rarest). Higher rarity = higher rating and stronger stats. The big number in the corner of a card is its <b>rating</b>.', 'cards'],
   ['📦', 'GETTING CARDS', '<b>Free packs</b> refill on Home every 12 hours. Buy more in the <b>Shop</b> with coins: cheap Bronze packs up to Lightning packs with the best odds. The <b>Banner</b> has 2 featured cards and guarantees a Mythic within 80 pulls. You can also try the <b>Gacha machine</b>, <b>Wonder Pick</b>, or buy cards from other players on the <b>Market</b>.', 'shop'],
-  ['🪙', 'COINS & SHARDS', '<b>Coins</b> come from battles, missions, achievements and selling cards. <b>Shards</b> (◆) come from shredding duplicate cards; spend them to craft the exact card you want, evolve or fuse cards. Pack Points from opening packs buy specific cards too.', 'shop'],
-  ['👥', 'YOUR TEAM', 'Go to <b>Team</b>. You pick 6 cards: a <b>Leader</b>, 2 <b>Starters</b> and 3 on the <b>Bench</b>. Not sure? Tap <b>Auto Build</b>. Bonuses: 3+ fighters from the same anime give <b>Synergy</b>, and famous pairs (Naruto + Sasuke, Goku + Vegeta…) unlock <b>Combos</b>.', 'team'],
+  ['🪙', 'COINS & SHARDS', '<b>Coins</b> come from battles, missions, achievements and selling cards. <b>Shards</b> (◆) come from shredding duplicate cards; spend them to craft the exact card you want. Pack Points from opening packs buy specific cards too.', 'shop'],
+  ['👥', 'YOUR TEAM', 'Go to <b>Team</b>. You pick 6 cards: a <b>Leader</b>, 2 <b>Starters</b> and 3 on the <b>Bench</b>. Slot 1 is your <b>Leader</b>: its <b>Leader Skill</b> boosts every fighter that shares a category with it (a series like Naruto, or a trait like Villains, Swordsmen or Saiyans). Aim for 6/6 boosted. Not sure? Use the <b>Team Builder</b> with the Leader Boost goal.', 'team'],
   ['⚔️', 'HOW BATTLES WORK', 'It\'s 6 vs 6 but only <b>one fighter</b> is out at a time. Each turn you get <b>+3 Energy</b>. You hold <b>4 cards</b>: tap one to use it (its cost is the number in the corner). Strike = cheap hit, Blast = bigger hit, Guard = block, Special = the fighter\'s signature move. Hit <b>END TURN</b> when you\'re done. Knock out all 6 enemies to win. Stuck? Tap <b>AUTO</b> and the game plays for you.', 'battle'],
   ['🌟', 'ULTIMATES & SWITCHING', 'The ring next to END TURN is your <b>Ultimate</b>. It fills as you fight; when it glows, tap it for a free huge attack. Tap a fighter on your <b>bench</b> to swap them in (once per turn), for example to save a hurt fighter.', 'battle'],
   ['🃏', 'ARTS DECK', 'Your 4 battle cards are drawn from a <b>20-card Arts Deck</b> (Team → Arts Deck). Add <b>Tactic</b> cards to build a strategy: Burst (spend all Energy on one giant hit), Power Charge (boost your next attack), Energy Link (+2 Energy), Recover (heal), Cleanse. New? Load a <b>starter deck</b>.', 'deck'],
   ['🗺️', 'GAME MODES', '<b>Story</b>: 10 stages to start with. <b>Ranked</b>: climb Bronze → Legend each season. <b>Daily Boss</b>: one giant boss a day, deal as much damage as you can. <b>Tower</b>: 50 floors. <b>Story Arcs</b>: famous fights. <b>Event</b>: a new anime every week. <b>Players</b>: battle your friends\' teams.', 'battle'],
-  ['📈', 'GETTING STRONGER', '<b>Mastery</b>: win with a card to level it up. <b>Evolve</b>: turn duplicates of a card into its stronger form (Cards → Evolve). <b>Fuse</b>: combine two characters into a duo card (Cards → Fuse). <b>Awaken</b>: spend a duplicate for a ★.', 'cards'],
+  ['📈', 'GETTING STRONGER', '<b>Diamonds</b>: every card starts at ◆◆◆. Each duplicate you pull adds a Diamond, up to 7◆ (stronger stats; 7◆ unlocks <b>Limit Break</b> and a rainbow card). <b>Level</b>: win battles or use Training Tickets to level cards up to Lv 100. <b>Ascension</b> is coming for special cards later.', 'cards'],
   ['🎟️', 'SEASON PASS', 'Everything you do earns pass XP. The free track gives packs and this season\'s <b>exclusive cards</b> you can\'t get anywhere else. Premium (25,000 coins) adds cosmetics, more packs and a Mythic pick at tier 50.', 'pass'],
   ['📋', 'DAILY STUFF', 'Every day: claim your <b>login reward</b>, do <b>Daily Missions</b> (the clipboard button), fight the <b>Daily Boss</b>, do <b>Challenges</b> in the Shop, and open your <b>free packs</b>. That\'s the fastest way to grow.', 'missions'],
 ]
@@ -1698,8 +1700,8 @@ function awakenSheet(key) {
 }
 
 // ================= TEAM BUILDER (auto build v2) =================
-const TBX = { goal: 'best', series: [], types: [], roles: [], need: {}, rmin: 'C', rmax: 'X', faction: '', tag: 'any', locks: [], excl: [], fill: 'best', open: false }
-const GOALS = [['best', 'HIGHEST RATING', 'Strongest six'], ['syn', 'MAX SYNERGY', 'Stack one series'], ['chem', 'MAX CHEMISTRY', 'Same faction links'], ['speed', 'SPEED', 'Move first, hit first'], ['tank', 'TANK WALL', 'Defence and survival'], ['burst', 'BURST DAMAGE', 'Power and energy hitters'], ['sustain', 'SUSTAIN', 'Heals, revives, endure'], ['dragon', 'DRAGON DECK', '3+ Dragons for Burst']]
+const TBX = { goal: 'lead', series: [], types: [], roles: [], need: {}, rmin: 'C', rmax: 'X', faction: '', tag: 'any', locks: [], excl: [], fill: 'best', open: false }
+const GOALS = [['best', 'HIGHEST RATING', 'Strongest six'], ['lead', 'LEADER BOOST', 'All six boosted by the leader'], ['speed', 'SPEED', 'Move first, hit first'], ['tank', 'TANK WALL', 'Defence and survival'], ['burst', 'BURST DAMAGE', 'Power and energy hitters'], ['sustain', 'SUSTAIN', 'Heals, revives, endure'], ['dragon', 'DRAGON DECK', '3+ Dragons for Burst']]
 const ROLES = ['FIGHTER', 'ASSASSIN', 'SHOOTER', 'TANK', 'SUPPORT']
 const isDrg = isDragon
 function goalScore(c, g) {
@@ -1713,7 +1715,9 @@ function goalScore(c, g) {
   return c.ovr
 }
 function chemOf(T) { const link = (x, y) => !x || !y ? 0 : x.faction === y.faction ? 2 : x.anime === y.anime ? 1 : 0, lead = T[0]; return Math.round((link(T[0], T[1]) + link(T[1], T[2])) / 4 * 70 + (lead ? T.slice(3).filter(c => c && c.anime === lead.anime).length : 0) / 3 * 30) }
-function orderTeam(L, g) { // best lead + chemistry order
+function bestLeader(L) { let best = { v: 0, c: null }; for (const c of L) { if (!c.lead) continue; const n = L.filter(x => leadHits(c.lead, x)).length, v = n * c.lead.pct / 10 + (c.lead.ki ? 2 : 0); if (v > best.v) best = { v, c, n } } return best }
+function orderTeam(L, g) { const B = bestLeader(L); if (B.c) return [B.c, ...L.filter(x => x !== B.c).sort((x, y) => goalScore(y, g) - goalScore(x, g))]; return orderTeamOld(L, g) }
+function orderTeamOld(L, g) { // best lead + chemistry order
   let best = L, bv = -1e9; const sorted = L.slice().sort((x, y) => goalScore(y, g) - goalScore(x, g))
   const perm = (arr, k, out) => { if (k === arr.length) { const v = chemOf(arr) + goalScore(arr[0], g) * .2 + (arr[1] ? goalScore(arr[1], g) * .1 : 0) + (arr[2] ? goalScore(arr[2], g) * .1 : 0); if (v > bv) { bv = v; best = arr.slice() } return } for (let i = k; i < arr.length; i++) { [arr[k], arr[i]] = [arr[i], arr[k]]; perm(arr, k + 1); [arr[k], arr[i]] = [arr[i], arr[k]] } }
   perm(sorted.slice(), 0); return best
@@ -1722,7 +1726,7 @@ function chemFast(L) { const f = {}, a = {}; for (const c of L) { f[c.faction] =
 function teamValue(L, g) {
   const n = L.length || 1, avg = L.reduce((t, c) => t + goalScore(c, g), 0) / n, sy = synergy(L).bonus, ch = chemFast(L)
   const roles = new Set(L.map(c => c.role)).size, types = {}; for (const c of L) { const t = c.t || typeOfA(c.anime); types[t] = (types[t] || 0) + 1 }
-  let v = avg + sy * (g === 'syn' ? 3 : .6) + ch * (g === 'chem' ? .25 : .03) + roles * .4 - Math.max(0, Math.max(...Object.values(types)) - 3) * 1.2
+  const LB = bestLeader(L); let v = avg + LB.v * (g === 'lead' ? 1.6 : .6) + roles * .4 - Math.max(0, Math.max(...Object.values(types)) - 3) * 1.2
   for (const [ro, m] of Object.entries(TBX.need)) { const have = L.filter(c => c.role === ro).length; if (have < m) v -= 100 * (m - have) }
   if (g === 'dragon') { const d = L.filter(isDrg).length; if (d < 3) v -= (3 - d) * 30 }
   return v
@@ -1811,7 +1815,7 @@ function builderResults() {
     if (!opts.length || !opts[0].T.length) { sh.append(h('p', 'muted', 'No cards match those filters. Loosen them and try again.')); return }
     opts.forEach((o, n) => {
       const w = h('div', 'tb-opt' + (n === 0 ? ' best' : ''))
-      w.append(h('div', 'tb-oh', `<b>${n === 0 ? 'BEST PICK' : 'OPTION ' + (n + 1)}</b><span>RATING <em>${o.rating}</em></span><span>SYNERGY <em>${o.syn.bonus ? '+' + o.syn.bonus + '%' : '—'}</em></span><span>CHEM <em>${o.chem}%</em></span>${o.short ? '<span class="warn">FILTERS LEFT GAPS</span>' : ''}`))
+      w.append(h('div', 'tb-oh', `<b>${n === 0 ? 'BEST PICK' : 'OPTION ' + (n + 1)}</b><span>RATING <em>${o.rating}</em></span><span>LEADER BOOST <em>${o.T[0] && o.T[0].lead ? o.T.filter(x => leadHits(o.T[0].lead, x)).length + '/' + o.T.length : '—'}</em></span>${o.short ? '<span class="warn">FILTERS LEFT GAPS</span>' : ''}`))
       const g6 = h('div', 'tb-o6')
       o.T.forEach((c, i) => { const cell = h('button', 'tb-oc'); cell.append(cardImg(c, 200), h('small', '', (i === 0 ? 'LEADER · ' : '') + whyFor(c, g))); cell.onclick = () => { if (TBX.locks.includes(c.key)) return toast('That card is locked.', 'err'); TBX.excl.push(c.key); builderResults() }; g6.append(cell) })
       w.append(g6)
@@ -1834,3 +1838,7 @@ function progBox(key, c) {
     r.append(t, cb); w.append(r) }
   return w
 }
+
+// ================= LEADER SKILLS =================
+const catName = k => ANIME[k] ? ANAME(k) : k
+function leadText(L) { return L.cats.map(catName).join(' or ') + ': +' + L.pct + '% HP, +' + Math.round(L.pct / 2) + '% attack and defence' + (L.ki ? ', +' + L.ki + ' Energy per turn' : '') }

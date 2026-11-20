@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpgq2on'
-import { sfx, sfxOn, music } from './sfx.js?v=mwpgq2on'
-import { createFX } from './fx2d.js?v=mwpgq2on'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpgybpc'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpgybpc'
+import { createFX } from './fx2d.js?v=mwpgybpc'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -23,6 +23,12 @@ export const TEAM_COMBOS = [
 export function combosFor(cards) { const names = new Set(); for (const c of cards) if (c) for (const p of c.name.split(' & ')) names.add(p.trim()); return TEAM_COMBOS.filter(x => names.has(x.a) && names.has(x.b)) }
 // series synergy: 3+ fighters from one series boost the whole team's damage
 export const SYN = { 3: 4, 4: 6, 5: 8, 6: 10 }
+// leader skill: the leader boosts every fighter that shares one of its categories
+export const leadHits = (lead, c) => !!(lead && c && lead.cats.some(k => k === c.anime || (c.cat || []).includes(k)))
+export function leaderInfo(cards) { const L = cards[0], lead = L && L.lead; if (!lead) return { lead: null, n: 0 }; return { lead, leader: L, n: cards.filter(c => c && leadHits(lead, c)).length } }
+function applyLeader(side) { const L = side.team[0] && side.team[0].card, lead = L && L.lead; if (!lead) return; side.kiBonus = lead.ki || 0; let n = 0
+  for (const f of side.team) if (leadHits(lead, f.card)) { n++; f.max = f.hp = Math.round(f.max * (1 + lead.pct / 100)); const k = 1 + lead.pct / 200; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.boosted = 1 }
+  side.leadN = n }
 export function synergy(cards) { const n = {}; for (const c of cards) if (c) n[c.anime] = (n[c.anime] || 0) + 1; let best = null; for (const a in n) if (!best || n[a] > n[best]) best = a; const k = best ? n[best] : 0; return { anime: best, n: k, bonus: SYN[Math.min(6, k)] || 0 } }
 const matchup = (att, def) => beats(tOf(att.card), tOf(def.card)) ? 1.3 : beats(tOf(def.card), tOf(att.card)) ? .8 : 1
 const tcol = c => (TYPE[tOf(c)] || TYPE.ki).c[0]
@@ -652,8 +658,7 @@ export function startBattle(stage) {
       if (e.copyStat) { const best = Math.max(...foe.team.map(g => Math.max(g.pwr, g.ki, g.def))); f.pwr = Math.max(f.pwr, best) }
     }
   }
-  for (const sd of [B.you, B.ai]) { const cb = combosFor(sd.team.map(f => f.card)); if (cb.length) { sd.teamDmg = (sd.teamDmg || 0) + 6 * cb.length; sd.combos = cb } }
-  for (const sd of [B.you, B.ai]) { const sy = synergy(sd.team.map(f => f.card)); if (sy.bonus) { sd.teamDmg = (sd.teamDmg || 0) + sy.bonus; sd.syn = sy } }
+  applyLeader(B.you); applyLeader(B.ai)
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
   sealNow()
   refill(B.you); refill(B.ai)
@@ -905,13 +910,13 @@ export function startBattle(stage) {
       draw(); await wait(1100)
     }
     B.busy = true; controls()
-    const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
+    const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN + (s.kiBonus || 0)); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
     if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
     log('Enemy turn'); turnBanner('ENEMY TURN', false); draw(); await wait(800)
     for (const ev of aiTurn(B, stage.mode === 'ranked' && (stage.rating || 0) >= 80 ? 5 : stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
     if (B.you.skip || act(B.you).frozen) { B.you.skip = 0; act(B.you).frozen = 0; log('You lose your turn!'); turnBanner('TIME STOPPED', true); await wait(900); B.turn++; return aiPhase() }
     B.turn++
-    const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); act(B.ai).fort = 0
+    const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN + (y.kiBonus || 0)); refill(y); y.switched = false; y.seq = []; startTurn(y); act(B.ai).fort = 0
     B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); if (AUTO) autoTurn()
   }
   async function endTurn() { if (B.busy || B.over) return; await aiPhase() }
