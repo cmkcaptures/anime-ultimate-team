@@ -2902,3 +2902,18 @@ html { background: #2a1258 !important; min-height: 100% }
 .awk-n.got { background: linear-gradient(160deg, #1a8a5a, #0a3a26); box-shadow: 0 0 0 2px #6affc0 } .awk-n.got em { color: #6affc0 }
 .awk-n.final { background: linear-gradient(135deg, #ff5ab0, #ffd95a, #5ac8ff); } .awk-n.final b { font-size: 20px } .awk-n.final small, .awk-n.final em { color: #1a0f3a }
 .awk-n:disabled { cursor: default } .awk-n:not(.got):not(.can):not(.open) { opacity: .55 }
+
+/* ================= TEAM BUILDER v2 ================= */
+.tbx { display: grid; gap: 10px; margin-bottom: 4px }
+.tb-f small { display: block; margin: 4px 0 6px; font: 800 11px var(--eUI, Inter); letter-spacing: .14em; color: #ffcc00 }
+.tb-chips { display: flex; flex-wrap: wrap; gap: 6px }
+.tb-chip { padding: 6px 12px; border: 0; border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; font: 800 12px var(--eUI, Inter); cursor: pointer; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3) }
+.tb-chip.on { background: #ffcc00; color: #1a0f3a; box-shadow: 0 0 0 2px #fff }
+.tb-sel { height: 34px; padding: 0 10px; border-radius: 10px; border: 0; background: #2a1a5e; color: #fff; font: 700 13px var(--eUI, Inter) }
+.tb-presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px }
+.tb-pre { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,.25); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.2) } .tb-pre b { flex: 1; font: 800 15px var(--eD, 'Barlow Condensed'); color: #fff }
+.tb-opt { margin: 10px 0 18px; padding: 12px; border-radius: 16px; background: rgba(0,0,0,.25); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.2) } .tb-opt.best { box-shadow: 0 0 0 3px #ffcc00 }
+.tb-oh { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 10px; font: 800 12px var(--eUI, Inter); color: #c8b8ff; letter-spacing: .08em } .tb-oh b { font: 800 20px var(--eD, 'Barlow Condensed'); color: #fff; margin-right: auto } .tb-oh em { font-style: normal; color: #ffcc00; font-size: 15px } .tb-oh .warn { color: #ff7a85 }
+.tb-o6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 10px }
+.tb-oc { border: 0; padding: 0; background: none; cursor: pointer; display: grid; gap: 4px; text-align: center } .tb-oc img, .tb-oc canvas { width: 100%; border-radius: 8px } .tb-oc small { font: 700 10px var(--eUI, Inter); color: #c8b8ff }
+@media (max-width: 540px) { .tb-o6 { grid-template-columns: repeat(3, 1fr) } }

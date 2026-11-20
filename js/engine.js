@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp7x1n5'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp81vak'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -807,6 +807,7 @@ function act(a) {
       o.n -= N.dup; P.shards -= sh; have.push(N.id); addXP(15)
       return { msg: N.id === 'aw' ? c.name + ' is fully AWAKENED!' : N.name + ' unlocked for ' + c.name + '.' }
     }
+    case 'teamPreset': { const i = +a.i; if (!(i >= 0 && i < 3) || !Array.isArray(a.team)) return { error: 'Bad preset.' }; const L = P.presets || (P.presets = []); L[i] = { name: String(a.name || 'Team').slice(0, 18), team: a.team.slice(0, 6).map(k => (k && P.club.cards[k] ? k : null)) }; return { msg: 'Saved ' + L[i].name + '.' } }
     case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }
     case 'equip': {
       const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
@@ -839,6 +840,7 @@ function state() {
     items: itemsP(), itemDefs: ITEMS, itemMax: ITEM_MAX,
     decks: deckP(), deckOn: S.profile.deckOn || 0, deckMax: DECK_MAX, deckSize: DECK_SIZE, starterDecks: STARTER_DECKS,
     onb: onboarding(),
+    presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH,
     camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST,
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
