@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpicosr'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpijtg4'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -1087,7 +1087,7 @@ function act(a) {
       return { msg: '+' + x.rw.toLocaleString() + ' coins' }
     }
     case 'campChest': { const C = campP(), ci = +a.c || 1, ii = +a.i, i = ci === 1 ? ii : ci * 10 + ii, R = CAMP_CHEST[ii]; if (!R) return { error: 'Unknown chest.' }; const tot = Object.entries(C.stars).filter(([k]) => k.startsWith(ci + ':')).reduce((n, [, v]) => n + v, 0); if (tot < R.at) return { error: 'Need ' + R.at + ' stars.' }; if (C.chests.includes(i)) return { error: 'Already opened.' }
-      C.chests.push(i); P.coins += R.coins; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1; if (R.shards) P.shards = (P.shards || 0) + R.shards; return { msg: 'Chest opened: +' + R.coins.toLocaleString() + ' coins and a ' + PACKS[R.pack].name + (R.shards ? ' and ◆' + R.shards.toLocaleString() + ' shards' : '') + '.' } }
+      C.chests.push(i); let bonus = ''; if (ci === 3 && ii === 1) { giveCard('Story/ab4c25df0a27d36e85485d0a795650ad.jpg'); P.last = ['Story/ab4c25df0a27d36e85485d0a795650ad.jpg']; bonus = ' WHIS joins your club!' } P.coins += R.coins; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1; if (R.shards) P.shards = (P.shards || 0) + R.shards; return { msg: 'Chest opened: +' + R.coins.toLocaleString() + ' coins and a ' + PACKS[R.pack].name + (R.shards ? ' and ◆' + R.shards.toLocaleString() + ' shards' : '') + '.' + bonus } }
     case 'awk': {
       const c = byKey(a.key), o = c && P.club.cards[a.key], N = AWK.find(n => n.id === a.node); if (!o || !N) return { error: 'Unknown card or node.' }
       const have = o.awk || (o.awk = []); if (have.includes(N.id)) return { error: 'Already unlocked.' }

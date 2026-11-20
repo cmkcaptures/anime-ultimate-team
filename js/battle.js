@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpicosr'
-import { sfx, sfxOn, music } from './sfx.js?v=mwpicosr'
-import { createFX } from './fx2d.js?v=mwpicosr'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpijtg4'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpijtg4'
+import { createFX } from './fx2d.js?v=mwpijtg4'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -100,11 +100,12 @@ function passives(s) {
   p.dr = Math.min(p.dr, 18); p.dmg = Math.min(p.dmg, 12); p.crit = Math.min(p.crit, 12); p.heal = Math.min(p.heal, 12); p.gauge = Math.min(p.gauge, 15)
   return p
 }
+function drawOne(s) { if (s.deck) { if (!s.pile || !s.pile.length) { s.pile = []; for (const [k, v] of Object.entries(s.deck)) for (let i = 0; i < v; i++) s.pile.push(k); s.pile.sort(() => Math.random() - .5) } return s.pile.pop() } return drawArt(act(s)) }
+const ATTACK_ARTS = ['strike', 'blast', 'special', 'burst']
 function refill(s) {
-  while (s.hand.length < HAND) {
-    if (s.deck) { if (!s.pile || !s.pile.length) { s.pile = []; for (const [k, v] of Object.entries(s.deck)) for (let i = 0; i < v; i++) s.pile.push(k); s.pile.sort(() => Math.random() - .5) } s.hand.push(s.pile.pop()) }
-    else s.hand.push(drawArt(act(s)))
-  }
+  while (s.hand.length < HAND) s.hand.push(drawOne(s))
+  // never get stuck: a hand with no attacks swaps its oldest card for a fresh draw (up to 3 tries)
+  for (let t = 0; t < 3 && !s.hand.some(a => ATTACK_ARTS.includes(a)); t++) { s.hand.shift(); s.hand.push(drawOne(s)) }
 }
 function hit(att, def, base, stat, pierce, A, D, kind) {
   const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = PE(def)
@@ -150,7 +151,7 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (def.guard) { if (!pierceAll) dmg *= ed.guardStrong ? 1 - ed.guardStrong / 100 : .5; def.guard = 0 }
   dmg = Math.max(1, Math.round(dmg))
   if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) pasNote(def, 'SHIELD') }
-  def.hp = Math.max(0, def.hp - dmg); att.dealt += dmg; def.hitsTaken++
+  def.hp = Math.max(0, def.hp - dmg); if (def.hp < 1) def.hp = 0; att.dealt += dmg; def.hitsTaken++
   // on-hit passives
   if (ea.drain && !ea.noHeal) att.hp = Math.min(att.max, att.hp + Math.round(dmg * ea.drain / 100))
   if (ed.reflect && dmg > 0) { const rf = Math.round(dmg * ed.reflect / 100); att.hp = Math.max(1, att.hp - rf); pasNote(def, 'REFLECT ' + rf) }
@@ -553,7 +554,7 @@ function campPage(el, ok) {
     const boss = X.POOL.find(c => c.key === ch.boss)
     el.append(h('section', 'bhero camp-hero', `<div><span class="sh-tag">${ch.sub.toUpperCase()}</span><h2>${ch.name.toUpperCase()}</h2><p>Clear each stage to unlock the next. Win with at most 1 fighter KO'd and within 12 turns for 3 stars. The boss drops <b>${boss ? boss.name + ' · ' + boss.ver : 'a Mythic'}</b>.</p></div><div class="bstat"><b>${tot}</b><span>/ ${ch.stages.length * 3} STARS</span></div>`))
     const chests = h('div', 'camp-chests')
-    ST.campChest.forEach((R, i) => { const cid = ch.id === 1 ? i : ch.id * 10 + i, open = C.chests.includes(cid), b = h('button', 'btn ' + (open ? 'dark' : tot >= R.at ? 'gold' : 'dark') + ' sm', open ? '✓ CHEST ' + R.at + '★' : '🎁 ' + R.at + '★ CHEST'); b.disabled = open || tot < R.at; b.onclick = async () => { const r = await X.act('campChest', { c: ch.id, i }); if (!r.error) X.go('battle') }; chests.append(b) })
+    ST.campChest.forEach((R, i) => { const cid = ch.id === 1 ? i : ch.id * 10 + i, open = C.chests.includes(cid), b = h('button', 'btn ' + (open ? 'dark' : tot >= R.at ? 'gold' : 'dark') + ' sm', open ? '✓ CHEST ' + R.at + '★' : '🎁 ' + R.at + '★ CHEST' + (ch.id === 3 && i === 1 ? ' + WHIS' : '')); b.disabled = open || tot < R.at; b.onclick = async () => { const r = await X.act('campChest', { c: ch.id, i }); if (!r.error) X.go('battle') }; chests.append(b) })
     el.append(chests)
     const list = h('div', 'camp-list')
     ch.stages.forEach(st => {
