@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwpgybpc'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpgybpc'
-import * as ACC from './account.js?v=mwpgybpc'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpgybpc'
+import { createFX } from './fx2d.js?v=mwphcsd0'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwphcsd0'
+import * as ACC from './account.js?v=mwphcsd0'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwphcsd0'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwpgybpc'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwphcsd0'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -482,41 +482,47 @@ function autoTeam(target) {
   const lead = pick[0], rest = pick.slice(1).sort((x, y) => ((y.faction === lead.faction) * 2 + (y.anime === lead.anime)) - ((x.faction === lead.faction) * 2 + (x.anime === lead.anime)) || scoreFor(y, target) - scoreFor(x, target))
   const T = [lead, ...rest].map(c => c.key); while (T.length < 6) T.push(null); return T
 }
+let TTAB = 0; try { TTAB = +(localStorage.getItem('aut-teamTab') || 0) || 0 } catch { }
+const teamPower = T => Math.round(T.reduce((n, c) => n + (c ? (c.ovr * 2400 + (c.dia || 3) * 9000 + (c.lv || 1) * 900) * (c.boosted ? 1.12 : 1) : 0), 0))
 PAGES.team = (el) => {
-  const st = teamStats(), sy = { n: 0 }, TC = P.team.map(k => k && BYKEY[k] && eff(BYKEY[k])), LI = leaderInfo(TC.filter(Boolean).length ? [TC[0], ...TC.slice(1)] : [])
-  const lead = BYKEY[P.team[0]]
-  const head = h('section', 'thead2')
-  head.innerHTML = `${lead ? `<div class="ch-card" style="--art:url('${lead.url}');--fx:${Math.round((lead.fx ?? .5) * 100)}%;--fy:${Math.round((lead.fy ?? .22) * 100)}%"><i></i><span>LEADER · ${lead.name}</span></div>` : ''}
-    <div class="ch-main"><small>チーム</small><h2>MY TEAM</h2>
-      <div class="ch-stats"><div class="s3"><b>${st.rating || '--'}</b><span>RATING</span></div><div class="s2"><b>${LI.lead ? LI.n + '/' + st.count : '—'}</b><span>LEADER BOOST</span></div><div class="s1"><b>${LI.lead ? '+' + LI.lead.pct + '%' : '—'}</b><span>HP BOOST</span></div><div class="s4"><b>${st.count}/6</b><span>CARDS</span></div></div>
-      <div class="synrow">${LI.lead ? `<b>LEADER SKILL · ${leadText(LI.lead)}</b><span>Fighters sharing a category with your leader (slot 1) get the boost. ${LI.n} of ${st.count} boosted.</span>` : '<b>NO LEADER YET</b><span>Put a card in slot 1. Its Leader Skill boosts every fighter that shares a category with it.</span>'}</div></div>`
-  el.append(head)
-  teamBuilderPanel(el)
-
-  const slots = (from, to, title) => {
-    el.append(h('div', 'sec', `<h3>${title}</h3>`))
-    const g = h('div', 'teamslots')
-    for (let i = from; i < to; i++) {
-      const k = P.team[i], c = k && BYKEY[k], b = h('button', 'tslot tap', c ? '' : '+')
-      b.append(h('span', 'r', i === 0 ? 'LEADER' : i < 3 ? 'STARTER' : 'BENCH'))
-      if (c) { b.append(cardImg(eff(c), 240)); if (LI.lead && leadHits(LI.lead, c)) b.append(h('span', 'syn-tag', i === 0 ? 'LEADER' : 'BOOSTED')) }
-      b.onclick = () => teamPicker(i); g.append(b)
-    }
-    el.append(g)
-  }
-  { const cb = combosFor(P.team.map(k => k && BYKEY[k])); el.append(h('div', 'combo-row', cb.length ? cb.map(x => `<span class="cmb on"><b>${x.n}</b><small>${x.a} + ${x.b} · +6% team damage</small></span>`).join('') : '<span class="cmb"><b>NO TEAM COMBOS</b><small>Put famous pairs together (Naruto + Sasuke, Goku + Vegeta, Deku + Bakugo…) to unlock combos.</small></span>')) }
-  { const D = ST.decks[ST.deckOn], db = h('button', 'btn violet block', `ARTS DECK · ${D.name.toUpperCase()} · EDIT`); db.style.margin = '6px 0'; db.onclick = () => go('deck'); el.append(db) }
-  slots(0, 3, 'STARTERS')
-  const chem = h('div', 'chemrow'); const L = ['NO LINK', 'SAME SERIES +', 'SAME FACTION ++']
-  st.links.forEach((l, i) => chem.append(h('div', 'stat', `<b style="font-size:18px;color:${l === 2 ? 'var(--green)' : l === 1 ? 'var(--gold)' : l === 0 ? 'var(--red)' : 'var(--ink3)'}">${l < 0 ? 'EMPTY' : L[l]}</b><span>${i === 0 ? 'LEADER ↔ STARTER' : 'STARTER ↔ STARTER'}</span>`)))
-  el.append(chem)
-  slots(3, 6, 'BENCH')
+  const TC = P.team.map(k => k && BYKEY[k] && eff(BYKEY[k])), LI = leaderInfo(TC[0] ? TC : []), count = TC.filter(Boolean).length
+  for (const c of TC) if (c && LI.lead && leadHits(LI.lead, c)) c.boosted = 1
+  const presets = ST.presets || []
+  if (!presets[TTAB] && count) act('teamPreset', { i: TTAB, name: 'Team ' + (TTAB + 1), team: P.team })
+  // tabs + power
+  const top = h('div', 'tm-top')
+  for (let i = 0; i < 3; i++) { const t = h('button', 'tm-tab' + (i === TTAB ? ' on' : ''), (presets[i] && presets[i].name) || 'Team ' + (i + 1))
+    t.onclick = async () => { if (i === TTAB) return; await act('teamPreset', { i: TTAB, name: (presets[TTAB] && presets[TTAB].name) || 'Team ' + (TTAB + 1), team: P.team }); const p = (ST.presets || [])[i]; TTAB = i; try { localStorage.setItem('aut-teamTab', i) } catch { }
+      await act('team', { team: p ? p.team.map(k => (k && club()[k] ? k : null)) : [null, null, null, null, null, null] }); rerender() }
+    top.append(t) }
+  top.append(h('div', 'tm-pow', `<small>TEAM POWER</small><b>${teamPower(TC).toLocaleString()}</b>`))
+  el.append(top)
+  // leader + slots
+  const main = h('section', 'tm-main'), L = TC[0]
+  const lb = h('button', 'tm-lead tap' + (L ? '' : ' empty')); lb.append(h('span', 'tm-tag', 'LEADER'))
+  if (L) { lb.append(cardImg(L, 420), h('div', 'tm-meta', `<b>${L.name}</b><span>${diaStr(L.dia || 3)} · Lv ${L.lv || 1}</span>`)) } else lb.append(h('div', 'tm-plus', '+<small>PICK A LEADER</small>'))
+  lb.onclick = () => teamPicker(0); main.append(lb)
+  const right = h('div', 'tm-right')
+  right.append(h('div', 'tm-skill', LI.lead ? `<b>👑 LEADER SKILL</b><span>${leadText(LI.lead)}</span><em>${LI.n}/${count} BOOSTED</em>` : '<b>👑 NO LEADER</b><span>Put a card in the Leader slot. Its skill boosts every fighter that shares a category with it.</span>'))
+  const slot = i => { const c = TC[i], btn = h('button', 'tm-slot tap' + (c ? (c.boosted ? ' bst' : ' nob') : ' empty'))
+    if (c) { btn.append(cardImg(c, 260), h('span', 'tm-badge', c.boosted ? 'BOOSTED' : 'NOT BOOSTED'), h('div', 'tm-sm', `<span>${diaStr(c.dia || 3)}</span><span>Lv ${c.lv || 1}</span>`)) } else btn.append(h('div', 'tm-plus', '+'))
+    btn.onclick = () => teamPicker(i); return btn }
+  right.append(h('div', 'tm-lbl', 'MAIN · FIGHT FIRST')); { const g = h('div', 'tm-mainrow'); g.append(slot(1), slot(2)); right.append(g) }
+  right.append(h('div', 'tm-lbl', 'SUB · SWAP IN DURING BATTLE')); { const g = h('div', 'tm-subrow'); g.append(slot(3), slot(4), slot(5)); right.append(g) }
+  main.append(right); el.append(main)
+  // actions
+  const acts = h('div', 'tm-acts')
+  const ab = h('button', 'btn gold', 'AUTO BUILD'); ab.onclick = () => { TBX.show = !TBX.show; rerender(); setTimeout(() => document.querySelector('.tbx')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60) }
+  const D = ST.decks[ST.deckOn], dk = h('button', 'btn violet', 'ARTS DECK · ' + D.name.toUpperCase()); dk.onclick = () => go('deck')
+  const cl = h('button', 'btn dark', 'CLEAR'); cl.onclick = async () => { await act('team', { team: [null, null, null, null, null, null] }); rerender() }
+  acts.append(ab, dk, cl); el.append(acts)
+  if (TBX.show) teamBuilderPanel(el)
 }
 function teamPicker(slot) {
   openModal(sh => {
     sh.append(h('div', 'sec', `<h3>${slot === 0 ? 'PICK YOUR LEADER' : slot < 3 ? 'PICK A STARTER' : 'PICK A BENCH CARD'}</h3>`))
     if (P.team[slot]) { const rm = h('button', 'ghost', 'Remove this card'); rm.onclick = async () => { const T = P.team.slice(); T[slot] = null; await act('team', { team: T }); closeModal(); rerender() }; sh.append(rm) }
-    const avail = owned().filter(c => !P.team.includes(c.key)), teamAnime = synergy(P.team.map((k, i) => i !== slot && k && BYKEY[k])).anime
+    const LD0 = slot !== 0 && P.team[0] && BYKEY[P.team[0]] && BYKEY[P.team[0]].lead, avail = owned().filter(c => !P.team.includes(c.key)).sort((x, y) => (LD0 ? leadHits(LD0, y) - leadHits(LD0, x) : 0) || y.ovr - x.ovr), teamAnime = synergy(P.team.map((k, i) => i !== slot && k && BYKEY[k])).anime
     const sel = (lbl, key, opts) => { const w = h('label', 'tp-f', `<span>${lbl}</span>`), s2 = document.createElement('select'); for (const [v, t] of opts) { const o = new Option(t, v); if (TB[key] === v) o.selected = true; s2.append(o) } s2.onchange = () => { TB[key] = s2.value; draw() }; w.append(s2); return w }
     const series = [...new Set(avail.map(c => c.anime))].sort((a, b) => ANAME(a).localeCompare(ANAME(b)))
     const bar = h('div', 'tp-bar')
@@ -1796,9 +1802,9 @@ function teamBuilderPanel(el) {
   }
   el.append(box)
   const row = h('div', 'grid2'); row.style.margin = '10px 0 4px'
-  const auto = h('button', 'btn gold', 'BUILD TEAM'), clear = h('button', 'btn dark', 'CLEAR')
+  const auto = h('button', 'btn gold', 'BUILD TEAM'), clear = h('button', 'btn dark', 'CLOSE')
   auto.onclick = () => { if (!own.length) return toast('Open some packs first.', 'err'); builderResults() }
-  clear.onclick = async () => { await act('team', { team: [null, null, null, null, null, null] }); rerender() }
+  clear.onclick = () => { TBX.show = false; rerender() }
   row.append(auto, clear); el.append(row)
   // presets
   const ps = (ST.presets || []), pr = h('div', 'tb-presets')
@@ -1806,7 +1812,7 @@ function teamBuilderPanel(el) {
     if (p) { const l = h('button', 'btn green sm', 'LOAD'); l.onclick = async () => { const T = p.team.map(k => k && club()[k] ? k : null); await act('team', { team: T }); toast('Loaded ' + p.name, 'gold'); rerender() }; w.append(l) }
     const sv = h('button', 'btn dark sm', p ? 'OVERWRITE' : 'SAVE CURRENT'); sv.onclick = async () => { const nm = prompt('Name this team', p ? p.name : 'Team ' + (i + 1)); if (nm == null) return; await act('teamPreset', { i, name: nm.slice(0, 18) || 'Team ' + (i + 1), team: P.team }); rerender() }; w.append(sv)
     pr.append(w) }
-  el.append(h('div', 'sec', '<h3>SAVED TEAMS</h3>'), pr)
+
 }
 function builderResults() {
   const opts = buildOptions(), g = TBX.goal
