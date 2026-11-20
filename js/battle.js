@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpfblmb'
-import { sfx, sfxOn, music } from './sfx.js?v=mwpfblmb'
-import { createFX } from './fx2d.js?v=mwpfblmb'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpgfmj1'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpgfmj1'
+import { createFX } from './fx2d.js?v=mwpgfmj1'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -46,8 +46,9 @@ const ARTS = {
   cylinder: { name: 'MAGIC CYLINDER', cost: 2, col: '#ff3d6a', desc: 'Next hit bounces back', tactic: 1, item: 'items/cylinder.jpg' },
 }
 // tribes: field 3+ of a tribe for its bonus
-export const DRAGONS = ['NATSU', 'ACNOLOGIA', 'GOKU', 'GOGETA', 'VEGITO', 'SHENRON']
-const isDragon = c => c.name.split(' & ').some(n => DRAGONS.includes(n.trim()))
+// real dragons and dragon slayers (not Dragon Ball)
+export const DRAGONS = ['NATSU', 'ACNOLOGIA', 'SHENRON', 'GARCHOMP', 'DURALUDON', 'CHARIZARD', 'RESHIRAM', 'ZEKROM', 'SLIFER']
+export const isDragon = c => DRAGONS.some(n => c.name.includes(n)) || (/KAIDO/.test(c.name) && /DRAGON/.test(c.ver || ''))
 const TAC_ICON = { burst: '💥', charge: '⚡', transfer: '🔗', heal: '✚', cleanse: '✦', senzu: '', cylinder: '' }
 const pctOf = c => { const m = /(\d+)%\s*PWR/.exec((c.tx || []).join(' ')); return m ? +m[1] : 220 }
 const isAoe = c => /all enemies/i.test((c.tx || []).join(' '))

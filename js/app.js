@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwpfblmb'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS } from './battle.js?v=mwpfblmb'
-import * as ACC from './account.js?v=mwpfblmb'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpfblmb'
+import { createFX } from './fx2d.js?v=mwpgfmj1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon } from './battle.js?v=mwpgfmj1'
+import * as ACC from './account.js?v=mwpgfmj1'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpgfmj1'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwpfblmb'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwpgfmj1'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -1628,7 +1628,7 @@ PAGES.deck = (el) => {
   const sd = h('div', 'dk-starters')
   for (const S0 of ST.starterDecks) { const b = h('button', 'tb-t', `<b>${S0.name.toUpperCase()}</b><small>${Object.entries(S0.c).map(([k, v]) => v + ' ' + DECK_INFO[k][0].toLowerCase()).join(' · ')}</small>`); b.onclick = () => { DK.c = { ...S0.c }; DK.name = S0.name; rerender() }; sd.append(b) }
   el.append(sd)
-  el.append(h('p', 'muted', '<small style="font-weight:700">Dragon tribe: Natsu, Acnologia, Goku, Gogeta, Vegito. Field 3 or more and every Burst becomes Dragon Fury (+50%).</small>'))
+  el.append(h('p', 'muted', '<small style="font-weight:700">Dragons: Natsu, Acnologia, Kaido (Dragon Form), Slifer and Pokémon trainers with dragons (Charizard, Garchomp, Zekrom, Reshiram, Duraludon). Field 3 or more and every Burst becomes Dragon Fury (+50%).</small>'))
 }
 
 // ================= GETTING STARTED =================
@@ -1697,7 +1697,7 @@ function awakenSheet(key) {
 const TBX = { goal: 'best', series: [], types: [], roles: [], need: {}, rmin: 'C', rmax: 'X', faction: '', tag: 'any', locks: [], excl: [], fill: 'best', open: false }
 const GOALS = [['best', 'HIGHEST RATING', 'Strongest six'], ['syn', 'MAX SYNERGY', 'Stack one series'], ['chem', 'MAX CHEMISTRY', 'Same faction links'], ['speed', 'SPEED', 'Move first, hit first'], ['tank', 'TANK WALL', 'Defence and survival'], ['burst', 'BURST DAMAGE', 'Power and energy hitters'], ['sustain', 'SUSTAIN', 'Heals, revives, endure'], ['dragon', 'DRAGON DECK', '3+ Dragons for Burst']]
 const ROLES = ['FIGHTER', 'ASSASSIN', 'SHOOTER', 'TANK', 'SUPPORT']
-const isDrg = c => c.name.split(' & ').some(n => DRAGONS.includes(n.trim()))
+const isDrg = isDragon
 function goalScore(c, g) {
   const st = c.st || [70, 70, 70, 70, 70, 70], e = (c.pas && c.pas.e) || {}
   if (g === 'speed') return c.ovr * .45 + st[1] * .55 + (e.first ? 8 : 0) + (e.spd || 0) * .5 + (e.dodge || 0) * .3
