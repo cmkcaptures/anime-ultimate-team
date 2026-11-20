@@ -93,10 +93,10 @@ async function idbPut(k, v) { const db = await idb(); if (!db) return; try { db.
 export const ART = {}, ARTP = {}
 export function getArt(c) {
   return ARTP[c.id] || (ARTP[c.id] = (async () => {
-    const ck = `v2|${c.key}|${c.mt}`
+    const ck = `v2|${c.key}|${c.mt}${c.nocut ? '|n' : ''}`
     const blob = await idbGet(ck)
     if (blob) return ART[c.id] = await loadImg(URL.createObjectURL(blob))
-    const can = cutout(await loadImg(c.url))
+    const raw = await loadImg(c.url), can = c.nocut ? (() => { const k = document.createElement('canvas'); k.width = raw.width; k.height = raw.height; k.getContext('2d').drawImage(raw, 0, 0); return k })() : cutout(raw)
     // use the canvas straight away; save the cached copy later when the browser is idle
     setTimeout(() => can.toBlob(b => b && idbPut(ck, b), 'image/webp', .9), 1500)
     return ART[c.id] = can
@@ -167,7 +167,7 @@ export function drawCard(x, d) {
     const rk = tr.rank; let sd = ((d.uid || 7) + 1) * 7919
     const rnd = () => (sd = (sd * 9301 + 49297) % 233280) / 233280
     if (rk >= 5) { // holographic rainbow bands
-      x.save(); x.globalCompositeOperation = 'overlay'; x.globalAlpha = rk >= 6 ? .34 : .24
+      x.save(); x.beginPath(); x.rect(0, 0, W, H); x.rect(W - 40, 40, -(W - 80), H - 380); x.clip('evenodd'); x.globalCompositeOperation = 'overlay'; x.globalAlpha = rk >= 6 ? .34 : .24
       const hb = x.createLinearGradient(0, 0, W, H); const cols = ['#ff5ab0', '#ffd95a', '#5affb0', '#5ac8ff', '#b88cff']
       for (let i = 0; i <= 20; i++) hb.addColorStop(i / 20, cols[i % cols.length])
       x.fillStyle = hb; x.fillRect(0, 0, W, H); x.restore()
@@ -265,7 +265,7 @@ const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fi
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340, prio) {
-  const bw = bucket(w), k = 't10|' + sig(c) + '|' + bw
+  const bw = bucket(w), k = 't11|' + sig(c) + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)

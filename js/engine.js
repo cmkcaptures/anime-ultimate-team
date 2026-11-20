@@ -737,7 +737,8 @@ async function boot() {
   S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
   const f = fresh(); S.profile = { ...f.profile, ...S.profile };
   { const q = new URLSearchParams(location.search).get('allcards'), P = S.profile
-    if (q === 'on' && !P.allBak) { P.allBak = JSON.parse(JSON.stringify(P.club.cards)); const now = Date.now(); for (const c of CARDS) if (!P.club.cards[c.key]) P.club.cards[c.key] = { n: 1, first: now, last: now, lvl: 0, ser: 999, tmp: 1 } }
+    if (q === 'on' && !P.allBak) P.allBak = JSON.parse(JSON.stringify(P.club.cards))
+    if (P.allBak && q !== 'off') { const now = Date.now(); for (const c of CARDS) if (!P.club.cards[c.key]) P.club.cards[c.key] = { n: 1, first: now, last: now, lvl: 0, ser: 999, tmp: 1 } }
     else if (q === 'off' && P.allBak) { P.club.cards = P.allBak; delete P.allBak }
     if (q) { history.replaceState(null, '', location.pathname); S.savedAt = Date.now(); setTimeout(save, 500) } }
   S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
