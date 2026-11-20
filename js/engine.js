@@ -744,12 +744,7 @@ async function boot() {
   // newest save wins (cloud vs this device)
   S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
   const f = fresh(); S.profile = { ...f.profile, ...S.profile };
-  { const q = new URLSearchParams(location.search).get('allcards'), P = S.profile
-    if (q === 'on' && !P.allBak) P.allBak = JSON.parse(JSON.stringify(P.club.cards))
-    if (P.allBak && q !== 'off') { const now = Date.now(); for (const c of CARDS) if (!P.club.cards[c.key]) P.club.cards[c.key] = { n: 1, first: now, last: now, lvl: 0, ser: 999, tmp: 1 } }
-    else if (q === 'off' && P.allBak) { P.club.cards = P.allBak; delete P.allBak }
-    if (q === 'wipe' && !P.wiped) { P.club.cards = {}; delete P.allBak; P.team = [null, null, null, null, null, null]; P.avatar = null; P.coins = 3000000; P.wiped = 1 }
-    if (q) { history.replaceState(null, '', location.pathname); S.savedAt = Date.now(); setTimeout(save, 500) } }
+  { const P = S.profile; if (P.allBak) { P.club.cards = P.allBak; delete P.allBak } }
   S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
   for (const [k, o] of Object.entries(S.profile.club.cards)) if (!o.ser && byKey(k)) o.ser = rollSerial(k)
   // cards moved between rarity folders get a new key (folder/file); re-link everything by file name
