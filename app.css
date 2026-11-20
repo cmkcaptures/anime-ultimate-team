@@ -2841,3 +2841,8 @@ body > .mo-done { position: fixed !important; left: 50% !important; transform: t
 html, body { background: #2a1258 }
 #app { height: var(--apph, 100dvh) !important }
 @media (display-mode: standalone), (display-mode: fullscreen) { #app { height: var(--apph, 100vh) !important } }
+/* phone app: last buttons scroll clear of the nav; overlays clear the clock */
+.page { padding-bottom: calc(var(--navh) + 70px + env(safe-area-inset-bottom, 0)) !important }
+.o2-top { padding-top: calc(16px + env(safe-area-inset-top, 0)) !important }
+.mo-head { margin-top: env(safe-area-inset-top, 0) }
+html { background: #2a1258 !important; min-height: 100% }
