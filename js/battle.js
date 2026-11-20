@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp8fcry'
-import { sfx, sfxOn, music } from './sfx.js?v=mwp8fcry'
-import { createFX } from './fx2d.js?v=mwp8fcry'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp8icwh'
+import { sfx, sfxOn, music } from './sfx.js?v=mwp8icwh'
+import { createFX } from './fx2d.js?v=mwp8icwh'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -507,7 +507,7 @@ function campPage(el, ok) {
     el.append(chests)
     const list = h('div', 'camp-list')
     ch.stages.forEach(st => {
-      const key = ch.id + ':' + st.n, s = C.stars[key] || 0, open = st.n === 1 || (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = byName(st.enemy[0])
+      const key = ch.id + ':' + st.n, s = C.stars[key] || 0, open = st.n === 1 || (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
       const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${[...new Set(st.enemy.map(x => x.split('#')[0]))].join(', ')}</em></span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
       row.disabled = !ok || !open
       row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
