@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp7hwon'
-import { sfx, sfxOn, music } from './sfx.js?v=mwp7hwon'
-import { createFX } from './fx2d.js?v=mwp7hwon'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp7p1bo'
+import { sfx, sfxOn, music } from './sfx.js?v=mwp7p1bo'
+import { createFX } from './fx2d.js?v=mwp7p1bo'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -245,7 +245,77 @@ function ultimate(B, who) {
 function nextAlive(s) { const i = s.team.findIndex(f => !f.ko); if (i >= 0) s.active = i; return i >= 0 }
 
 // ---------------- AI ----------------
+// ===== smart Auto brain (level 5): estimates damage, looks for lethal, plans energy =====
+function estHit(att, def, base, stat, pierce) {
+  const ea = PE(att)
+  let d = base * (stat / 80) * (100 / (60 + def.def * .5)) * matchup(att, def) * (1 + (ea.dmg || 0) / 100 + (att.rage || 0) / 100)
+  if (att.card.tag) d *= 1.18
+  if (def.guard && !pierce) d *= .5
+  if (ea.exec && def.hp / def.max < .4) d *= 1 + ea.exec / 100
+  return d
+}
+function estArt(me, foe, a, chainN) {
+  const at = act(me), d = act(foe), chain = 1 + Math.min(.32, Math.max(0, chainN) * .08), pierce = /Ignores Guard/.test(kitTxt(at.card)), ch = me.chargeNext ? 1 + me.chargeNext / 100 : 1
+  if (a === 'strike') return estHit(at, d, 260 * chain * ch, at.pwr, false)
+  if (a === 'blast') return estHit(at, d, 420 * chain * ch, at.ki, false)
+  if (a === 'special') return estHit(at, d, pctOf(at.card) * 3.2 * chain * ch * (isAoe(at.card) ? .75 : 1), Math.max(at.pwr, at.ki), pierce)
+  if (a === 'burst') return estHit(at, d, 210 * me.ki * ch, Math.max(at.pwr, at.ki), false)
+  return 0
+}
+function smartTurn(B, who) {
+  const me = B[who], foe = B[who === 'ai' ? 'you' : 'ai'], evs = []
+  const alive = s => s.team.map((f, i) => [f, i]).filter(([f]) => !f.ko)
+  // 1) switching: escape a bad matchup or save a nearly dead fighter for later
+  if (!me.switched) {
+    const cur = act(me), opp = act(foe), bench = alive(me).filter(([, i]) => i !== me.active)
+    const score = f => (matchup(f, opp) - matchup(opp, f)) * 2 + f.hp / f.max + (f.pwr + f.ki) / 400
+    const best = bench.sort((x, y) => score(y[0]) - score(x[0]))[0]
+    const dying = cur.hp / cur.max < .2 && foe.gauge >= 70
+    if (best && ((matchup(opp, cur) > 1 && matchup(best[0], opp) >= 1 && best[0].hp / best[0].max > .45) || (dying && best[0].hp / best[0].max > .5) || score(best[0]) - score(cur) > 1.4)) {
+      me.active = best[1]; me.switched = true; evs.push({ who, swap: true })
+    }
+  }
+  let guarded = false
+  for (let n = 0; n < 10; n++) {
+    const mine = act(me), opp = act(foe); if (!mine || !opp || mine.ko || opp.ko) break
+    // 2) ultimate: fire it when it can kill, the foe isn't guarding, or the foe's ult is about to land
+    if (me.gauge >= GAUGE_MAX) {
+      const ultD = estHit(mine, opp, pctOf(mine.card) * 6, Math.max(mine.pwr, mine.ki), /Ignores Guard/.test(kitTxt(mine.card)))
+      if (ultD >= opp.hp || !opp.guard || foe.gauge >= 85 || opp.cylinder) { const e = ultimate(B, who); if (e) { evs.push(e); continue } }
+    }
+    const hand = me.hand.map((a, i) => [a, i]), can = a => hand.find(([x]) => x === a && ARTS[x].cost <= me.ki && !(x === 'burst' && me.ki < 2))
+    const chainN = me.seq.length, dmgOf = a => estArt(me, foe, a, chainN)
+    // 3) pop a Magic Cylinder trap with the cheapest hit first
+    if (opp.cylinder) { const p = can('strike') || can('blast'); if (p) { const e = playArt(B, who, p[1]); if (e) { evs.push(e); continue } } }
+    // 4) emergency items / heals
+    const hpP = mine.hp / mine.max, threat = foe.gauge >= 85 || estHit(opp, mine, pctOf(opp.card) * 3.2, Math.max(opp.pwr, opp.ki), false) > mine.hp
+    let pick = null
+    if (hpP < .35 && can('senzu')) pick = can('senzu')
+    else if (threat && !mine.cylinder && can('cylinder')) pick = can('cylinder')
+    else if (hpP < .45 && can('heal')) pick = can('heal')
+    else if (mine.burnT > 0 && hpP < .6 && can('cleanse')) pick = can('cleanse')
+    else if (can('transfer') && me.ki <= KI_MAX - 2) pick = can('transfer')
+    if (pick) { const e = playArt(B, who, pick[1]); if (e) { evs.push(e); continue } }
+    // 5) lethal check: best single attack that kills right now
+    const atks = ['special', 'burst', 'blast', 'strike'].map(a => [a, can(a)]).filter(([, p]) => p)
+    if (!atks.length) { if (!guarded && !mine.guard && can('guard')) { guarded = true; const e = playArt(B, who, can('guard')[1]); if (e) { evs.push(e); continue } } break }
+    const kill = atks.filter(([a]) => dmgOf(a) >= opp.hp + (opp.shieldHp || 0)).sort((x, y) => ARTS[x[0]].cost - ARTS[y[0]].cost)[0]
+    if (kill) { const e = playArt(B, who, kill[1][1]); if (e) { evs.push(e); continue } }
+    // 6) charge before a big hit
+    if (can('charge') && (can('special') || (can('burst') && me.ki >= 5)) && me.ki >= 1 + (can('special') ? ARTS.special.cost : 2) && !me.chargeNext) { const e = playArt(B, who, can('charge')[1]); if (e) { evs.push(e); continue } }
+    // 7) guard against an incoming ultimate when hurt
+    if (!guarded && !mine.guard && threat && hpP < .6 && can('guard')) { guarded = true; const e = playArt(B, who, can('guard')[1]); if (e) { evs.push(e); continue } }
+    // 8) best damage per energy, but don't waste energy that would afford a special next turn
+    const best = atks.filter(([a]) => a !== 'burst' || me.ki >= 5).map(([a, p]) => [a, p, dmgOf(a) + (a === 'special' ? 1e6 : 0)]).sort((x, y) => y[2] - x[2])
+    if (!best.length) break
+    const specialNext = me.hand.includes('special') && !can('special')
+    let choice = best[0]
+    const e = playArt(B, who, choice[1][1]); if (!e) break; evs.push(e)
+  }
+  return evs
+}
 function planTurn(B, level, who = 'ai') {
+  if (level >= 5) return smartTurn(B, who)
   const me = B[who], foe = B[who === 'ai' ? 'you' : 'ai'], evs = []
   const smart = level >= 3, clever = level >= 2
   // counter-switch: bring in someone with type advantage, or rescue a dying fighter
@@ -820,7 +890,7 @@ export function startBattle(stage) {
   async function autoTurn() {
     if (!AUTO || B.busy || B.over) return
     B.busy = true; controls(); await wait(350)
-    for (const ev of planTurn(B, 4, 'you')) { if (B.over) return; await show(ev); if (B.over) return }
+    for (const ev of planTurn(B, 5, 'you')) { if (B.over) return; await show(ev); if (B.over) return }
     B.busy = false; if (!B.over && AUTO) await aiPhase()
   }
   { const sb = $a('.ar-speed'), sd = () => { sb.textContent = SPEED + '×'; sb.classList.toggle('on', SPEED > 1) }; sb.onclick = () => { SPEED = SPEED === 1 ? 2 : SPEED === 2 ? 3 : 1; try { localStorage.setItem('aut-bspeed', SPEED) } catch { } ov.style.setProperty('--spd', SPEED); sd() }; ov.style.setProperty('--spd', SPEED); sd()
