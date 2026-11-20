@@ -2852,3 +2852,12 @@ html { background: #2a1258 !important; min-height: 100% }
   .psel .pk3 { width: 168px !important; height: 258px !important; margin-left: -84px !important; top: 14px !important }
   .psel .floor { height: 80px }
 }
+/* shop featured panel compact on phones */
+@media (max-width: 540px) {
+  body[data-page=shop] .shero { padding: 16px 16px 20px !important; min-height: 0 !important; gap: 6px !important }
+  body[data-page=shop] .sh-pack { min-height: 210px !important }
+  .sh-tilt { width: 150px !important }
+  body[data-page=shop] .sh-info h2 { font-size: 40px !important }
+  body[data-page=shop] .sh-info p { font-size: 12px !important; margin: 4px 0 !important }
+  body[data-page=shop] .sh-odds, body[data-page=shop] .sh-meta { margin: 4px 0 !important }
+}
