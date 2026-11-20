@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp5uqou'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp5w40k'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -745,6 +745,7 @@ async function boot() {
   S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
   const f = fresh(); S.profile = { ...f.profile, ...S.profile };
   { const P = S.profile; if (P.allBak) { P.club.cards = P.allBak; delete P.allBak } }
+  try { const S2 = passP(), m = freeCardTiers(), reached = Math.floor(S2.xp / PASS_TIER); for (const [t, k] of Object.entries(m)) if ((S2.f.includes(+t) || reached >= +t && S2.f.length) && !S.profile.club.cards[k] && S2.f.includes(+t)) giveCard(k) } catch (x) { console.warn(x) }
   S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
   for (const [k, o] of Object.entries(S.profile.club.cards)) if (!o.ser && byKey(k)) o.ser = rollSerial(k)
   // cards moved between rarity folders get a new key (folder/file); re-link everything by file name
