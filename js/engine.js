@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp72t2z'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp7ak32'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -301,6 +301,17 @@ function onboarding() {
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
+// ---------- AWAKENING TREE ----------
+const AWK = [
+  { id: 'pwr', name: '+4 POWER', d: 'PWR +4', dup: 1, sh: 1, req: null },
+  { id: 'spd', name: '+4 SPEED', d: 'SPD +4', dup: 1, sh: 1, req: null },
+  { id: 'def', name: '+4 DEFENSE', d: 'DEF +4', dup: 1, sh: 1, req: null },
+  { id: 'dodge', name: '+5% DODGE', d: '5% chance to dodge any hit', dup: 1, sh: 2, req: 'spd' },
+  { id: 'dmg', name: '+8% DAMAGE', d: 'All damage +8%', dup: 2, sh: 2, req: 'pwr' },
+  { id: 'ovr', name: '+3 RATING', d: 'Overall +3 and all stats +2', dup: 2, sh: 3, req: 'def' },
+  { id: 'aw', name: 'AWAKENED', d: 'Awakened foil, +10% HP and +2 rating', dup: 3, sh: 5, req: ['dodge', 'dmg', 'ovr'] },
+]
+const AWK_SH = { C: 60, U: 100, R: 160, E: 260, L: 420, M: 700, X: 1100 }
 // ---------- STORY CAMPAIGN ----------
 // each stage: intro scene lines [speaker card name, text], enemy card names, rating, reward coins
 const CAMPAIGN = [
@@ -726,6 +737,16 @@ function act(a) {
     }
     case 'campChest': { const C = campP(), i = +a.i, R = CAMP_CHEST[i]; if (!R) return { error: 'Unknown chest.' }; const tot = Object.values(C.stars).reduce((n, v) => n + v, 0); if (tot < R.at) return { error: 'Need ' + R.at + ' stars.' }; if (C.chests.includes(i)) return { error: 'Already opened.' }
       C.chests.push(i); P.coins += R.coins; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1; if (R.shards) P.shards = (P.shards || 0) + R.shards; return { msg: 'Chest opened: +' + R.coins.toLocaleString() + ' coins and a ' + PACKS[R.pack].name + (R.shards ? ' and ◆' + R.shards.toLocaleString() + ' shards' : '') + '.' } }
+    case 'awk': {
+      const c = byKey(a.key), o = c && P.club.cards[a.key], N = AWK.find(n => n.id === a.node); if (!o || !N) return { error: 'Unknown card or node.' }
+      const have = o.awk || (o.awk = []); if (have.includes(N.id)) return { error: 'Already unlocked.' }
+      const req = N.req ? [].concat(N.req) : []; if (req.some(r => !have.includes(r))) return { error: 'Unlock the nodes below it first.' }
+      const sh = N.sh * AWK_SH[c.r], inTeam = P.team.includes(a.key) ? 1 : 0
+      if (o.n - 1 < N.dup) return { error: 'Needs ' + N.dup + ' duplicate' + (N.dup > 1 ? 's' : '') + ' (you have ' + (o.n - 1) + ').' }
+      if ((P.shards || 0) < sh) return { error: 'Needs ◆' + sh.toLocaleString() + ' shards.' }
+      o.n -= N.dup; P.shards -= sh; have.push(N.id); addXP(15)
+      return { msg: N.id === 'aw' ? c.name + ' is fully AWAKENED!' : N.name + ' unlocked for ' + c.name + '.' }
+    }
     case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }
     case 'equip': {
       const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
@@ -758,6 +779,7 @@ function state() {
     items: itemsP(), itemDefs: ITEMS, itemMax: ITEM_MAX,
     decks: deckP(), deckOn: S.profile.deckOn || 0, deckMax: DECK_MAX, deckSize: DECK_SIZE, starterDecks: STARTER_DECKS,
     onb: onboarding(),
+    awkT: AWK, awkSh: AWK_SH,
     camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST,
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }

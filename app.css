@@ -2889,3 +2889,16 @@ html { background: #2a1258 !important; min-height: 100% }
 .scn-box { position: absolute; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0)); transform: translateX(-50%); width: min(720px, calc(100% - 28px)); padding: 16px 20px 14px; border-radius: 18px; background: #1a0f3a; box-shadow: 0 0 0 3px #fff, 0 6px 0 3px rgba(0,0,0,.5); z-index: 3; color: #fff }
 .scn-box small { display: inline-block; margin-bottom: 6px; padding: 2px 12px; border-radius: 999px; background: #ffcc00; color: #1a0f3a; font: 800 13px var(--eUI, Inter); letter-spacing: .08em }
 .scn-box p { margin: 0; font: 700 17px/1.45 var(--eUI, Inter) } .scn-box em { display: block; margin-top: 8px; text-align: right; font: 800 10px var(--eUI, Inter); font-style: normal; letter-spacing: .18em; color: rgba(255,255,255,.5) }
+
+/* ================= AWAKENING TREE ================= */
+.awk-top { display: flex; gap: 16px; align-items: center; margin-bottom: 14px }
+.awk-info { display: grid; gap: 3px } .awk-info b { font: 800 26px var(--eD, 'Barlow Condensed'); color: #fff } .awk-info small { font: 700 12px var(--eUI, Inter); color: #c8b8ff } .awk-info span { font: 800 12px var(--eUI, Inter); letter-spacing: .08em; color: #fff } .awk-info em { font-style: normal; color: #ffcc00; font-size: 16px }
+.awk-tree { display: grid; gap: 12px }
+.awk-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px } .awk-row:first-child { grid-template-columns: minmax(0, 1fr); max-width: 60%; margin: 0 auto; width: 100% }
+.awk-n { display: grid; gap: 3px; padding: 12px 8px; border: 0; border-radius: 14px; text-align: center; color: #fff; cursor: pointer; background: linear-gradient(160deg, #3a2a7a, #1a0f3a); box-shadow: 0 0 0 2px rgba(255,255,255,.35), 0 4px 0 2px rgba(0,0,0,.35) }
+.awk-n b { font: 800 16px var(--eD, 'Barlow Condensed') } .awk-n small { font: 600 11px var(--eUI, Inter); color: rgba(255,255,255,.75) } .awk-n em { font: 800 10px var(--eUI, Inter); font-style: normal; letter-spacing: .08em; color: #c8b8ff }
+.awk-n.open { box-shadow: 0 0 0 2px #fff, 0 4px 0 2px rgba(0,0,0,.35) }
+.awk-n.can { background: linear-gradient(160deg, #ffb000, #ff6a00); box-shadow: 0 0 0 3px #fff, 0 4px 0 3px rgba(0,0,0,.35) } .awk-n.can em { color: #fff }
+.awk-n.got { background: linear-gradient(160deg, #1a8a5a, #0a3a26); box-shadow: 0 0 0 2px #6affc0 } .awk-n.got em { color: #6affc0 }
+.awk-n.final { background: linear-gradient(135deg, #ff5ab0, #ffd95a, #5ac8ff); } .awk-n.final b { font-size: 20px } .awk-n.final small, .awk-n.final em { color: #1a0f3a }
+.awk-n:disabled { cursor: default } .awk-n:not(.got):not(.can):not(.open) { opacity: .55 }

@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp72t2z'
-import { sfx, sfxOn, music } from './sfx.js?v=mwp72t2z'
-import { createFX } from './fx2d.js?v=mwp72t2z'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp7ak32'
+import { sfx, sfxOn, music } from './sfx.js?v=mwp7ak32'
+import { createFX } from './fx2d.js?v=mwp7ak32'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -64,7 +64,7 @@ function kitEffects(me, a) {
 }
 function fighter(card, lvl = 0) {
   const [pwr, spd, ki, tec, def, iq] = card.st || [70, 70, 70, 70, 70, 70]
-  const hp = Math.round(card.ovr * 40 + def * 12 + (card.tag ? 600 : 0))
+  const hp = Math.round((card.ovr * 40 + def * 12 + (card.tag ? 600 : 0)) * (card.awoke ? 1.1 : 1))
   const e = (card.pas && card.pas.e) || {}, boost = 1 + (e.allStats || 0) / 100
   const f = { card, key: card.key, hp, max: hp, pwr: Math.round(pwr * boost), spd: Math.round(spd * boost) + (e.spd || 0), ki: Math.round(ki * boost), tec: Math.round(tec * boost), def: Math.round(def * boost), iq, guard: 0, ko: false, lvl, dealt: 0, kos: 0, fort: 0,
     pe: e, endure: e.endure || 0, revive: e.revive || 0, firstNull: e.firstNull || 0, hitsTaken: 0, turns: 0, rage: 0, shieldHp: e.shield ? Math.round(hp * e.shield / 100) : 0, burn: 0, burnT: 0, attacks: 0, ultFired: 0, ultDodge: e.ultDodge || 0, sealed: 0, opened: 0, arise: 0 }

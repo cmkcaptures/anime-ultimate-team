@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwp72t2z'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor } from './battle.js?v=mwp72t2z'
-import * as ACC from './account.js?v=mwp72t2z'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp72t2z'
+import { createFX } from './fx2d.js?v=mwp7ak32'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor } from './battle.js?v=mwp7ak32'
+import * as ACC from './account.js?v=mwp7ak32'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp7ak32'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp72t2z'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp7ak32'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -16,7 +16,13 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
 let POOL = [], BYKEY = {}, ST = null, P = null
 const club = () => P.club.cards
 const effL = (c, l) => (l ? { ...c, lvl: l } : c)
-const eff = c => { const o = club()[c.key], x = effL(c, (o && o.lvl) || 0); return o && o.sig ? { ...x, sig: 1, ovr: x.ovr + 2, st: (x.st || []).map(v => Math.min(99, v + 2)) } : x }
+const effSig = c => { const o = club()[c.key], x = effL(c, (o && o.lvl) || 0); return o && o.sig ? { ...x, sig: 1, ovr: x.ovr + 2, st: (x.st || []).map(v => Math.min(99, v + 2)) } : x }
+const eff = c => { const x = effSig(c), o = club()[c.key], w = (o && o.awk) || []; if (!w.length) return x
+  const st = (x.st || [70, 70, 70, 70, 70, 70]).slice(), up = (i, v) => st[i] = Math.min(99, st[i] + v); let ovr = x.ovr
+  if (w.includes('pwr')) up(0, 4); if (w.includes('spd')) up(1, 4); if (w.includes('def')) up(4, 4)
+  if (w.includes('ovr')) { ovr += 3; for (let i = 0; i < 6; i++) up(i, 2) } if (w.includes('aw')) ovr += 2
+  const pe = { ...((x.pas && x.pas.e) || {}) }; if (w.includes('dodge')) pe.dodge = (pe.dodge || 0) + 5; if (w.includes('dmg')) pe.dmg = (pe.dmg || 0) + 8
+  return { ...x, ovr: Math.min(99, ovr), st, awk: w.length, awoke: w.includes('aw') ? 1 : 0, pas: x.pas ? { ...x.pas, e: pe } : { n: 'AWAKENED', d: '', e: pe } } }
 const owned = () => POOL.filter(c => club()[c.key])
 const tierCol = r => r === 'X' ? '#e0c8ff' : TIER[r].pal[1]
 const ANAME = a => ANIME[a] ? ANIME[a].name.replace(/\b\w+/g, w => w[0] + w.slice(1).toLowerCase()) : a
@@ -399,12 +405,13 @@ async function cardDetail(key) {
       const a = h('div', 'acts')
       const add = (cls, label, dis, fn) => { const b = h('button', 'btn sm ' + cls, label); b.disabled = !!dis; b.onclick = fn; a.append(b) }
       add('violet', inTeam ? 'IN TEAM' : 'ADD TO TEAM', inTeam, () => { const T = P.team.slice(), i = T.indexOf(null); closeModal(); if (i < 0) { toast('Your team is full. Swap a card on the Team page.'); go('team'); return } T[i] = key; act('team', { team: T }).then(() => go('team')) })
-      add('green', lvl >= 5 ? 'MAX ★' : `AWAKEN ★${lvl + 1}`, !(e.n > 1 && lvl < 5), async () => { await act('awaken', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
+      add('violet', `AWAKENING TREE ${(e.awk || []).length}/7`, false, () => awakenSheet(key))
+      add('green', lvl >= 5 ? 'MAX ★' : `LEVEL UP ★${lvl + 1}`, !(e.n > 1 && lvl < 5), async () => { await act('awaken', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       add('gold', 'SELL ON MARKET', spare < 1, () => listSheet(key))
       add('dark', `QUICK SELL ${fmt(ST.quick[key])}`, spare < 1, async () => { await act('quickSell', { key }); if (club()[key]) cardDetail(key); else closeModal(); if (CUR === 'cards') rerender() })
       if (e.n > 1) add('dark', `SHRED ${e.n - 1} → ◆${fmt((e.n - 1) * ST.shardGet[c.r])}`, spare < 1, async () => { await act('shred', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       d.append(a)
-      if (e.n > 1) d.append(h('span', 'muted', `<small style="font-weight:700">Awakening uses a duplicate. It adds a star and market value; rating and stats stay the same.</small>`))
+      if (e.n > 1) d.append(h('span', 'muted', `<small style="font-weight:700">Level up uses a duplicate for a star and market value. The Awakening Tree uses duplicates and shards for real stat and rating boosts.</small>`))
     } else {
       const b = h('button', 'btn block', 'FIND ON MARKET'); b.onclick = () => { MS.q = c.name.toLowerCase(); MS.view = 'results'; go('market') }; d.append(b)
     }
@@ -1656,4 +1663,24 @@ PAGES.guide = (el) => {
   })
   el.append(g)
   const t = h('button', 'btn gold block big', 'PRACTICE BATTLE TUTORIAL'); t.style.marginTop = '14px'; t.onclick = () => go('battle'); el.append(t)
+}
+
+// ================= AWAKENING TREE =================
+function awakenSheet(key) {
+  const base = BYKEY[key]; if (!base) return
+  openModal(sh => {
+    const e = club()[key]; if (!e) return
+    const have = e.awk || [], c = eff(base), dup = e.n - 1, mult = ST.awkSh[base.r]
+    sh.append(h('div', 'sec', '<h3>AWAKENING TREE</h3><span class="muted" style="font-weight:700;font-size:12px">覚醒 · spend duplicates and shards</span>'))
+    const top = h('div', 'awk-top'); const im = cardImg(c, 300); im.style.width = '120px'; top.append(im, h('div', 'awk-info', `<b>${c.name}</b><small>${c.ver}</small><span>RATING ${base.ovr} → <em>${c.ovr}</em></span><span>${have.length}/7 NODES</span><span>DUPLICATES ${dup} · ◆${fmt(P.shards || 0)}</span>`)); sh.append(top)
+    const rows = [['aw'], ['dodge', 'dmg', 'ovr'], ['spd', 'pwr', 'def']], g = h('div', 'awk-tree')
+    for (const r of rows) { const row = h('div', 'awk-row')
+      for (const id of r) { const N = ST.awkT.find(n => n.id === id), got = have.includes(id), req = N.req ? [].concat(N.req) : [], open = req.every(q => have.includes(q)), cost = N.sh * mult, can = open && !got && dup >= N.dup && (P.shards || 0) >= cost
+        const b = h('button', 'awk-n' + (got ? ' got' : can ? ' can' : open ? ' open' : '') + (id === 'aw' ? ' final' : ''), `<b>${N.name}</b><small>${N.d}</small><em>${got ? 'UNLOCKED' : !open ? '🔒 LOCKED' : N.dup + ' dupe · ◆' + fmt(cost)}</em>`)
+        b.disabled = !can; b.onclick = async () => { const x = await act('awk', { key, node: id }); if (!x.error) { if (id === 'aw') sfx('fanfare'); awakenSheet(key); if (CUR === 'cards' || CUR === 'team') rerender() } }
+        row.append(b) }
+      g.append(row) }
+    sh.append(g)
+    sh.append(h('p', 'muted', '<small style="font-weight:700">Bottom nodes first. Boosts apply in every battle and to your team rating. Fully awakened cards get a glowing foil.</small>'))
+  })
 }

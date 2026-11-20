@@ -167,6 +167,7 @@ export function drawCard(x, d) {
     const star = (X, Y, s) => { x.save(); x.fillStyle = '#fff'; x.shadowColor = '#fff'; x.shadowBlur = 14; x.beginPath(); x.moveTo(X, Y - s); x.lineTo(X + s * .16, Y - s * .16); x.lineTo(X + s, Y); x.lineTo(X + s * .16, Y + s * .16); x.lineTo(X, Y + s); x.lineTo(X - s * .16, Y + s * .16); x.lineTo(X - s, Y); x.lineTo(X - s * .16, Y - s * .16); x.fill(); x.restore() }
     star(470, 70, 20); star(80, 300, 13); if (tr.rank >= 3) { star(610, 560, 16); star(310, 150, 9); star(560, 420, 8) }
   }
+  if (d.awoke) { x.save(); x.globalCompositeOperation = 'screen'; const ag = x.createRadialGradient(W / 2, H * .35, 40, W / 2, H * .35, 520); ag.addColorStop(0, 'rgba(255,240,180,.55)'); ag.addColorStop(.5, 'rgba(255,120,220,.18)'); ag.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = ag; x.fillRect(0, 0, W, H); x.restore(); x.save(); x.strokeStyle = '#ffe9a8'; x.lineWidth = 10; x.shadowColor = '#ffcc00'; x.shadowBlur = 30; x.strokeRect(20, 20, W - 40, H - 40); x.restore() }
   { // premium foil on high tiers
     const rk = tr.rank; let sd = ((d.uid || 7) + 1) * 7919
     const rnd = () => (sd = (sd * 9301 + 49297) % 233280) / 233280
@@ -264,7 +265,7 @@ export function drawCard(x, d) {
 const THUMBS = {}
 const SMALL = innerWidth < 700
 const bucket = w => SMALL ? (w <= 300 ? 220 : w <= 460 ? 380 : 480) : w <= 260 ? 260 : w <= 440 ? 440 : 560
-const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.z, c.mv, c.total].join('|')
+const sig = c => [c.key, c.lvl || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.z, c.mv, c.total, c.awoke || 0, (c.st || []).join(',')].join('|')
 // one render at a time, yielding to the browser between cards so scrolling stays smooth
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
