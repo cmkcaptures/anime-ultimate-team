@@ -37,6 +37,7 @@ export const ANIME = {
   DAN: { name: 'DANDADAN', tag: 'DAN', type: 'psychic' },
   SL: { name: 'SOLO LEVELING', tag: 'SL', type: 'devil' },
   DN: { name: 'DEATH NOTE', tag: 'DN', type: 'psychic' },
+  PKM: { name: 'POKÉMON', tag: 'PKM', type: 'bond' },
 }
 export const TYPE = {
   ki: { c: ['#ff7a00', '#b80018', '#ffd400'], en: 'AURA' },
@@ -57,6 +58,7 @@ export const TYPE = {
   psychic: { c: ['#d0a0ff', '#3a0a6a', '#ffffff'], en: 'PSYCHIC' },
   flame: { c: ['#ffb000', '#8a1000', '#fff0a0'], en: 'FLAME' },
   hero: { c: ['#ffe03d', '#c81020', '#ffffff'], en: 'HERO' },
+  bond: { c: ['#ffcb05', '#2a75bb', '#ff3d3d'], en: 'BOND' },
 }
 
 export const DISP = n => `italic 900 ${n}px "Sofia Sans Extra Condensed"`
