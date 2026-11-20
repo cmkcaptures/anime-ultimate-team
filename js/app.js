@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwp7r1bt'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor } from './battle.js?v=mwp7r1bt'
-import * as ACC from './account.js?v=mwp7r1bt'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp7r1bt'
+import { createFX } from './fx2d.js?v=mwp7sc1j'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor } from './battle.js?v=mwp7sc1j'
+import * as ACC from './account.js?v=mwp7sc1j'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp7sc1j'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp7r1bt'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp7sc1j'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -295,10 +295,11 @@ PAGES.pack = (el, type) => {
     const free = t === 'standard' && ST.free.charges > 0
     const a = h('button', 'btn ' + (pend || free ? 'green' : 'gold'), pend ? `OPEN PACK<small>${pend} waiting</small>` : free ? `OPEN FREE<small>${ST.free.charges} free left</small>` : `OPEN A PACK<small>${fmt(pk.cost)} coins</small>`)
     a.onclick = async () => { if (pend) return openPack(t); const r = await act(free ? 'freePack' : 'buyPack', { pack: t }); if (!r.error) openPack(t) }
-    const b = h('button', 'btn violet', `BUY 5<small>${fmt(pk.cost * 5)} coins</small>`)
-    b.disabled = P.coins < pk.cost * 5
-    b.onclick = async () => { for (let i = 0; i < 5; i++) { const r = await act('buyPack', { pack: t }); if (r.error) break } toast('Packs are waiting in Booster Packs. Tap OPEN PACK.', 'gold'); place() }
+    const c10 = Math.round(pk.cost * 10 * .9), b = h('button', 'btn violet', `BUY 10 & OPEN<small>${fmt(c10)} coins · 10% off</small>`)
+    b.disabled = P.coins < c10
+    b.onclick = async () => { const r = await act('buyPack', { pack: t, count: 10 }); if (!r.error) multiOpen(t, 10) }
     acts.append(a, b)
+    if (pend > 1) { const o = h('button', 'btn gold block', `OPEN ALL ${pend} PACKS AT ONCE`); o.style.gridColumn = '1 / -1'; o.onclick = () => multiOpen(t, Math.min(pend, 50)); acts.append(o) }
     dots.innerHTML = types.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('')
   }
   let sx = null; sel.onpointerdown = e => sx = e.clientX; sel.onpointerup = e => { if (sx !== null && Math.abs(e.clientX - sx) > 40) { idx = clamp(idx + (e.clientX < sx ? 1 : -1), 0, types.length - 1); place() } sx = null }
