@@ -178,7 +178,7 @@ const packEl = (type, w) => { const cv = document.createElement('canvas'); packC
 
 // ================= router + transitions =================
 const TABS = ['home', 'cards', 'team', 'market', 'shop', 'battle']
-const TITLES = { museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
+const TITLES = { deck: 'ARTS DECK',  museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
 let CUR = null, CURARG = null, curEl = null
 const PAGES = {}
 function go(name, arg, opts = {}) {
@@ -497,6 +497,7 @@ PAGES.team = (el) => {
     el.append(g)
   }
   { const cb = combosFor(P.team.map(k => k && BYKEY[k])); el.append(h('div', 'combo-row', cb.length ? cb.map(x => `<span class="cmb on"><b>${x.n}</b><small>${x.a} + ${x.b} · +6% team damage</small></span>`).join('') : '<span class="cmb"><b>NO TEAM COMBOS</b><small>Put famous pairs together (Naruto + Sasuke, Goku + Vegeta, Deku + Bakugo…) to unlock combos.</small></span>')) }
+  { const D = ST.decks[ST.deckOn], db = h('button', 'btn violet block', `ARTS DECK · ${D.name.toUpperCase()} · EDIT`); db.style.margin = '6px 0'; db.onclick = () => go('deck'); el.append(db) }
   slots(0, 3, 'STARTERS')
   const chem = h('div', 'chemrow'); const L = ['NO LINK', 'SAME SERIES +', 'SAME FACTION ++']
   st.links.forEach((l, i) => chem.append(h('div', 'stat', `<b style="font-size:18px;color:${l === 2 ? 'var(--green)' : l === 1 ? 'var(--gold)' : l === 0 ? 'var(--red)' : 'var(--ink3)'}">${l < 0 ? 'EMPTY' : L[l]}</b><span>${i === 0 ? 'LEADER ↔ STARTER' : 'STARTER ↔ STARTER'}</span>`)))
@@ -1573,4 +1574,39 @@ function ambience() {
   document.body.dataset.fx = fx
   if (fx && !document.getElementById('fxLayer')) { const L = document.createElement('div'); L.id = 'fxLayer'; L.innerHTML = Array.from({ length: 26 }, (_, i) => `<i style="--x:${(i * 41) % 100}%;--d:${6 + (i % 7)}s;--dl:-${(i * 1.3) % 9}s;--s:${.6 + (i % 4) * .25}"></i>`).join(''); document.body.append(L) }
   if (!fx) document.getElementById('fxLayer')?.remove()
+}
+
+// ================= ARTS DECK BUILDER =================
+const DK = { i: null, c: null, name: '' }
+const DECK_INFO = {
+  strike: ['STRIKE', 'Physical hit using PWR. Cheap, chains into combos.', 1], blast: ['BLAST', 'Energy blast using ENG. Hits harder than a Strike.', 2], guard: ['GUARD', 'Halves the next hit you take.', 1], special: ['SPECIAL', "Your active fighter's signature move.", 4],
+  burst: ['BURST', 'Spend ALL your Energy on one huge hit. Field 3+ Dragons for Dragon Fury (+50%).', 'ALL'], charge: ['POWER CHARGE', 'Your next attack deals +35%. Stack them for a one-card carry.', 1],
+  transfer: ['ENERGY LINK', 'Your bench feeds you +2 Energy.', 0], heal: ['RECOVER', 'Heal your active fighter 18%.', 2], cleanse: ['CLEANSE', 'Remove burn and freeze, and Guard up.', 1] }
+PAGES.deck = (el) => {
+  if (DK.i == null) DK.i = ST.deckOn
+  const D = ST.decks[DK.i]; if (!DK.c) { DK.c = { ...D.c }; DK.name = D.name }
+  const total = Object.values(DK.c).reduce((n, v) => n + (v || 0), 0), tac = ['burst', 'charge', 'transfer', 'heal', 'cleanse'].reduce((n, k) => n + (DK.c[k] || 0), 0)
+  el.append(h('section', 'bhero', `<div><span class="sh-tag">デッキ · ARTS DECK</span><h2>ARTS DECK</h2><p>Your battle hand is drawn from this 20-card deck. Mix attacks with Tactic cards to build a plan: a Dragon Burst nuke, a one-card carry, or a heal wall.</p></div><div class="bstat"><b>${total}</b><span>/ 20 CARDS · ${tac}/8 TACTICS</span></div>`))
+  const tabs = h('div', 'mtabs'); ST.decks.forEach((d, i) => { const t = h('button', 'mtab' + (DK.i === i ? ' on' : ''), (i === ST.deckOn ? '★ ' : '') + d.name.toUpperCase()); t.onclick = () => { DK.i = i; DK.c = null; rerender() }; tabs.append(t) }); el.append(tabs)
+  const nm = h('input', 'field'); nm.value = DK.name; nm.maxLength = 20; nm.oninput = () => DK.name = nm.value; el.append(nm)
+  el.append(h('div', 'sec', '<h3>CARDS</h3><span class="muted" style="font-weight:700;font-size:12px">tap − / + to build your deck</span>'))
+  const g = h('div', 'dk-grid')
+  for (const [k, [n, desc, cost]] of Object.entries(DECK_INFO)) {
+    const v = DK.c[k] || 0, max = ST.deckMax[k], isT = !['strike', 'blast', 'guard', 'special'].includes(k)
+    const row = h('div', 'dk-row' + (isT ? ' tac' : '') + (v ? ' on' : ''), `<span class="dk-cost">${cost}</span><div class="dk-tx"><b>${n}${isT ? ' <em>TACTIC</em>' : ''}</b><small>${desc}</small></div><div class="dk-q"><button>−</button><b>${v}</b><button>+</button></div>`)
+    const [mi, pl] = row.querySelectorAll('.dk-q button'); mi.disabled = !v; pl.disabled = v >= max || total >= 20 || (isT && tac >= 8)
+    mi.onclick = () => { DK.c[k] = v - 1; rerender() }; pl.onclick = () => { DK.c[k] = v + 1; rerender() }
+    g.append(row)
+  }
+  el.append(g)
+  const bar = h('div', 'grid2'); bar.style.marginTop = '12px'
+  const save = h('button', 'btn gold', DK.i === ST.deckOn ? 'SAVE DECK' : 'SAVE & USE THIS DECK'); save.disabled = total !== 20
+  save.onclick = async () => { const r = await act('deckSave', { i: DK.i, name: DK.name, c: DK.c, use: true }); if (!r.error) { DK.c = null; rerender() } }
+  const clr = h('button', 'btn dark', 'CLEAR'); clr.onclick = () => { DK.c = {}; rerender() }
+  bar.append(save, clr); el.append(bar)
+  el.append(h('div', 'sec', '<h3>STARTER DECKS</h3><span class="muted" style="font-weight:700;font-size:12px">load one into this slot, then tweak it</span>'))
+  const sd = h('div', 'dk-starters')
+  for (const S0 of ST.starterDecks) { const b = h('button', 'tb-t', `<b>${S0.name.toUpperCase()}</b><small>${Object.entries(S0.c).map(([k, v]) => v + ' ' + DECK_INFO[k][0].toLowerCase()).join(' · ')}</small>`); b.onclick = () => { DK.c = { ...S0.c }; DK.name = S0.name; rerender() }; sd.append(b) }
+  el.append(sd)
+  el.append(h('p', 'muted', '<small style="font-weight:700">Dragon tribe: Natsu, Acnologia, Goku, Gogeta, Vegito. Field 3 or more and every Burst becomes Dragon Fury (+50%).</small>'))
 }

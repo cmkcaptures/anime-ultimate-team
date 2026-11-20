@@ -2787,3 +2787,15 @@ body[data-fx=halloween] #fxLayer i { width: 22px; height: 12px; background: #1a0
 @keyframes fxBat { 0% { transform: translate(0, 10vh) scale(var(--s)) } 50% { transform: translate(30vw, 40vh) scale(var(--s)) } 100% { transform: translate(-10vw, 110vh) scale(var(--s)) } }
 html body[data-fx=halloween] #app { background: linear-gradient(115deg, #ff7a00 0 26%, #3a0a5a 26%) !important }
 @media (prefers-reduced-motion: reduce) { #fxLayer { display: none } }
+
+/* ================= ARTS DECK ================= */
+.dk-grid { display: grid; gap: 10px }
+.dk-row { display: grid; grid-template-columns: 50px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 14px; background: linear-gradient(160deg, #3a2a7a, var(--eN)); box-shadow: 0 0 0 3px rgba(255,255,255,.7), 0 4px 0 3px rgba(26,11,58,.5) }
+.dk-row.on { box-shadow: 0 0 0 3px #fff, 0 4px 0 3px rgba(26,11,58,.5) }
+.dk-row.tac { background: linear-gradient(160deg, #6a1a8a, #2a0f4a) }
+.dk-cost { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(180deg, #5fd6ff, #1460d8); color: #fff; font: 800 18px var(--eD); box-shadow: 0 0 0 2px #fff }
+.dk-tx b { display: block; font: 800 18px var(--eD); color: #fff } .dk-tx b em { font: 800 9px var(--eUI); font-style: normal; padding: 1px 6px; border-radius: 5px; background: var(--ePink); vertical-align: 3px; letter-spacing: .1em } .dk-tx small { font: 600 12px var(--eUI); color: rgba(255,255,255,.8) }
+.dk-q { display: flex; align-items: center; gap: 8px } .dk-q b { min-width: 24px; text-align: center; font: 800 22px var(--eD); color: var(--eY) }
+.dk-q button { width: 34px; height: 34px; border: 0; border-radius: 10px; background: #fff; color: var(--eN); font: 800 20px var(--eUI); cursor: pointer; box-shadow: 0 3px 0 rgba(26,11,58,.5) } .dk-q button:disabled { opacity: .35; cursor: default }
+.dk-starters { display: flex; gap: 12px; flex-wrap: wrap; padding: 6px 4px 12px }
+.tac-ic { font: 800 44px/1 var(--eUI); font-style: normal; filter: drop-shadow(0 3px 0 rgba(0,0,0,.4)) }

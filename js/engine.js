@@ -267,6 +267,16 @@ function fusionRecipes() {
   }
   return out
 }
+// ---------- ARTS DECKS ----------
+const DECK_SIZE = 20, DECK_MAX = { strike: 10, blast: 10, guard: 5, special: 4, burst: 3, charge: 3, transfer: 3, heal: 3, cleanse: 3 }, TACTICS = ['burst', 'charge', 'transfer', 'heal', 'cleanse']
+const STARTER_DECKS = [
+  { name: 'Balanced', c: { strike: 8, blast: 6, guard: 3, special: 3 } },
+  { name: 'Dragon Burst', c: { strike: 6, blast: 5, guard: 2, special: 2, burst: 3, transfer: 2 } },
+  { name: 'One-Card Carry', c: { strike: 6, blast: 3, guard: 2, special: 2, charge: 3, transfer: 3, heal: 1 } },
+  { name: 'Heal Wall', c: { strike: 6, blast: 4, guard: 4, special: 2, heal: 3, cleanse: 1 } },
+]
+function deckP() { const P = S.profile; if (!P.decks) P.decks = [{ name: 'Balanced', c: { strike: 8, blast: 6, guard: 3, special: 3 } }, { name: 'Dragon Burst', c: { ...STARTER_DECKS[1].c } }, { name: 'One-Card Carry', c: { ...STARTER_DECKS[2].c } }]; if (P.deckOn == null) P.deckOn = 0; return P.decks }
+function deckOk(c) { let n = 0, tac = 0; for (const [k, v] of Object.entries(c || {})) { if (!(k in DECK_MAX) || v < 0 || v > DECK_MAX[k] || v !== Math.round(v)) return 'Bad card count.'; n += v; if (TACTICS.includes(k)) tac += v } if (n !== DECK_SIZE) return 'A deck needs exactly 20 cards.'; if (tac > 8) return 'At most 8 Tactic cards.'; if (!c.strike) return 'Add at least one Strike.'; return '' }
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
@@ -639,6 +649,8 @@ function act(a) {
       P.shards -= r.cost; giveCard(r.out); P.last = [r.out]; bump('fuse'); addXP(40)
       return { msg: `Fusion complete: ${cardName(r.out)}!` }
     }
+    case 'deckSave': { deckP(); const i = +a.i; if (!(i >= 0 && i < 3)) return { error: 'Bad slot.' }; const er = deckOk(a.c); if (er) return { error: er }; P.decks[i] = { name: String(a.name || 'Deck ' + (i + 1)).slice(0, 20), c: { ...a.c } }; if (a.use) P.deckOn = i; return { msg: 'Deck saved' + (a.use ? ' and equipped.' : '.') } }
+    case 'deckUse': { deckP(); const i = +a.i; if (!(i >= 0 && i < 3)) return { error: 'Bad slot.' }; P.deckOn = i; return {} }
     case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }
     case 'equip': {
       const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
@@ -668,6 +680,7 @@ function state() {
     login: (() => { const { L, can, next } = loginP(); return { streak: L.streak, can, next, rw: LOGIN_RW } })(),
     evo: Object.fromEntries(cards().map(c => [c.key, evoNext(c.key)]).filter(x => x[1].length)), evoCopies: EVO_COPIES, evoCost: Object.fromEntries(cards().map(c => [c.key, Math.round(SHARD_COST[c.r] * .4)])),
     fusion: fusionRecipes(), gachaCost: GACHA_COST, gachaPool: GACHA.map(g => ({ label: g.label, rare: !!g.rare, w: g.w })),
+    decks: deckP(), deckOn: S.profile.deckOn || 0, deckMax: DECK_MAX, deckSize: DECK_SIZE, starterDecks: STARTER_DECKS,
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }

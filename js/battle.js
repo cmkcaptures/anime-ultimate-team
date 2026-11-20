@@ -37,7 +37,16 @@ const ARTS = {
   blast: { name: 'BLAST', cost: 2, col: '#ffc23a', desc: 'Energy blast · ENG' },
   guard: { name: 'GUARD', cost: 1, col: '#3dffa0', desc: 'Halve the next hit' },
   special: { name: 'SPECIAL', cost: 4, col: '#4aa8ff', desc: 'Signature move' },
+  burst: { name: 'BURST', cost: 0, col: '#ff3b6b', desc: 'Spend ALL Energy · huge hit', tactic: 1 },
+  charge: { name: 'POWER CHARGE', cost: 1, col: '#ff9a00', desc: 'Next attack +35%, stacks', tactic: 1 },
+  transfer: { name: 'ENERGY LINK', cost: 0, col: '#3ab8ff', desc: 'Bench feeds you +2 Energy', tactic: 1 },
+  heal: { name: 'RECOVER', cost: 2, col: '#2fe0b0', desc: 'Heal your fighter 18%', tactic: 1 },
+  cleanse: { name: 'CLEANSE', cost: 1, col: '#c9a8ff', desc: 'Remove burn/freeze · Guard up', tactic: 1 },
 }
+// tribes: field 3+ of a tribe for its bonus
+export const DRAGONS = ['NATSU', 'ACNOLOGIA', 'GOKU', 'GOGETA', 'VEGITO', 'SHENRON']
+const isDragon = c => c.name.split(' & ').some(n => DRAGONS.includes(n.trim()))
+const TAC_ICON = { burst: '💥', charge: '⚡', transfer: '🔗', heal: '✚', cleanse: '✦' }
 const pctOf = c => { const m = /(\d+)%\s*PWR/.exec((c.tx || []).join(' ')); return m ? +m[1] : 220 }
 const isAoe = c => /all enemies/i.test((c.tx || []).join(' '))
 const kitTxt = c => (c.tx || []).join(' ')
@@ -82,7 +91,12 @@ function passives(s) {
   p.dr = Math.min(p.dr, 18); p.dmg = Math.min(p.dmg, 12); p.crit = Math.min(p.crit, 12); p.heal = Math.min(p.heal, 12); p.gauge = Math.min(p.gauge, 15)
   return p
 }
-function refill(s) { while (s.hand.length < HAND) s.hand.push(drawArt(act(s))) }
+function refill(s) {
+  while (s.hand.length < HAND) {
+    if (s.deck) { if (!s.pile || !s.pile.length) { s.pile = []; for (const [k, v] of Object.entries(s.deck)) for (let i = 0; i < v; i++) s.pile.push(k); s.pile.sort(() => Math.random() - .5) } s.hand.push(s.pile.pop()) }
+    else s.hand.push(drawArt(act(s)))
+  }
+}
 function hit(att, def, base, stat, pierce, A, D, kind) {
   const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = PE(def)
   // defensive dodges / nullifies first
@@ -159,11 +173,20 @@ function playArt(B, who, idx) {
   const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], art = me.hand[idx], cost = ARTS[art].cost, a = act(me), d = act(foe)
   if (me.ki < cost || a.ko || d.ko) return null
   if (art === 'special' && me.confiscated) return null
+  if (art === 'burst' && me.ki < 2) return null
   me.ki -= cost; me.hand.splice(idx, 1)
-  me.seq.push(art)
   const ev = { who, art, hits: [] }
+  if (ARTS[art].tactic && art !== 'burst') {
+    if (art === 'charge') { me.chargeNext = (me.chargeNext || 0) + 35; ev.tactic = 'NEXT ATTACK +' + me.chargeNext + '%' }
+    else if (art === 'transfer') { me.ki = Math.min(KI_MAX, me.ki + 2); ev.tactic = '+2 ENERGY' }
+    else if (art === 'heal') { const h = Math.round(a.max * .18); a.hp = Math.min(a.max, a.hp + h); ev.tactic = '+' + h.toLocaleString() + ' HP' }
+    else if (art === 'cleanse') { a.burnT = 0; a.frozen = 0; a.guard = 1; ev.tactic = 'CLEANSED · GUARD UP' }
+    return ev
+  }
+  me.seq.push(art)
   const combo = comboFor(me.seq), dmgArts = me.seq.filter(x => x !== 'guard').length
-  const chain = 1 + Math.min(.32, Math.max(0, dmgArts - 1) * .08) + (combo ? combo.bonus : 0)
+  let chain = 1 + Math.min(.32, Math.max(0, dmgArts - 1) * .08) + (combo ? combo.bonus : 0)
+  if (art !== 'guard' && me.chargeNext) { chain *= 1 + me.chargeNext / 100; ev.charged = me.chargeNext; me.chargeNext = 0 }
   if (combo) { ev.combo = combo.name; me.seq = [] }
   ev.chain = art === 'guard' ? 0 : dmgArts
   const pierce = /Ignores Guard/.test(kitTxt(a.card))
@@ -175,6 +198,7 @@ function playArt(B, who, idx) {
     if (ea.benchChip) { const b = alive(foe).filter(f => f !== d)[0]; if (b) ev.hits.push({ t: b, ...hit(a, b, 260 * ea.benchChip / 100, a.pwr, false, me, foe, 'strike') }) }
     if (ea.chainBoost) a.rage = Math.min(40, (a.rage || 0) + ea.chainBoost)
   }
+  else if (art === 'burst') { const k = me.ki + cost, spent = me.ki; me.ki = 0; const drag = me.team.filter(f => !f.ko && isDragon(f.card)).length >= 3; ev.move = 'BURST · ' + spent + ' ENERGY' + (drag ? ' · DRAGON FURY' : ''); ev.hits.push({ t: d, ...hit(a, d, 210 * spent * chain * (drag ? 1.5 : 1), Math.max(a.pwr, a.ki), false, me, foe, 'special') }) }
   else if (art === 'blast') ev.hits.push({ t: d, ...hit(a, d, 420 * chain, a.ki, false, me, foe, 'blast') })
   else if (art === 'special') {
     const base = pctOf(a.card) * 3.2 * chain
@@ -235,6 +259,12 @@ function planTurn(B, level, who = 'ai') {
     if (!playable.length) break
     const hasSpecial = me.hand.includes('special'), opp = act(foe), mine = act(me)
     let pick = null
+    { const hi = me.hand.indexOf('heal'), ti = me.hand.indexOf('transfer'), ci = me.hand.indexOf('charge'), bi = me.hand.indexOf('burst'), cl = me.hand.indexOf('cleanse')
+      if (hi >= 0 && me.ki >= 2 && mine.hp / mine.max < .5) pick = ['heal', hi]
+      else if (ti >= 0 && me.ki <= KI_MAX - 2) pick = ['transfer', ti]
+      else if (cl >= 0 && me.ki >= 1 && (mine.burnT > 0)) pick = ['cleanse', cl]
+      else if (ci >= 0 && me.ki >= 3 && (hasSpecial || bi >= 0)) pick = ['charge', ci]
+      else if (bi >= 0 && me.ki >= 5 && !hasSpecial) pick = ['burst', bi] }
     // 1) finish a low target with the cheapest attack
     if (clever && opp.hp / opp.max < .12) pick = playable.find(([a]) => a === 'strike') || playable.find(([a]) => a !== 'guard')
     // 2) special if affordable
@@ -444,6 +474,7 @@ export function startBattle(stage) {
   const yours = P.team.filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
+  { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
   if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * .88); f.ki = Math.round(f.ki * .88); f.def = Math.round(f.def * 1.15) }
   if (stage.boost && stage.boost !== 1) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boost); for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * (1 + (stage.boost - 1) * .6)) }
   for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) {
@@ -540,16 +571,16 @@ export function startBattle(stage) {
     $a('.ar-ki').innerHTML = `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`
     const hand = $a('.ar-hand'); hand.innerHTML = ''
     const f = act(s), rc = X.tierCol(f.card.r), fx = Math.round((f.card.fx ?? .5) * 100), fy = Math.round((f.card.fy ?? .22) * 100)
-    const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['ENERGY', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'] }
+    const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['ENERGY', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'], burst: ['TACTIC', '#ff3b6b', '#ffd0dc'], charge: ['TACTIC', '#ff9a00', '#ffe2a8'], transfer: ['TACTIC', '#3ab8ff', '#c8ecff'], heal: ['TACTIC', '#2fe0b0', '#c8fff0'], cleanse: ['TACTIC', '#a46bff', '#e8d8ff'] }
     s.hand.forEach((a, i) => {
       const d = ARTS[a], sp = a === 'special', [kind, c1, c2] = KIND[a], b = document.createElement('button')
       b.className = 'art2 ' + a
       b.style.cssText = `--c1:${c1};--c2:${c2};--rc:${rc};--i:${i - (s.hand.length - 1) / 2};--art:url("${f.card.url}");--fx:${fx}%;--fy:${fy}%`
       b.innerHTML = `<span class="fr"></span><span class="pic"></span><span class="holo"></span><span class="glints"><i></i><i></i><i></i><i></i></span>
-        <span class="gem"><b>${d.cost}</b></span><span class="kind">${kind}</span>
-        <span class="sym">${ICON[a]}</span>
+        <span class="gem"><b>${a === 'burst' ? 'ALL' : d.cost}</b></span><span class="kind">${kind}</span>
+        <span class="sym">${ICON[a] || `<b class="tac-ic">${TAC_ICON[a]}</b>`}</span>
         <span class="plate"><b>${sp ? f.card.mv : d.name}</b><small>${sp ? (isAoe(f.card) ? 'HITS ALL ENEMIES' : 'MASSIVE SINGLE HIT') : d.desc.toUpperCase()}</small></span>`
-      b.disabled = !my || s.ki < d.cost
+      b.disabled = !my || s.ki < d.cost || (a === 'burst' && s.ki < 2)
       b.onclick = () => doArt(i)
       hand.append(b)
     })
@@ -619,8 +650,9 @@ export function startBattle(stage) {
     if (ev.swap) { log('Enemy switched fighters'); sfx('bswitch'); draw(); await wait(500); return }
     const side = ev.who, other = side === 'you' ? 'ai' : 'you'
     const atk = $a(`.ar-side.${side} .ar-active`)
+    if (ev.tactic) { log(`${act(B[side]).card.name} · ${ARTS[ev.art].name}`); floatTag(atk, ev.tactic, 'adv'); sfx(ev.art === 'heal' ? 'heal' : 'bguard'); await wait(450); draw(); return }
     if (ev.guard) { log(`${act(B[side]).card.name} braces · GUARD`); sfx('bguard'); atk.classList.add('guarding'); await wait(450); atk.classList.remove('guarding'); draw(); return }
-    const big = ev.art === 'special' || ev.art === 'ultimate', A = act(B[side]), col = tcol(A.card)
+    const big = ev.art === 'special' || ev.art === 'ultimate' || ev.art === 'burst', A = act(B[side]), col = tcol(A.card)
     const tgtEl = $a(`.ar-side.${other} .ar-active`)
     log(big ? `${ev.art === 'ultimate' ? ev.ult + ' · ' : ''}${ev.move}` : `${A.card.name} · ${ARTS[ev.art].name}`)
     if (ev.chain > 1 || ev.combo) chainPop(side, ev.chain, ev.combo)
