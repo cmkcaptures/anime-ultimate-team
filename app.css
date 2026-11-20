@@ -2826,7 +2826,8 @@ html body[data-fx=halloween] #app { background: linear-gradient(115deg, #ff7a00 
 .art2.item .sym { display: none }
 /* ================= HOME-SCREEN APP (iPhone full screen) ================= */
 @media (display-mode: standalone), (display-mode: fullscreen) {
-  #app { padding-top: env(safe-area-inset-top, 0); box-sizing: border-box }
+  html, body { height: 100%; min-height: 100vh; background: #2a1258 !important }
+  #app { height: 100vh !important; min-height: -webkit-fill-available; padding-top: env(safe-area-inset-top, 0); box-sizing: border-box }
 }
 /* stop iPhone auto-zoom: nothing wider than the screen, inputs at 16px */
 html, body { max-width: 100vw; overflow-x: hidden; touch-action: manipulation; -webkit-text-size-adjust: 100% }
