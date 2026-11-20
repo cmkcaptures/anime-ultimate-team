@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwp7p1bo'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor } from './battle.js?v=mwp7p1bo'
-import * as ACC from './account.js?v=mwp7p1bo'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp7p1bo'
+import { createFX } from './fx2d.js?v=mwp7r1bt'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor } from './battle.js?v=mwp7r1bt'
+import * as ACC from './account.js?v=mwp7r1bt'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp7r1bt'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp7p1bo'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp7r1bt'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }

@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp7p1bo'
-import { sfx, sfxOn, music } from './sfx.js?v=mwp7p1bo'
-import { createFX } from './fx2d.js?v=mwp7p1bo'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp7r1bt'
+import { sfx, sfxOn, music } from './sfx.js?v=mwp7r1bt'
+import { createFX } from './fx2d.js?v=mwp7r1bt'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -512,7 +512,7 @@ function campPage(el, ok) {
       row.disabled = !ok || !open
       row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
         try { sessionStorage.setItem('campOutro', JSON.stringify({ c: ch.id, s: st.n, had: s > 0 })) } catch { }
-        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: st.boss ? 4 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: st.boss ? 1.25 : 1 + st.n * .03, team: campTeam(st.enemy) })
+        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: st.boss ? 1.25 : 1 + st.n * .03, team: campTeam(st.enemy) })
       })
       list.append(row)
     })
@@ -864,7 +864,7 @@ export function startBattle(stage) {
     const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
     if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
     log('Enemy turn'); turnBanner('ENEMY TURN', false); draw(); await wait(800)
-    for (const ev of aiTurn(B, stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
+    for (const ev of aiTurn(B, stage.mode === 'ranked' && (stage.rating || 0) >= 80 ? 5 : stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
     if (B.you.skip || act(B.you).frozen) { B.you.skip = 0; act(B.you).frozen = 0; log('You lose your turn!'); turnBanner('TIME STOPPED', true); await wait(900); B.turn++; return aiPhase() }
     B.turn++
     const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); act(B.ai).fort = 0
