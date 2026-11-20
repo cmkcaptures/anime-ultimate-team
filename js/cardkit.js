@@ -38,6 +38,7 @@ export const ANIME = {
   SL: { name: 'SOLO LEVELING', tag: 'SL', type: 'devil' },
   DN: { name: 'DEATH NOTE', tag: 'DN', type: 'psychic' },
   PKM: { name: 'POKÉMON', tag: 'PKM', type: 'bond' },
+  AOT: { name: 'ATTACK ON TITAN', tag: 'AOT', type: 'titan' },
 }
 export const TYPE = {
   ki: { c: ['#ff7a00', '#b80018', '#ffd400'], en: 'AURA' },
@@ -59,6 +60,7 @@ export const TYPE = {
   flame: { c: ['#ffb000', '#8a1000', '#fff0a0'], en: 'FLAME' },
   hero: { c: ['#ffe03d', '#c81020', '#ffffff'], en: 'HERO' },
   bond: { c: ['#ffcb05', '#2a75bb', '#ff3d3d'], en: 'BOND' },
+  titan: { c: ['#c8a070', '#3a1a10', '#ff6a3d'], en: 'TITAN' },
 }
 
 export const DISP = n => `italic 900 ${n}px "Sofia Sans Extra Condensed"`
