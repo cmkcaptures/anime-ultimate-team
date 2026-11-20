@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp7ak32'
-import { sfx, sfxOn, music } from './sfx.js?v=mwp7ak32'
-import { createFX } from './fx2d.js?v=mwp7ak32'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp7hwon'
+import { sfx, sfxOn, music } from './sfx.js?v=mwp7hwon'
+import { createFX } from './fx2d.js?v=mwp7hwon'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -419,7 +419,15 @@ function scene(lines, title, bg, done) {
   o.onclick = e => { if (e.target.closest('.scn-skip')) return end(); i++; i >= lines.length ? end() : show() }
   document.body.append(o); show()
 }
+function campTeam(specs) {
+  const used = new Set(), out = []
+  for (const sp of specs) { const [n, o] = sp.split('#'), list = X.POOL.filter(c => c.name === n && !used.has(c.key)).sort((a, b) => b.ovr - a.ovr), c = (o && list.find(x => x.ovr === +o)) || list[0]; if (c) { used.add(c.key); out.push(c.key) } }
+  return out
+}
 function campPage(el, ok) {
+  { let pend = null; try { pend = JSON.parse(sessionStorage.getItem('campOutro') || 'null') } catch { }
+    if (pend) { sessionStorage.removeItem('campOutro'); const C0 = X.ST().campP || { stars: {} }; const ch0 = X.ST().camp.find(c => c.id === pend.c), st0 = ch0 && ch0.stages.find(s => s.n === pend.s)
+      if (st0 && st0.outro && (C0.stars[pend.c + ':' + pend.s] || 0) > 0 && !pend.had) setTimeout(() => scene(st0.outro, 'AFTER · ' + st0.name, null, () => X.go('battle')), 300) } }
   const { h } = X, ST = X.ST(), C = ST.campP || { stars: {}, chests: [] }, tot = Object.values(C.stars).reduce((n, v) => n + v, 0)
   for (const ch of ST.camp) {
     const boss = X.POOL.find(c => c.key === ch.boss)
@@ -430,11 +438,11 @@ function campPage(el, ok) {
     const list = h('div', 'camp-list')
     ch.stages.forEach(st => {
       const key = ch.id + ':' + st.n, s = C.stars[key] || 0, open = st.n === 1 || (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = byName(st.enemy[0])
-      const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${st.enemy.join(', ')} · rating ${st.rating}</em></span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
+      const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${[...new Set(st.enemy.map(x => x.split('#')[0]))].join(', ')}</em></span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
       row.disabled = !ok || !open
       row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
-        const main = st.enemy.map(byName).filter(Boolean)
-        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: st.boss ? 4 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: st.boss ? 1.25 : 1 + st.n * .03, team: teamFrom(main, st.rating) })
+        try { sessionStorage.setItem('campOutro', JSON.stringify({ c: ch.id, s: st.n, had: s > 0 })) } catch { }
+        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: st.boss ? 4 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: st.boss ? 1.25 : 1 + st.n * .03, team: campTeam(st.enemy) })
       })
       list.append(row)
     })

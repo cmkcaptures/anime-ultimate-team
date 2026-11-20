@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp7ak32'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp7hwon'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -316,30 +316,90 @@ const AWK_SH = { C: 60, U: 100, R: 160, E: 260, L: 420, M: 700, X: 1100 }
 // each stage: intro scene lines [speaker card name, text], enemy card names, rating, reward coins
 const CAMPAIGN = [
   { id: 1, name: 'The Worlds Collide', sub: 'Chapter 1 · Attack on Titan × Naruto', boss: 'Mythic/eren founding titan.jpg', stages: [
-    { n: 1, name: 'Shiganshina Falls', enemy: ['BERTHOLDT', 'DINA', 'FALCO'], rating: 72, coins: 1000, scene: [
-      ['ARMIN', 'Eren! The sky over the wall just... split open. Like glass.'],
-      ['EREN', 'Forget the sky. The Colossal Titan is back. And it brought friends.'],
-      ['MIKASA', 'Stay behind me. Whatever came through that crack, we fight it together.']] },
-    { n: 2, name: 'A Stranger in Orange', enemy: ['NARUTO', 'KAKASHI', 'JIRAIYA'], rating: 76, coins: 1500, scene: [
-      ['NARUTO', 'Whoa! Where am I? And why are the giants naked?!'],
-      ['LEVI', 'A brat in a jumpsuit fell out of the sky. Tch. Restrain him.'],
-      ['NARUTO', 'Restrain me? Believe it, you\'ll have to beat me first!']] },
-    { n: 3, name: 'Titans and Shinobi', enemy: ['REINER', 'ANNIE', 'BERTHOLDT'], rating: 80, coins: 2000, scene: [
-      ['KAKASHI', 'Those cracks are pulling our worlds together. Fighting each other won\'t close them.'],
-      ['ERWIN', 'Then we fight side by side. The Warriors are using the chaos to strike.'],
-      ['NARUTO', 'Shadow clones and flying swordsmen? Now THAT\'S a team!']] },
-    { n: 4, name: 'Clouds of Red', enemy: ['PAIN', 'ITACHI', 'OBITO'], rating: 84, coins: 2500, scene: [
-      ['JIRAIYA', 'Red clouds on black cloaks. The Akatsuki came through the rift too.'],
-      ['PAIN', 'This world has its own god-power. The Founding Titan. We will take it.'],
-      ['EREN', 'Nobody takes anything from us. Not again.']] },
-    { n: 5, name: 'The Beast\'s Bargain', enemy: ['ZEKE', 'MADARA', 'LARA TYBUR'], rating: 88, coins: 3000, scene: [
-      ['ZEKE', 'Madara and I want the same thing: one will, one world, no more war.'],
-      ['MADARA', 'Infinite Tsukuyomi and the Coordinate together. A perfect dream.'],
-      ['LEVI', 'I promised Erwin I\'d kill the Beast. Your friend just makes it two for one.']] },
-    { n: 6, name: 'BOSS · The Founding Titan', boss: 1, enemy: ['EREN', 'ZEKE', 'MADARA', 'PAIN'], rating: 92, coins: 5000, scene: [
-      ['MIKASA', 'Eren... what have they done to you?'],
-      ['EREN', 'The worlds are merging, Mikasa. I can see every path. I\'m the only one who can end it.'],
-      ['NARUTO', 'Then I\'ll drag you back, just like I did with Sasuke. That\'s my nindo!']] },
+    { n: 1, name: 'The Sky Breaks', rating: 72, coins: 1000,
+      enemy: ['REINER', 'BERTHOLDT', 'ANNIE', 'FALCO', 'ZEKE#81', 'LARA TYBUR'],
+      scene: [
+        ['ARMIN', 'Captain. The sky over Shiganshina... it\'s cracking. Like a pane of glass.'],
+        ['LEVI', 'Glass doesn\'t bleed smoke. Something\'s coming through.'],
+        ['MIKASA', 'Those shapes in the steam. That\'s the Armored Titan. And the Colossal.'],
+        ['ARMIN', 'That\'s impossible. Bertholdt is dead. I... I\'m the one who ate him.'],
+        ['LEVI', 'Then work out how a dead man walks later. Blades out.']],
+      outro: [
+        ['ARMIN', 'They didn\'t recognise us. Reiner looked at me like we\'d never met.'],
+        ['MIKASA', 'Because to them, we haven\'t. They\'re from before. Before any of it.'],
+        ['MIKASA', 'Eren. You haven\'t said a word.'],
+        ['EREN', '...I\'ve seen this sky before. In someone else\'s memories.']] },
+    { n: 2, name: 'Strangers in the Smoke', rating: 76, coins: 1500,
+      enemy: ['NARUTO#83', 'SASUKE#83', 'KAKASHI', 'JIRAIYA', 'MIGHT GUY', 'NARUTO#69'],
+      scene: [
+        ['NARUTO', 'Ugh... Kakashi-sensei? Where\'s the village? Where\'s ANYTHING?'],
+        ['KAKASHI', 'Stay sharp. That rift felt like Kamui. Someone pulled us here on purpose.'],
+        ['LEVI', 'More of them, falling out of the same crack. Don\'t let them shift.'],
+        ['NARUTO', 'Shift?! Hey, wait, we\'re not your enemy!'],
+        ['JIRAIYA', 'Save the speech, kid. Soldiers who\'ve lost this much don\'t listen first.']],
+      outro: [
+        ['KAKASHI', 'Your Titans. Our Tailed Beasts. One great power, split into pieces and handed down through blood.'],
+        ['ARMIN', 'You\'re saying our worlds were built the same way?'],
+        ['KAKASHI', 'I\'m saying whoever opened that rift knows it too.'],
+        ['LEVI', 'Tch. You fight like you mean it. That\'s enough for now.'],
+        ['NARUTO', 'So we\'re a team! Believe it!'],
+        ['LEVI', 'Don\'t push it.']] },
+    { n: 3, name: 'The Man Behind the Mask', rating: 80, coins: 2000,
+      enemy: ['OBITO#85', 'REINER', 'ANNIE', 'BERTHOLDT', 'FALCO', 'OBITO#77'],
+      scene: [
+        ['KAKASHI', 'There. The air\'s twisting again. I\'d know that technique anywhere.'],
+        ['OBITO', 'Kakashi. You followed me across worlds. Still chasing the past.'],
+        ['ARMIN', 'It\'s him. He\'s pulling the Warriors out of time, back when they still believed in Marley.'],
+        ['OBITO', 'Soldiers who already know how to kill Titans. Why build an army when history already built one for me?'],
+        ['KAKASHI', 'Obito. Whatever Madara promised you, it isn\'t worth this.']],
+      outro: [
+        ['OBITO', 'Kill me if you want. The door is already open.'],
+        ['OBITO', 'Madara wanted a world without war. And this world has a god buried in its sand.'],
+        ['KAKASHI', 'A god?'],
+        ['EREN', '...The Founding Titan.'],
+        ['MIKASA', 'Eren, how do you know that\'s what he means?']] },
+    { n: 4, name: 'Red Clouds Over Paradis', rating: 84, coins: 2500,
+      enemy: ['PAIN', 'ITACHI#87', 'OBITO#77', 'MADARA#78', 'ITACHI#83', 'OBITO#85'],
+      scene: [
+        ['PAIN', 'Shinobi and soldiers standing side by side. Pain has a way of uniting people.'],
+        ['JIRAIYA', 'Nagato. Still hiding behind those eyes.'],
+        ['ITACHI', 'Naruto. Turn back. You don\'t understand what\'s waiting at the end of this.'],
+        ['NARUTO', 'Not a chance! You guys always talk like you\'ve already seen the ending!'],
+        ['ITACHI', '...Someone has.']],
+      outro: [
+        ['ITACHI', 'You fought well. Now listen, because I\'ll only say this once.'],
+        ['ITACHI', 'Madara and the Beast Titan aren\'t the ones holding the strings. The first crack was opened from your side of the sky.'],
+        ['ARMIN', 'Our side? None of us can do anything like that.'],
+        ['ITACHI', 'Not with their hands. With their memories. Watch the one who stays quiet.'],
+        ['MIKASA', '...Eren?']] },
+    { n: 5, name: 'The Beast\'s Bargain', rating: 88, coins: 3000,
+      enemy: ['ZEKE#88', 'MADARA#94', 'YMIR & ZEKE', 'OBITO#93', 'ZEKE#81', 'LARA TYBUR'],
+      scene: [
+        ['ZEKE', 'Madara and I want the same thing. No more children born just to be fed to war.'],
+        ['MADARA', 'The Infinite Tsukuyomi, poured through your Paths. Every living soul dreaming in peace. Forever.'],
+        ['LEVI', 'I promised Erwin I\'d cut you down, Zeke. Brought a friend this time? Good. Saves me a trip.'],
+        ['ZEKE', 'Eren. You understand, don\'t you? Come and stand beside your brother.'],
+        ['EREN', '...Not yet.']],
+      outro: [
+        ['ZEKE', 'Why... why isn\'t the Coordinate answering me?'],
+        ['MADARA', 'The Paths are rejecting the Rinnegan. No... someone is already inside.'],
+        ['ARMIN', 'Eren? Eren, where are you going?!'],
+        ['EREN', 'I\'m sorry, Armin. I saw all of this, every path. I needed them to tear the sky open.'],
+        ['EREN', 'Madara\'s eyes. Zeke\'s blood. Obito\'s door. All of it leads to me.']] },
+    { n: 6, name: 'BOSS · Freedom', boss: 1, rating: 92, coins: 5000,
+      enemy: ['EREN#94', 'ZEKE#88', 'MADARA#94', 'OBITO#93', 'EREN#87', 'ERWIN'],
+      scene: [
+        ['EREN', 'Two worlds. Two endless wars. I can end both of them, and I\'m the only one who can.'],
+        ['LEVI', 'Erwin... even you? He\'s dragging the dead along on puppet strings.'],
+        ['MIKASA', 'Eren. Please. Come home.'],
+        ['EREN', 'I\'m free, Mikasa. For the first time in my life, I\'m actually free.'],
+        ['NARUTO', 'I know that look. Sasuke had it too. I dragged him back, and I\'ll drag you back!']],
+      outro: [
+        ['EREN', 'You won. It doesn\'t matter.'],
+        ['EREN', 'The Rumbling is already marching. Not here. Through the rift. Into your world, Naruto.'],
+        ['KAKASHI', 'Konoha...'],
+        ['ARMIN', 'Then we follow it. All of us.'],
+        ['NARUTO', 'Yeah. Whatever\'s waiting on the other side, we face it together.']] },
   ] },
 ]
 const CAMP_CHEST = [{ at: 9, coins: 5000, pack: 'jumbo' }, { at: 18, coins: 10000, pack: 'premium', shards: 2000 }]
