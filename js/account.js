@@ -3,7 +3,7 @@ const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/'
 let A, F, auth, db, USER = null, PROFILE = null
 
 const css = `
-.acc{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:16px;background:radial-gradient(60% 50% at 50% 30%,#2a1430,#07070b 75%);font-family:Nunito,system-ui,sans-serif;color:#fff}
+.acc{position:fixed;inset:0;z-index:10001;display:grid;place-items:center;padding:16px;background:radial-gradient(60% 50% at 50% 30%,#2a1430,#07070b 75%);font-family:Nunito,system-ui,sans-serif;color:#fff}
 .acc-card{width:min(400px,100%);padding:30px 26px 24px;border-radius:22px;background:linear-gradient(160deg,#1f1a2c,#120f1a);box-shadow:0 30px 70px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.1)}
 .acc h1{margin:0 0 2px;font:italic 900 40px/.9 "Sofia Sans Extra Condensed",sans-serif;background:linear-gradient(90deg,#ff7ab8,#ffd36a,#6affc0,#6ac8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .acc p{margin:0 0 18px;font-weight:700;font-size:13px;color:rgba(255,255,255,.6)}

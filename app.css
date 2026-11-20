@@ -2917,3 +2917,11 @@ html { background: #2a1258 !important; min-height: 100% }
 .tb-o6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 10px }
 .tb-oc { border: 0; padding: 0; background: none; cursor: pointer; display: grid; gap: 4px; text-align: center } .tb-oc img, .tb-oc canvas { width: 100%; border-radius: 8px } .tb-oc small { font: 700 10px var(--eUI, Inter); color: #c8b8ff }
 @media (max-width: 540px) { .tb-o6 { grid-template-columns: repeat(3, 1fr) } }
+/* ================= BOOT LOADING SCREEN ================= */
+#boot { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; background: linear-gradient(115deg, #ff8a1f 0 30%, #7b2ff2 30%); transition: opacity .45s }
+#boot.out { opacity: 0; pointer-events: none }
+.bt-in { display: grid; gap: 14px; justify-items: center; text-align: center }
+.bt-in b { font: italic 900 52px/.9 'Barlow Condensed', 'Arial Narrow', sans-serif; color: #fff; -webkit-text-stroke: 2px #1a0f3a; paint-order: stroke fill; text-shadow: 0 6px 0 #1a0f3a }
+.bt-in i { width: min(280px, 70vw); height: 14px; border-radius: 999px; background: #1a0f3a; box-shadow: 0 0 0 3px #fff; overflow: hidden }
+.bt-in i s { display: block; height: 100%; width: 5%; background: repeating-linear-gradient(115deg, #ffe14a 0 10px, #ffb000 10px 20px); transition: width .3s }
+.bt-in small { font: 800 13px Inter, sans-serif; letter-spacing: .14em; color: #fff; text-transform: uppercase }

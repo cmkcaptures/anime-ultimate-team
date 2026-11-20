@@ -95,13 +95,21 @@ const idb = () => DBP || (DBP = new Promise(res => { try { const r = indexedDB.o
 async function idbGet(k) { const db = await idb(); if (!db) return null; return new Promise(r => { try { const q = db.transaction('art').objectStore('art').get(k); q.onsuccess = () => r(q.result || null); q.onerror = () => r(null) } catch { r(null) } }) }
 async function idbPut(k, v) { const db = await idb(); if (!db) return; try { db.transaction('art', 'readwrite').objectStore('art').put(v, k) } catch { } }
 export const ART = {}, ARTP = {}
+let WK = undefined, WID = 0; const WJOBS = new Map()
+function cutWorker() {
+  if (WK !== undefined) return WK
+  try { if (typeof OffscreenCanvas === 'undefined' || !window.Worker) return WK = null; WK = new Worker(new URL('./cutout-worker.js', import.meta.url)); WK.onmessage = ({ data }) => { const j = WJOBS.get(data.id); if (!j) return; WJOBS.delete(data.id); data.err ? j.rej(data.err) : j.res(data) }; WK.onerror = () => { for (const j of WJOBS.values()) j.rej('worker'); WJOBS.clear(); WK = null } } catch { WK = null }
+  return WK
+}
 export function getArt(c) {
   return ARTP[c.id] || (ARTP[c.id] = (async () => {
     const ck = `v2|${c.key}|${c.mt}${c.nocut ? '|n' : ''}`
     const blob = await idbGet(ck)
     if (blob) return ART[c.id] = await loadImg(URL.createObjectURL(blob))
+    // heavy part (decode + background removal) runs in a worker so the game never stutters
+    const W = cutWorker()
+    if (W) { try { const r = await new Promise((res, rej) => { const id = ++WID; WJOBS.set(id, { res, rej }); W.postMessage({ id, url: new URL(c.url, location.href).href, nocut: !!c.nocut }) }); idbPut(ck, r.blob); return ART[c.id] = r.bmp } catch { } }
     const raw = await loadImg(c.url), can = c.nocut ? (() => { const k = document.createElement('canvas'); k.width = raw.width; k.height = raw.height; k.getContext('2d').drawImage(raw, 0, 0); return k })() : cutout(raw)
-    // use the canvas straight away; save the cached copy later when the browser is idle
     setTimeout(() => can.toBlob(b => b && idbPut(ck, b), 'image/webp', .9), 1500)
     return ART[c.id] = can
   })())

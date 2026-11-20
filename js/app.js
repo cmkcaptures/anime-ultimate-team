@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwp87jke'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS } from './battle.js?v=mwp87jke'
-import * as ACC from './account.js?v=mwp87jke'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp87jke'
+import { createFX } from './fx2d.js?v=mwp8fcry'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS } from './battle.js?v=mwp8fcry'
+import * as ACC from './account.js?v=mwp8fcry'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp8fcry'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp87jke'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp8fcry'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -187,6 +187,8 @@ const TABS = ['home', 'cards', 'team', 'market', 'shop', 'battle']
 const TITLES = { guide: 'HOW TO PLAY',  deck: 'ARTS DECK',  museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
 let CUR = null, CURARG = null, curEl = null
 const PAGES = {}
+const NAVTOP = new Map(); addEventListener('resize', () => NAVTOP.clear())
+const navTop = b => { if (!NAVTOP.has(b)) NAVTOP.set(b, b.offsetTop); return NAVTOP.get(b) }
 function go(name, arg, opts = {}) {
   if (!opts.silent && name !== CUR) sfx('nav')
   document.body.dataset.page = name;
@@ -203,7 +205,7 @@ function go(name, arg, opts = {}) {
   el.classList.add('in'); setTimeout(() => el.classList.remove('in'), 900)
   $('#ptitle').textContent = TITLES[name] || ''
   const tab = TABS.includes(name) ? name : name === 'pass' ? 'battle' : name === 'pack' || name === 'results' || name === 'wonder' || name === 'missions' ? (name === 'missions' ? null : 'home') : null
-  document.querySelectorAll('#nav button').forEach((b, i) => { const on = b.dataset.go === tab; b.classList.toggle('on', on); if (on) { $('#navPill').style.setProperty('--i', i); $('#navPill').style.setProperty('--py', b.offsetTop + 'px') } })
+  document.querySelectorAll('#nav button').forEach((b, i) => { const on = b.dataset.go === tab; b.classList.toggle('on', on); if (on) { $('#navPill').style.setProperty('--i', i); $('#navPill').style.setProperty('--py', navTop(b) + 'px') } })
   $('#fab').hidden = name !== 'home'
 }
 const rerender = () => { if (curEl && PAGES[CUR]) { curEl.innerHTML = ''; PAGES[CUR](curEl, CURARG) } }
@@ -750,15 +752,27 @@ PAGES.missions = (el) => {
 }
 
 // ================= boot =================
+const bootP = (p, t) => { const b = document.getElementById('btBar'), x = document.getElementById('btTx'); if (b) b.style.width = Math.round(p * 100) + '%'; if (x && t) x.textContent = t }
+const bootDone = () => { const o = document.getElementById('boot'); if (o) { o.classList.add('out'); setTimeout(() => o.remove(), 500) } }
 ;(async () => {
+  bootP(.1, 'Loading cards…')
   const raw = await api('/api/cards'); POOL = raw.map((c, i) => ({ ...c, uid: i, total: raw.length, t: ANIME[c.anime] ? ANIME[c.anime].type : 'ki' }))
   BYKEY = Object.fromEntries(POOL.map(c => [c.key, c]))
+  bootP(.3, 'Loading your club…')
   const s = await api('/api/state'); SKEW = s.now - Date.now(); applyState(s)
   // bring over the very first browser save, once
   try { const old = JSON.parse(localStorage.getItem('aut-club-v1')); if (old && old.cards && Object.keys(old.cards).length && !P.imported && !P.club.packs) { await act('import', { club: old, team: JSON.parse(localStorage.getItem('aut-team-v1')) }); toast('Moved your old box and team into this save.', 'gold') } } catch { }
-  await fontsReady
+  bootP(.45, 'Loading fonts…'); await fontsReady
+  { // preload your team and partner art so the first screens draw instantly
+    const keys = [...new Set(P.team.filter(Boolean))], L = keys.map(k => BYKEY[k]).filter(Boolean); let done = 0
+    bootP(.5, 'Preparing your team…')
+    await Promise.race([Promise.all(L.map(c => thumbURL(eff(c), 340, true).then(() => bootP(.5 + .45 * (++done / L.length))).catch(() => { }))), new Promise(r => setTimeout(r, 7000))])
+  }
+  bootP(1, 'Ready!')
   const hsh = location.hash.slice(1), [name, ...rest] = hsh.split('-')
-  go(PAGES[name] ? name : 'home', rest.join('-') || null, { silent: !hsh })
+  go(PAGES[name] ? name : 'home', rest.join('-') || null, { silent: !hsh }); bootDone()
+  // warm the rest of your collection in the background (cached forever after)
+  setTimeout(() => { for (const c of owned().sort((a, b) => b.ovr - a.ovr).slice(0, 80)) thumbURL(eff(c), 300).catch(() => { }) }, 2500)
   setInterval(async () => {
     await refresh()
     if (CUR === 'market' && MS.tab !== 0) { await loadMarket(); if ($('#modal').hidden) rerender() }
