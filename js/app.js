@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwp7sc1j'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor } from './battle.js?v=mwp7sc1j'
-import * as ACC from './account.js?v=mwp7sc1j'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp7sc1j'
+import { createFX } from './fx2d.js?v=mwp7x1n5'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor } from './battle.js?v=mwp7x1n5'
+import * as ACC from './account.js?v=mwp7x1n5'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp7x1n5'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp7sc1j'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp7x1n5'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -1002,7 +1002,7 @@ function shopHero(el) {
       <span class="sh-tag">${t === 'premium' ? '★ FEATURED' : pk.anime ? 'SERIES PACK' : 'CORE PACK'}</span>
       <h2>${pk.name}</h2>
       <p>${packDesc(t)}</p>
-      <div class="sh-meta"><span><b>5</b> cards</span><span><b>${packPool(t).length}</b> in pool</span>${t === 'premium' ? '<span class="gold"><b>EPIC+</b> guaranteed</span>' : ''}</div>
+      <div class="sh-meta"><span><b>${pk.size || 5}</b> cards</span><span><b>${packPool(t).length}</b> in pool</span>${t === 'premium' ? '<span class="gold"><b>EPIC+</b> guaranteed</span>' : ''}</div>
       <div class="sh-odds"></div>
       <div class="sh-buy"></div>
     </div>`
@@ -1019,8 +1019,10 @@ function shopHero(el) {
   if (t === 'lightning') { const L = ST.light; buy.disabled = buy.disabled || L.n < 1; bb.after(h('div', 'lt-stock', `⚡ <b>${L.n}/${L.max}</b> in stock${L.next ? ` · next in <span class="timer" data-until="${L.next - SKEW}"></span>` : ''}`)) }
   buy.onclick = async () => { const x = await act('buyPack', { pack: t }); if (!x.error) openPack(t) }
   bb.append(buy)
+  if (t !== 'lightning') { const c10 = Math.round(pk.cost * 9), ten = h('button', 'btn gold big', `<span>BUY ×10</span><b><i class="coin-i"></i>${fmt(c10)}</b>`); ten.disabled = P.coins < c10; ten.onclick = async () => { const x = await act('buyPack', { pack: t, count: 10 }); if (!x.error) multiOpen(t, 10) }; bb.append(ten) }
   { const wi = h('button', 'btn dark big', '<span>WHAT\'S INSIDE</span>'); wi.onclick = () => packContents(t); bb.append(wi) }
   if (pend) { const o = h('button', 'btn green big', `<span>OPEN</span><b>${pend} READY</b>`); o.onclick = () => openPack(t); bb.append(o) }
+  if (pend > 1) { const o = h('button', 'btn green big', `<span>OPEN ALL</span><b>${Math.min(pend, 50)} AT ONCE</b>`); o.onclick = () => multiOpen(t, Math.min(pend, 50)); bb.append(o) }
   el.append(hero)
   // pack selector strip
   const strip = h('div', 'sh-strip')
