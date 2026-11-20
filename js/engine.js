@@ -748,6 +748,7 @@ async function boot() {
     if (q === 'on' && !P.allBak) P.allBak = JSON.parse(JSON.stringify(P.club.cards))
     if (P.allBak && q !== 'off') { const now = Date.now(); for (const c of CARDS) if (!P.club.cards[c.key]) P.club.cards[c.key] = { n: 1, first: now, last: now, lvl: 0, ser: 999, tmp: 1 } }
     else if (q === 'off' && P.allBak) { P.club.cards = P.allBak; delete P.allBak }
+    if (q === 'wipe' && !P.wiped) { P.club.cards = {}; delete P.allBak; P.team = [null, null, null, null, null, null]; P.avatar = null; P.coins = 3000000; P.wiped = 1 }
     if (q) { history.replaceState(null, '', location.pathname); S.savedAt = Date.now(); setTimeout(save, 500) } }
   S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
   for (const [k, o] of Object.entries(S.profile.club.cards)) if (!o.ser && byKey(k)) o.ser = rollSerial(k)
