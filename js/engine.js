@@ -739,7 +739,7 @@ async function boot() {
   { const q = new URLSearchParams(location.search).get('allcards'), P = S.profile
     if (q === 'on' && !P.allBak) { P.allBak = JSON.parse(JSON.stringify(P.club.cards)); const now = Date.now(); for (const c of CARDS) if (!P.club.cards[c.key]) P.club.cards[c.key] = { n: 1, first: now, last: now, lvl: 0, ser: 999, tmp: 1 } }
     else if (q === 'off' && P.allBak) { P.club.cards = P.allBak; delete P.allBak }
-    if (q) history.replaceState(null, '', location.pathname) }
+    if (q) { history.replaceState(null, '', location.pathname); S.savedAt = Date.now(); setTimeout(save, 500) } }
   S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
   for (const [k, o] of Object.entries(S.profile.club.cards)) if (!o.ser && byKey(k)) o.ser = rollSerial(k)
   // cards moved between rarity folders get a new key (folder/file); re-link everything by file name
