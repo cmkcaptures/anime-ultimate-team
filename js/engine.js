@@ -268,7 +268,13 @@ function fusionRecipes() {
   return out
 }
 // ---------- ARTS DECKS ----------
-const DECK_SIZE = 20, DECK_MAX = { strike: 10, blast: 10, guard: 5, special: 4, burst: 3, charge: 3, transfer: 3, heal: 3, cleanse: 3 }, TACTICS = ['burst', 'charge', 'transfer', 'heal', 'cleanse']
+const ITEMS = {
+  senzu: { name: 'SENZU BEAN', anime: 'DBZ', art: 'items/senzu.jpg', cost: 2, desc: 'Fully heals your active fighter and clears burn and freeze.' },
+  cylinder: { name: 'MAGIC CYLINDER', anime: 'YGO', art: 'items/cylinder.jpg', cost: 2, desc: 'Trap: the next attack on your active fighter is sent straight back at the attacker.' },
+}
+const ITEM_MAX = 2
+function itemsP() { const P = S.profile; if (!P.items) P.items = { senzu: 1, cylinder: 1 }; return P.items }
+const DECK_SIZE = 20, DECK_MAX = { strike: 10, blast: 10, guard: 5, special: 4, burst: 3, charge: 3, transfer: 3, heal: 3, cleanse: 3, senzu: 1, cylinder: 1 }, TACTICS = ['burst', 'charge', 'transfer', 'heal', 'cleanse']
 const STARTER_DECKS = [
   { name: 'Balanced', c: { strike: 8, blast: 6, guard: 3, special: 3 } },
   { name: 'Dragon Burst', c: { strike: 6, blast: 5, guard: 2, special: 2, burst: 3, transfer: 2 } },
@@ -276,7 +282,7 @@ const STARTER_DECKS = [
   { name: 'Heal Wall', c: { strike: 6, blast: 4, guard: 4, special: 2, heal: 3, cleanse: 1 } },
 ]
 function deckP() { const P = S.profile; if (!P.decks) P.decks = [{ name: 'Balanced', c: { strike: 8, blast: 6, guard: 3, special: 3 } }, { name: 'Dragon Burst', c: { ...STARTER_DECKS[1].c } }, { name: 'One-Card Carry', c: { ...STARTER_DECKS[2].c } }]; if (P.deckOn == null) P.deckOn = 0; return P.decks }
-function deckOk(c) { let n = 0, tac = 0; for (const [k, v] of Object.entries(c || {})) { if (!(k in DECK_MAX) || v < 0 || v > DECK_MAX[k] || v !== Math.round(v)) return 'Bad card count.'; n += v; if (TACTICS.includes(k)) tac += v } if (n !== DECK_SIZE) return 'A deck needs exactly 20 cards.'; if (tac > 8) return 'At most 8 Tactic cards.'; if (!c.strike) return 'Add at least one Strike.'; return '' }
+function deckOk(c) { let n = 0, tac = 0; for (const [k, v] of Object.entries(c || {})) { if (!(k in DECK_MAX) || v < 0 || v > DECK_MAX[k] || v !== Math.round(v)) return 'Bad card count.'; n += v; if (TACTICS.includes(k)) tac += v } if (n !== DECK_SIZE) return 'A deck needs exactly 20 cards.'; if (tac > 8) return 'At most 8 Tactic cards.'; { const it = itemsP(); let ni = 0; for (const k in ITEMS) { if ((c[k] || 0) > (it[k] || 0)) return 'You don\'t own that item.'; ni += c[k] || 0 } if (ni > ITEM_MAX) return 'At most 2 items.' }; if (!c.strike) return 'Add at least one Strike.'; return '' }
 // ---------- GETTING STARTED ----------
 function onboarding() {
   const P = S.profile, B = P.battle || {}, done = P.onb || {}
@@ -432,11 +438,12 @@ function act(a) {
     }
     case 'openPack': {
       if (!(P.pending[a.pack] > 0)) return { error: 'No unopened pack of that type.' }
-      P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = [];
+      P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = []; let itemMsg = ''
+      if (Math.random() < (a.pack === 'bronze' || a.pack === 'silver' ? .04 : .08)) { const ks = Object.keys(ITEMS), ik = ks[Math.floor(Math.random() * ks.length)], it = itemsP(); it[ik] = (it[ik] || 0) + 1; itemMsg = 'Bonus item: ' + ITEMS[ik].name + '!' }
       if (a.pack === 'banner') { const B = banner(), pt = P.pity || (P.pity = {}), pr = pt[B.id] || (pt[B.id] = { n: 0, m: 0, f: 0 }); pr.n++; pr.m++; pr.f++; for (const k of a.keys || []) { const c = byKey(k); if (c && 'MX'.includes(c.r)) pr.m = 0; if (B.featured.includes(k)) pr.f = 0 } } P.pp = Math.min(2500, (P.pp || 0) + PP_PER_PACK); addXP(40)
       const SIG = new Set(a.sig || [])
       for (const k of a.keys || []) { const c = byKey(k); if (!c) continue; giveCard(k); if (SIG.has(k)) { const o = P.club.cards[k]; o.sig = (o.sig || 0) + 1; bump('sig') } P.last.push(k); const rk = 'CURELMX'.indexOf(c.r); if (rk >= 3) bump('epic'); if (rk >= 4) bump('legend') }
-      return {}
+      return itemMsg ? { msg: itemMsg } : {}
     }
     case 'ppBuy': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
@@ -704,6 +711,7 @@ function state() {
     login: (() => { const { L, can, next } = loginP(); return { streak: L.streak, can, next, rw: LOGIN_RW } })(),
     evo: Object.fromEntries(cards().map(c => [c.key, evoNext(c.key)]).filter(x => x[1].length)), evoCopies: EVO_COPIES, evoCost: Object.fromEntries(cards().map(c => [c.key, Math.round(SHARD_COST[c.r] * .4)])),
     fusion: fusionRecipes(), gachaCost: GACHA_COST, gachaPool: GACHA.map(g => ({ label: g.label, rare: !!g.rare, w: g.w })),
+    items: itemsP(), itemDefs: ITEMS, itemMax: ITEM_MAX,
     decks: deckP(), deckOn: S.profile.deckOn || 0, deckMax: DECK_MAX, deckSize: DECK_SIZE, starterDecks: STARTER_DECKS,
     onb: onboarding(),
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()

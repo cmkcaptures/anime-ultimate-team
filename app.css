@@ -2817,3 +2817,10 @@ html body[data-fx=halloween] #app { background: linear-gradient(115deg, #ff7a00 
 .gd .btn { margin: 0 16px 14px }
 .lb-quick { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important }
 .onb-row .btn { white-space: nowrap; flex: 0 0 auto }
+
+/* ================= ITEMS ================= */
+.dk-row.item { background: linear-gradient(160deg, #1a6a3a, #0a2a1a) }
+.dk-img { background-size: cover; background-position: center; position: relative } .dk-img b { position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(180deg, #5fd6ff, #1460d8); font-size: 13px; box-shadow: 0 0 0 2px #fff }
+.dk-tx b em.it { background: #2fbf5a }
+.art2.item .pic { background-size: cover !important; background-position: center !important }
+.art2.item .sym { display: none }

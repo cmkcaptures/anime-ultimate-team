@@ -1583,20 +1583,22 @@ const DK = { i: null, c: null, name: '' }
 const DECK_INFO = {
   strike: ['STRIKE', 'Physical hit using PWR. Cheap, chains into combos.', 1], blast: ['BLAST', 'Energy blast using ENG. Hits harder than a Strike.', 2], guard: ['GUARD', 'Halves the next hit you take.', 1], special: ['SPECIAL', "Your active fighter's signature move.", 4],
   burst: ['BURST', 'Spend ALL your Energy on one huge hit. Field 3+ Dragons for Dragon Fury (+50%).', 'ALL'], charge: ['POWER CHARGE', 'Your next attack deals +35%. Stack them for a one-card carry.', 1],
-  transfer: ['ENERGY LINK', 'Your bench feeds you +2 Energy.', 0], heal: ['RECOVER', 'Heal your active fighter 18%.', 2], cleanse: ['CLEANSE', 'Remove burn and freeze, and Guard up.', 1] }
+  transfer: ['ENERGY LINK', 'Your bench feeds you +2 Energy.', 0], heal: ['RECOVER', 'Heal your active fighter 18%.', 2], cleanse: ['CLEANSE', 'Remove burn and freeze, and Guard up.', 1],
+  senzu: ['SENZU BEAN', 'Fully heals your active fighter and clears burn and freeze.', 2], cylinder: ['MAGIC CYLINDER', 'Trap: the next attack on your fighter bounces back at the attacker.', 2] }
 PAGES.deck = (el) => {
   if (DK.i == null) DK.i = ST.deckOn
   const D = ST.decks[DK.i]; if (!DK.c) { DK.c = { ...D.c }; DK.name = D.name }
   const total = Object.values(DK.c).reduce((n, v) => n + (v || 0), 0), tac = ['burst', 'charge', 'transfer', 'heal', 'cleanse'].reduce((n, k) => n + (DK.c[k] || 0), 0)
-  el.append(h('section', 'bhero', `<div><span class="sh-tag">デッキ · ARTS DECK</span><h2>ARTS DECK</h2><p>Your battle hand is drawn from this 20-card deck. Mix attacks with Tactic cards to build a plan: a Dragon Burst nuke, a one-card carry, or a heal wall.</p></div><div class="bstat"><b>${total}</b><span>/ 20 CARDS · ${tac}/8 TACTICS</span></div>`))
+  el.append(h('section', 'bhero', `<div><span class="sh-tag">デッキ · ARTS DECK</span><h2>ARTS DECK</h2><p>Your battle hand is drawn from this 20-card deck. Mix attacks with Tactic cards to build a plan: a Dragon Burst nuke, a one-card carry, or a heal wall. Add up to 2 Items you own (they drop from packs).</p></div><div class="bstat"><b>${total}</b><span>/ 20 CARDS · ${tac}/8 TACTICS</span></div>`))
   const tabs = h('div', 'mtabs'); ST.decks.forEach((d, i) => { const t = h('button', 'mtab' + (DK.i === i ? ' on' : ''), (i === ST.deckOn ? '★ ' : '') + d.name.toUpperCase()); t.onclick = () => { DK.i = i; DK.c = null; rerender() }; tabs.append(t) }); el.append(tabs)
   const nm = h('input', 'field'); nm.value = DK.name; nm.maxLength = 20; nm.oninput = () => DK.name = nm.value; el.append(nm)
   el.append(h('div', 'sec', '<h3>CARDS</h3><span class="muted" style="font-weight:700;font-size:12px">tap − / + to build your deck</span>'))
   const g = h('div', 'dk-grid')
   for (const [k, [n, desc, cost]] of Object.entries(DECK_INFO)) {
-    const v = DK.c[k] || 0, max = ST.deckMax[k], isT = !['strike', 'blast', 'guard', 'special'].includes(k)
-    const row = h('div', 'dk-row' + (isT ? ' tac' : '') + (v ? ' on' : ''), `<span class="dk-cost">${cost}</span><div class="dk-tx"><b>${n}${isT ? ' <em>TACTIC</em>' : ''}</b><small>${desc}</small></div><div class="dk-q"><button>−</button><b>${v}</b><button>+</button></div>`)
-    const [mi, pl] = row.querySelectorAll('.dk-q button'); mi.disabled = !v; pl.disabled = v >= max || total >= 20 || (isT && tac >= 8)
+    const isI = !!(ST.itemDefs || {})[k], own = isI ? (ST.items || {})[k] || 0 : 99, nI = Object.keys(ST.itemDefs || {}).reduce((n, q) => n + (DK.c[q] || 0), 0)
+    const v = DK.c[k] || 0, max = Math.min(ST.deckMax[k], own), isT = !['strike', 'blast', 'guard', 'special'].includes(k) && !isI
+    const row = h('div', 'dk-row' + (isT ? ' tac' : '') + (isI ? ' item' : '') + (v ? ' on' : ''), `${isI ? `<span class="dk-cost dk-img" style="background-image:url('${ST.itemDefs[k].art}')"><b>${cost}</b></span>` : `<span class="dk-cost">${cost}</span>`}<div class="dk-tx"><b>${n}${isT ? ' <em>TACTIC</em>' : ''}${isI ? ` <em class="it">ITEM · OWNED ${own}</em>` : ''}</b><small>${desc}</small></div><div class="dk-q"><button>−</button><b>${v}</b><button>+</button></div>`)
+    const [mi, pl] = row.querySelectorAll('.dk-q button'); mi.disabled = !v; pl.disabled = v >= max || total >= 20 || (isT && tac >= 8) || (isI && nI >= ST.itemMax)
     mi.onclick = () => { DK.c[k] = v - 1; rerender() }; pl.onclick = () => { DK.c[k] = v + 1; rerender() }
     g.append(row)
   }

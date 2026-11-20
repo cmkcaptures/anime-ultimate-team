@@ -42,11 +42,13 @@ const ARTS = {
   transfer: { name: 'ENERGY LINK', cost: 0, col: '#3ab8ff', desc: 'Bench feeds you +2 Energy', tactic: 1 },
   heal: { name: 'RECOVER', cost: 2, col: '#2fe0b0', desc: 'Heal your fighter 18%', tactic: 1 },
   cleanse: { name: 'CLEANSE', cost: 1, col: '#c9a8ff', desc: 'Remove burn/freeze · Guard up', tactic: 1 },
+  senzu: { name: 'SENZU BEAN', cost: 2, col: '#6ad04a', desc: 'Full heal · clears burn/freeze', tactic: 1, item: 'items/senzu.jpg' },
+  cylinder: { name: 'MAGIC CYLINDER', cost: 2, col: '#ff3d6a', desc: 'Next hit bounces back', tactic: 1, item: 'items/cylinder.jpg' },
 }
 // tribes: field 3+ of a tribe for its bonus
 export const DRAGONS = ['NATSU', 'ACNOLOGIA', 'GOKU', 'GOGETA', 'VEGITO', 'SHENRON']
 const isDragon = c => c.name.split(' & ').some(n => DRAGONS.includes(n.trim()))
-const TAC_ICON = { burst: '💥', charge: '⚡', transfer: '🔗', heal: '✚', cleanse: '✦' }
+const TAC_ICON = { burst: '💥', charge: '⚡', transfer: '🔗', heal: '✚', cleanse: '✦', senzu: '', cylinder: '' }
 const pctOf = c => { const m = /(\d+)%\s*PWR/.exec((c.tx || []).join(' ')); return m ? +m[1] : 220 }
 const isAoe = c => /all enemies/i.test((c.tx || []).join(' '))
 const kitTxt = c => (c.tx || []).join(' ')
@@ -100,6 +102,7 @@ function refill(s) {
 function hit(att, def, base, stat, pierce, A, D, kind) {
   const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = PE(def)
   // defensive dodges / nullifies first
+  if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
   if (def.firstNull > 0) { def.firstNull--; pasNote(def, 'NULLIFIED'); return { dmg: 0, crit: false, mu: 1, miss: 'NULLIFIED' } }
   if (kind === 'ult' && def.ultDodge > 0) { def.ultDodge--; pasNote(def, 'ERASED'); return { dmg: 0, crit: false, mu: 1, miss: 'ERASED' } }
   if (ed.dodge && Math.random() * 100 < ed.dodge) { pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
@@ -181,6 +184,8 @@ function playArt(B, who, idx) {
     else if (art === 'transfer') { me.ki = Math.min(KI_MAX, me.ki + 2); ev.tactic = '+2 ENERGY' }
     else if (art === 'heal') { const h = Math.round(a.max * .18); a.hp = Math.min(a.max, a.hp + h); ev.tactic = '+' + h.toLocaleString() + ' HP' }
     else if (art === 'cleanse') { a.burnT = 0; a.frozen = 0; a.guard = 1; ev.tactic = 'CLEANSED · GUARD UP' }
+    else if (art === 'senzu') { const h = a.max - a.hp; a.hp = a.max; a.burnT = 0; a.frozen = 0; ev.tactic = 'SENZU BEAN · +' + h.toLocaleString() + ' HP' }
+    else if (art === 'cylinder') { a.cylinder = 1; ev.tactic = 'TRAP SET · MAGIC CYLINDER' }
     return ev
   }
   me.seq.push(art)
@@ -260,7 +265,10 @@ function planTurn(B, level, who = 'ai') {
     const hasSpecial = me.hand.includes('special'), opp = act(foe), mine = act(me)
     let pick = null
     { const hi = me.hand.indexOf('heal'), ti = me.hand.indexOf('transfer'), ci = me.hand.indexOf('charge'), bi = me.hand.indexOf('burst'), cl = me.hand.indexOf('cleanse')
-      if (hi >= 0 && me.ki >= 2 && mine.hp / mine.max < .5) pick = ['heal', hi]
+      const si = me.hand.indexOf('senzu'), yi = me.hand.indexOf('cylinder')
+      if (si >= 0 && me.ki >= 2 && mine.hp / mine.max < .35) pick = ['senzu', si]
+      else if (yi >= 0 && me.ki >= 2 && !mine.cylinder && mine.hp / mine.max < .7) pick = ['cylinder', yi]
+      else if (hi >= 0 && me.ki >= 2 && mine.hp / mine.max < .5) pick = ['heal', hi]
       else if (ti >= 0 && me.ki <= KI_MAX - 2) pick = ['transfer', ti]
       else if (cl >= 0 && me.ki >= 1 && (mine.burnT > 0)) pick = ['cleanse', cl]
       else if (ci >= 0 && me.ki >= 3 && (hasSpecial || bi >= 0)) pick = ['charge', ci]
@@ -571,11 +579,11 @@ export function startBattle(stage) {
     $a('.ar-ki').innerHTML = `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`
     const hand = $a('.ar-hand'); hand.innerHTML = ''
     const f = act(s), rc = X.tierCol(f.card.r), fx = Math.round((f.card.fx ?? .5) * 100), fy = Math.round((f.card.fy ?? .22) * 100)
-    const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['ENERGY', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'], burst: ['TACTIC', '#ff3b6b', '#ffd0dc'], charge: ['TACTIC', '#ff9a00', '#ffe2a8'], transfer: ['TACTIC', '#3ab8ff', '#c8ecff'], heal: ['TACTIC', '#2fe0b0', '#c8fff0'], cleanse: ['TACTIC', '#a46bff', '#e8d8ff'] }
+    const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['ENERGY', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'], burst: ['TACTIC', '#ff3b6b', '#ffd0dc'], senzu: ['ITEM', '#3aa83a', '#d8ffb0'], cylinder: ['ITEM', '#c8102e', '#ffd23a'], charge: ['TACTIC', '#ff9a00', '#ffe2a8'], transfer: ['TACTIC', '#3ab8ff', '#c8ecff'], heal: ['TACTIC', '#2fe0b0', '#c8fff0'], cleanse: ['TACTIC', '#a46bff', '#e8d8ff'] }
     s.hand.forEach((a, i) => {
       const d = ARTS[a], sp = a === 'special', [kind, c1, c2] = KIND[a], b = document.createElement('button')
-      b.className = 'art2 ' + a
-      b.style.cssText = `--c1:${c1};--c2:${c2};--rc:${rc};--i:${i - (s.hand.length - 1) / 2};--art:url("${f.card.url}");--fx:${fx}%;--fy:${fy}%`
+      b.className = 'art2 ' + a + (d.item ? ' item' : '')
+      b.style.cssText = `--c1:${c1};--c2:${c2};--rc:${rc};--i:${i - (s.hand.length - 1) / 2};--art:url("${d.item || f.card.url}");--fx:${d.item ? 50 : fx}%;--fy:${d.item ? 50 : fy}%`
       b.innerHTML = `<span class="fr"></span><span class="pic"></span><span class="holo"></span><span class="glints"><i></i><i></i><i></i><i></i></span>
         <span class="gem"><b>${a === 'burst' ? 'ALL' : d.cost}</b></span><span class="kind">${kind}</span>
         <span class="sym">${ICON[a] || `<b class="tac-ic">${TAC_ICON[a]}</b>`}</span>
