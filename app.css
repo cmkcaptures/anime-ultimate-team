@@ -2824,3 +2824,7 @@ html body[data-fx=halloween] #app { background: linear-gradient(115deg, #ff7a00 
 .dk-tx b em.it { background: #2fbf5a }
 .art2.item .pic { background-size: cover !important; background-position: center !important }
 .art2.item .sym { display: none }
+/* ================= HOME-SCREEN APP (iPhone full screen) ================= */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  #app { padding-top: env(safe-area-inset-top, 0); box-sizing: border-box }
+}
