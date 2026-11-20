@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp6t54l'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwp72t2z'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -301,6 +301,38 @@ function onboarding() {
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
+// ---------- STORY CAMPAIGN ----------
+// each stage: intro scene lines [speaker card name, text], enemy card names, rating, reward coins
+const CAMPAIGN = [
+  { id: 1, name: 'The Worlds Collide', sub: 'Chapter 1 · Attack on Titan × Naruto', boss: 'Mythic/eren founding titan.jpg', stages: [
+    { n: 1, name: 'Shiganshina Falls', enemy: ['BERTHOLDT', 'DINA', 'FALCO'], rating: 72, coins: 1000, scene: [
+      ['ARMIN', 'Eren! The sky over the wall just... split open. Like glass.'],
+      ['EREN', 'Forget the sky. The Colossal Titan is back. And it brought friends.'],
+      ['MIKASA', 'Stay behind me. Whatever came through that crack, we fight it together.']] },
+    { n: 2, name: 'A Stranger in Orange', enemy: ['NARUTO', 'KAKASHI', 'JIRAIYA'], rating: 76, coins: 1500, scene: [
+      ['NARUTO', 'Whoa! Where am I? And why are the giants naked?!'],
+      ['LEVI', 'A brat in a jumpsuit fell out of the sky. Tch. Restrain him.'],
+      ['NARUTO', 'Restrain me? Believe it, you\'ll have to beat me first!']] },
+    { n: 3, name: 'Titans and Shinobi', enemy: ['REINER', 'ANNIE', 'BERTHOLDT'], rating: 80, coins: 2000, scene: [
+      ['KAKASHI', 'Those cracks are pulling our worlds together. Fighting each other won\'t close them.'],
+      ['ERWIN', 'Then we fight side by side. The Warriors are using the chaos to strike.'],
+      ['NARUTO', 'Shadow clones and flying swordsmen? Now THAT\'S a team!']] },
+    { n: 4, name: 'Clouds of Red', enemy: ['PAIN', 'ITACHI', 'OBITO'], rating: 84, coins: 2500, scene: [
+      ['JIRAIYA', 'Red clouds on black cloaks. The Akatsuki came through the rift too.'],
+      ['PAIN', 'This world has its own god-power. The Founding Titan. We will take it.'],
+      ['EREN', 'Nobody takes anything from us. Not again.']] },
+    { n: 5, name: 'The Beast\'s Bargain', enemy: ['ZEKE', 'MADARA', 'LARA TYBUR'], rating: 88, coins: 3000, scene: [
+      ['ZEKE', 'Madara and I want the same thing: one will, one world, no more war.'],
+      ['MADARA', 'Infinite Tsukuyomi and the Coordinate together. A perfect dream.'],
+      ['LEVI', 'I promised Erwin I\'d kill the Beast. Your friend just makes it two for one.']] },
+    { n: 6, name: 'BOSS · The Founding Titan', boss: 1, enemy: ['EREN', 'ZEKE', 'MADARA', 'PAIN'], rating: 92, coins: 5000, scene: [
+      ['MIKASA', 'Eren... what have they done to you?'],
+      ['EREN', 'The worlds are merging, Mikasa. I can see every path. I\'m the only one who can end it.'],
+      ['NARUTO', 'Then I\'ll drag you back, just like I did with Sasuke. That\'s my nindo!']] },
+  ] },
+]
+const CAMP_CHEST = [{ at: 9, coins: 5000, pack: 'jumbo' }, { at: 18, coins: 10000, pack: 'premium', shards: 2000 }]
+function campP() { const P = S.profile; return P.camp || (P.camp = { stars: {}, chests: [] }) }
 // ---------- TOWER / ARCS / EVENTS ----------
 const towerFloor = n => ({ rating: Math.min(95, 68 + Math.round(n * .55)), level: Math.min(5, 1 + Math.floor(n / 10)), boost: 1 + Math.max(0, n - 25) * .012, coins: 300 + n * 40, pack: n % 10 === 0 ? (n === 50 ? 'lightning' : n >= 30 ? 'premium' : 'jumbo') : null })
 const ARCS = [
@@ -572,6 +604,16 @@ function act(a) {
         P.tower.best = n; P.coins += T.coins; if (T.pack) P.pending[T.pack] = (P.pending[T.pack] || 0) + 1
         return { msg: `Floor ${n} cleared! +${T.coins.toLocaleString()} coins${T.pack ? ' and a ' + PACKS[T.pack].name : ''}.` }
       }
+      if (a.mode === 'camp') {
+        const [ci, si] = String(a.id).split(':').map(Number), ch = CAMPAIGN.find(c => c.id === ci), st = ch && ch.stages.find(s => s.n === si); if (!st) return { error: 'Unknown stage.' }
+        const C = campP(), key = ci + ':' + si, prev = si === 1 || (C.stars[ci + ':' + (si - 1)] || 0) > 0; if (!prev) return { error: 'Stage locked.' }
+        if (!a.won) { addXP(10); return {} }
+        const got = 1 + ((a.ko || 0) <= 1 ? 1 : 0) + ((a.turns || 99) <= 12 ? 1 : 0), had = C.stars[key] || 0; C.stars[key] = Math.max(had, got); addXP(had ? 20 : 60)
+        if (had) { P.coins += 300; return { msg: '★'.repeat(got) + ' Stage replayed. +300 coins.' } }
+        P.coins += st.coins; let extra = ''
+        if (st.boss) { giveCard(ch.boss); P.last = [ch.boss]; P.pending.premium = (P.pending.premium || 0) + 1; extra = ', ' + cardName(ch.boss) + ' and a Premium Drop' }
+        return { msg: `${'★'.repeat(got)} ${st.name} cleared! +${st.coins.toLocaleString()} coins${extra}.` }
+      }
       if (a.mode === 'arc') {
         const [id, ch] = String(a.id).split(':'), arc = ARCS.find(x => x.id === id), c = +ch; if (!arc || !ARC_CH[c]) return { error: 'Unknown chapter.' }
         const A = (P.arcs = P.arcs || {}), done = A[id] || 0; if (c > done) return { error: 'Chapter locked.' }
@@ -682,6 +724,8 @@ function act(a) {
       if (L.every(o => o.claimed || o.id === x.id)) { P.pending.premium = (P.pending.premium || 0) + 1; return { msg: 'All done! +' + x.rw.toLocaleString() + ' coins and a Premium Drop for finishing Getting Started.' } }
       return { msg: '+' + x.rw.toLocaleString() + ' coins' }
     }
+    case 'campChest': { const C = campP(), i = +a.i, R = CAMP_CHEST[i]; if (!R) return { error: 'Unknown chest.' }; const tot = Object.values(C.stars).reduce((n, v) => n + v, 0); if (tot < R.at) return { error: 'Need ' + R.at + ' stars.' }; if (C.chests.includes(i)) return { error: 'Already opened.' }
+      C.chests.push(i); P.coins += R.coins; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1; if (R.shards) P.shards = (P.shards || 0) + R.shards; return { msg: 'Chest opened: +' + R.coins.toLocaleString() + ' coins and a ' + PACKS[R.pack].name + (R.shards ? ' and ◆' + R.shards.toLocaleString() + ' shards' : '') + '.' } }
     case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }
     case 'equip': {
       const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
@@ -714,6 +758,7 @@ function state() {
     items: itemsP(), itemDefs: ITEMS, itemMax: ITEM_MAX,
     decks: deckP(), deckOn: S.profile.deckOn || 0, deckMax: DECK_MAX, deckSize: DECK_SIZE, starterDecks: STARTER_DECKS,
     onb: onboarding(),
+    camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST,
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }

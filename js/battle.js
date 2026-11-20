@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp6t54l'
-import { sfx, sfxOn, music } from './sfx.js?v=mwp6t54l'
-import { createFX } from './fx2d.js?v=mwp6t54l'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp72t2z'
+import { sfx, sfxOn, music } from './sfx.js?v=mwp72t2z'
+import { createFX } from './fx2d.js?v=mwp72t2z'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -326,7 +326,7 @@ function enemyTeam(stage) {
   return out.sort((a, b) => b.ovr - a.ovr)
 }
 
-let MODE = 'story'
+let MODE = 'camp'
 const mastL = k => { const x = (X.P.mast || {})[k] || 0, T = X.ST().mastT || [0, 60, 180, 400, 750]; return T.filter(t => x >= t).length - 1 }
 function teamFrom(main, rating) {
   const used = new Set(main.map(c => c.key)), out = main.slice(0, 6)
@@ -336,7 +336,7 @@ function teamFrom(main, rating) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['story', 'STORY'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
+  for (const [k, n] of [['camp', 'CAMPAIGN'], ['story', 'STORY'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -409,6 +409,38 @@ function towerPage(el, ok) {
   { const nx = [10, 20, 30, 40, 50].find(m => m > best); if (nx) el.append(h('p', 'muted', `<b>Next milestone: Floor ${nx}</b> · ${X.ST().packs[T[nx - 1].pack].name}`)) }
   el.append(list)
 }
+// ================= STORY CAMPAIGN =================
+const byName = n => X.POOL.filter(c => c.name === n).sort((a, b) => b.ovr - a.ovr)[0]
+function scene(lines, title, bg, done) {
+  const { h } = X, o = h('div', 'scn'); let i = 0
+  o.innerHTML = `<div class="scn-bg" style="background-image:url('${bg || ''}')"></div><div class="scn-top"><b>${title}</b><button class="btn dark sm scn-skip">SKIP ›</button></div><div class="scn-who"></div><div class="scn-box"><small></small><p></p><em>TAP TO CONTINUE</em></div>`
+  const show = () => { const [who, t] = lines[i], c = byName(who); o.querySelector('.scn-who').style.backgroundImage = c ? `url("${c.url}")` : 'none'; o.querySelector('.scn-who').style.setProperty('--fy', Math.round((c && c.fy != null ? c.fy : .22) * 100) + '%'); o.querySelector('.scn-box small').textContent = who; o.querySelector('.scn-box p').textContent = t; o.querySelector('.scn-who').classList.remove('in'); void o.offsetWidth; o.querySelector('.scn-who').classList.add('in') }
+  const end = () => { o.remove(); done() }
+  o.onclick = e => { if (e.target.closest('.scn-skip')) return end(); i++; i >= lines.length ? end() : show() }
+  document.body.append(o); show()
+}
+function campPage(el, ok) {
+  const { h } = X, ST = X.ST(), C = ST.campP || { stars: {}, chests: [] }, tot = Object.values(C.stars).reduce((n, v) => n + v, 0)
+  for (const ch of ST.camp) {
+    const boss = X.POOL.find(c => c.key === ch.boss)
+    el.append(h('section', 'bhero camp-hero', `<div><span class="sh-tag">${ch.sub.toUpperCase()}</span><h2>${ch.name.toUpperCase()}</h2><p>The skies are cracking and the worlds are merging. Clear each stage to unlock the next. Win with at most 1 fighter KO'd and within 12 turns for 3 stars. The boss drops <b>${boss ? boss.name + ' · ' + boss.ver : 'a Mythic'}</b>.</p></div><div class="bstat"><b>${tot}</b><span>/ ${ch.stages.length * 3} STARS</span></div>`))
+    const chests = h('div', 'camp-chests')
+    ST.campChest.forEach((R, i) => { const open = C.chests.includes(i), b = h('button', 'btn ' + (open ? 'dark' : tot >= R.at ? 'gold' : 'dark') + ' sm', open ? '✓ CHEST ' + R.at + '★' : '🎁 ' + R.at + '★ CHEST'); b.disabled = open || tot < R.at; b.onclick = async () => { const r = await X.act('campChest', { i }); if (!r.error) X.go('battle') }; chests.append(b) })
+    el.append(chests)
+    const list = h('div', 'camp-list')
+    ch.stages.forEach(st => {
+      const key = ch.id + ':' + st.n, s = C.stars[key] || 0, open = st.n === 1 || (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = byName(st.enemy[0])
+      const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${st.enemy.join(', ')} · rating ${st.rating}</em></span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
+      row.disabled = !ok || !open
+      row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
+        const main = st.enemy.map(byName).filter(Boolean)
+        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: st.boss ? 4 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: st.boss ? 1.25 : 1 + st.n * .03, team: teamFrom(main, st.rating) })
+      })
+      list.append(row)
+    })
+    el.append(list)
+  }
+}
 function arcsPage(el, ok) {
   const { h, P } = X, ST = X.ST(), A = P.arcs || {}
   el.append(h('section', 'bhero', `<div><span class="sh-tag">STORY ARCS</span><h2>STORY ARCS</h2><p>Relive the big fights. Each arc has three chapters against that anime's fighters, ending with its villains as a powered-up final boss. Clearing an arc gives a Premium Drop and ◆1,000 shards.</p></div><div class="bstat"><b>${ST.arcs.filter(a => (A[a.id] || 0) >= 3).length}</b><span>/ ${ST.arcs.length} ARCS</span></div>`))
@@ -454,7 +486,7 @@ export function battlePage(el) {
   modeTabs(el)
   if (MODE !== 'story') {
     if (team.length < 6) { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
-    return (MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
+    return (MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
   }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)
@@ -789,7 +821,7 @@ export function startBattle(stage) {
   async function end(won) {
     B.over = true; controls()
     await wait(500)
-    const r = stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0) } : { stage: stage.n, won })
+    const r = stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0), ko: B.you.team.filter(f => f.ko).length, turns: B.turn } : { stage: stage.n, won })
     sfx(stage.boss ? 'claim' : won ? 'win' : 'lose')
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
