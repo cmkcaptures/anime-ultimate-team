@@ -277,6 +277,21 @@ const STARTER_DECKS = [
 ]
 function deckP() { const P = S.profile; if (!P.decks) P.decks = [{ name: 'Balanced', c: { strike: 8, blast: 6, guard: 3, special: 3 } }, { name: 'Dragon Burst', c: { ...STARTER_DECKS[1].c } }, { name: 'One-Card Carry', c: { ...STARTER_DECKS[2].c } }]; if (P.deckOn == null) P.deckOn = 0; return P.decks }
 function deckOk(c) { let n = 0, tac = 0; for (const [k, v] of Object.entries(c || {})) { if (!(k in DECK_MAX) || v < 0 || v > DECK_MAX[k] || v !== Math.round(v)) return 'Bad card count.'; n += v; if (TACTICS.includes(k)) tac += v } if (n !== DECK_SIZE) return 'A deck needs exactly 20 cards.'; if (tac > 8) return 'At most 8 Tactic cards.'; if (!c.strike) return 'Add at least one Strike.'; return '' }
+// ---------- GETTING STARTED ----------
+function onboarding() {
+  const P = S.profile, B = P.battle || {}, done = P.onb || {}
+  const L = [
+    { id: 'guide', t: 'Read the How to Play guide', d: 'Tap HOW TO PLAY on Home.', ok: !!P.guideSeen, rw: 500, go: 'guide' },
+    { id: 'pack', t: 'Open your first pack', d: 'Tap FREE PACK on Home. They refill every 12 hours.', ok: (P.club.packs || 0) >= 1, rw: 500, go: 'home' },
+    { id: 'team', t: 'Build a team of 6', d: 'Team → Auto Build picks your best cards.', ok: P.team.filter(Boolean).length >= 6, rw: 500, go: 'team' },
+    { id: 'story', t: 'Win your first battle', d: 'Battle → Story → Stage 1. Tap AUTO if you get stuck.', ok: (B.cleared || 0) >= 1, rw: 1500, go: 'battle' },
+    { id: 'deck', t: 'Look at your Arts Deck', d: 'Team → Arts Deck. Load a starter deck and save it.', ok: !!P.deckEdited, rw: 500, go: 'deck' },
+    { id: 'login', t: 'Claim a daily login reward', d: 'Pops up on Home each day.', ok: P.login && P.login.streak >= 1, rw: 500, go: 'home' },
+    { id: 'pass', t: 'Claim a Season Pass reward', d: 'Battle → Season Pass. Everything you do earns pass XP.', ok: P.pass && (P.pass.f || []).length >= 1, rw: 500, go: 'pass' },
+    { id: 'ranked', t: 'Play a Ranked match', d: 'Battle → Ranked → Find Match.', ok: P.rank && (P.rank.w + P.rank.l) >= 1, rw: 1500, go: 'battle' },
+  ]
+  return L.map(x => ({ ...x, claimed: !!done[x.id] }))
+}
 // ---------- MASTERY ----------
 const MAST = [0, 60, 180, 400, 750], MAST_RW = [0, 500, 1000, 2500, 5000]
 const mastLv = x => MAST.filter(t => x >= t).length
@@ -649,8 +664,15 @@ function act(a) {
       P.shards -= r.cost; giveCard(r.out); P.last = [r.out]; bump('fuse'); addXP(40)
       return { msg: `Fusion complete: ${cardName(r.out)}!` }
     }
-    case 'deckSave': { deckP(); const i = +a.i; if (!(i >= 0 && i < 3)) return { error: 'Bad slot.' }; const er = deckOk(a.c); if (er) return { error: er }; P.decks[i] = { name: String(a.name || 'Deck ' + (i + 1)).slice(0, 20), c: { ...a.c } }; if (a.use) P.deckOn = i; return { msg: 'Deck saved' + (a.use ? ' and equipped.' : '.') } }
+    case 'deckSave': { deckP(); P.deckEdited = 1; const i = +a.i; if (!(i >= 0 && i < 3)) return { error: 'Bad slot.' }; const er = deckOk(a.c); if (er) return { error: er }; P.decks[i] = { name: String(a.name || 'Deck ' + (i + 1)).slice(0, 20), c: { ...a.c } }; if (a.use) P.deckOn = i; return { msg: 'Deck saved' + (a.use ? ' and equipped.' : '.') } }
     case 'deckUse': { deckP(); const i = +a.i; if (!(i >= 0 && i < 3)) return { error: 'Bad slot.' }; P.deckOn = i; return {} }
+    case 'guideSeen': { P.guideSeen = 1; return {} }
+    case 'onbClaim': {
+      const L = onboarding(), x = L.find(o => o.id === a.id); if (!x || !x.ok || x.claimed) return { error: 'Not ready yet.' }
+      ;(P.onb = P.onb || {})[x.id] = 1; P.coins += x.rw; addXP(20)
+      if (L.every(o => o.claimed || o.id === x.id)) { P.pending.premium = (P.pending.premium || 0) + 1; return { msg: 'All done! +' + x.rw.toLocaleString() + ' coins and a Premium Drop for finishing Getting Started.' } }
+      return { msg: '+' + x.rw.toLocaleString() + ' coins' }
+    }
     case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }
     case 'equip': {
       const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
@@ -681,6 +703,7 @@ function state() {
     evo: Object.fromEntries(cards().map(c => [c.key, evoNext(c.key)]).filter(x => x[1].length)), evoCopies: EVO_COPIES, evoCost: Object.fromEntries(cards().map(c => [c.key, Math.round(SHARD_COST[c.r] * .4)])),
     fusion: fusionRecipes(), gachaCost: GACHA_COST, gachaPool: GACHA.map(g => ({ label: g.label, rare: !!g.rare, w: g.w })),
     decks: deckP(), deckOn: S.profile.deckOn || 0, deckMax: DECK_MAX, deckSize: DECK_SIZE, starterDecks: STARTER_DECKS,
+    onb: onboarding(),
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }

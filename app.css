@@ -2799,3 +2799,21 @@ html body[data-fx=halloween] #app { background: linear-gradient(115deg, #ff7a00 
 .dk-q button { width: 34px; height: 34px; border: 0; border-radius: 10px; background: #fff; color: var(--eN); font: 800 20px var(--eUI); cursor: pointer; box-shadow: 0 3px 0 rgba(26,11,58,.5) } .dk-q button:disabled { opacity: .35; cursor: default }
 .dk-starters { display: flex; gap: 12px; flex-wrap: wrap; padding: 6px 4px 12px }
 .tac-ic { font: 800 44px/1 var(--eUI); font-style: normal; filter: drop-shadow(0 3px 0 rgba(0,0,0,.4)) }
+
+/* ================= ONBOARDING + GUIDE ================= */
+.onb { padding: 16px 18px; margin: 4px 0 20px; border-radius: 20px; background: linear-gradient(160deg, #2fe0b0, #0d9a7a); box-shadow: 0 0 0 4px #fff, 0 8px 0 4px #04402f }
+.onb-h { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; flex-wrap: wrap }
+.onb-h small { font: 900 11px var(--eJ); color: #fff; letter-spacing: .1em } .onb-h b { display: block; font: 800 28px/1 var(--eD); color: #fff; -webkit-text-stroke: 1.5px #04402f; paint-order: stroke fill; text-shadow: 0 3px 0 #04402f } .onb-h span { font: 800 12px var(--eUI); color: #04402f }
+.onb-bar { display: block; height: 10px; margin: 10px 0; border-radius: 6px; background: #04402f } .onb-bar s { display: block; height: 100%; border-radius: 6px; background: #ffe14a }
+.onb-list { display: grid; gap: 8px }
+.onb-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(4,64,47,.55) }
+.onb-row.ready { background: rgba(255,255,255,.2); box-shadow: inset 0 0 0 2px #ffe14a }
+.onb-row b { display: block; font: 800 16px var(--eD); color: #fff } .onb-row small { font: 600 12px var(--eUI); color: rgba(255,255,255,.85) }
+.guide { display: grid; gap: 12px }
+.gd { border-radius: 16px; background: linear-gradient(160deg, #3a2a7a, var(--eN)); box-shadow: 0 0 0 3px #fff, 0 5px 0 3px rgba(26,11,58,.55); overflow: hidden }
+.gd summary { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none } .gd summary::-webkit-details-marker { display: none }
+.gd summary i { font-style: normal; font-size: 26px } .gd summary b { flex: 1; font: 800 20px var(--eD); color: #fff } .gd summary em { font: 800 26px var(--eD); font-style: normal; color: var(--eY); transition: transform .2s } .gd[open] summary em { transform: rotate(90deg) }
+.gd p { margin: 0; padding: 0 18px 10px; font: 500 15px/1.6 var(--eUI); color: rgba(255,255,255,.9) } .gd p b { color: var(--eY) }
+.gd .btn { margin: 0 16px 14px }
+.lb-quick { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important }
+.onb-row .btn { white-space: nowrap; flex: 0 0 auto }

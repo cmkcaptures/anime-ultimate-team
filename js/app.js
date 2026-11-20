@@ -178,7 +178,7 @@ const packEl = (type, w) => { const cv = document.createElement('canvas'); packC
 
 // ================= router + transitions =================
 const TABS = ['home', 'cards', 'team', 'market', 'shop', 'battle']
-const TITLES = { deck: 'ARTS DECK',  museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
+const TITLES = { guide: 'HOW TO PLAY',  deck: 'ARTS DECK',  museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
 let CUR = null, CURARG = null, curEl = null
 const PAGES = {}
 function go(name, arg, opts = {}) {
@@ -248,6 +248,7 @@ PAGES.home = (el) => {
     mb('c-cards', 'コレクション', 'CARDS', Object.keys(club()).length + ' owned', pick(c => c.anime === 'BLE'), () => go('cards')),
     mb('c-mkt', 'マーケット', 'MARKET', 'Live auctions', pick(c => c.anime === 'MHA'), () => go('market')),
   )
+  { const L = ST.onb, left = L.filter(x => !x.claimed); if (left.length) el.append(onbBlock(L)) }
   lob.append(fc, mn); el.append(lob)
   // quick strip: free packs, wonder pick, pass, players
   const F = ST.free, W = ST.wonderE, full = F.charges >= F.max, qs = h('div', 'lb-quick')
@@ -256,6 +257,7 @@ PAGES.home = (el) => {
     q('FREE PACK', '無料', F.charges ? F.charges + ' ready' : `<span data-until="${F.next}"></span>`, async () => { if (!ST.free.charges) return go('shop'); const r = await act('freePack'); if (!r.error) openPack('standard') }, F.charges > 0),
     q('WONDER PICK', 'ワンダー', W.charges + '/' + W.max + ' energy', () => go('wonder'), W.charges > 0),
     q('SEASON PASS', 'パス', ST.pass ? 'Tier ' + ST.pass.tier : '', () => go('pass')),
+    q('HOW TO PLAY', '遊び方', 'Guide for new players', () => go('guide'), !ST.profile.guideSeen),
     q('DAILY LOGIN', 'ログイン', ST.login.can ? 'Day ' + (ST.login.next + 1) + ' ready!' : ST.login.streak + ' day streak', () => loginSheet(), ST.login.can),
     q('PLAYERS', 'ランキング', 'Leaderboard', () => go('players')),
   )
@@ -1609,4 +1611,46 @@ PAGES.deck = (el) => {
   for (const S0 of ST.starterDecks) { const b = h('button', 'tb-t', `<b>${S0.name.toUpperCase()}</b><small>${Object.entries(S0.c).map(([k, v]) => v + ' ' + DECK_INFO[k][0].toLowerCase()).join(' · ')}</small>`); b.onclick = () => { DK.c = { ...S0.c }; DK.name = S0.name; rerender() }; sd.append(b) }
   el.append(sd)
   el.append(h('p', 'muted', '<small style="font-weight:700">Dragon tribe: Natsu, Acnologia, Goku, Gogeta, Vegito. Field 3 or more and every Burst becomes Dragon Fury (+50%).</small>'))
+}
+
+// ================= GETTING STARTED =================
+function onbBlock(L) {
+  const done = L.filter(x => x.claimed).length, box = h('section', 'onb')
+  box.innerHTML = `<div class="onb-h"><div><small>はじめに · NEW PLAYER</small><b>GETTING STARTED</b></div><span>${done}/${L.length} · finish all for a Premium Drop</span></div><i class="onb-bar"><s style="width:${done / L.length * 100}%"></s></i><div class="onb-list"></div>`
+  const list = box.querySelector('.onb-list')
+  for (const x of L.filter(o => !o.claimed).slice(0, 3)) {
+    const r = h('div', 'onb-row' + (x.ok ? ' ready' : ''), `<div><b>${x.t}</b><small>${x.d}</small></div>`)
+    const btn = x.ok ? h('button', 'btn gold sm', 'CLAIM ' + fmt(x.rw)) : h('button', 'btn sm', 'GO ›')
+    btn.onclick = async () => { if (!x.ok) return go(x.go); const r2 = await act('onbClaim', { id: x.id }); if (!r2.error) rerender() }
+    r.append(btn); list.append(r)
+  }
+  return box
+}
+// ================= HOW TO PLAY =================
+const GUIDE = [
+  ['🎴', 'WHAT IS THIS GAME?', 'Collect anime fighters as cards, build a team of 6, and battle. Every card is a real moment from an anime (like Goku at the Spirit Bomb), with its own stats, move and a unique passive called a <b>Moment</b>.', 'cards'],
+  ['💎', 'RARITIES', 'Common → Uncommon → Rare → Epic → Legendary → Mythic → <b>Rainbow Secret</b> (the rarest). Higher rarity = higher rating and stronger stats. The big number in the corner of a card is its <b>rating</b>.', 'cards'],
+  ['📦', 'GETTING CARDS', '<b>Free packs</b> refill on Home every 12 hours. Buy more in the <b>Shop</b> with coins: cheap Bronze packs up to Lightning packs with the best odds. The <b>Banner</b> has 2 featured cards and guarantees a Mythic within 80 pulls. You can also try the <b>Gacha machine</b>, <b>Wonder Pick</b>, or buy cards from other players on the <b>Market</b>.', 'shop'],
+  ['🪙', 'COINS & SHARDS', '<b>Coins</b> come from battles, missions, achievements and selling cards. <b>Shards</b> (◆) come from shredding duplicate cards; spend them to craft the exact card you want, evolve or fuse cards. Pack Points from opening packs buy specific cards too.', 'shop'],
+  ['👥', 'YOUR TEAM', 'Go to <b>Team</b>. You pick 6 cards: a <b>Leader</b>, 2 <b>Starters</b> and 3 on the <b>Bench</b>. Not sure? Tap <b>Auto Build</b>. Bonuses: 3+ fighters from the same anime give <b>Synergy</b>, and famous pairs (Naruto + Sasuke, Goku + Vegeta…) unlock <b>Combos</b>.', 'team'],
+  ['⚔️', 'HOW BATTLES WORK', 'It\'s 6 vs 6 but only <b>one fighter</b> is out at a time. Each turn you get <b>+3 Energy</b>. You hold <b>4 cards</b>: tap one to use it (its cost is the number in the corner). Strike = cheap hit, Blast = bigger hit, Guard = block, Special = the fighter\'s signature move. Hit <b>END TURN</b> when you\'re done. Knock out all 6 enemies to win. Stuck? Tap <b>AUTO</b> and the game plays for you.', 'battle'],
+  ['🌟', 'ULTIMATES & SWITCHING', 'The ring next to END TURN is your <b>Ultimate</b>. It fills as you fight; when it glows, tap it for a free huge attack. Tap a fighter on your <b>bench</b> to swap them in (once per turn), for example to save a hurt fighter.', 'battle'],
+  ['🃏', 'ARTS DECK', 'Your 4 battle cards are drawn from a <b>20-card Arts Deck</b> (Team → Arts Deck). Add <b>Tactic</b> cards to build a strategy: Burst (spend all Energy on one giant hit), Power Charge (boost your next attack), Energy Link (+2 Energy), Recover (heal), Cleanse. New? Load a <b>starter deck</b>.', 'deck'],
+  ['🗺️', 'GAME MODES', '<b>Story</b>: 10 stages to start with. <b>Ranked</b>: climb Bronze → Legend each season. <b>Daily Boss</b>: one giant boss a day, deal as much damage as you can. <b>Tower</b>: 50 floors. <b>Story Arcs</b>: famous fights. <b>Event</b>: a new anime every week. <b>Players</b>: battle your friends\' teams.', 'battle'],
+  ['📈', 'GETTING STRONGER', '<b>Mastery</b>: win with a card to level it up. <b>Evolve</b>: turn duplicates of a card into its stronger form (Cards → Evolve). <b>Fuse</b>: combine two characters into a duo card (Cards → Fuse). <b>Awaken</b>: spend a duplicate for a ★.', 'cards'],
+  ['🎟️', 'SEASON PASS', 'Everything you do earns pass XP. The free track gives packs and this season\'s <b>exclusive cards</b> you can\'t get anywhere else. Premium (25,000 coins) adds cosmetics, more packs and a Mythic pick at tier 50.', 'pass'],
+  ['📋', 'DAILY STUFF', 'Every day: claim your <b>login reward</b>, do <b>Daily Missions</b> (the clipboard button), fight the <b>Daily Boss</b>, do <b>Challenges</b> in the Shop, and open your <b>free packs</b>. That\'s the fastest way to grow.', 'missions'],
+]
+PAGES.guide = (el) => {
+  if (!P.guideSeen) act('guideSeen')
+  el.append(h('section', 'bhero', '<div><span class="sh-tag">遊び方 · HOW TO PLAY</span><h2>NEW TO THE GAME?</h2><p>Everything explained in 2 minutes. Tap a topic to open it, or tap GO to jump straight there.</p></div>'))
+  const g = h('div', 'guide')
+  GUIDE.forEach(([ic, t, d, to], i) => {
+    const c = h('details', 'gd'); if (i < 2) c.open = true
+    c.innerHTML = `<summary><i>${ic}</i><b>${t}</b><em>›</em></summary><p>${d}</p>`
+    const b = h('button', 'btn sm', 'GO TO ' + ({ cards: 'CARDS', shop: 'SHOP', team: 'TEAM', battle: 'BATTLE', deck: 'ARTS DECK', pass: 'SEASON PASS', missions: 'MISSIONS' })[to] + ' ›'); b.onclick = () => go(to); c.append(b)
+    g.append(c)
+  })
+  el.append(g)
+  const t = h('button', 'btn gold block big', 'PRACTICE BATTLE TUTORIAL'); t.style.marginTop = '14px'; t.onclick = () => go('battle'); el.append(t)
 }
