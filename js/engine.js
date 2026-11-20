@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpgfmj1'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpgq2on'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -118,7 +118,10 @@ const PRINT = { C: 9999, U: 7500, R: 5000, E: 2500, L: 1000, M: 500, X: 250 }
 const rollSerial = k => { const c = byKey(k), cap = PRINT[c ? c.r : 'C'] || 9999; return 1 + Math.floor(Math.pow(Math.random(), .85) * cap) }
 // every new copy gets a serial; the card keeps its lowest (best) one
 const giveCard = (k, lvl = 0) => { const sr = rollSerial(k), r = giveCard0(k, lvl), o = S.profile.club.cards[k]; if (o) o.ser = Math.min(o.ser || 1e9, sr); return r }
-const giveCard0 = (k, lvl = 0) => { const now = Date.now(), e = S.profile.club.cards[k] || (S.profile.club.cards[k] = { n: 0, first: now, lvl: 0 }); e.n++; e.last = now; e.lvl = Math.max(e.lvl || 0, lvl || 0); return e }
+const giveCard0 = (k) => { const now = Date.now(), C = S.profile.club.cards, had = C[k], e = had || (C[k] = { n: 1, first: now, dia: 3, lv: 1, xp: 0, asc: 0 }); if (had) { if ((e.dia || 3) < 7) e.dia = (e.dia || 3) + 1; else e.n++ } e.last = now; return e }
+// ---------- LEVEL (1-100) ----------
+const LV_MAX = 100, lvNeed = l => 40 + l * 8
+function addCardXP(o, n) { o.lv = o.lv || 1; o.xp = (o.xp || 0) + n; let up = 0; while (o.lv < LV_MAX && o.xp >= lvNeed(o.lv)) { o.xp -= lvNeed(o.lv); o.lv++; up++ } if (o.lv >= LV_MAX) o.xp = 0; return up }
 const addXP = n => { const P = S.profile; P.xp = (P.xp || 0) + n; passP().xp += n * 3 }
 // ---------- SEASON PASS: 4-week seasons, 50 tiers, 300 pass XP per tier ----------
 const PASS_TIER = 300, PASS_TIERS = 50, PASS_COST = 25000
@@ -653,7 +656,7 @@ function act(a) {
     }
     case 'battle': {
       // mastery for every fighter in your team
-      { const M = P.mast || (P.mast = {}); const ups = []; for (const k of P.team.filter(Boolean)) { const before = mastLv(M[k] || 0); M[k] = (M[k] || 0) + (a.won ? 25 : 10); const after = mastLv(M[k]); for (let l = before + 1; l <= after; l++) { if (MAST_RW[l - 1]) P.coins += MAST_RW[l - 1]; ups.push(cardName(k) + ' Mastery ' + l) } } if (ups.length) notice('Mastery up: ' + ups.join(', '), 'ok') }
+      { const ups = []; for (const k of P.team.filter(Boolean)) { const o = P.club.cards[k]; if (!o) continue; const u = addCardXP(o, a.won ? 60 : 20); if (u) ups.push(cardName(k) + ' Lv ' + o.lv) } if (ups.length) notice('Level up: ' + ups.join(', '), 'ok') }
       if (a.mode === 'boss') {
         const Bo = bossP(), BD = bossToday(); if (Bo.tries >= BOSS_TRIES) return { error: 'No boss attempts left today.' }
         Bo.tries++; const dmg = Math.max(0, Math.min(2e6, Math.round(+a.dmg || 0))); Bo.total += dmg; const prev = Bo.best; Bo.best = Math.max(Bo.best, dmg); P.bossBestEver = Math.max(P.bossBestEver || 0, dmg); addXP(30)
@@ -714,11 +717,14 @@ function act(a) {
       if (first) { P.battle.cleared = n; if (PK[n]) { P.pending[PK[n]] = (P.pending[PK[n]] || 0) + 1; extra = ` and a ${PK[n] === 'premium' ? 'Premium' : 'Legends'} pack` } }
       return { msg: `Stage ${n} ${first ? 'cleared' : 'won'}! +${coins.toLocaleString()} coins${extra}.` }
     }
+    case 'train': { const o = P.club.cards[a.key]; if (!o) return { error: 'You do not own that card.' }; if ((o.lv || 1) >= LV_MAX) return { error: 'Already Lv 100.' }
+      if (a.with === 'ticket') { if ((P.tickets || 0) < 1) return { error: 'No Training Tickets.' }; P.tickets--; const u = addCardXP(o, 400); return { msg: '+400 XP' + (u ? ' · Lv ' + o.lv : '') } }
+      if (P.coins < 2000) return { error: 'You need 2,000 coins.' }; P.coins -= 2000; const u = addCardXP(o, 250); return { msg: '+250 XP' + (u ? ' · Lv ' + o.lv : '') } }
     case 'loginClaim': {
       const { L, d, can, next } = loginP(); if (!can) return { error: 'Already claimed today. Come back tomorrow!' }
       const R = LOGIN_RW[next]; L.last = d; L.streak++
       if (R.coins) P.coins += R.coins; if (R.shards) P.shards = (P.shards || 0) + R.shards; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1
-      addXP(20); return { msg: `Day ${next + 1} reward claimed!`, rw: R }
+      P.tickets = (P.tickets || 0) + 1; addXP(20); return { msg: `Day ${next + 1} reward claimed! +1 Training Ticket`, rw: R }
     }
     case 'tradeEscrow': { if (P.allBak) return { error: 'Trading is off while the temporary all-cards unlock is on.' } }
     // falls through
@@ -841,7 +847,7 @@ function state() {
     decks: deckP(), deckOn: S.profile.deckOn || 0, deckMax: DECK_MAX, deckSize: DECK_SIZE, starterDecks: STARTER_DECKS,
     onb: onboarding(),
     presets: S.profile.presets || [],
-    awkT: AWK, awkSh: AWK_SH,
+    awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
     camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST,
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
@@ -878,6 +884,14 @@ async function boot() {
   try { const S2 = passP(), m = freeCardTiers(), reached = Math.floor(S2.xp / PASS_TIER); for (const [t, k] of Object.entries(m)) if ((S2.f.includes(+t) || reached >= +t && S2.f.length) && !S.profile.club.cards[k] && S2.f.includes(+t)) giveCard(k) } catch (x) { console.warn(x) }
   S.market = { ...f.market, ...S.market }; S.notices = S.notices || []; S.wonder = S.wonder || []
   for (const [k, o] of Object.entries(S.profile.club.cards)) if (!o.ser && byKey(k)) o.ser = rollSerial(k)
+  if (!S.profile.prog2) { const P = S.profile; let refund = 0
+    for (const [k, o] of Object.entries(P.club.cards)) { const c = byKey(k), awk = o.awk || []
+      if (c) for (const id of awk) { const N = AWK.find(x => x.id === id); if (N) refund += N.sh * (AWK_SH[c.r] || 0) }
+      const total = 3 + Math.max(0, (o.n || 1) - 1) + (o.lvl || 0) + awk.length
+      o.dia = Math.min(7, total); o.n = 1 + Math.max(0, total - 7); o.lvl = 0; delete o.awk; o.asc = 0
+      o.lv = 1; o.xp = 0; addCardXP(o, Math.round(((P.mast || {})[k] || 0) * 2.4)) }
+    P.shards = (P.shards || 0) + refund; P.tickets = (P.tickets || 0) + 5; P.prog2 = 1; S.savedAt = Date.now()
+    notice('Cards upgraded to the new Diamond system!' + (refund ? ' Refunded ◆' + refund.toLocaleString() + ' shards from Awakening.' : '') + ' +5 Training Tickets.', 'ok') }
   // cards moved between rarity folders get a new key (folder/file); re-link everything by file name
   { const byFile = {}, dup = new Set(); for (const c of CARDS) { const f = c.key.split('/').pop(); if (byFile[f]) dup.add(f); byFile[f] = c.key } for (const f of dup) delete byFile[f]
     const ALIAS = { 'Common/jolyne.jpg': 'Epic/jolyne 5.jpg', 'Epic/jolyne.jpg': 'Uncommon/jolyne.jpg', 'Legendary/dabi.jpg': 'Legendary/dabi 5.jpg', 'Uncommon/dabi.jpg': 'Rare/dabi.jpg' }

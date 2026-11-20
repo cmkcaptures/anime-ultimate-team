@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwpgfmj1'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon } from './battle.js?v=mwpgfmj1'
-import * as ACC from './account.js?v=mwpgfmj1'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpgfmj1'
+import { createFX } from './fx2d.js?v=mwpgq2on'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon } from './battle.js?v=mwpgq2on'
+import * as ACC from './account.js?v=mwpgq2on'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpgq2on'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwpgfmj1'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwpgq2on'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -16,8 +16,13 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
 let POOL = [], BYKEY = {}, ST = null, P = null
 const club = () => P.club.cards
 const effL = (c, l) => (l ? { ...c, lvl: l } : c)
-const effSig = c => { const o = club()[c.key], x = effL(c, (o && o.lvl) || 0); return o && o.sig ? { ...x, sig: 1, ovr: x.ovr + 2, st: (x.st || []).map(v => Math.min(99, v + 2)) } : x }
-const eff = c => { const x = effSig(c), o = club()[c.key], w = (o && o.awk) || []; if (!w.length) return x
+const LB_KEYS = ['dmg', 'dodge', 'dr', 'regen', 'teamHeal', 'spec', 'strikeBoost', 'exec', 'aoeBoost', 'vsAnimeB', 'vsTypeB', 'teamDmg', 'avenge', 'crit', 'spd', 'ultBoost']
+const effSig = c => { const o = club()[c.key]; if (!o) return c
+  const dia = Math.min(7, o.dia || 3), lv = o.lv || 1, mult = 1 + (dia - 3) * .04 + (lv - 1) * .0015
+  const st = (c.st || [70, 70, 70, 70, 70, 70]).map(v => Math.min(99, Math.round(v * mult)))
+  let pas = c.pas; if (dia >= 7 && pas && pas.e) { const e = { ...pas.e }; for (const k of LB_KEYS) if (typeof e[k] === 'number') e[k] = Math.round(e[k] * 1.25); pas = { ...pas, e } }
+  return { ...c, st, pas, ovr: Math.min(99, c.ovr + (dia - 3) + Math.floor((lv - 1) / 25)), dia, lv, asc: o.asc || 0, maxed: dia >= 7 ? 1 : 0, sig: o.sig ? 1 : 0 } }
+const eff = c => { const x = effSig(c), w = []; if (!w.length) return x
   const st = (x.st || [70, 70, 70, 70, 70, 70]).slice(), up = (i, v) => st[i] = Math.min(99, st[i] + v); let ovr = x.ovr
   if (w.includes('pwr')) up(0, 4); if (w.includes('spd')) up(1, 4); if (w.includes('def')) up(4, 4)
   if (w.includes('ovr')) { ovr += 3; for (let i = 0; i < 6; i++) up(i, 2) } if (w.includes('aw')) ovr += 2
@@ -66,7 +71,7 @@ function toast(text, kind = 'ok') {
 const LAZY = 'IntersectionObserver' in window ? new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) { LAZY.unobserve(e.target); e.target._draw() } }, { rootMargin: '300px' }) : null
 function cardImg(c, w = 340) {
   const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, rated ${c.ovr}`; im.decoding = 'async'; im.draggable = false
-  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r; if (c.sig) im.dataset.sig = 1
+  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r; if (c.sig) im.dataset.sig = 1; if (c.maxed) im.dataset.max = 1
   im._draw = () => thumbURL(c, w).then(u => im.src = u)
   if (LAZY) { LAZY.observe(im); setTimeout(() => { if (!im.src && im.isConnected && im.getBoundingClientRect().top < innerHeight + 300) { LAZY.unobserve(im); im._draw() } }, 50) } else im._draw()
   return im
@@ -352,7 +357,7 @@ PAGES.cards = (el) => {
   el.append(head)
   { const mu = h('button', 'btn violet', 'ギャラリー · CARD MUSEUM'); mu.style.marginTop = '4px'; mu.onclick = () => go('museum'); el.append(mu) }
   const tools = h('div', ''); tools.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:14px'
-  const MODES = ['OWNED', 'ALL', 'BINDER', 'EVOLVE', 'FUSE']; const seg = segmented(['OWNED', 'ALL', 'BINDER', 'EVOLVE', 'FUSE'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
+  const MODES = ['OWNED', 'ALL', 'BINDER']; const seg = segmented(['OWNED', 'ALL', 'BINDER'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
   const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search characters or forms'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
   const an = h('div', 'chips'), ra = h('div', 'chips')
   tools.append(seg, q, an, ra); el.append(tools)
@@ -397,24 +402,23 @@ async function cardDetail(key) {
     d.append(h('span', 'marks', `<span style="color:${tierCol(c.r)}">${RARITY_MARK[c.r]} ${TIER[c.r].name}</span>`))
     d.append(h('h2', '', c.name), h('span', 'ver', c.ver + (c.tag ? ' · TAG UNIT' : '')))
     if (e && e.ser) d.append(h('span', 'serial' + (e.ser <= 100 ? ' low' : ''), `SERIAL #${String(e.ser).padStart(4, '0')}${e.ser <= 10 ? ' · ULTRA LOW' : e.ser <= 100 ? ' · LOW SERIAL' : ''}`))
-    d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}${lvl ? ' · ★' + lvl : ''}`))
+    d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}`))
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
     d.append(h('div', 'movebox', `<b style="color:${TYPE[c.t].c[2]}">${TYPE[c.t].en} · ${c.mv}</b><p>${c.tx.join(' ')}</p>`))
-    if (e) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
-    if (ST.evo[key]) d.append(evoBlock(key))
+    if (e) d.append(progBox(key, c))
+    if (false) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
     if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
     d.append(h('span', 'eyebrow', `MARKET VALUE ~ ${fmt(ST.values[key])} COINS`))
     if (e) {
       const a = h('div', 'acts')
       const add = (cls, label, dis, fn) => { const b = h('button', 'btn sm ' + cls, label); b.disabled = !!dis; b.onclick = fn; a.append(b) }
       add('violet', inTeam ? 'IN TEAM' : 'ADD TO TEAM', inTeam, () => { const T = P.team.slice(), i = T.indexOf(null); closeModal(); if (i < 0) { toast('Your team is full. Swap a card on the Team page.'); go('team'); return } T[i] = key; act('team', { team: T }).then(() => go('team')) })
-      add('violet', `AWAKENING TREE ${(e.awk || []).length}/7`, false, () => awakenSheet(key))
-      add('green', lvl >= 5 ? 'MAX ★' : `LEVEL UP ★${lvl + 1}`, !(e.n > 1 && lvl < 5), async () => { await act('awaken', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
+      if (false) add('green', lvl >= 5 ? 'MAX ★' : `LEVEL UP ★${lvl + 1}`, !(e.n > 1 && lvl < 5), async () => { await act('awaken', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       add('gold', 'SELL ON MARKET', spare < 1, () => listSheet(key))
       add('dark', `QUICK SELL ${fmt(ST.quick[key])}`, spare < 1, async () => { await act('quickSell', { key }); if (club()[key]) cardDetail(key); else closeModal(); if (CUR === 'cards') rerender() })
       if (e.n > 1) add('dark', `SHRED ${e.n - 1} → ◆${fmt((e.n - 1) * ST.shardGet[c.r])}`, spare < 1, async () => { await act('shred', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       d.append(a)
-      if (e.n > 1) d.append(h('span', 'muted', `<small style="font-weight:700">Level up uses a duplicate for a star and market value. The Awakening Tree uses duplicates and shards for real stat and rating boosts.</small>`))
+      d.append(h('span', 'muted', `<small style="font-weight:700">Duplicates add a Diamond (max 7◆). Spare copies after that can be sold or shredded.</small>`))
     } else {
       const b = h('button', 'btn block', 'FIND ON MARKET'); b.onclick = () => { MS.q = c.name.toLowerCase(); MS.view = 'results'; go('market') }; d.append(b)
     }
@@ -1815,4 +1819,18 @@ function builderResults() {
       w.append(ap); sh.append(w)
     })
   })
+}
+
+// ================= DIAMONDS · LEVEL · ASCENSION =================
+const diaStr = n => '◆'.repeat(n) + '◇'.repeat(7 - n)
+function progBox(key, c) {
+  const o = club()[key], dia = o.dia || 3, lv = o.lv || 1, need = (ST.lvNeed || [])[lv] || 1, xp = o.xp || 0
+  const w = h('div', 'prog' + (dia >= 7 ? ' maxed' : ''), `<div class="pg-d"><b>${diaStr(dia)}</b><span>${dia >= 7 ? 'LIMIT BREAK · passive +25%' : (7 - dia) + ' more duplicate' + (7 - dia > 1 ? 's' : '') + ' to max'}</span></div>
+    <div class="pg-l"><b>Lv ${lv}</b><i><s style="width:${lv >= 100 ? 100 : Math.round(xp / need * 100)}%"></s></i><span>${lv >= 100 ? 'MAX LEVEL' : xp + ' / ' + need + ' XP'}</span></div>
+    <div class="pg-a"><b>A${o.asc || 0}</b><span>ASCENSION · coming soon</span></div>`)
+  if (lv < 100) { const r = h('div', 'pg-train'), t = h('button', 'btn green sm', `TRAIN · TICKET (${ST.tickets || 0})`), cb = h('button', 'btn dark sm', 'TRAIN · 2,000 COINS')
+    t.disabled = !(ST.tickets > 0); cb.disabled = P.coins < 2000
+    t.onclick = async () => { const r2 = await act('train', { key, with: 'ticket' }); if (!r2.error) cardDetail(key) }; cb.onclick = async () => { const r2 = await act('train', { key, with: 'coins' }); if (!r2.error) cardDetail(key) }
+    r.append(t, cb); w.append(r) }
+  return w
 }

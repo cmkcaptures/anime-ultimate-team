@@ -2940,3 +2940,14 @@ html { background: #2a1258 !important; min-height: 100% }
 .cx-row img { width: 74px; border-radius: 8px }
 .cx-tx b { display: block; font: 800 18px var(--eD, 'Barlow Condensed') } .cx-tx em { display: block; font: 700 11px var(--eUI, Inter); font-style: normal; color: #c8b8ff; margin-bottom: 3px } .cx-tx span { display: block; font: 700 12px var(--eUI, Inter); color: #fff } .cx-tx i { display: inline-block; margin-top: 4px; font: 800 10px var(--eUI, Inter); font-style: normal; letter-spacing: .1em; color: #ffcc00 } .cx-row.own .cx-tx i { color: #6affc0 }
 @media (max-width: 540px) { .cx-wrap .camp-st { padding-right: 16px; padding-bottom: 44px } .cx-on-row { top: auto; bottom: 10px; right: 14px; transform: none } }
+
+/* ================= DIAMONDS · LEVEL · ASCENSION ================= */
+.prog { display: grid; gap: 10px; margin: 10px 0; padding: 12px 14px; border-radius: 16px; background: rgba(0,0,0,.28); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.2) }
+.prog.maxed { box-shadow: 0 0 0 2px #fff, 0 0 18px rgba(255,120,220,.6); animation: rbBox 3s linear infinite }
+.pg-d b { display: block; font: 900 24px sans-serif; letter-spacing: 3px; color: #ffd23a } .prog.maxed .pg-d b { background: linear-gradient(90deg, #ff5ab0, #ffd95a, #5affb0, #5ac8ff, #b88cff, #ff5ab0); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: rbText 2.5s linear infinite }
+.pg-d span, .pg-l span, .pg-a span { font: 800 11px var(--eUI, Inter); letter-spacing: .1em; color: #c8b8ff }
+.pg-l { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center } .pg-l b, .pg-a b { font: 800 20px var(--eD, 'Barlow Condensed'); color: #fff } .pg-l i { height: 10px; border-radius: 99px; background: rgba(0,0,0,.4); overflow: hidden } .pg-l s { display: block; height: 100%; background: linear-gradient(90deg, #6affc0, #20c080) }
+.pg-a { display: flex; gap: 10px; align-items: baseline } .pg-train { display: flex; gap: 8px; flex-wrap: wrap }
+img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
+@keyframes rbGlow { 0% { box-shadow: 0 0 0 2px #ff5ab0, 0 0 16px #ff5ab0 } 25% { box-shadow: 0 0 0 2px #ffd95a, 0 0 16px #ffd95a } 50% { box-shadow: 0 0 0 2px #5affb0, 0 0 16px #5affb0 } 75% { box-shadow: 0 0 0 2px #5ac8ff, 0 0 16px #5ac8ff } 100% { box-shadow: 0 0 0 2px #ff5ab0, 0 0 16px #ff5ab0 } }
+@keyframes rbText { to { background-position: 200% 0 } } @keyframes rbBox { 50% { box-shadow: 0 0 0 2px #fff, 0 0 22px rgba(90,200,255,.7) } }
