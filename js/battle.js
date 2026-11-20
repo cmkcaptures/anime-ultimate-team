@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwp9qpwd'
-import { sfx, sfxOn, music } from './sfx.js?v=mwp9qpwd'
-import { createFX } from './fx2d.js?v=mwp9qpwd'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpfblmb'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpfblmb'
+import { createFX } from './fx2d.js?v=mwpfblmb'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -427,10 +427,10 @@ function bossPage(el, ok) {
     <div class="bh-name"><b>${c.name}</b><span>${c.ver} · ${BD.hpMult}× HP</span></div>
     <div class="bh-ab"><b>BOSS SKILL · ${BD.ab.name}</b><span>${BD.ab.d}</span></div>
     <p>Everyone fights the same boss today. You can't win; deal as much damage as you can in 12 turns before it retreats. Your best attempt counts.</p>
-    <div class="rk-stats"><span><b>${me.best.toLocaleString()}</b>BEST DAMAGE</span><span><b>${left}/${BD.tries}</b>ATTEMPTS LEFT</span><span><b>${me.total.toLocaleString()}</b>TOTAL TODAY</span></div></div>`
+    <div class="cx-slot"></div><div class="rk-stats"><span><b>${me.best.toLocaleString()}</b>BEST DAMAGE</span><span><b>${left}/${BD.tries}</b>ATTEMPTS LEFT</span><span><b>${me.total.toLocaleString()}</b>TOTAL TODAY</span></div></div>`
   const go = h('button', 'btn gold big rk-go', left > 0 ? 'FIGHT THE BOSS' : 'COME BACK TOMORROW'); go.disabled = !ok || left < 1
   go.onclick = () => go2({ mode: 'boss', id: 0, boss: BD.hpMult, bossAb: BD.ab, label: 'Daily Boss · ' + c.name, name: c.name, level: 5, team: [BD.key], arena: ARENA_KEYS[BD.day % ARENA_KEYS.length] })
-  hero.querySelector('.bh-info').append(go); el.append(hero)
+  hero.querySelector('.bh-info').append(go); hero.querySelector('.cx-slot').append(cxBtn(() => [c], 'Daily Boss · ' + c.name)); el.append(hero)
   el.append(h('div', 'sec', '<h3>DAMAGE REWARDS</h3><span class="muted" style="font-weight:700;font-size:12px">unlocked once a day by your best attempt</span>'))
   const g = h('div', 'rk-tiers')
   BD.rw.forEach((r, i) => { const done = me.got.includes(i); g.append(h('div', 'rk-t' + (done ? ' got on' : ''), `<b>${r.at.toLocaleString()}</b><small>DAMAGE</small><span>${done ? '✓ ' : ''}${r.label}</span>`)) })
@@ -483,6 +483,43 @@ function towerPage(el, ok) {
   { const nx = [10, 20, 30, 40, 50].find(m => m > best); if (nx) el.append(h('p', 'muted', `<b>Next milestone: Floor ${nx}</b> · ${X.ST().packs[T[nx - 1].pack].name}`)) }
   el.append(list)
 }
+// ================= COUNTER TIPS =================
+const kitT = c => (c.tx || []).join(' ')
+export function counterPicks(enemy, n = 6) {
+  const E = enemy.filter(Boolean), EA = {}, own = X.P.club.cards
+  for (const e of E) EA[e.anime] = (EA[e.anime] || 0) + 1
+  const pe = c => (c.pas && c.pas.e) || {}
+  const surv = E.filter(e => pe(e).endure || pe(e).revive || pe(e).ablaze).map(e => e.name), big = E.filter(e => Object.keys(pe(e)).length >= 2 && e.ovr >= 88).map(e => e.name)
+  const walls = E.filter(e => pe(e).dr || pe(e).guardStrong || pe(e).shield || e.role === 'TANK').map(e => e.name), healers = E.filter(e => pe(e).teamHeal || pe(e).regen).map(e => e.name)
+  const tops = E.slice().sort((x, y) => y.ovr - x.ovr).slice(0, 3)
+  const out = []
+  for (const c of X.POOL) {
+    const e = pe(c), why = []; let s = c.ovr * .4
+    const adv = E.filter(x => beats(tOf(c), tOf(x))).length, dis = E.filter(x => beats(tOf(x), tOf(c))).length
+    if (adv) { s += adv * 7; why.push('Type beats ' + adv + ' of them') } if (dis) s -= dis * 6
+    if (e.vsAnime && EA[e.vsAnime]) { s += 6 * EA[e.vsAnime] + (e.vsAnimeB || 0) / 2; why.push('+' + e.vsAnimeB + '% vs ' + X.ANAME(e.vsAnime)) }
+    if (e.noSurvive && surv.length) { s += 18; why.push('Cancels ' + surv.slice(0, 2).join(' & ') + ' surviving KOs') }
+    if (e.nullPassive && big.length) { s += 12; why.push('Shuts off ' + big[0] + '\'s passive') }
+    if ((/Ignores Guard/.test(kitT(c)) || e.pierce || e.pierceStrike) && walls.length) { s += 6; why.push('Hits through ' + walls[0] + '\'s defence') }
+    if (e.firstNull && tops.length) { s += 6; why.push('Blocks the first ' + e.firstNull + ' hits') }
+    if (e.wheel) { s += 8; why.push('Adapts and gets tankier every hit') }
+    if ((e.exec || e.burst) && healers.length) { s += 5; why.push('Finishes healers like ' + healers[0]) }
+    if (e.teamHeal) { s += 4; why.push('Heals your team every turn') }
+    if (e.slow && E.length) { s += 3; why.push('Drains their Energy') }
+    if (!why.length) continue
+    out.push({ c, s, why: why.sort((a, b) => /^(Type|\+)/.test(a) - /^(Type|\+)/.test(b)).slice(0, 2), own: !!own[c.key] })
+  }
+  const seen = new Set(); return out.sort((x, y) => y.s - x.s).filter(o => !seen.has(o.c.name) && seen.add(o.c.name)).slice(0, n)
+}
+export function counterSheet(enemy, title) {
+  const { h } = X, picks = counterPicks(enemy), E = enemy.filter(Boolean)
+  const o = h('div', 'cx-ov'); o.onclick = ev => { if (ev.target === o || ev.target.closest('.cx-x')) o.remove() }
+  const box = h('div', 'cx-box', `<button class="cx-x">✕</button><small>WHO WORKS WELL · 攻略</small><h3>${title}</h3><p class="cx-foe">vs ${[...new Set(E.map(e => e.name))].join(', ')}</p>`)
+  if (!picks.length) box.append(h('p', 'cx-foe', 'No standout counters. Bring your strongest team.'))
+  for (const p of picks) { const row = h('div', 'cx-row' + (p.own ? ' own' : '')); const im = X.cardImg(p.c, 200); row.append(im, h('div', 'cx-tx', `<b>${p.c.name}</b><em>${p.c.ver} · ${p.c.ovr}</em>${p.why.map(w => '<span>✓ ' + w + '</span>').join('')}<i>${p.own ? 'IN YOUR CLUB' : 'NOT OWNED'}</i>`)); box.append(row) }
+  o.append(box); document.body.append(o)
+}
+const cxBtn = (enemyFn, title) => { const b = X.h('button', 'cx-btn', '🎯 COUNTERS'); b.onclick = ev => { ev.stopPropagation(); counterSheet(enemyFn(), title) }; return b }
 // ================= STORY CAMPAIGN =================
 const byName = n => X.POOL.filter(c => c.name === n).sort((a, b) => b.ovr - a.ovr)[0]
 function scene(lines, title, bg, done) {
@@ -514,11 +551,11 @@ function campPage(el, ok) {
       const key = ch.id + ':' + st.n, s = C.stars[key] || 0, open = st.n === 1 || (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
       const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${[...new Set(st.enemy.map(x => x.split('#')[0]))].join(', ')}</em></span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
       row.disabled = !ok || !open
+      { const cb = cxBtn(() => campTeam(st.enemy).map(k => X.BYKEY[k]), ch.id + '-' + st.n + ' · ' + st.name); cb.classList.add('cx-on-row'); const wrap = h('div', 'cx-wrap'); wrap.append(row, cb); list.append(wrap) }
       row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
         try { sessionStorage.setItem('campOutro', JSON.stringify({ c: ch.id, s: st.n, had: s > 0 })) } catch { }
         go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: st.boss ? 1.25 : 1 + st.n * .03, team: campTeam(st.enemy) })
       })
-      list.append(row)
     })
     el.append(list)
   }
@@ -543,6 +580,7 @@ function arcsPage(el, ok) {
       }
       chs.append(b)
     })
+    { const bad = pool.filter(c => arc.bad.includes(c.name)).sort((a, b) => b.ovr - a.ovr), good = pool.filter(c => !arc.bad.includes(c.name)).sort((a, b) => b.ovr - a.ovr); card.querySelector('.arc-info').append(cxBtn(() => bad.concat(good).slice(0, 6), arc.name)) }
     g.append(card)
   }
   el.append(g)
@@ -551,6 +589,7 @@ function eventPage(el, ok) {
   const { h } = X, E = X.ST().event, pool = X.POOL.filter(c => c.anime === E.anime).sort((a, b) => b.ovr - a.ovr)
   const hero = h('section', 'bhero evhero', `<div><span class="sh-tag">LIMITED EVENT · ENDS IN <b class="timer" data-until="${E.ends}"></b></span><h2>${X.ANAME(E.anime).toUpperCase()} WEEK</h2><p>This week's fights are all ${X.ANAME(E.anime)}. Clear each difficulty once a day for coins; Nightmare also gives a ${X.ST().packs[E.pack].name}. A new anime takes over every Monday.</p></div>`)
   if (pool[0]) hero.style.setProperty('--art', `url("${pool[0].url}")`)
+  hero.querySelector('div').append(cxBtn(() => pool.slice(0, 6), X.ANAME(E.anime) + ' Week'))
   el.append(hero)
   const list = h('div', 'stages')
   E.tiers.forEach((T, i) => {

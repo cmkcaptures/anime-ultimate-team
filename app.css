@@ -2925,3 +2925,18 @@ html { background: #2a1258 !important; min-height: 100% }
 .bt-in i { width: min(280px, 70vw); height: 14px; border-radius: 999px; background: #1a0f3a; box-shadow: 0 0 0 3px #fff; overflow: hidden }
 .bt-in i s { display: block; height: 100%; width: 5%; background: repeating-linear-gradient(115deg, #ffe14a 0 10px, #ffb000 10px 20px); transition: width .3s }
 .bt-in small { font: 800 13px Inter, sans-serif; letter-spacing: .14em; color: #fff; text-transform: uppercase }
+
+/* ================= COUNTER TIPS ================= */
+.cx-wrap { position: relative }
+.cx-wrap .camp-st { width: 100%; padding-right: 150px }
+.cx-on-row { position: absolute; right: 70px; top: 50%; transform: translateY(-50%) }
+.cx-btn { padding: 7px 12px; border: 0; border-radius: 999px; background: #ffcc00; color: #1a0f3a; font: 800 12px var(--eUI, Inter); letter-spacing: .06em; cursor: pointer; box-shadow: 0 0 0 2px #fff, 0 3px 0 2px rgba(0,0,0,.35); white-space: nowrap }
+.bh-info .cx-btn, .arc-info .cx-btn, .evhero .cx-btn { margin: 8px 0 }
+.cx-ov { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; padding: 16px; background: rgba(8,4,20,.75) }
+.cx-box { position: relative; width: min(560px, 100%); max-height: 88vh; overflow-y: auto; padding: 18px 18px 10px; border-radius: 20px; background: linear-gradient(160deg, #3a2a7a, #1a0f3a); box-shadow: 0 0 0 3px #fff, 0 10px 40px rgba(0,0,0,.6); color: #fff }
+.cx-box > small { font: 800 11px var(--eUI, Inter); letter-spacing: .16em; color: #ffcc00 } .cx-box h3 { margin: 2px 0 2px; font: 800 26px var(--eD, 'Barlow Condensed') } .cx-foe { margin: 0 0 12px; font: 600 12px var(--eUI, Inter); color: #c8b8ff }
+.cx-x { position: absolute; right: 12px; top: 10px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(255,255,255,.15); color: #fff; font-size: 16px; cursor: pointer }
+.cx-row { display: grid; grid-template-columns: 74px 1fr; gap: 12px; align-items: center; padding: 8px; margin-bottom: 8px; border-radius: 14px; background: rgba(0,0,0,.25) } .cx-row.own { box-shadow: inset 0 0 0 2px #6affc0 }
+.cx-row img { width: 74px; border-radius: 8px }
+.cx-tx b { display: block; font: 800 18px var(--eD, 'Barlow Condensed') } .cx-tx em { display: block; font: 700 11px var(--eUI, Inter); font-style: normal; color: #c8b8ff; margin-bottom: 3px } .cx-tx span { display: block; font: 700 12px var(--eUI, Inter); color: #fff } .cx-tx i { display: inline-block; margin-top: 4px; font: 800 10px var(--eUI, Inter); font-style: normal; letter-spacing: .1em; color: #ffcc00 } .cx-row.own .cx-tx i { color: #6affc0 }
+@media (max-width: 540px) { .cx-wrap .camp-st { padding-right: 16px; padding-bottom: 44px } .cx-on-row { top: auto; bottom: 10px; right: 14px; transform: none } }
