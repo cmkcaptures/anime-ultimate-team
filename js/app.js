@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwphcsd0'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwphcsd0'
-import * as ACC from './account.js?v=mwphcsd0'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwphcsd0'
+import { createFX } from './fx2d.js?v=mwphr0sq'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwphr0sq'
+import * as ACC from './account.js?v=mwphr0sq'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwphr0sq'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwphcsd0'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwphr0sq'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -70,7 +70,7 @@ function toast(text, kind = 'ok') {
 // cards are drawn only when they scroll near the screen (big win on My Cards / binders / shop)
 const LAZY = 'IntersectionObserver' in window ? new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) { LAZY.unobserve(e.target); e.target._draw() } }, { rootMargin: '300px' }) : null
 function cardImg(c, w = 340) {
-  const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, rated ${c.ovr}`; im.decoding = 'async'; im.draggable = false
+  const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, grade ${gradeOf(c.ovr)}`; im.decoding = 'async'; im.draggable = false
   im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r; if (c.sig) im.dataset.sig = 1; if (c.maxed) im.dataset.max = 1
   im._draw = () => thumbURL(c, w).then(u => im.src = u)
   if (LAZY) { LAZY.observe(im); setTimeout(() => { if (!im.src && im.isConnected && im.getBoundingClientRect().top < innerHeight + 300) { LAZY.unobserve(im); im._draw() } }, 50) } else im._draw()
@@ -522,6 +522,12 @@ function teamPicker(slot) {
   openModal(sh => {
     sh.append(h('div', 'sec', `<h3>${slot === 0 ? 'PICK YOUR LEADER' : slot < 3 ? 'PICK A STARTER' : 'PICK A BENCH CARD'}</h3>`))
     if (P.team[slot]) { const rm = h('button', 'ghost', 'Remove this card'); rm.onclick = async () => { const T = P.team.slice(); T[slot] = null; await act('team', { team: T }); closeModal(); rerender() }; sh.append(rm) }
+    { // swap with another team slot
+      const others = [0, 1, 2, 3, 4, 5].filter(j => j !== slot && (P.team[j] || P.team[slot]))
+      if (others.length) { const sw = h('div', 'tp-swap', '<small>SWAP WITH</small>'), row = h('div', 'tp-swrow')
+        for (const j of others) { const c = P.team[j] && BYKEY[P.team[j]], b = h('button', 'tp-sw', `<em>${j === 0 ? 'LEADER' : j < 3 ? 'MAIN' : 'SUB'}</em><b>${c ? c.name : 'Empty slot'}</b>`)
+          b.onclick = async () => { const T = P.team.slice(); [T[slot], T[j]] = [T[j], T[slot]]; await act('team', { team: T }); closeModal(); rerender() }; row.append(b) }
+        sw.append(row); sh.append(sw) } }
     const LD0 = slot !== 0 && P.team[0] && BYKEY[P.team[0]] && BYKEY[P.team[0]].lead, avail = owned().filter(c => !P.team.includes(c.key)).sort((x, y) => (LD0 ? leadHits(LD0, y) - leadHits(LD0, x) : 0) || y.ovr - x.ovr), teamAnime = synergy(P.team.map((k, i) => i !== slot && k && BYKEY[k])).anime
     const sel = (lbl, key, opts) => { const w = h('label', 'tp-f', `<span>${lbl}</span>`), s2 = document.createElement('select'); for (const [v, t] of opts) { const o = new Option(t, v); if (TB[key] === v) o.selected = true; s2.append(o) } s2.onchange = () => { TB[key] = s2.value; draw() }; w.append(s2); return w }
     const series = [...new Set(avail.map(c => c.anime))].sort((a, b) => ANAME(a).localeCompare(ANAME(b)))
@@ -603,7 +609,7 @@ function marketResults(el) {
     hero.innerHTML = ''; const hc = h('div', 'ah-card'); hc.append(cardImg(effL(c, l.lvl), 520)); hero.append(hc)
     hero.onpointermove = e => { const r = hero.getBoundingClientRect(); hc.style.transform = `rotateY(${((e.clientX - r.left) / r.width - .5) * 22}deg) rotateX(${-((e.clientY - r.top) / r.height - .5) * 16}deg)` }
     hero.onpointerleave = () => hc.style.transform = ''
-    info.innerHTML = `<div class="a-head"><div><span class="a-rar">${RARITY_MARK[c.r]} ${TIER[c.r].name}</span><h3>${c.name}</h3><small>${c.ver}${l.lvl ? ' · ★' + l.lvl : ''}</small></div><b class="a-ovr">${c.ovr}</b></div>
+    info.innerHTML = `<div class="a-head"><div><span class="a-rar">${RARITY_MARK[c.r]} ${TIER[c.r].name}</span><h3>${c.name}</h3><small>${c.ver}${l.lvl ? ' · ★' + l.lvl : ''}</small></div><b class="a-ovr" style="color:${GRADE_COL[gradeOf(c.ovr)]}">${gradeOf(c.ovr)}</b></div>
       <div class="a-timer"><span>TIME REMAINING</span><b data-urgent data-until="${l.exp - SKEW}" data-done="Ended"></b></div>
       <div class="a-tiles">
         <div><span>START</span><b>${fmt(l.start)}</b></div>
@@ -1692,7 +1698,7 @@ function awakenSheet(key) {
     const e = club()[key]; if (!e) return
     const have = e.awk || [], c = eff(base), dup = e.n - 1, mult = ST.awkSh[base.r]
     sh.append(h('div', 'sec', '<h3>AWAKENING TREE</h3><span class="muted" style="font-weight:700;font-size:12px">覚醒 · spend duplicates and shards</span>'))
-    const top = h('div', 'awk-top'); const im = cardImg(c, 300); im.style.width = '120px'; top.append(im, h('div', 'awk-info', `<b>${c.name}</b><small>${c.ver}</small><span>RATING ${base.ovr} → <em>${c.ovr}</em></span><span>${have.length}/7 NODES</span><span>DUPLICATES ${dup} · ◆${fmt(P.shards || 0)}</span>`)); sh.append(top)
+    const top = h('div', 'awk-top'); const im = cardImg(c, 300); im.style.width = '120px'; top.append(im, h('div', 'awk-info', `<b>${c.name}</b><small>${c.ver}</small><span>GRADE ${gradeOf(base.ovr)} → <em>${gradeOf(c.ovr)}</em></span><span>${have.length}/7 NODES</span><span>DUPLICATES ${dup} · ◆${fmt(P.shards || 0)}</span>`)); sh.append(top)
     const rows = [['aw'], ['dodge', 'dmg', 'ovr'], ['spd', 'pwr', 'def']], g = h('div', 'awk-tree')
     for (const r of rows) { const row = h('div', 'awk-row')
       for (const id of r) { const N = ST.awkT.find(n => n.id === id), got = have.includes(id), req = N.req ? [].concat(N.req) : [], open = req.every(q => have.includes(q)), cost = N.sh * mult, can = open && !got && dup >= N.dup && (P.shards || 0) >= cost
@@ -1771,7 +1777,7 @@ function buildOptions() {
 }
 function whyFor(c, g) { const e = (c.pas && c.pas.e) || {}, w = []
   if (TBX.locks.includes(c.key)) w.push('locked'); if (g === 'speed') w.push('SPD ' + c.st[1]); if (g === 'tank') w.push('DEF ' + c.st[4]); if (g === 'burst') w.push('PWR ' + c.st[0]); if (g === 'dragon' && isDrg(c)) w.push('Dragon')
-  if (e.endure || e.revive) w.push('survives KO'); if (e.regen || e.teamHeal) w.push('heals'); if (e.first) w.push('moves first'); if (!w.length) w.push(c.ovr + ' rated')
+  if (e.endure || e.revive) w.push('survives KO'); if (e.regen || e.teamHeal) w.push('heals'); if (e.first) w.push('moves first'); if (!w.length) w.push('Grade ' + gradeOf(c.ovr))
   return w.slice(0, 2).join(' · ') }
 function teamBuilderPanel(el) {
   const own = owned(), chip = (on, label, fn, cls = '') => { const b = h('button', 'tb-chip' + (on ? ' on' : '') + cls, label); b.onclick = fn; return b }
@@ -1821,7 +1827,7 @@ function builderResults() {
     if (!opts.length || !opts[0].T.length) { sh.append(h('p', 'muted', 'No cards match those filters. Loosen them and try again.')); return }
     opts.forEach((o, n) => {
       const w = h('div', 'tb-opt' + (n === 0 ? ' best' : ''))
-      w.append(h('div', 'tb-oh', `<b>${n === 0 ? 'BEST PICK' : 'OPTION ' + (n + 1)}</b><span>RATING <em>${o.rating}</em></span><span>LEADER BOOST <em>${o.T[0] && o.T[0].lead ? o.T.filter(x => leadHits(o.T[0].lead, x)).length + '/' + o.T.length : '—'}</em></span>${o.short ? '<span class="warn">FILTERS LEFT GAPS</span>' : ''}`))
+      w.append(h('div', 'tb-oh', `<b>${n === 0 ? 'BEST PICK' : 'OPTION ' + (n + 1)}</b><span>AVG GRADE <em>${gradeOf(o.rating)}</em></span><span>LEADER BOOST <em>${o.T[0] && o.T[0].lead ? o.T.filter(x => leadHits(o.T[0].lead, x)).length + '/' + o.T.length : '—'}</em></span>${o.short ? '<span class="warn">FILTERS LEFT GAPS</span>' : ''}`))
       const g6 = h('div', 'tb-o6')
       o.T.forEach((c, i) => { const cell = h('button', 'tb-oc'); cell.append(cardImg(c, 200), h('small', '', (i === 0 ? 'LEADER · ' : '') + whyFor(c, g))); cell.onclick = () => { if (TBX.locks.includes(c.key)) return toast('That card is locked.', 'err'); TBX.excl.push(c.key); builderResults() }; g6.append(cell) })
       w.append(g6)

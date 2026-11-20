@@ -195,7 +195,7 @@ export function drawCard(x, d) {
   const wg = x.createLinearGradient(0, 0, 300, 300); wg.addColorStop(0, 'rgba(0,0,0,.9)'); wg.addColorStop(.4, 'rgba(0,0,0,.5)'); wg.addColorStop(.62, 'rgba(0,0,0,0)'); x.fillStyle = wg; x.fillRect(0, 0, 320, 320)
   const pal = d.r === 'X' ? ['#fff', '#ffe9a8', '#c9f3ff'] : low ? ['#fff', tr.pal[0], tr.pal[1]] : ['#fff', c3, c1]
   const g2 = x.createLinearGradient(0, 30, 0, 160); g2.addColorStop(.15, pal[0]); g2.addColorStop(.6, pal[1]); g2.addColorStop(1, pal[2])
-  x.font = DISP(158); x.textBaseline = 'alphabetic'; x.shadowColor = 'rgba(0,0,0,.75)'; x.shadowOffsetY = 6; x.fillStyle = g2; x.fillText(d.ovr, 26, 160)
+  x.font = DISP(158); x.textBaseline = 'alphabetic'; x.shadowColor = 'rgba(0,0,0,.75)'; x.shadowOffsetY = 6; const tg = gradeOf(d.ovr); if (tg === 'Ω') { const gg = x.createLinearGradient(26, 40, 170, 160); RB.forEach((cc, i) => gg.addColorStop(i / (RB.length - 1), cc)); x.fillStyle = gg } else x.fillStyle = g2; x.fillText(tg, 30, 160)
   x.shadowOffsetY = 3; x.font = DISP(32); x.fillStyle = '#fff'; x.fillText(d.role, 76, 202);
   if (d.dia) { x.save(); x.shadowColor = 'rgba(0,0,0,.85)'; x.shadowOffsetY = 2; x.font = '900 26px sans-serif'; const s = '◆'.repeat(d.dia) + '◇'.repeat(7 - d.dia), y = d.tag ? 282 : 240; if (d.maxed) { const g = x.createLinearGradient(30, 0, 230, 0); ['#ff5ab0', '#ffd95a', '#5affb0', '#5ac8ff', '#b88cff'].forEach((cc, i) => g.addColorStop(i / 4, cc)); x.fillStyle = g } else x.fillStyle = '#ffd23a'; x.fillText(s, 30, y); x.restore() }
   if (d.maxed) { x.save(); const g = x.createLinearGradient(0, 0, W, H); ['#ff5ab0', '#ffd95a', '#5affb0', '#5ac8ff', '#b88cff', '#ff5ab0'].forEach((cc, i, L) => g.addColorStop(i / (L.length - 1), cc)); x.strokeStyle = g; x.lineWidth = 14; x.shadowColor = '#fff'; x.shadowBlur = 24; x.strokeRect(16, 16, W - 32, H - 32); x.globalCompositeOperation = 'overlay'; x.globalAlpha = .28; x.fillStyle = g; x.fillRect(0, 0, W, H); x.restore() }
@@ -273,7 +273,7 @@ export function drawCard(x, d) {
 const THUMBS = {}
 const SMALL = innerWidth < 700
 const bucket = w => SMALL ? (w <= 300 ? 220 : w <= 460 ? 380 : 480) : w <= 260 ? 260 : w <= 440 ? 440 : 560
-const sig = c => [c.key, c.dia || 0, c.lv || 0, c.maxed || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.z, c.mv, c.total, c.awoke || 0, (c.st || []).join(',')].join('|')
+const sig = c => ['g1', c.key, c.dia || 0, c.lv || 0, c.maxed || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.z, c.mv, c.total, c.awoke || 0, (c.st || []).join(',')].join('|')
 // one render at a time, yielding to the browser between cards so scrolling stays smooth
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
@@ -294,6 +294,10 @@ export function thumbURL(c, w = 340, prio) {
     return job
   })())
 }
+// card grade from effective rating: C · B · A · S · Z · Ω
+export const GRADES = ['C', 'B', 'A', 'S', 'Z', 'Ω']
+export const gradeOf = o => o >= 98 ? 'Ω' : o >= 94 ? 'Z' : o >= 88 ? 'S' : o >= 81 ? 'A' : o >= 72 ? 'B' : 'C'
+export const GRADE_COL = { C: '#b8b8c8', B: '#6fe0bd', A: '#6cc4ff', S: '#ffd45a', Z: '#ff5ab0', 'Ω': '#e0c8ff' }
 export const RARITY_MARK = { C: '●', U: '●●', R: '●●●', E: '●●●●', L: '★', M: '★★', X: '♛' }
 export const fontsReady = Promise.all([
   document.fonts.load('italic 900 100px "Sofia Sans Extra Condensed"'),

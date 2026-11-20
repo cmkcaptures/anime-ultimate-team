@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwphcsd0'
-import { sfx, sfxOn, music } from './sfx.js?v=mwphcsd0'
-import { createFX } from './fx2d.js?v=mwphcsd0'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwphr0sq'
+import { sfx, sfxOn, music } from './sfx.js?v=mwphr0sq'
+import { createFX } from './fx2d.js?v=mwphr0sq'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -523,7 +523,7 @@ export function counterSheet(enemy, title) {
   const o = h('div', 'cx-ov'); o.onclick = ev => { if (ev.target === o || ev.target.closest('.cx-x')) o.remove() }
   const box = h('div', 'cx-box', `<button class="cx-x">✕</button><small>WHO WORKS WELL · 攻略</small><h3>${title}</h3><p class="cx-foe">vs ${[...new Set(E.map(e => e.name))].join(', ')}</p>`)
   if (!picks.length) box.append(h('p', 'cx-foe', 'No standout counters. Bring your strongest team.'))
-  for (const p of picks) { const row = h('div', 'cx-row' + (p.own ? ' own' : '')); const im = X.cardImg(p.c, 200); row.append(im, h('div', 'cx-tx', `<b>${p.c.name}</b><em>${p.c.ver} · ${p.c.ovr}</em>${p.why.map(w => '<span>✓ ' + w + '</span>').join('')}<i>${p.own ? 'IN YOUR CLUB' : 'NOT OWNED'}</i>`)); box.append(row) }
+  for (const p of picks) { const row = h('div', 'cx-row' + (p.own ? ' own' : '')); const im = X.cardImg(p.c, 200); row.append(im, h('div', 'cx-tx', `<b>${p.c.name}</b><em>${p.c.ver} · Grade ${p.c.ovr >= 98 ? 'Ω' : p.c.ovr >= 94 ? 'Z' : p.c.ovr >= 88 ? 'S' : p.c.ovr >= 81 ? 'A' : p.c.ovr >= 72 ? 'B' : 'C'}</em>${p.why.map(w => '<span>✓ ' + w + '</span>').join('')}<i>${p.own ? 'IN YOUR CLUB' : 'NOT OWNED'}</i>`)); box.append(row) }
   o.append(box); document.body.append(o)
 }
 const cxBtn = (enemyFn, title) => { const b = X.h('button', 'cx-btn', '🎯 COUNTERS'); b.onclick = ev => { ev.stopPropagation(); counterSheet(enemyFn(), title) }; return b }
