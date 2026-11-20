@@ -95,11 +95,10 @@ const idb = () => DBP || (DBP = new Promise(res => { try { const r = indexedDB.o
 async function idbGet(k) { const db = await idb(); if (!db) return null; return new Promise(r => { try { const q = db.transaction('art').objectStore('art').get(k); q.onsuccess = () => r(q.result || null); q.onerror = () => r(null) } catch { r(null) } }) }
 async function idbPut(k, v) { const db = await idb(); if (!db) return; try { db.transaction('art', 'readwrite').objectStore('art').put(v, k) } catch { } }
 export const ART = {}, ARTP = {}
-let WK = undefined, WID = 0; const WJOBS = new Map()
-function cutWorker() {
-  if (WK !== undefined) return WK
-  try { if (typeof OffscreenCanvas === 'undefined' || !window.Worker) return WK = null; WK = new Worker(new URL('./cutout-worker.js', import.meta.url)); WK.onmessage = ({ data }) => { const j = WJOBS.get(data.id); if (!j) return; WJOBS.delete(data.id); data.err ? j.rej(data.err) : j.res(data) }; WK.onerror = () => { for (const j of WJOBS.values()) j.rej('worker'); WJOBS.clear(); WK = null } } catch { WK = null }
-  return WK
+let WK = undefined, WID = 0, WRR = 0; const WJOBS = new Map()
+function cutWorker() { // small pool of workers so several cards process at once
+  if (WK === undefined) { try { if (typeof OffscreenCanvas === 'undefined' || !window.Worker) WK = null; else { const n = Math.max(2, Math.min(4, (navigator.hardwareConcurrency || 4) - 1)); WK = Array.from({ length: n }, () => { const w = new Worker(new URL('./cutout-worker.js', import.meta.url)); w.onmessage = ({ data }) => { const j = WJOBS.get(data.id); if (!j) return; WJOBS.delete(data.id); data.err ? j.rej(data.err) : j.res(data) }; w.onerror = () => { for (const j of WJOBS.values()) j.rej('worker'); WJOBS.clear(); WK = null }; return w }) } } catch { WK = null } }
+  return WK ? WK[WRR++ % WK.length] : null
 }
 export function getArt(c) {
   return ARTP[c.id] || (ARTP[c.id] = (async () => {
@@ -282,8 +281,9 @@ export function thumbURL(c, w = 340, prio) {
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
-    const job = (prio ? getArt(c) : QUEUE).then(async () => {
-      await getArt(c); if (!prio) await idle()
+    await getArt(c) // art loads in parallel across workers; only the quick draw step is queued
+    const job = (prio ? Promise.resolve() : QUEUE).then(async () => {
+      if (!prio) await new Promise(r => setTimeout(r, 0))
       const can = document.createElement('canvas'); can.width = bw; can.height = Math.round(bw * 952 / 680)
       const x = can.getContext('2d'); x.scale(bw / 680, bw / 680); drawCard(x, c)
       const blob = await new Promise(r => can.toBlob(r, 'image/webp', .84))

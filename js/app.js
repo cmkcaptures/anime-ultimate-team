@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwp8wppe'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS } from './battle.js?v=mwp8wppe'
-import * as ACC from './account.js?v=mwp8wppe'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp8wppe'
+import { createFX } from './fx2d.js?v=mwp92dps'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS } from './battle.js?v=mwp92dps'
+import * as ACC from './account.js?v=mwp92dps'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp92dps'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp8wppe'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp92dps'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -772,7 +772,7 @@ const bootDone = () => { const o = document.getElementById('boot'); if (o) { o.c
   const hsh = location.hash.slice(1), [name, ...rest] = hsh.split('-')
   go(PAGES[name] ? name : 'home', rest.join('-') || null, { silent: !hsh }); bootDone()
   // warm the rest of your collection in the background (cached forever after)
-  setTimeout(() => { for (const c of owned().sort((a, b) => b.ovr - a.ovr).slice(0, 80)) thumbURL(eff(c), 300).catch(() => { }) }, 2500)
+  setTimeout(async () => { for (const c of owned().sort((a, b) => b.ovr - a.ovr).slice(0, 80)) { try { await thumbURL(eff(c), 300) } catch { } await new Promise(r => setTimeout(r, 120)) } }, 4000)
   setInterval(async () => {
     await refresh()
     if (CUR === 'market' && MS.tab !== 0) { await loadMarket(); if ($('#modal').hidden) rerender() }
