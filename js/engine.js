@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpillsl'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpiwo46'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -210,6 +210,19 @@ function bossToday() {
   const ab = AB[day % AB.length]
   return { day, key: c.key, hpMult: BOSS_HP, tries: BOSS_TRIES, rw: BOSS_RW, ends: (day + 1) * 864e5, ab: { ...ab, name: c.mv || 'BOSS ATTACK' } }
 }
+// ---------- RAID WEEKENDS ----------
+// Fri 00:00 -> Mon 00:00 UTC. Everyone hits one shared boss; its HP lives in Firestore.
+const RAID_HP = 500000, RAID_TRIES = 3, RAID_BOSSES = ['Story/2c088316237c31915117f8d596539829.jpg', 'Story/e51d1520ff0dc755ba7f4d396c1f2542.jpg', 'Story/muzan final form.jpg', 'Story/Imu.jpg']
+const RAID_RW = [{ at: 25000, coins: 3000, label: '3,000 coins' }, { at: 60000, pack: 'jumbo', label: 'Jumbo Gold' }, { at: 120000, pack: 'premium', label: 'Premium Drop' }, { at: 200000, shards: 3000, tickets: 3, label: '◆3,000 + 3 Tickets' }]
+function raidNow() {
+  const now = Date.now(), day = Math.floor(now / 864e5), dow = (day + 4) % 7 // 0 = Sunday
+  const daysSinceFri = (dow + 2) % 7, friDay = day - daysSinceFri, active = daysSinceFri <= 2
+  const wk = Math.floor(friDay / 7), key = RAID_BOSSES[wk % RAID_BOSSES.length]
+  const AB = [{ id: 'aoe', d: 'Every 3rd turn it hits your whole team for 12% of their max HP.' }, { id: 'drain', d: 'Every 3rd turn it drains 3 Energy and steals your Ultimate charge.' }, { id: 'rage', d: 'Every 3rd turn it powers up: +15% damage, stacking.' }, { id: 'burn', d: 'Every 3rd turn it burns your whole team for 3 turns.' }]
+  const c = byKey(key)
+  return { id: 'r' + wk, key, active, hp: RAID_HP, tries: RAID_TRIES, rw: RAID_RW, starts: friDay * 864e5, ends: (friDay + 3) * 864e5, next: (friDay + 7) * 864e5, hpMult: 30, ab: { ...AB[wk % AB.length], name: c ? c.mv : 'RAID ATTACK' } }
+}
+function raidP() { const P = S.profile, R = raidNow(), d = Math.floor(Date.now() / 864e5); if (!P.raid || P.raid.id !== R.id) P.raid = { id: R.id, day: d, tries: 0, best: 0, total: 0, got: [], win: 0 }; if (P.raid.day !== d) { P.raid.day = d; P.raid.tries = 0 } return P.raid }
 function bossP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.boss || P.boss.day !== d) P.boss = { day: d, tries: 0, best: 0, total: 0, got: [] }; return P.boss }
 // ---------- LOGIN STREAK ----------
 const LOGIN_RW = [{ coins: 1000 }, { coins: 1500 }, { pack: 'silver' }, { coins: 2500 }, { shards: 300 }, { pack: 'standard' }, { pack: 'premium' }]
@@ -942,6 +955,12 @@ function act(a) {
     case 'battle': {
       // mastery for every fighter in your team
       { const ups = []; for (const k of P.team.filter(Boolean)) { const o = P.club.cards[k]; if (!o) continue; const u = addCardXP(o, a.won ? 60 : 20); if (u) ups.push(cardName(k) + ' Lv ' + o.lv) } if (ups.length) notice('Level up: ' + ups.join(', '), 'ok') }
+      if (a.mode === 'raid') {
+        const R = raidNow(), Rp = raidP(); if (!R.active) return { error: 'No raid right now.' }; if (Rp.tries >= RAID_TRIES) return { error: 'No raid attempts left today.' }
+        Rp.tries++; const dmg = Math.max(0, Math.min(1500000, Math.round(+a.dmg || 0))); Rp.total += dmg; Rp.best = Math.max(Rp.best, dmg); addXP(30)
+        const got = []; for (let i = 0; i < RAID_RW.length; i++) { const r = RAID_RW[i]; if (Rp.total >= r.at && !Rp.got.includes(i)) { Rp.got.push(i); if (r.coins) P.coins += r.coins; if (r.pack) P.pending[r.pack] = (P.pending[r.pack] || 0) + 1; if (r.shards) P.shards = (P.shards || 0) + r.shards; if (r.tickets) P.tickets = (P.tickets || 0) + r.tickets; got.push(r.label) } }
+        return { msg: 'Raid hit for ' + dmg.toLocaleString() + ' damage!' + (got.length ? ' Unlocked: ' + got.join(', ') + '.' : ''), raidTotal: Rp.total }
+      }
       if (a.mode === 'boss') {
         const Bo = bossP(), BD = bossToday(); if (Bo.tries >= BOSS_TRIES) return { error: 'No boss attempts left today.' }
         Bo.tries++; const dmg = Math.max(0, Math.min(2e6, Math.round(+a.dmg || 0))); Bo.total += dmg; const prev = Bo.best; Bo.best = Math.max(Bo.best, dmg); P.bossBestEver = Math.max(P.bossBestEver || 0, dmg); addXP(30)
@@ -964,8 +983,18 @@ function act(a) {
         return { msg: `Floor ${n} cleared! +${T.coins.toLocaleString()} coins${T.pack ? ' and a ' + PACKS[T.pack].name : ''}.` }
       }
       if (a.mode === 'camp') {
-        const [ci, si] = String(a.id).split(':').map(Number), ch = CAMPAIGN.find(c => c.id === ci), st = ch && ch.stages.find(s => s.n === si); if (!st) return { error: 'Unknown stage.' }
-        const C = campP(), key = ci + ':' + si, prev = si === 1 ? (ci === 1 || (C.stars[(ci - 1) + ':6'] || 0) > 0) : (C.stars[ci + ':' + (si - 1)] || 0) > 0; if (!prev) return { error: 'Stage locked.' }
+        const hard = String(a.id).startsWith('H'), [ci, si] = String(a.id).replace(/^H/, '').split(':').map(Number), ch = CAMPAIGN.find(c => c.id === ci), st = ch && ch.stages.find(s => s.n === si); if (!st) return { error: 'Unknown stage.' }
+        const C = campP()
+        if (hard) { // HARD MODE: unlocked by beating the normal boss; double rewards
+          const key = 'H' + ci + ':' + si, open = (C.stars[ci + ':6'] || 0) > 0 && (si === 1 || (C.stars['H' + ci + ':' + (si - 1)] || 0) > 0); if (!open) return { error: 'Hard stage locked.' }
+          if (!a.won) { addXP(15); return {} }
+          const got = 1 + ((a.ko || 0) <= 1 ? 1 : 0) + ((a.turns || 99) <= 12 ? 1 : 0), had = C.stars[key] || 0; C.stars[key] = Math.max(had, got); addXP(had ? 30 : 100)
+          if (had) { P.coins += 600; return { msg: '★'.repeat(got) + ' Hard stage replayed. +600 coins.' } }
+          P.coins += st.coins * 2; let extra = ''
+          if (st.boss) { P.pending.premium = (P.pending.premium || 0) + 2; P.shards = (P.shards || 0) + 3000; P.tickets = (P.tickets || 0) + 5; extra = ', 2 Premium Drops, ◆3,000 shards and 5 Training Tickets' }
+          return { msg: `HARD ${'★'.repeat(got)} ${st.name} cleared! +${(st.coins * 2).toLocaleString()} coins${extra}.` }
+        }
+        const key = ci + ':' + si, prev = si === 1 ? (ci === 1 || (C.stars[(ci - 1) + ':6'] || 0) > 0) : (C.stars[ci + ':' + (si - 1)] || 0) > 0; if (!prev) return { error: 'Stage locked.' }
         if (!a.won) { addXP(10); return {} }
         const got = 1 + ((a.ko || 0) <= 1 ? 1 : 0) + ((a.turns || 99) <= 12 ? 1 : 0), had = C.stars[key] || 0; C.stars[key] = Math.max(had, got); addXP(had ? 20 : 60)
         if (had) { P.coins += 300; return { msg: '★'.repeat(got) + ' Stage replayed. +300 coins.' } }
@@ -1099,6 +1128,8 @@ function act(a) {
       return { msg: N.id === 'aw' ? c.name + ' is fully AWAKENED!' : N.name + ' unlocked for ' + c.name + '.' }
     }
     case 'teamPreset': { const i = +a.i; if (!(i >= 0 && i < 3) || !Array.isArray(a.team)) return { error: 'Bad preset.' }; const L = P.presets || (P.presets = []); L[i] = { name: String(a.name || 'Team').slice(0, 18), team: a.team.slice(0, 6).map(k => (k && P.club.cards[k] ? k : null)) }; return { msg: 'Saved ' + L[i].name + '.' } }
+    case 'raidWin': { const Rp = raidP(); if (!Rp.total) return { error: 'Hit the raid boss at least once to share the victory.' }; if (Rp.win) return { error: 'Already claimed.' }; if (!(a.globalDown)) return { error: 'The boss is still standing!' }
+      Rp.win = 1; P.pending.premium = (P.pending.premium || 0) + 2; P.coins += 20000; P.tickets = (P.tickets || 0) + 5; return { msg: 'RAID VICTORY! +2 Premium Drops, 20,000 coins and 5 Training Tickets.' } }
     case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }
     case 'equip': {
       const ty = a.slot; if (!['frame', 'title', 'border', 'opener'].includes(ty)) return { error: 'Unknown slot.' }
@@ -1131,6 +1162,7 @@ function state() {
     items: itemsP(), itemDefs: ITEMS, itemMax: ITEM_MAX,
     decks: deckP(), deckOn: S.profile.deckOn || 0, deckMax: DECK_MAX, deckSize: DECK_SIZE, starterDecks: STARTER_DECKS,
     onb: onboarding(),
+    raid: { ...raidNow(), me: raidP() },
     presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
     camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST,

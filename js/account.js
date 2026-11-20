@@ -96,3 +96,12 @@ export async function tradeCreate(t) { const r = await F.addDoc(F.collection(db,
 export async function tradesIn() { const q = F.query(F.collection(db, 'trades'), F.where('to', '==', USER.uid)); return (await F.getDocs(q)).docs.map(d => ({ id: d.id, ...d.data() })) }
 export async function tradesOut() { const q = F.query(F.collection(db, 'trades'), F.where('from', '==', USER.uid)); return (await F.getDocs(q)).docs.map(d => ({ id: d.id, ...d.data() })) }
 export async function tradeSet(id, status) { await F.updateDoc(F.doc(db, 'trades', id), { status, upd: Date.now() }) }
+
+// ---- raid weekends: each player's total damage lives at raids/{id}/players/{uid}; the boss HP is the sum ----
+export async function raidPost(rid, total) { if (!USER) return; await F.setDoc(F.doc(db, 'raids', rid, 'players', USER.uid), { name: (PROFILE && PROFILE.name) || 'Player', dmg: Math.round(total), at: Date.now() }, { merge: true }) }
+export async function raidStatus(rid) {
+  const col = F.collection(db, 'raids', rid, 'players')
+  let sum = 0; try { const agg = await F.getAggregateFromServer(col, { t: F.sum('dmg') }); sum = agg.data().t || 0 } catch { }
+  let top = []; try { top = (await F.getDocs(F.query(col, F.orderBy('dmg', 'desc'), F.limit(10)))).docs.map(d => ({ uid: d.id, ...d.data() })) } catch { }
+  return { sum, top }
+}

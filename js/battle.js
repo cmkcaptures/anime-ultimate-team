@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpillsl'
-import { sfx, sfxOn, music } from './sfx.js?v=mwpillsl'
-import { createFX } from './fx2d.js?v=mwpillsl'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpiwo46'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpiwo46'
+import { createFX } from './fx2d.js?v=mwpiwo46'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -418,7 +418,7 @@ function teamFrom(main, rating) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['camp', 'CAMPAIGN'], ['story', 'STORY'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
+  for (const [k, n] of [['camp', 'CAMPAIGN'], ['raid', 'RAID'], ['story', 'STORY'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -538,11 +538,42 @@ function scene(lines, title, bg, done) {
   o.onclick = e => { if (e.target.closest('.scn-skip')) return end(); i++; i >= lines.length ? end() : show() }
   document.body.append(o); show()
 }
+// ================= RAID WEEKENDS =================
+let RAIDCACHE = { id: null, at: 0, data: null }
+function raidPage(el, ok) {
+  const { h } = X, R = X.ST().raid; if (!R) return
+  const c = X.BYKEY[R.key], me = R.me, left = R.tries - me.tries
+  const hero = h('section', 'bosshero raidhero'); if (c) { hero.style.setProperty('--art', `url("${c.url}")`); hero.style.setProperty('--fx', '50%'); hero.style.setProperty('--fy', Math.round((c.fy ?? .25) * 100) + '%') }
+  hero.innerHTML = `<i class="bh-art"></i><div class="bh-info"><small>レイド · ${R.active ? 'ENDS IN <b class="timer" data-until="' + R.ends + '"></b>' : 'NEXT RAID IN <b class="timer" data-until="' + R.next + '"></b>'}</small><h2>RAID WEEKEND</h2>
+    <div class="bh-name"><b>${c ? c.name : 'RAID BOSS'}</b><span>${c ? c.ver : ''} · SHARED BY EVERY PLAYER</span></div>
+    <div class="rd-hp"><i><s style="width:100%"></s></i><span>Loading boss HP…</span></div>
+    <div class="bh-ab"><b>RAID SKILL · ${R.ab.name}</b><span>${R.ab.d}</span></div>
+    <p>Every player fights the same boss from Friday to Sunday. All damage is added together. Bring it to 0 before Monday and everyone who hit it shares the victory reward: 2 Premium Drops, 20,000 coins and 5 Training Tickets.</p>
+    <div class="rk-stats"><span><b>${me.total.toLocaleString()}</b>YOUR DAMAGE</span><span><b>${me.best.toLocaleString()}</b>BEST HIT</span><span><b>${R.active ? left + '/' + R.tries : '—'}</b>ATTEMPTS TODAY</span></div></div>`
+  const go = h('button', 'btn gold big rk-go', !R.active ? 'RAID OPENS FRIDAY' : left > 0 ? 'ATTACK THE RAID BOSS' : 'COME BACK TOMORROW'); go.disabled = !ok || !R.active || left < 1
+  go.onclick = () => go2({ mode: 'raid', id: 0, boss: R.hpMult, bossAb: R.ab, label: 'Raid · ' + (c ? c.name : 'Boss'), name: c ? c.name : 'Raid Boss', level: 5, team: [R.key], raidId: R.id })
+  hero.querySelector('.bh-info').append(go)
+  const win = h('button', 'btn green big', 'CLAIM RAID VICTORY'); win.style.display = 'none'; hero.querySelector('.bh-info').append(win)
+  el.append(hero)
+  el.append(h('div', 'sec', '<h3>YOUR DAMAGE REWARDS</h3><span class="muted" style="font-weight:700;font-size:12px">your total over the whole weekend</span>'))
+  const g = h('div', 'rk-tiers'); R.rw.forEach((r, i) => { const done = me.got.includes(i); g.append(h('div', 'rk-t' + (done ? ' got on' : ''), `<b>${r.at.toLocaleString()}</b><small>DAMAGE</small><span>${done ? '✓ ' : ''}${r.label}</span>`)) }); el.append(g)
+  el.append(h('div', 'sec', '<h3>TOP RAIDERS</h3>'))
+  const lb = h('div', 'rd-lb', '<p class="muted">Loading…</p>'); el.append(lb)
+  const paint = d => {
+    const hp = Math.max(0, R.hp - d.sum), pct = hp / R.hp * 100, bar = hero.querySelector('.rd-hp')
+    if (bar) bar.innerHTML = `<i><s style="width:${pct.toFixed(1)}%"></s></i><span>${hp <= 0 ? 'DEFEATED!' : hp.toLocaleString() + ' / ' + R.hp.toLocaleString() + ' HP'}</span>`
+    lb.innerHTML = d.top.length ? d.top.map((p, i) => `<div class="rd-row"><b>${i + 1}</b><span>${String(p.name || 'Player').replace(/[<>&]/g, '')}</span><em>${(p.dmg || 0).toLocaleString()}</em></div>`).join('') : '<p class="muted">No hits yet. Be the first!</p>'
+    if (hp <= 0 && me.total > 0 && !me.win) { win.style.display = ''; win.onclick = async () => { const r = await X.act('raidWin', { globalDown: 1 }); if (!r.error) X.go('battle') } }
+  }
+  if (RAIDCACHE.id === R.id && Date.now() - RAIDCACHE.at < 20000 && RAIDCACHE.data) paint(RAIDCACHE.data)
+  X.raidStatus(R.id).then(d => { RAIDCACHE = { id: R.id, at: Date.now(), data: d }; if (lb.isConnected) paint(d) }).catch(() => { lb.innerHTML = '<p class="muted">Could not reach the raid server.</p>'; const bar = hero.querySelector('.rd-hp span'); if (bar) bar.textContent = 'Boss HP unavailable right now' })
+}
 function campTeam(specs) {
   const used = new Set(), out = []
   for (const sp of specs) { const [n, o] = sp.split('#'), list = X.POOL.filter(c => c.name === n && !used.has(c.key)).sort((a, b) => b.ovr - a.ovr), c = (o && list.find(x => x.ovr === +o)) || list[0]; if (c) { used.add(c.key); out.push(c.key) } }
   return out
 }
+const CHARD = {}
 function campPage(el, ok) {
   { let pend = null; try { pend = JSON.parse(sessionStorage.getItem('campOutro') || 'null') } catch { }
     if (pend) { sessionStorage.removeItem('campOutro'); const C0 = X.ST().campP || { stars: {} }; const ch0 = X.ST().camp.find(c => c.id === pend.c), st0 = ch0 && ch0.stages.find(s => s.n === pend.s)
@@ -553,18 +584,20 @@ function campPage(el, ok) {
     if (!unlocked) { el.append(h('section', 'bhero camp-hero camp-locked', `<div><span class="sh-tag">${ch.sub.toUpperCase()}</span><h2>🔒 ${ch.name.toUpperCase()}</h2><p>Beat the Chapter ${ch.id - 1} boss to unlock.</p></div>`)); continue }
     const boss = X.POOL.find(c => c.key === ch.boss)
     el.append(h('section', 'bhero camp-hero', `<div><span class="sh-tag">${ch.sub.toUpperCase()}</span><h2>${ch.name.toUpperCase()}</h2><p>Clear each stage to unlock the next. Win with at most 1 fighter KO'd and within 12 turns for 3 stars. The boss drops <b>${boss ? boss.name + ' · ' + boss.ver : 'a Mythic'}</b>.</p></div><div class="bstat"><b>${tot}</b><span>/ ${ch.stages.length * 3} STARS</span></div>`))
+    const bossDone = (C.stars[ch.id + ':6'] || 0) > 0, hard = bossDone && CHARD[ch.id]
+    { const tg = h('div', 'camp-diff'); for (const [v, l] of [[0, 'NORMAL'], [1, bossDone ? 'HARD' : '🔒 HARD']]) { const b = h('button', 'mtab' + ((!!hard) === !!v ? ' on' : '') + (v ? ' hard' : ''), l); b.disabled = v && !bossDone; b.onclick = () => { CHARD[ch.id] = v; X.go('battle') }; tg.append(b) } if (!bossDone) tg.append(h('small', '', 'Beat the boss to unlock Hard mode')); else if (hard) tg.append(h('small', '', 'Enemies much stronger · double coins · boss gives 2 Premium Drops')); el.append(tg) }
     const chests = h('div', 'camp-chests')
     ST.campChest.forEach((R, i) => { const cid = ch.id === 1 ? i : ch.id * 10 + i, open = C.chests.includes(cid), b = h('button', 'btn ' + (open ? 'dark' : tot >= R.at ? 'gold' : 'dark') + ' sm', open ? '✓ CHEST ' + R.at + '★' : '🎁 ' + R.at + '★ CHEST' + (ch.id === 3 && i === 1 ? ' + WHIS' : '')); b.disabled = open || tot < R.at; b.onclick = async () => { const r = await X.act('campChest', { c: ch.id, i }); if (!r.error) X.go('battle') }; chests.append(b) })
     el.append(chests)
     const list = h('div', 'camp-list')
     ch.stages.forEach(st => {
-      const key = ch.id + ':' + st.n, s = C.stars[key] || 0, open = st.n === 1 ? unlocked : (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
+      const key = (hard ? 'H' : '') + ch.id + ':' + st.n, s = C.stars[key] || 0, open = hard ? (st.n === 1 || (C.stars['H' + ch.id + ':' + (st.n - 1)] || 0) > 0) : st.n === 1 ? unlocked : (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
       const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${[...new Set(st.enemy.map(x => x.split('#')[0]))].join(', ')}</em></span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
       row.disabled = !ok || !open
       { const cb = cxBtn(() => campTeam(st.enemy).map(k => X.BYKEY[k]), ch.id + '-' + st.n + ' · ' + st.name); cb.classList.add('cx-on-row'); const wrap = h('div', 'cx-wrap'); wrap.append(row, cb); list.append(wrap) }
       row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
         try { sessionStorage.setItem('campOutro', JSON.stringify({ c: ch.id, s: st.n, had: s > 0 })) } catch { }
-        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: (st.boss ? 1.25 : 1 + st.n * .03) + (ch.id - 1) * .06, team: campTeam(st.enemy) })
+        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: hard || st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: (st.boss ? 1.25 : 1 + st.n * .03) + (ch.id - 1) * .06 + (hard ? .35 : 0), team: campTeam(st.enemy) })
       })
     })
     el.append(list)
@@ -617,7 +650,7 @@ export function battlePage(el) {
   modeTabs(el)
   if (MODE !== 'story') {
     if (team.length < 6) { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
-    return (MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
+    return (MODE === 'raid' ? raidPage : MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
   }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)
@@ -952,6 +985,7 @@ export function startBattle(stage) {
     B.over = true; controls()
     await wait(500)
     const r = stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0), ko: B.you.team.filter(f => f.ko).length, turns: B.turn } : { stage: stage.n, won })
+    if (stage.mode === 'raid' && r && r.raidTotal != null && X.raidPost) { try { await X.raidPost(stage.raidId, r.raidTotal); RAIDCACHE.at = 0 } catch (e) { console.warn('raid post failed', e) } }
     sfx(stage.boss ? 'claim' : won ? 'win' : 'lose')
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
