@@ -2866,3 +2866,6 @@ html { background: #2a1258 !important; min-height: 100% }
   #app { zoom: .86; max-width: none !important; width: calc(100vw / .86) !important; height: calc(var(--apph, 100dvh) / .86) !important }
   body[data-page=shop] .shero .sh-pack, body[data-page=pack] .psel { zoom: .85 }
 }
+/* battle: top buttons below the phone's status bar / notch */
+#arena { padding-top: env(safe-area-inset-top, 0) !important; box-sizing: border-box }
+@media (max-width: 540px) { #arena { padding-top: max(env(safe-area-inset-top, 0px), 8px) !important } }
