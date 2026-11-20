@@ -2846,3 +2846,9 @@ html, body { background: #2a1258 }
 .o2-top { padding-top: calc(16px + env(safe-area-inset-top, 0)) !important }
 .mo-head { margin-top: env(safe-area-inset-top, 0) }
 html { background: #2a1258 !important; min-height: 100% }
+/* pack picker fits on phones */
+@media (max-width: 540px) {
+  .psel { height: 330px !important }
+  .psel .pk3 { width: 168px !important; height: 258px !important; margin-left: -84px !important; top: 14px !important }
+  .psel .floor { height: 80px }
+}
