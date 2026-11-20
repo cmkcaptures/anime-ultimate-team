@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwp81vak'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS } from './battle.js?v=mwp81vak'
-import * as ACC from './account.js?v=mwp81vak'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp81vak'
+import { createFX } from './fx2d.js?v=mwp87jke'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS } from './battle.js?v=mwp87jke'
+import * as ACC from './account.js?v=mwp87jke'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwp87jke'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp81vak'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg } from './cardkit.js?v=mwp87jke'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -1192,8 +1192,8 @@ async function multiOpen(type, n) {
   const grid = ov.querySelector('.mo-grid'), FXC = createFX(ov)
   const els = all.map((c, i) => { const e = h('div', 'mo-c', `<div class="in"><div class="f"></div><div class="b"></div></div>`); e.dataset.tier = c.r; e.style.setProperty('--rc', tierCol(c.r)); const im = new Image(); im.src = urls[i]; e.querySelector('.f').append(im); grid.append(e); return e })
   let skip = false, closed = false; ov.querySelector('.o2-skip').onclick = () => { skip = true }
-  const fin = () => { if (closed) return; closed = true; skip = true; try { FXC.dispose() } catch { } document.body.classList.remove('in-opener'); ov.remove(); doneB.remove(); document.querySelectorAll('#opener').forEach(o => o.remove()); go('shop') }
-  const doneB = ov.querySelector('.mo-done'); document.body.append(doneB); doneB.onclick = fin
+  const fin = e => { if (e) { e.preventDefault(); e.stopPropagation() } if (closed) return; closed = true; skip = true; ov.style.display = 'none'; doneB.style.display = 'none'; requestAnimationFrame(() => setTimeout(() => { try { FXC.dispose() } catch { } document.body.classList.remove('in-opener'); ov.remove(); doneB.remove(); document.querySelectorAll('#opener').forEach(o => o.remove()); go('shop') }, 30)) }
+  const doneB = ov.querySelector('.mo-done'); document.body.append(doneB); doneB.onclick = fin; doneB.onpointerup = fin
   sfx('deal'); await wait(400)
   // reveal worst first, best last; Epic+ pause with an impact
   for (let i = els.length - 1; i >= 0; i--) {
