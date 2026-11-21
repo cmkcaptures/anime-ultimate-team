@@ -29,6 +29,7 @@ export const ANIME = {
   TG: { name: 'TOKYO GHOUL', tag: 'TG', type: 'ghoul' },
   BLE: { name: 'BLEACH', tag: 'BLE', type: 'reiatsu' },
   SDS: { name: 'SEVEN DEADLY SINS', tag: 'SDS', type: 'magic' },
+  YYH: { name: 'YU YU HAKUSHO', tag: 'YYH', type: 'reiatsu' },
   K8: { name: 'KAIJU NO. 8', tag: 'K8', type: 'kaiju' },
   MOB: { name: 'MOB PSYCHO 100', tag: 'MOB', type: 'psychic' },
   FF: { name: 'FIRE FORCE', tag: 'FF', type: 'flame' },

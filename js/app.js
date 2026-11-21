@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqobpcg'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqobpcg'
+import { createFX } from './fx2d.js?v=mwqp3w68'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqp3w68'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqobpcg'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqobpcg'
+import * as ACC from './account.js?v=mwqp3w68'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqp3w68'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqobpcg'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqp3w68'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -116,6 +116,7 @@ const PACKLOOK = {
   AOT: { t: ['ATTACK ON', 'TITAN'], c: ['#e8c890', '#c8a070', '#6a3a1a', '#1a0a04', '#ff6a3d'], set: 'AT' },
   SL: { t: ['SOLO', 'LEVELING'], c: ['#9ad8ff', '#3a6aff', '#1a0a5a', '#05031a', '#b88cff'], set: 'SL' },
   DAN: { t: ['DANDADAN', 'OCCULT'], c: ['#ff9ad0', '#ff3d9a', '#5a0a6a', '#14041a', '#7df9ff'], set: 'DD' },
+  YYH: { t: ['YU YU', 'HAKUSHO'], c: ['#7affd0', '#1ab07a', '#0a3a5a', '#04121a', '#ffe04a'], set: 'YYH' },
   SDS: { t: ['SEVEN DEADLY', 'SINS'], c: ['#ffe27a', '#e0a020', '#6a1a0a', '#160806', '#ff5a3a'], set: 'SDS' },
 }
 const PACKABLE = () => POOL.filter(c => !c.season)
@@ -867,7 +868,7 @@ const PACK_FX = {
   MHA: ['UNITED STATES OF SMASH', 'impact', '#ffd23a', '#2a7aff'], BC: ['BLACK DIVIDER', 'slash', '#1a1a1a', '#e0ffe0'], PKM: ['I CHOOSE YOU!', 'impact', '#ff3a3a', '#fff'],
   OPM: ['SERIOUS PUNCH', 'impact', '#ffe04a', '#fff'], AOT: ['TITAN SHIFT', 'bolt', '#ffd23a', '#ff8a2a'], SL: ['ARISE', 'spiral', '#7a4aff', '#000'],
   DAN: ['OCCULT AWAKENING', 'spiral', '#ff3d9a', '#7df9ff'], SDS: ['FULL COUNTER', 'slash', '#ffcc33', '#5a0a1a'], FF: ['ADOLLA BURST', 'beam', '#ff7a1a', '#ffe04a'],
-  HXH: ['NEN AWAKENS', 'spiral', '#5aff9a', '#fff'], FT: ['DRAGON SLAYER', 'beam', '#ff5a1a', '#ffd23a'], JJBA: ['ZA WARUDO', 'impact', '#ffd23a', '#7a2aff'],
+  HXH: ['NEN AWAKENS', 'spiral', '#5aff9a', '#fff'], FT: ['DRAGON SLAYER', 'beam', '#ff5a1a', '#ffd23a'], JJBA: ['ZA WARUDO', 'impact', '#ffd23a', '#7a2aff'], YYH: ['SPIRIT GUN', 'beam', '#3affc8', '#fff'],
 }
 async function packIntro(ov, FXC, anime, shake) {
   const F = PACK_FX[anime]; if (!F) return

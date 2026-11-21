@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqobpcg'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqobpcg'
-import { createFX } from './fx2d.js?v=mwqobpcg'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqp3w68'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqp3w68'
+import { createFX } from './fx2d.js?v=mwqp3w68'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -946,12 +946,13 @@ export function startBattle(stage) {
     AOT: ['TITAN GRAPPLE', 'Titan vs Titan', 'Enemy stunned'],
     MHA: ['PLUS ULTRA CLASH', 'Go beyond!', 'Ultimate gauge +50%'],
     PKM: ['TYPE MATCHUP', 'Command your partner!', 'Next attack +30%'],
+    YYH: ['SPIRIT CLASH', 'Spirit Gun vs everything!', '+2 Energy'],
   }
   const clashOf = (attCard, team) => { const a = attCard.anime; if (CLASH[a] && team.some(f => !f.ko && f.card.anime === a)) return { key: a, ...cl(CLASH[a]) }; return { key: null, ...cl(['POWER CLASH', 'Raw power vs raw power', 'Counter-hit']) } }
   const cl = ([name, sub, bonus]) => ({ name, sub, bonus })
   function undoHits(ev) { for (const x of ev.hits || []) { if (!x.t || !x.dmg) continue; x.t.hp = Math.min(x.t.max, x.t.hp + x.dmg); if (x.t.hp > 0) x.t.ko = false; x.dmg = 0; x.miss = 'CLASHED' } }
   function clashBonus(key, me, foe) { const a = act(me), d = act(foe)
-    if (key === 'JJK') d.sealed = 1; else if (key === 'DBZ') me.ki = Math.min(KI_MAX, me.ki + 2); else if (key === 'NAR' || key === 'AOT') foe.skip = 1
+    if (key === 'JJK') d.sealed = 1; else if (key === 'DBZ' || key === 'YYH') me.ki = Math.min(KI_MAX, me.ki + 2); else if (key === 'NAR' || key === 'AOT') foe.skip = 1
     else if (key === 'OP') foe.ki = Math.max(0, foe.ki - 3); else if (key === 'BLE') a.rage = (a.rage || 0) + 20; else if (key === 'DS') a.hp = Math.min(a.max, a.hp + Math.round(a.max * .15))
     else if (key === 'MHA') me.gauge = Math.min(GAUGE_MAX, me.gauge + 50); else if (key === 'PKM') me.chargeNext = (me.chargeNext || 0) + 30 }
   function tapBattle(C, mine, theirs, auto) { return new Promise(res => {
