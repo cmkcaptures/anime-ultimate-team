@@ -3037,3 +3037,5 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 @keyframes dmgPop { 0% { transform: translate(-50%, 20px) scale(.3); opacity: 0 } 10% { transform: translate(-50%, -6px) scale(1.2); opacity: 1 } 18% { transform: translate(-50%, 0) scale(1) } 80% { transform: translate(-50%, -10px); opacity: 1 } 100% { transform: translate(-50%, -34px); opacity: 0 } }
 .tban { top: 10% !important; height: 46px !important; margin-top: 0 !important; animation-duration: 1.2s !important }
 .tban b { font-size: 26px !important }
+.cx-on-row { right: 18px !important } .cx-wrap .camp-st .cs-stars { margin-right: 150px }
+@media (max-width: 540px) { .cx-wrap .camp-st .cs-stars { margin-right: 0 } }
