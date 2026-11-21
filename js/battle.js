@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpv6wiz'
-import { sfx, sfxOn, music } from './sfx.js?v=mwpv6wiz'
-import { createFX } from './fx2d.js?v=mwpv6wiz'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpvr0ui'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpvr0ui'
+import { createFX } from './fx2d.js?v=mwpvr0ui'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -710,7 +710,7 @@ export function startBattle(stage) {
     <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t"></small></div><div class="bct-s ai"></div></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
-    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
+    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
   document.body.append(ov); document.body.classList.add('in-battle'); music('battle')
   const $a = s => ov.querySelector(s)
   let ST3 = null
@@ -750,7 +750,7 @@ export function startBattle(stage) {
   function field(side, s) {
     const a = $a(`.ar-side.${side} .ar-active`), f = act(s)
     if (a.dataset.k !== f.key) { a.innerHTML = ''; const im = img(f, 360); a.append(im); a.dataset.k = f.key; a.classList.remove('enter'); void a.offsetWidth; a.classList.add('enter') }
-    a.style.setProperty('--rc', X.tierCol(f.card.r))
+    a.style.setProperty('--rc', X.tierCol(f.card.r)); a.classList.toggle('aura', !!f.aura); a.classList.toggle('formed', !!f.transformed && !f.aura)
     let hb = a.querySelector('.hpb'); if (!hb) { hb = document.createElement('div'); hb.className = 'hpb'; a.append(hb) }
     hb.innerHTML = `<b>${f.hp.toLocaleString()}</b><i><s style="width:${f.hp / f.max * 100}%"></s></i>`
     const foeF = act(side === 'you' ? B.ai : B.you), mu = foeF ? matchup(f, foeF) : 1
@@ -791,6 +791,7 @@ export function startBattle(stage) {
       b.onclick = () => doArt(i)
       hand.append(b)
     }) }
+    { const tb = $a('.ar-trans'), fA = act(s), ok = canTransform(fA); tb.hidden = !ok; tb.disabled = !my || !ok; if (ok) tb.querySelector('small').textContent = fA.card.form ? fA.card.form.name : 'POWER UP' }
     const u = $a('.ar-ult'); u.disabled = !my || s.gauge < GAUGE_MAX; u.classList.toggle('ready', s.gauge >= GAUGE_MAX)
     u.style.setProperty('--g', s.gauge / GAUGE_MAX); u.querySelector('small').textContent = s.gauge >= GAUGE_MAX ? ultOf(f.card)[0] : Math.floor(s.gauge) + '%'; u.title = ultOf(f.card).join(': ')
     $a('.ar-end').disabled = !my
@@ -874,7 +875,7 @@ export function startBattle(stage) {
     else if (key === 'OP') foe.ki = Math.max(0, foe.ki - 3); else if (key === 'BLE') a.rage = (a.rage || 0) + 20; else if (key === 'DS') a.hp = Math.min(a.max, a.hp + Math.round(a.max * .15))
     else if (key === 'MHA') me.gauge = Math.min(GAUGE_MAX, me.gauge + 50); else if (key === 'PKM') me.chargeNext = (me.chargeNext || 0) + 30 }
   function tapBattle(C, mine, theirs, auto) { return new Promise(res => {
-    const edge = 1 + ((mine.card.ovr || 80) - (theirs.card.ovr || 80)) / 60
+    const edge = (1 + ((mine.card.ovr || 80) - (theirs.card.ovr || 80)) / 60) * (mine.transformed ? 1.2 : 1)
     if (auto) return res(Math.random() < Math.min(.8, Math.max(.2, .5 * edge)))
     const o = document.createElement('div'); o.className = 'clash'
     o.innerHTML = `<div class="cl-box"><small>⚔️ CLASH!</small><h3>${C.name}</h3><p>${C.sub}</p><div class="cl-bar"><i></i></div><div class="cl-vs"><span>${mine.card.name}</span><b>VS</b><span>${theirs.card.name}</span></div><button class="btn gold big cl-tap">TAP! TAP! TAP!</button><em>3</em></div>`
@@ -909,6 +910,22 @@ export function startBattle(stage) {
     if (win) { undoHits(ev); hit(mine, theirs, 250, Math.max(mine.pwr, mine.ki), true, me, foe, 'special'); log(`Enemy won the clash and countered!`); banner('CLASH LOST', 'Your Ultimate was cancelled', '#ff3d6a') }
     else { log('You won the clash! Your Ultimate goes through.'); banner('CLASH WON', 'Your Ultimate goes through', '#ffcc00') }
     draw()
+  }
+  // ================= TRANSFORMATIONS (S / Z / Ω, once per fighter, under 50% HP) =================
+  function canTransform(f) { return !!f && !f.ko && !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5 }
+  async function transform(side, who) {
+    const f = act(side); if (!canTransform(f)) return
+    const full = !!f.card.form, k = full ? 1.25 : 1.15
+    f.transformed = 1; f.hp = Math.min(f.max, f.hp + Math.round(f.max * (full ? .3 : .15)))
+    f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.burnT = 0; f.frozen = 0
+    side.gauge = Math.min(GAUGE_MAX, side.gauge + (full ? 30 : 15)); if (who === 'you') side.skip = 0
+    if (full) { const e = { ...(f.pe || {}) }; for (const x of ['dmg', 'dodge', 'dr', 'regen', 'teamHeal', 'spec', 'strikeBoost', 'exec', 'aoeBoost', 'crit', 'ultBoost']) if (typeof e[x] === 'number') e[x] = Math.round(e[x] * 1.5); f.pe = e
+      f.card = { ...f.card, url: f.card.form.url, ver: f.card.form.name, mv: f.card.form.mv, fy: f.card.form.fy ?? f.card.fy, id: f.card.id + '_form', key: f.card.key + '#form', pas: f.card.pas ? { ...f.card.pas, e } : f.card.pas }; f.key = f.card.key }
+    else f.aura = 1
+    const name = full ? f.card.form.name : 'POWER UP'
+    cutin(f.card, name, (who === 'you' ? '' : 'ENEMY · ') + 'TRANSFORMATION', '#ffcc00', true, name)
+    const el = $a(`.ar-side.${who} .ar-active`); if (el) { el.dataset.k = ''; const [x, y] = ctr(el); FXC.gather(x, y, '#ffcc00', .6, 30); setTimeout(() => FXC.hit(x, y, '#ffcc00', 1.6), 600) }
+    sfx('bcharge'); log(`${f.card.name} ${full ? 'transforms: ' + name : 'powers up'}!`); await wait(1500); draw()
   }
   async function show(ev) {
     if (ev.swap) { log('Enemy switched fighters'); sfx('bswitch'); draw(); await wait(500); return }
@@ -993,6 +1010,7 @@ export function startBattle(stage) {
       await show(ev); B.busy = false; if (!B.over) controls()
     }
   }
+  $a('.ar-trans').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); await transform(B.you, 'you'); B.busy = false; if (!B.over) controls() }
   $a('.ar-ult').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); const e = ultimate(B, 'you'); if (e) await show(e); B.busy = false; if (!B.over) controls() }
   const mb = $a('.ar-mute'), mdraw = () => { mb.textContent = sfxOn() ? '🔊 SOUND' : '🔇 MUTED'; mb.classList.toggle('off', !sfxOn()) }
   mb.onclick = () => { sfxOn(!sfxOn()); mdraw() }; mdraw()
@@ -1005,6 +1023,7 @@ export function startBattle(stage) {
   function sweepKO() { for (const [side, sd] of [['you', B.you], ['ai', B.ai]]) { for (const f of sd.team) if (!f.ko && f.hp <= 0.5) { f.hp = 0; f.ko = true } if (act(sd).ko && !nextAlive(sd)) { end(side === 'ai'); return true } } draw(); return false }
   async function aiPhase() {
     if (B.over || sweepKO()) return
+    if ((stage.level || 1) >= 5 && canTransform(act(B.ai))) await transform(B.ai, 'ai')
     if (stage.boss && B.turn >= 12 && !B.over) { log('Time up! The boss retreats.'); return end(false) }
     if (stage.bossAb && B.turn % 3 === 0 && !B.over) {
       const ab = stage.bossAb, you = B.you, boss = act(B.ai)
@@ -1049,6 +1068,7 @@ export function startBattle(stage) {
   async function autoTurn() {
     if (!AUTO || B.busy || B.over) return
     B.busy = true; controls(); await wait(350)
+    if (canTransform(act(B.you))) await transform(B.you, 'you')
     for (const ev of planTurn(B, 5, 'you')) { if (B.over) return; await show(ev); if (B.over) return }
     // auto Tag Assist: after a Special/Ultimate, tag in the best bench fighter for a free hit
     if (!B.over && !B.you.switched && (B.you.seq.includes('special') || B.you.ultTurn === B.turn)) { const foe = act(B.ai), cur = act(B.you), sc = f => (matchup(f, foe) - matchup(foe, f)) * 2 + f.hp / f.max, best = B.you.team.map((f, i) => [f, i]).filter(([f, i]) => !f.ko && i !== B.you.active && f.hp / f.max > .35).sort((x, y) => sc(y[0]) - sc(x[0]))[0]; if (best && sc(best[0]) >= sc(cur) - .3) { B.busy = false; await doSwitch(best[1]); B.busy = true } }
