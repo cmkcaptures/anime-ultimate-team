@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqnd7n5'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqnd7n5'
+import { createFX } from './fx2d.js?v=mwqnfje7'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqnfje7'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqnd7n5'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqnd7n5'
+import * as ACC from './account.js?v=mwqnfje7'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqnfje7'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqnd7n5'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqnfje7'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -484,9 +484,11 @@ function autoTeam(target) {
   let pick
   if (target.startsWith('series:')) { const a = target.slice(7); pick = own.filter(c => c.anime === a).sort((x, y) => y.ovr - x.ovr).slice(0, 6); pick = pick.concat(own.filter(c => !pick.includes(c)).sort((x, y) => y.ovr - x.ovr)).slice(0, 6) }
   else {
-    const sorted = own.sort((x, y) => scoreFor(y, target) - scoreFor(x, target)), val = L => L.reduce((n, c) => n + scoreFor(c, target), 0) / L.length * (1 + synergy(L).bonus / 100)
+    const sorted = own.sort((x, y) => scoreFor(y, target) - scoreFor(x, target)), val = L => { const AB = teamAuras(L); return L.reduce((n, c) => n + scoreFor(c, target), 0) / L.length * (1 + synergy(L).bonus / 100) * (1 + AB.reduce((n, v) => n + v, 0) / L.length / 160) }
     pick = sorted.slice(0, 6); let best = val(pick)
     for (const a of new Set(own.map(c => c.anime))) { const S = sorted.filter(c => c.anime === a).slice(0, 6); if (S.length < 3) continue; for (let k = 3; k <= S.length; k++) { const L = S.slice(0, k).concat(sorted.filter(c => c.anime !== a)).slice(0, 6); const v = val(L); if (v > best) { best = v; pick = L } } }
+    // aura pass: swap in cards that link up with the team's aura tags
+    { const cand = sorted.slice(0, 60); for (let pass = 0; pass < 2; pass++) for (let i = 0; i < pick.length; i++) for (const c of cand) { if (pick.some(p => p.key === c.key)) continue; const L = pick.slice(); L[i] = c; const v = val(L); if (v > best) { best = v; pick = L } } }
   }
   pick.sort((x, y) => scoreFor(y, target) - scoreFor(x, target))
   const lead = pick[0], rest = pick.slice(1).sort((x, y) => ((y.faction === lead.faction) * 2 + (y.anime === lead.anime)) - ((x.faction === lead.faction) * 2 + (x.anime === lead.anime)) || scoreFor(y, target) - scoreFor(x, target))
