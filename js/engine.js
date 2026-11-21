@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqm6h76'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqmcy3w'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -858,6 +858,7 @@ function act(a) {
       P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = []; let itemMsg = ''
       if (Math.random() < (a.pack === 'bronze' || a.pack === 'silver' ? .04 : .08)) { const ks = Object.keys(ITEMS), ik = ks[Math.floor(Math.random() * ks.length)], it = itemsP(); it[ik] = (it[ik] || 0) + 1; itemMsg = 'Bonus item: ' + ITEMS[ik].name + '!' }
       if (a.pack === 'banner') { const B = banner(), pt = P.pity || (P.pity = {}), pr = pt[B.id] || (pt[B.id] = { n: 0, m: 0, f: 0 }); pr.n++; pr.m++; pr.f++; for (const k of a.keys || []) { const c = byKey(k); if (c && 'MX'.includes(c.r)) pr.m = 0; if (B.featured.includes(k)) pr.f = 0 } } P.pp = Math.min(2500, (P.pp || 0) + PP_PER_PACK); addXP(40)
+      if (PACKS[a.pack] && PACKS[a.pack].anime) { const sp = P.spity || (P.spity = {}); sp[a.pack] = (a.keys || []).some(k => { const c = byKey(k); return c && 'LMX'.includes(c.r) }) ? 0 : (sp[a.pack] || 0) + 1 }
       const SIG = new Set(a.sig || [])
       for (const k of a.keys || []) { const c = byKey(k); if (!c) continue; giveCard(k); if (SIG.has(k)) { const o = P.club.cards[k]; o.sig = (o.sig || 0) + 1; bump('sig') } P.last.push(k); const rk = 'CURELMX'.indexOf(c.r); if (rk >= 3) bump('epic'); if (rk >= 4) bump('legend') }
       return itemMsg ? { msg: itemMsg } : {}
@@ -1172,7 +1173,7 @@ function state() {
     login: (() => { const { L, can, next } = loginP(); return { streak: L.streak, can, next, rw: LOGIN_RW } })(),
     evo: Object.fromEntries(cards().map(c => [c.key, evoNext(c.key)]).filter(x => x[1].length)), evoCopies: EVO_COPIES, evoCost: Object.fromEntries(cards().map(c => [c.key, Math.round(SHARD_COST[c.r] * .4)])),
     fusion: fusionRecipes(), gachaCost: GACHA_COST, gachaPool: GACHA.map(g => ({ label: g.label, rare: !!g.rare, w: g.w })),
-    items: itemsP(), itemDefs: ITEMS, itemMax: ITEM_MAX,
+    items: itemsP(), itemDefs: ITEMS, itemMax: ITEM_MAX, spity: S.profile.spity || {}, PITY_N: 10,
     decks: deckP(), deckOn: S.profile.deckOn || 0, deckMax: DECK_MAX, deckSize: DECK_SIZE, starterDecks: STARTER_DECKS,
     onb: onboarding(),
     raid: { ...raidNow(), me: raidP() },

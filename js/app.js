@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwqm6h76'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwqm6h76'
-import * as ACC from './account.js?v=mwqm6h76'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqm6h76'
+import { createFX } from './fx2d.js?v=mwqmcy3w'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwqmcy3w'
+import * as ACC from './account.js?v=mwqmcy3w'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqmcy3w'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqm6h76'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqmcy3w'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -303,7 +303,7 @@ PAGES.pack = (el, type) => {
     btns.forEach((b, i) => { const d = i - idx; b.className = 'pk3 ' + (d === 0 ? 'c' : 'l'); b.style.transform = `translateX(${d * 190}px) translateZ(${d ? -200 : 0}px) rotateY(${-d * 30}deg) scale(${d ? .78 : 1})`; b.style.opacity = Math.abs(d) > 1 ? 0 : 1; b.style.zIndex = 5 - Math.abs(d) })
     const t = types[idx], pk = ST.packs[t], pend = P.pending[t] || 0, pool = packPool(t)
     history.replaceState(null, '', '#pack-' + t); CURARG = t
-    name.innerHTML = `<h2>${pk.name.toUpperCase()}</h2><p>${pool.length} cards · ${t === 'premium' ? 'guaranteed Epic or better' : pk.anime ? ANAME(pk.anime) + ' only' : 'every series'} · +5 pack points</p>`
+    name.innerHTML = `<h2>${pk.name.toUpperCase()}</h2><p>${pool.length} cards · ${t === 'premium' ? 'guaranteed Epic or better' : pk.anime ? ANAME(pk.anime) + ' only' : 'every series'} · +5 pack points</p>${pk.anime ? (() => { const n = (ST.PITY_N || 10) - ((ST.spity || {})[t] || 0); return '<p class="pity">⭐ Legendary+ guaranteed ' + (n <= 1 ? '<b>next pack!</b>' : 'in <b>' + n + '</b> packs') + '</p>' })() : ''}`
     acts.innerHTML = ''
     const free = t === 'standard' && ST.free.charges > 0
     const a = h('button', 'btn ' + (pend || free ? 'green' : 'gold'), pend ? `OPEN PACK<small>${pend} waiting</small>` : free ? `OPEN FREE<small>${ST.free.charges} free left</small>` : `OPEN A PACK<small>${fmt(pk.cost)} coins</small>`)
@@ -850,6 +850,7 @@ function rollPackKeys(type) {
   const drawOld = used => { const avail = pool.filter(c => !used.has(c.key)); const L = avail.length ? avail : pool; let t = Math.random() * L.reduce((n, c) => n + wOf(c), 0); for (const c of L) if ((t -= wOf(c)) < 0) return c; return L[0] }
   const out = [], used = new Set(); for (let i = 0; i < (def.size || 5); i++) { const c = draw(used); out.push(c); used.add(c.key) }
   if (def.guarantee && !out.some(c => TIER[c.r].rank >= TIER[def.guarantee].rank)) out[0] = pick(def.guarantee)
+  if (info.anime && ((ST.spity || {})[type] || 0) >= (ST.PITY_N || 10) - 1 && !out.some(c => 'LMX'.includes(c.r))) { const hi = pool.filter(c => 'LMX'.includes(c.r) && !out.some(o => o.key === c.key)); const M = hi.filter(c => c.r !== 'L'), L = hi.filter(c => c.r === 'L'); const g = (M.length && (Math.random() < .2 || !L.length)) ? M[Math.floor(Math.random() * M.length)] : L[Math.floor(Math.random() * L.length)]; if (g) out[0] = g }
   return out.sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr) // worst first, best revealed last
 }
 

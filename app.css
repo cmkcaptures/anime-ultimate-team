@@ -3089,3 +3089,6 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 .pfx-bolt .pfx-a { left: 50%; top: -5%; width: 6vmin; height: 0; background: linear-gradient(var(--p2), var(--p1), #fff); clip-path: polygon(40% 0, 100% 0, 60% 40%, 95% 40%, 20% 100%, 45% 55%, 5% 55%); filter: drop-shadow(0 0 30px var(--p1)); transform: translateX(-50%) scaleX(3) }
 .pfx-bolt.go .pfx-a { animation: pfxBolt .35s ease-in forwards } @keyframes pfxBolt { to { height: 60vh } }
 .pfx-bolt.go { animation: pfxFlash .9s } @keyframes pfxFlash { 0%, 30% { background: color-mix(in srgb, var(--p1) 40%, transparent) } 100% { background: transparent } }
+
+/* series pack pity */
+.pity { margin-top: 4px; font: 800 12px var(--eUI, Inter); color: #ffd45a; letter-spacing: .04em } .pity b { color: #fff }
