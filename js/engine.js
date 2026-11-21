@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqqfjg0'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqqlrhk'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -232,7 +232,9 @@ function raidNow() {
 function raidP() { const P = S.profile, R = raidNow(), d = Math.floor(Date.now() / 864e5); if (!P.raid || P.raid.id !== R.id) P.raid = { id: R.id, day: d, tries: 0, best: 0, total: 0, got: [], win: 0 }; if (P.raid.day !== d) { P.raid.day = d; P.raid.tries = 0 } return P.raid }
 function bossP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.boss || P.boss.day !== d) P.boss = { day: d, tries: 0, best: 0, total: 0, got: [] }; return P.boss }
 // ---------- LOGIN STREAK ----------
-const LOGIN_RW = [{ coins: 1000 }, { coins: 1500 }, { pack: 'silver' }, { coins: 2500 }, { shards: 300 }, { pack: 'standard' }, { pack: 'premium' }]
+const LOGIN_RW = [{ coins: 3000 }, { coins: 5000 }, { pack: 'silver' }, { shards: 800 }, { coins: 10000, tickets: 2 }, { pack: 'premium' }, { pack: 'premium', coins: 25000, shards: 2000, tickets: 5 }]
+// streak milestones: a one-off bonus the day you hit them
+const STREAK_MS = { 7: { coins: 20000, msg: '1-week streak' }, 14: { coins: 40000, shards: 2000, msg: '2-week streak' }, 30: { coins: 100000, shards: 5000, premium: 3, msg: '30-day streak' }, 60: { coins: 200000, shards: 10000, premium: 5, msg: '60-day streak' } }
 function loginP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.login) P.login = { last: 0, streak: 0 }; const L = P.login; if (L.last && d - L.last > 1) L.streak = 0; return { L, d, can: L.last !== d, next: L.last !== d ? (L.streak % 7) : ((L.streak - 1) % 7) } }
 // ---------- ACHIEVEMENTS ----------
 const ANIME_NAMES = { YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', JJBA: 'JoJo', HXH: 'Hunter x Hunter', BLE: 'Bleach', CSM: 'Chainsaw Man', FT: 'Fairy Tail', FF: 'Fire Force', YGO: 'Yu-Gi-Oh!', TG: 'Tokyo Ghoul' }
@@ -1174,8 +1176,10 @@ function act(a) {
     case 'loginClaim': {
       const { L, d, can, next } = loginP(); if (!can) return { error: 'Already claimed today. Come back tomorrow!' }
       const R = LOGIN_RW[next]; L.last = d; L.streak++
-      if (R.coins) P.coins += R.coins; if (R.shards) P.shards = (P.shards || 0) + R.shards; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1
-      P.tickets = (P.tickets || 0) + 1; addXP(20); return { msg: `Day ${next + 1} reward claimed! +1 Training Ticket`, rw: R }
+      if (R.coins) P.coins += R.coins; if (R.shards) P.shards = (P.shards || 0) + R.shards; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1; if (R.tickets) P.tickets = (P.tickets || 0) + R.tickets
+      P.tickets = (P.tickets || 0) + 1; addXP(20)
+      let bonus = ''; const M = STREAK_MS[L.streak]; if (M) { if (M.coins) P.coins += M.coins; if (M.shards) P.shards = (P.shards || 0) + M.shards; if (M.premium) P.pending.premium = (P.pending.premium || 0) + M.premium; bonus = ` 🔥 ${M.msg} bonus: +${M.coins.toLocaleString()} coins${M.shards ? ', ◆' + M.shards.toLocaleString() : ''}${M.premium ? ', ' + M.premium + ' Premium Drops' : ''}!` }
+      return { msg: `Day ${next + 1} claimed! 🔥 ${L.streak}-day streak · +1 Training Ticket.${bonus}`, rw: R }
     }
     case 'tradeEscrow': { if (P.allBak) return { error: 'Trading is off while the temporary all-cards unlock is on.' } }
     // falls through
@@ -1293,7 +1297,7 @@ function state() {
     cos: { ...COSMETICS, ...Object.fromEntries(achList().filter(x => x.rw.title).map(x => ['title_ach_' + x.id, { type: 'title', name: x.rw.title, d: 'Achievement: ' + x.name }])) }, ach: achList(), pass: (() => { const S2 = passP(); return { ...S2, theme: theme(), shown: seasonShown(), seasonCards: seasonCards().map(c => c.key), tier: Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER)), into: S2.xp % PASS_TIER, per: PASS_TIER, max: PASS_TIERS, cost: PASS_COST, ends: (seasonNo() + 1) * 28 * 864e5, rw: Array.from({ length: PASS_TIERS }, (_, i) => [passReward('f', i + 1), passReward('p', i + 1)]) } })(),
     ranked: (() => { const R = rankP(), i = rankOf(R.pts); return { ...R, tier: i, ranks: RANKS, ends: (seasonNo() + 1) * 28 * 864e5 } })(),
     boss: (() => { const BD = bossToday(); return BD ? { ...BD, me: bossP() } : null })(),
-    login: (() => { const { L, can, next } = loginP(); return { streak: L.streak, can, next, rw: LOGIN_RW } })(),
+    login: (() => { const { L, can, next } = loginP(); const nextM = Object.keys(STREAK_MS).map(Number).find(n => n > L.streak); return { streak: L.streak, can, next, rw: LOGIN_RW, nextM, nextMrw: nextM && STREAK_MS[nextM] } })(),
     evo: Object.fromEntries(cards().map(c => [c.key, evoNext(c.key)]).filter(x => x[1].length)), evoCopies: EVO_COPIES, evoCost: Object.fromEntries(cards().map(c => [c.key, Math.round(SHARD_COST[c.r] * .4)])),
     fusion: fusionRecipes(), gachaCost: GACHA_COST, gachaPool: GACHA.map(g => ({ label: g.label, rare: !!g.rare, w: g.w })),
     items: itemsP(), itemDefs: ITEMS, itemMax: ITEM_MAX, spity: S.profile.spity || {}, PITY_N: 10,

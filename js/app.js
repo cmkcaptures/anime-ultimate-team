@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqqfjg0'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf } from './battle.js?v=mwqqfjg0'
+import { createFX } from './fx2d.js?v=mwqqlrhk'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf } from './battle.js?v=mwqqlrhk'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqqfjg0'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqqfjg0'
+import * as ACC from './account.js?v=mwqqlrhk'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqqlrhk'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqqfjg0'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqqlrhk'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -282,7 +282,7 @@ PAGES.home = (el) => {
     q('WONDER PICK', 'ワンダー', W.charges + '/' + W.max + ' energy', () => go('wonder'), W.charges > 0),
     q('SEASON PASS', 'パス', ST.pass ? 'Tier ' + ST.pass.tier : '', () => go('pass')),
     q('HOW TO PLAY', '遊び方', 'Guide for new players', () => go('guide'), !ST.profile.guideSeen),
-    q('DAILY LOGIN', 'ログイン', ST.login.can ? 'Day ' + (ST.login.next + 1) + ' ready!' : ST.login.streak + ' day streak', () => loginSheet(), ST.login.can),
+    q('🔥 ' + (ST.login.streak || 0) + '-DAY STREAK', 'ログイン', ST.login.can ? 'Day ' + (ST.login.next + 1) + ' reward ready!' : ST.login.nextM ? (ST.login.nextM - ST.login.streak) + ' days to the ' + ST.login.nextM + '-day bonus' : 'Come back tomorrow', () => loginSheet(), ST.login.can),
     q('PLAYERS', 'ランキング', 'Leaderboard', () => go('players')),
   )
   el.append(qs)
@@ -1414,7 +1414,7 @@ function passPick(t, r) {
 }
 
 // ================= LOGIN STREAK =================
-function lrwText(R) { return R.coins ? fmt(R.coins) + ' coins' : R.shards ? '◆' + R.shards + ' shards' : ST.packs[R.pack].name }
+function lrwText(R) { return [R.pack && ST.packs[R.pack].name, R.coins && fmt(R.coins) + ' coins', R.shards && '◆' + fmt(R.shards), R.tickets && R.tickets + ' Tickets'].filter(Boolean).join(' + ') }
 function loginSheet() {
   const L = ST.login
   openModal(sh => {
@@ -1425,6 +1425,7 @@ function loginSheet() {
       g.append(h('div', 'lg-d' + (done ? ' done' : '') + (today ? ' today' : '') + (i === 6 ? ' big' : ''), `<small>DAY ${i + 1}</small><b>${lrwText(R)}</b><span>${done ? '✓' : today ? 'TODAY' : ''}</span>`))
     })
     sh.append(g)
+    if (L.nextM) { const M = L.nextMrw; sh.append(h('div', 'lg-ms', `🔥 <b>${L.streak}-day streak</b> · ${L.nextM - L.streak} more day${L.nextM - L.streak > 1 ? 's' : ''} to the <b>${L.nextM}-day bonus</b>: ${fmt(M.coins)} coins${M.shards ? ' + ◆' + fmt(M.shards) : ''}${M.premium ? ' + ' + M.premium + ' Premium Drops' : ''}`)) }
     const b = h('button', 'btn gold block big', L.can ? 'CLAIM DAY ' + (L.next + 1) : 'COME BACK TOMORROW'); b.disabled = !L.can
     b.onclick = async () => { const r = await act('loginClaim'); if (r.error) return; closeModal(); if (r.rw.pack) openPack(r.rw.pack); else rerender() }
     sh.append(b)
