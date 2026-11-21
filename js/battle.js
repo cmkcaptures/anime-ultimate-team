@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpuwsh1'
-import { sfx, sfxOn, music } from './sfx.js?v=mwpuwsh1'
-import { createFX } from './fx2d.js?v=mwpuwsh1'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpv6wiz'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpv6wiz'
+import { createFX } from './fx2d.js?v=mwpv6wiz'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -854,11 +854,69 @@ export function startBattle(stage) {
   function floatTag(el, text, cls) { const [x, y] = ctr(el); const n = TAGN.get(el) || 0; TAGN.set(el, n + 1); const t = document.createElement('div'); t.className = 'ftag ' + cls; t.textContent = text; t.style.left = (x + el.getBoundingClientRect().width * .62) + 'px'; t.style.top = (y - 60 + n * 34) + 'px'; FX().append(t); setTimeout(() => { t.remove(); TAGN.set(el, Math.max(0, (TAGN.get(el) || 1) - 1)) }, 2400) }
 
   function pasPop(n) { const el = $a(`.ar-side.${n.f === act(B.you) || B.you.team.includes(n.f) ? 'you' : 'ai'} .ar-active`); if (!el) return; const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'pas-pop'; t.innerHTML = `<small>${n.extra || 'PASSIVE'}</small><b>${n.name}</b>`; t.style.left = x + 'px'; t.style.top = (y - 120) + 'px'; FX().append(t); setTimeout(() => t.remove(), 2600) }
+  // ================= CLASH REACTIONS =================
+  const CLASH = {
+    JJK: ['DOMAIN CLASH', 'Domain Expansion vs Domain Expansion', 'Enemy passive sealed'],
+    DBZ: ['BEAM STRUGGLE', 'Push the beam back!', '+2 Energy'],
+    NAR: ['JUTSU CLASH', 'Rasengan vs Chidori', 'Enemy loses their next turn'],
+    OP: ["CONQUEROR'S CLASH", 'Haki vs Haki', 'Enemy loses 3 Energy'],
+    BLE: ['BANKAI CLASH', 'Reiatsu collision', '+20% damage'],
+    DS: ['BREATHING COUNTER', 'Read the form and strike', 'Heal 15%'],
+    AOT: ['TITAN GRAPPLE', 'Titan vs Titan', 'Enemy stunned'],
+    MHA: ['PLUS ULTRA CLASH', 'Go beyond!', 'Ultimate gauge +50%'],
+    PKM: ['TYPE MATCHUP', 'Command your partner!', 'Next attack +30%'],
+  }
+  const clashOf = (attCard, team) => { const a = attCard.anime; if (CLASH[a] && team.some(f => !f.ko && f.card.anime === a)) return { key: a, ...cl(CLASH[a]) }; return { key: null, ...cl(['POWER CLASH', 'Raw power vs raw power', 'Counter-hit']) } }
+  const cl = ([name, sub, bonus]) => ({ name, sub, bonus })
+  function undoHits(ev) { for (const x of ev.hits || []) { if (!x.t || !x.dmg) continue; x.t.hp = Math.min(x.t.max, x.t.hp + x.dmg); if (x.t.hp > 0) x.t.ko = false; x.dmg = 0; x.miss = 'CLASHED' } }
+  function clashBonus(key, me, foe) { const a = act(me), d = act(foe)
+    if (key === 'JJK') d.sealed = 1; else if (key === 'DBZ') me.ki = Math.min(KI_MAX, me.ki + 2); else if (key === 'NAR' || key === 'AOT') foe.skip = 1
+    else if (key === 'OP') foe.ki = Math.max(0, foe.ki - 3); else if (key === 'BLE') a.rage = (a.rage || 0) + 20; else if (key === 'DS') a.hp = Math.min(a.max, a.hp + Math.round(a.max * .15))
+    else if (key === 'MHA') me.gauge = Math.min(GAUGE_MAX, me.gauge + 50); else if (key === 'PKM') me.chargeNext = (me.chargeNext || 0) + 30 }
+  function tapBattle(C, mine, theirs, auto) { return new Promise(res => {
+    const edge = 1 + ((mine.card.ovr || 80) - (theirs.card.ovr || 80)) / 60
+    if (auto) return res(Math.random() < Math.min(.8, Math.max(.2, .5 * edge)))
+    const o = document.createElement('div'); o.className = 'clash'
+    o.innerHTML = `<div class="cl-box"><small>⚔️ CLASH!</small><h3>${C.name}</h3><p>${C.sub}</p><div class="cl-bar"><i></i></div><div class="cl-vs"><span>${mine.card.name}</span><b>VS</b><span>${theirs.card.name}</span></div><button class="btn gold big cl-tap">TAP! TAP! TAP!</button><em>3</em></div>`
+    ov.append(o); sfx('crack')
+    let me = 0, them = 0, t0 = performance.now(); const rate = 6.5 + ((theirs.card.ovr || 80) - 80) * .18
+    const bar = o.querySelector('.cl-bar i'), clock = o.querySelector('em')
+    o.querySelector('.cl-tap').onpointerdown = e => { e.preventDefault(); me += edge; sfx('nav') }
+    const tick = setInterval(() => { const el = (performance.now() - t0) / 1000; them = rate * el; const p = Math.max(5, Math.min(95, 50 + (me - them) * 4)); bar.style.width = p + '%'; clock.textContent = Math.max(0, Math.ceil(3 - el))
+      if (el >= 3) { clearInterval(tick); const win = me > them; o.classList.add(win ? 'won' : 'lost'); o.querySelector('h3').textContent = win ? 'CLASH WON!' : 'OVERPOWERED!'; setTimeout(() => { o.remove(); res(win) }, 900) } }, 60)
+  }) }
+  // the enemy fires a big move: offer the player a clash
+  async function maybeClash(ev) {
+    const me = B.you, foe = B.ai, mine = act(me), theirs = act(foe); if (!mine || !theirs || B.over) return
+    if (me.ki < 3 || !(ev.hits || []).some(x => x.dmg > 0)) return
+    const C = clashOf(theirs.card, me.team)
+    let go = AUTO
+    if (!AUTO) go = await new Promise(res => { const o = document.createElement('div'); o.className = 'clash ask'
+      o.innerHTML = `<div class="cl-box"><small>⚔️ ${theirs.card.name} uses ${ev.move || 'a big move'}!</small><h3>${C.name}</h3><p>React for 3 Energy? Win: cancel it and counter. ${C.key ? 'Bonus: ' + C.bonus + '.' : ''} Lose: it hits 25% harder.</p><div class="cl-row"><button class="btn gold">REACT</button><button class="btn dark">IGNORE</button></div><em class="cl-t"><s></s></em></div>`
+      ov.append(o); const [y, n] = o.querySelectorAll('button'), t = setTimeout(() => { o.remove(); res(false) }, 4000); y.onclick = () => { clearTimeout(t); o.remove(); res(true) }; n.onclick = () => { clearTimeout(t); o.remove(); res(false) } })
+    if (!go) return
+    me.ki -= 3
+    const win = await tapBattle(C, mine, theirs, AUTO)
+    if (win) { undoHits(ev); const c = hit(mine, theirs, 330, Math.max(mine.pwr, mine.ki), true, me, foe, 'special'); log(`${C.name} won! ${mine.card.name} counters for ${c.dmg.toLocaleString()}`); banner(C.name + ' WON', C.key ? C.bonus : 'Counter-hit!', '#ffcc00'); if (C.key) clashBonus(C.key, me, foe); sfx('crit'); ev.clashWon = 1 }
+    else { for (const x of ev.hits || []) if (x.t && x.dmg) { const extra = Math.round(x.dmg * .25); x.t.hp = Math.max(0, x.t.hp - extra); x.dmg += extra } log(`${theirs.card.name} overpowered the clash!`); banner('OVERPOWERED', '+25% damage', '#ff3d6a') }
+    draw()
+  }
+  // the player fires their Ultimate: strong AI enemies may clash back (resolved automatically)
+  async function aiClash(ev) {
+    const me = B.ai, foe = B.you, mine = act(me), theirs = act(foe); if (!mine || !theirs || B.over || (stage.level || 1) < 5 || me.ki < 3 || Math.random() > .35) return
+    const C = clashOf(theirs.card, me.team); me.ki -= 3; banner(C.name, act(B.ai).card.name + ' clashes back!', '#ff3d6a'); await wait(700)
+    const win = await tapBattle(C, mine, theirs, true)
+    if (win) { undoHits(ev); hit(mine, theirs, 250, Math.max(mine.pwr, mine.ki), true, me, foe, 'special'); log(`Enemy won the clash and countered!`); banner('CLASH LOST', 'Your Ultimate was cancelled', '#ff3d6a') }
+    else { log('You won the clash! Your Ultimate goes through.'); banner('CLASH WON', 'Your Ultimate goes through', '#ffcc00') }
+    draw()
+  }
   async function show(ev) {
     if (ev.swap) { log('Enemy switched fighters'); sfx('bswitch'); draw(); await wait(500); return }
     const side = ev.who, other = side === 'you' ? 'ai' : 'you'
     const atk = $a(`.ar-side.${side} .ar-active`)
     if (ev.tactic) { log(`${act(B[side]).card.name} · ${ARTS[ev.art].name}`); floatTag(atk, ev.tactic, 'adv'); sfx(ev.art === 'heal' ? 'heal' : 'bguard'); await wait(450); draw(); return }
+    if (side === 'ai' && (ev.art === 'special' || ev.art === 'ultimate')) await maybeClash(ev)
+    else if (side === 'you' && ev.art === 'ultimate') await aiClash(ev)
     if (ev.guard) { log(`${act(B[side]).card.name} braces · GUARD`); sfx('bguard'); atk.classList.add('guarding'); await wait(450); atk.classList.remove('guarding'); draw(); return }
     const big = ev.art === 'special' || ev.art === 'ultimate' || ev.art === 'burst', A = act(B[side]), col = tcol(A.card)
     const tgtEl = $a(`.ar-side.${other} .ar-active`)
@@ -992,6 +1050,8 @@ export function startBattle(stage) {
     if (!AUTO || B.busy || B.over) return
     B.busy = true; controls(); await wait(350)
     for (const ev of planTurn(B, 5, 'you')) { if (B.over) return; await show(ev); if (B.over) return }
+    // auto Tag Assist: after a Special/Ultimate, tag in the best bench fighter for a free hit
+    if (!B.over && !B.you.switched && (B.you.seq.includes('special') || B.you.ultTurn === B.turn)) { const foe = act(B.ai), cur = act(B.you), sc = f => (matchup(f, foe) - matchup(foe, f)) * 2 + f.hp / f.max, best = B.you.team.map((f, i) => [f, i]).filter(([f, i]) => !f.ko && i !== B.you.active && f.hp / f.max > .35).sort((x, y) => sc(y[0]) - sc(x[0]))[0]; if (best && sc(best[0]) >= sc(cur) - .3) { B.busy = false; await doSwitch(best[1]); B.busy = true } }
     B.busy = false; if (!B.over && AUTO) await aiPhase()
   }
   { const sb = $a('.ar-speed'), sd = () => { sb.textContent = SPEED + '×'; sb.classList.toggle('on', SPEED > 1) }; sb.onclick = () => { SPEED = SPEED === 1 ? 2 : SPEED === 2 ? 3 : 1; try { localStorage.setItem('aut-bspeed', SPEED) } catch { } ov.style.setProperty('--spd', SPEED); sd() }; ov.style.setProperty('--spd', SPEED); sd()
