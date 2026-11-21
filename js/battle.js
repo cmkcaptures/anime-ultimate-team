@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqnfje7'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqnfje7'
-import { createFX } from './fx2d.js?v=mwqnfje7'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqnyqyb'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqnyqyb'
+import { createFX } from './fx2d.js?v=mwqnyqyb'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -142,6 +142,7 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (ea.exec && def.hp / def.max < .4) m += ea.exec / 100
   if (ea.vsHigh && def.card.ovr > att.card.ovr) m += ea.vsHigh / 100
   if (ea.vsAnime && def.card.anime === ea.vsAnime) m += ea.vsAnimeB / 100
+  if (ed.weakTo) { if (ed.weakTo.some(t => tagsOf(att.card).includes(t))) { m += (ed.weakB || 50) / 100; att.hitWeak = 1 } else m -= (ed.resist || 0) / 100 }
   if (ea.vsRole && def.card.role === ea.vsRole) m += ea.vsRoleB / 100
   if (ea.vsType && ea.vsType.includes(def.card.t)) m += ea.vsTypeB / 100
   if (ea.avenge && A && A.team.some(f => f.ko && f !== att)) m += ea.avenge / 100
@@ -440,7 +441,7 @@ function teamFrom(main, rating) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['camp', 'CAMPAIGN'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
+  for (const [k, n] of [['camp', 'CAMPAIGN'], ['redzone', '💀 DEAD ZONE'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -596,6 +597,23 @@ function campTeam(specs) {
   return out
 }
 const CHARD = {}
+const rzTag = t => t.startsWith('S:') ? X.ANAME(t.slice(2)) : t
+function redzonePage(el, ok) {
+  const { h } = X, ST = X.ST(), Z = ST.redzone, done = ST.rzP || []; if (!Z) return
+  el.append(h('section', 'bhero rz-hero', `<div><span class="sh-tag">💀 DEAD ZONE · ${Z.sub.toUpperCase()}</span><h2>${Z.name.toUpperCase()}</h2><p>The hardest fights in the game. Every stage has <b>brutal rules</b> and <b>weaknesses</b>: fighters with a weakness tag deal bonus damage, <b>everyone else deals much less</b>. New and strong is not enough. Build for the stage.</p></div><div class="bstat"><b>${done.length}</b><span>/ ${Z.stages.length} CLEARED</span></div>`))
+  for (const st of Z.stages) {
+    const open = st.n === 1 || done.includes(st.n - 1), clr = done.includes(st.n), boss = X.POOL.filter(c => c.name === st.boss).sort((a, b) => b.ovr - a.ovr)[0], team = campTeam(st.enemy)
+    const w = st.reward, rw = [w.coins.toLocaleString() + ' coins', w.premium && w.premium + '× Premium', w.shards && '◆' + w.shards.toLocaleString(), w.tickets && w.tickets + ' Tickets'].filter(Boolean).join(' · ')
+    const box = h('section', 'rz-st' + (open ? '' : ' locked') + (clr ? ' done' : '') + (st.final ? ' final' : ''), `<div class="rz-art" style="background-image:url('${boss ? boss.url : ''}')"><span>DZ-${st.n}${st.final ? ' · FINAL' : ''}</span></div>
+      <div class="rz-body"><h3>${st.name.toUpperCase()} ${clr ? '<em>✓ CLEARED</em>' : ''}</h3><p class="rz-vs">vs ${st.enemy.join(', ')} · enemy power ×${st.boost}</p>
+      <div class="rz-rules">${st.rules.map(r => `<span class="rz-rule"><b>⚠ ${r[0]}</b>${r[1]}</span>`).join('')}</div>
+      <div class="rz-weak"><b>WEAK TO</b>${st.weak.map(t => `<span>${rzTag(t)} +${st.weakB}%</span>`).join('')}<i>Everyone else −${st.resist}% damage</i></div>
+      <p class="rz-tip">💡 ${st.tip}</p><p class="rz-rw">🎁 First clear: ${rw}</p></div>`)
+    const acts = h('div', 'rz-acts'), go = h('button', 'btn gold', open ? (clr ? 'REPLAY' : '💀 ENTER') : '🔒 LOCKED'); go.disabled = !ok || !open
+    go.onclick = () => go2({ mode: 'redzone', id: st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
+    acts.append(go, cxBtn(() => team.map(k => X.BYKEY[k]), 'DZ-' + st.n + ' · ' + st.name)); box.querySelector('.rz-body').append(acts); el.append(box)
+  }
+}
 function villainPage(el, ok) {
   { let pend = null; try { pend = JSON.parse(sessionStorage.getItem('vOutro') || 'null') } catch { }
     if (pend) { sessionStorage.removeItem('vOutro'); const C0 = X.ST().vcampP || { stars: {} }, st0 = X.ST().vcamp.stages.find(s => s.n === pend.s); if (st0 && st0.outro && (C0.stars[pend.s] || 0) > 0 && !pend.had) setTimeout(() => scene(st0.outro, 'AFTER · ' + st0.name, null, () => X.go('battle')), 300) } }
@@ -710,7 +728,7 @@ export function battlePage(el) {
   modeTabs(el)
   if (MODE !== 'story') {
     if (team.length < 6) { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
-    return (MODE === 'villain' ? villainPage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
+    return (MODE === 'redzone' ? redzonePage : MODE === 'villain' ? villainPage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
   }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)
@@ -755,6 +773,7 @@ export function startBattle(stage) {
       if (e.copyStat) { const best = Math.max(...foe.team.map(g => Math.max(g.pwr, g.ki, g.def))); f.pwr = Math.max(f.pwr, best) }
     }
   }
+  if (stage.rules) for (const f of B.ai.team) { const r = { ...stage.rules }; f.pe = { ...(f.pe || {}), ...r, dmg: ((f.pe || {}).dmg || 0) + (r.dmg || 0), dodge: Math.min(60, ((f.pe || {}).dodge || 0) + (r.dodge || 0)), regen: ((f.pe || {}).regen || 0) + (r.regen || 0) }; if (r.endure) f.endure = (f.endure || 0) + r.endure }
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4)
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
   sealNow()

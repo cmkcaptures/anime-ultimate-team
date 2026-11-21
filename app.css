@@ -3111,3 +3111,18 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 .tm-auras .ta { padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.08); font: 800 12px var(--eUI, Inter); color: #cfc4e8 } .tm-auras .ta em { font-style: normal; color: #8a80a8 }
 .tm-auras .ta.on { background: #6a3aff; color: #fff } .tm-auras .ta.on em { color: #ffe27a }
 .tm-auras small { flex-basis: 100%; font-size: 11px; opacity: .7 }
+
+/* ================= DEAD ZONE ================= */
+.rz-hero { background: linear-gradient(135deg, #3a0008, #12020a 55%, #5a0010) !important; box-shadow: 0 0 0 3px #ff2a3a, 0 0 40px rgba(255,30,50,.45) !important }
+.rz-st { display: flex; gap: 14px; margin: 12px 0; padding: 12px; border-radius: 18px; background: linear-gradient(160deg, #2a0610, #140308); box-shadow: 0 0 0 2px rgba(255,60,80,.5) }
+.rz-st.final { box-shadow: 0 0 0 3px #ff2a3a, 0 0 30px rgba(255,30,50,.5) } .rz-st.locked { opacity: .5 } .rz-st.done { box-shadow: 0 0 0 2px #3dffa0 }
+.rz-art { position: relative; width: 120px; min-height: 160px; flex: none; border-radius: 14px; background-size: cover; background-position: 50% 20%; box-shadow: 0 0 0 2px #fff }
+.rz-art span { position: absolute; left: 6px; top: 6px; padding: 2px 8px; border-radius: 999px; background: #ff2a3a; font: 900 11px var(--eUI, Inter); color: #fff }
+.rz-body { flex: 1; min-width: 0; display: grid; gap: 6px } .rz-body h3 { margin: 0; font: italic 900 24px/1 var(--eD, 'Barlow Condensed'); color: #fff } .rz-body h3 em { font-size: 14px; color: #3dffa0; font-style: normal }
+.rz-vs { margin: 0; font: 700 12px var(--eUI, Inter); color: #ffb0b8 }
+.rz-rules { display: grid; gap: 4px } .rz-rule { font: 600 12px var(--eUI, Inter); color: #ffd8dc } .rz-rule b { display: inline-block; margin-right: 6px; color: #ff5a6a }
+.rz-weak { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 800 12px var(--eUI, Inter) } .rz-weak > b { color: #ffe27a; letter-spacing: .08em }
+.rz-weak span { padding: 2px 9px; border-radius: 999px; background: #ffcc00; color: #1a0f3a } .rz-weak i { font-style: normal; color: #ff8a94; font-weight: 700 }
+.rz-tip, .rz-rw { margin: 0; font: 600 12px var(--eUI, Inter); color: #e8d0d4 } .rz-rw { color: #ffe27a }
+.rz-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px }
+@media (max-width: 600px) { .rz-st { flex-direction: column } .rz-art { width: 100%; min-height: 140px } }

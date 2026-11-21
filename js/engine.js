@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqnfje7'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqnyqyb'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -716,6 +716,29 @@ const CAMPAIGN = [
         ['ICHIGO', '(from the other side) Hey! Is anyone over there?! Something just came out of the rift into Soul Society!']] },
   ] },
 ]
+// ---------- DEAD ZONE: brutal stages with rules + weaknesses; counters matter more than raw power ----------
+const REDZONE = { id: 'rz1', name: 'Infinity Castle', sub: 'Dead Zone · Demon Slayer', stages: [
+  { n: 1, name: 'Upper Moon Three', boss: 'AKAZA', enemy: ['AKAZA', 'GYUTARO', 'HANTENGU', 'KAIGAKU'], boost: 3.2,
+    rules: [['Destructive Death', 'Every enemy reflects 30% of the damage it takes', { reflect: 30 }], ['Martial Arts', 'Enemies deal +20% damage', { dmg: 20 }]],
+    weak: ['Swordsmen'], weakB: 60, resist: 50, tip: 'Akaza punishes every hit you land. Swordsmen cut through him, and high single hits beat lots of small ones.',
+    reward: { coins: 15000, premium: 1 } },
+  { n: 2, name: 'Upper Moon Two', boss: 'DOMA', enemy: ['DOMA', 'HANTENGU', 'GYUTARO', 'KAIGAKU', 'AKAZA'], boost: 3.3,
+    rules: [['Cryo Lotus', 'Enemy attacks can freeze your fighter', { freeze: 35 }], ['Lotus Bloom', 'The enemy team heals 5% every turn', { teamHeal: 5 }]],
+    weak: ['S:FF', 'Dragons'], weakB: 70, resist: 50, tip: 'Doma freezes and out-heals you. Fire burns through ice: Fire Force cards and Dragons hit him hard. Bring Cleanse cards for the freezes.',
+    reward: { coins: 20000, premium: 1 } },
+  { n: 3, name: 'Upper Moon One', boss: 'KOKUSHIBO', enemy: ['KOKUSHIBO', 'DOMA', 'AKAZA', 'HANTENGU', 'GYUTARO', 'KAIGAKU'], boost: 3.2,
+    rules: [['Moon Breathing', 'Enemies dodge 30% of attacks', { dodge: 30 }], ['Crescent Moon Blades', 'Enemy Strikes often hit twice', { doubleStrike: 1 }]],
+    weak: ['Demon Slayer Corps', 'Gods & Kings'], weakB: 60, resist: 50, tip: 'Kokushibo is hard to hit. Demon Slayers and Gods & Kings break through. Cards that ignore dodge or hit the whole team shine here.',
+    reward: { coins: 25000, premium: 1, shards: 2000 } },
+  { n: 4, name: 'The Demon King', boss: 'MUZAN', enemy: ['MUZAN', 'KOKUSHIBO', 'DOMA', 'AKAZA'], boost: 3,
+    rules: [['Endless Regeneration', 'Enemies heal 12% every turn', { regen: 12 }], ['Five Brains, Seven Hearts', 'Every enemy survives its first KO', { endure: 1 }]],
+    weak: ['S:DS', 'Swordsmen'], weakB: 60, resist: 50, tip: 'Muzan out-heals almost anything. Seal his passive (Sealing Scroll, Makima, Yhwach, Gogeta) and his regeneration stops dead.',
+    reward: { coins: 30000, premium: 2, shards: 3000 } },
+  { n: 5, name: 'Infinite Fortress', boss: 'MUZAN', enemy: ['MUZAN', 'KOKUSHIBO', 'DOMA', 'AKAZA', 'HANTENGU', 'GYUTARO'], boost: 3.3, final: 1,
+    rules: [['The Castle Shifts', 'Enemies dodge 15% and heal 6% every turn', { dodge: 15, regen: 6 }], ['Twelve Kizuki', 'Enemies reflect 15% damage and deal +25% damage', { reflect: 15, dmg: 25 }]],
+    weak: ['S:DS', 'Swordsmen', 'Demon Slayer Corps'], weakB: 50, resist: 55, tip: 'Everything at once. Full Demon Slayer teams, a sealer for Muzan and a Cleanse or two. Raw power alone will not get through.',
+    reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
+] }
 // ---------- VILLAIN CAMPAIGN ----------
 const VCAMP = { name: 'The Dark Alliance', sub: 'Villain Campaign · Every world\'s villains unite', boss: 'AIZEN', stages: [
   { n: 1, name: 'The Covenant Moves', coins: 2500, enemy: ['KAKASHI', 'ZORO', 'BAKUGO', 'MEGUMI', 'GOHAN', 'YAMAMOTO'],
@@ -1063,6 +1086,19 @@ function act(a) {
         P.tower.best = n; P.coins += T.coins; if (T.pack) P.pending[T.pack] = (P.pending[T.pack] || 0) + 1
         return { msg: `Floor ${n} cleared! +${T.coins.toLocaleString()} coins${T.pack ? ' and a ' + PACKS[T.pack].name : ''}.` }
       }
+      if (a.mode === 'redzone') {
+        const n = +a.id, st = REDZONE.stages.find(s => s.n === n); if (!st) return { error: 'Unknown stage.' }
+        const R = (P.rz = P.rz || {}), done = R[REDZONE.id] || (R[REDZONE.id] = [])
+        if (n > 1 && !done.includes(n - 1)) return { error: 'Clear the previous Dead Zone stage first.' }
+        if (!a.won) { addXP(20); return {} }
+        if (done.includes(n)) { P.coins += 1500; addXP(30); return { msg: 'Dead Zone stage replayed. +1,500 coins.' } }
+        done.push(n); addXP(250); const w = st.reward, got = []
+        P.coins += w.coins; got.push(w.coins.toLocaleString() + ' coins')
+        if (w.premium) { P.pending.premium = (P.pending.premium || 0) + w.premium; got.push(w.premium + ' Premium Drop' + (w.premium > 1 ? 's' : '')) }
+        if (w.shards) { P.shards = (P.shards || 0) + w.shards; got.push('◆' + w.shards.toLocaleString() + ' shards') }
+        if (w.tickets) { P.tickets = (P.tickets || 0) + w.tickets; got.push(w.tickets + ' Training Tickets') }
+        return { msg: `💀 DEAD ZONE ${st.final ? 'CONQUERED' : 'CLEARED'}: ${st.name}! +${got.join(', ')}.` }
+      }
       if (a.mode === 'villain') {
         const n = +a.id, st = VCAMP.stages.find(s => s.n === n), C = vcampP(); if (!st) return { error: 'Unknown stage.' }
         if (n > 1 && !(C.stars[n - 1] > 0)) return { error: 'Stage locked.' }
@@ -1265,7 +1301,7 @@ function state() {
     raid: { ...raidNow(), me: raidP() },
     presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
-    camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST, vcamp: VCAMP, vcampP: vcampP(), rift: riftNow(),
+    camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST, vcamp: VCAMP, vcampP: vcampP(), rift: riftNow(), redzone: REDZONE, rzP: (S.profile.rz || {})[REDZONE.id] || [],
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
