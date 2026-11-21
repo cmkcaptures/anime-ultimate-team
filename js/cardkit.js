@@ -152,14 +152,7 @@ export function drawCard(x, d) {
     const g = o.createLinearGradient(0, 0, dw, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.07, '#000'); g.addColorStop(.93, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)'); o.fillStyle = g; o.fillRect(0, 0, dw, dh)
     x.drawImage(off, ox2, oy2)
   } else x.drawImage(img, ox, oy, dw, dh)
-  if (d.tint === 'corrupt') { x.save(); x.filter = 'none'
-    x.globalCompositeOperation = 'multiply'; x.fillStyle = '#b0102a'; x.fillRect(0, 0, W, AH)
-    x.globalCompositeOperation = 'color'; x.globalAlpha = .45; x.fillStyle = '#7a0020'; x.fillRect(0, 0, W, AH)
-    x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1
-    const v = x.createRadialGradient(W / 2, AH * .45, AH * .2, W / 2, AH * .45, AH * .85); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(25,0,8,.85)'); x.fillStyle = v; x.fillRect(0, 0, W, AH)
-    x.globalCompositeOperation = 'screen' // red foil streaks
-    for (const [p, a] of [[.18, .35], [.42, .22], [.7, .3]]) { const g = x.createLinearGradient(W * p - 120, 0, W * p + 120, AH); g.addColorStop(0, 'rgba(255,40,60,0)'); g.addColorStop(.5, `rgba(255,60,80,${a})`); g.addColorStop(1, 'rgba(255,40,60,0)'); x.fillStyle = g; x.fillRect(0, 0, W, AH) }
-    x.restore() }
+  if (d.tint === 'corrupt') { x.save(); x.filter = 'none'; const v = x.createRadialGradient(W / 2, AH * .45, AH * .55, W / 2, AH * .45, AH * .95); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(120,0,20,.55)'); x.fillStyle = v; x.fillRect(0, 0, W, AH); x.restore() }
   x.filter = 'none'
   if (real) { } else if (d.r === 'X') {
     x.fillStyle = stops(x.createLinearGradient(0, 0, W, H), ['#ff3d9a', '#ffcf2d', '#2dff9a', '#2db4ff', '#9a4dff', '#ff3d9a'])
@@ -288,7 +281,7 @@ const sig = c => ['g1', c.key, c.dia || 0, c.lv || 0, c.maxed || 0, c.ovr, c.nam
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340, prio) {
-  const bw = bucket(w), k = 't12|' + sig(c) + '|' + bw
+  const bw = bucket(w), k = 't13|' + sig(c) + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
