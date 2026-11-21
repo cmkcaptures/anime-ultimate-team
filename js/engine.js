@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqnyqyb'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqobpcg'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -722,19 +722,19 @@ const REDZONE = { id: 'rz1', name: 'Infinity Castle', sub: 'Dead Zone · Demon S
     rules: [['Destructive Death', 'Every enemy reflects 30% of the damage it takes', { reflect: 30 }], ['Martial Arts', 'Enemies deal +20% damage', { dmg: 20 }]],
     weak: ['Swordsmen'], weakB: 60, resist: 50, tip: 'Akaza punishes every hit you land. Swordsmen cut through him, and high single hits beat lots of small ones.',
     reward: { coins: 15000, premium: 1 } },
-  { n: 2, name: 'Upper Moon Two', boss: 'DOMA', enemy: ['DOMA', 'HANTENGU', 'GYUTARO', 'KAIGAKU', 'AKAZA'], boost: 3.3,
-    rules: [['Cryo Lotus', 'Enemy attacks can freeze your fighter', { freeze: 35 }], ['Lotus Bloom', 'The enemy team heals 5% every turn', { teamHeal: 5 }]],
+  { n: 2, name: 'Upper Moon Two', boss: 'DOMA', enemy: ['DOMA', 'HANTENGU', 'GYUTARO', 'KAIGAKU', 'AKAZA'], boost: 2.0,
+    rules: [['Cryo Lotus', 'Enemy attacks can freeze your fighter', { freeze: 20 }], ['Lotus Bloom', 'The enemy team heals 3% every turn', { teamHeal: 3 }]],
     weak: ['S:FF', 'Dragons'], weakB: 70, resist: 50, tip: 'Doma freezes and out-heals you. Fire burns through ice: Fire Force cards and Dragons hit him hard. Bring Cleanse cards for the freezes.',
     reward: { coins: 20000, premium: 1 } },
-  { n: 3, name: 'Upper Moon One', boss: 'KOKUSHIBO', enemy: ['KOKUSHIBO', 'DOMA', 'AKAZA', 'HANTENGU', 'GYUTARO', 'KAIGAKU'], boost: 3.2,
+  { n: 3, name: 'Upper Moon One', boss: 'KOKUSHIBO', enemy: ['KOKUSHIBO', 'DOMA', 'AKAZA', 'HANTENGU', 'GYUTARO', 'KAIGAKU'], boost: 2.1,
     rules: [['Moon Breathing', 'Enemies dodge 30% of attacks', { dodge: 30 }], ['Crescent Moon Blades', 'Enemy Strikes often hit twice', { doubleStrike: 1 }]],
     weak: ['Demon Slayer Corps', 'Gods & Kings'], weakB: 60, resist: 50, tip: 'Kokushibo is hard to hit. Demon Slayers and Gods & Kings break through. Cards that ignore dodge or hit the whole team shine here.',
     reward: { coins: 25000, premium: 1, shards: 2000 } },
-  { n: 4, name: 'The Demon King', boss: 'MUZAN', enemy: ['MUZAN', 'KOKUSHIBO', 'DOMA', 'AKAZA'], boost: 3,
+  { n: 4, name: 'The Demon King', boss: 'MUZAN', enemy: ['MUZAN', 'KOKUSHIBO', 'DOMA', 'AKAZA'], boost: 2.4,
     rules: [['Endless Regeneration', 'Enemies heal 12% every turn', { regen: 12 }], ['Five Brains, Seven Hearts', 'Every enemy survives its first KO', { endure: 1 }]],
     weak: ['S:DS', 'Swordsmen'], weakB: 60, resist: 50, tip: 'Muzan out-heals almost anything. Seal his passive (Sealing Scroll, Makima, Yhwach, Gogeta) and his regeneration stops dead.',
     reward: { coins: 30000, premium: 2, shards: 3000 } },
-  { n: 5, name: 'Infinite Fortress', boss: 'MUZAN', enemy: ['MUZAN', 'KOKUSHIBO', 'DOMA', 'AKAZA', 'HANTENGU', 'GYUTARO'], boost: 3.3, final: 1,
+  { n: 5, name: 'Infinite Fortress', boss: 'MUZAN', enemy: ['MUZAN', 'KOKUSHIBO', 'DOMA', 'AKAZA', 'HANTENGU', 'GYUTARO'], boost: 2.2, final: 1,
     rules: [['The Castle Shifts', 'Enemies dodge 15% and heal 6% every turn', { dodge: 15, regen: 6 }], ['Twelve Kizuki', 'Enemies reflect 15% damage and deal +25% damage', { reflect: 15, dmg: 25 }]],
     weak: ['S:DS', 'Swordsmen', 'Demon Slayer Corps'], weakB: 50, resist: 55, tip: 'Everything at once. Full Demon Slayer teams, a sealer for Muzan and a Cleanse or two. Raw power alone will not get through.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
