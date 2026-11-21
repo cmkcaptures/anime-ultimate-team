@@ -103,13 +103,20 @@ function cutWorker() { // small pool of workers so several cards process at once
 }
 export function getArt(c) {
   return ARTP[c.id] || (ARTP[c.id] = (async () => {
-    const ck = `v2|${c.key}|${c.mt}${c.nocut ? '|n' : ''}`
+    const ck = `v2|${c.key}|${c.mt}${c.nocut ? '|n' : ''}${c.tint ? '|t' + c.tint : ''}`
     const blob = await idbGet(ck)
     if (blob) return ART[c.id] = await loadImg(URL.createObjectURL(blob))
     // heavy part (decode + background removal) runs in a worker so the game never stutters
     const W = cutWorker()
-    if (W) { try { const r = await new Promise((res, rej) => { const id = ++WID; WJOBS.set(id, { res, rej }); W.postMessage({ id, url: new URL(c.url, location.href).href, nocut: !!c.nocut }) }); idbPut(ck, r.blob); return ART[c.id] = r.bmp } catch { } }
+    if (W && !c.tint) { try { const r = await new Promise((res, rej) => { const id = ++WID; WJOBS.set(id, { res, rej }); W.postMessage({ id, url: new URL(c.url, location.href).href, nocut: !!c.nocut }) }); idbPut(ck, r.blob); return ART[c.id] = r.bmp } catch { } }
     const raw = await loadImg(c.url), can = c.nocut ? (() => { const k = document.createElement('canvas'); k.width = raw.width; k.height = raw.height; k.getContext('2d').drawImage(raw, 0, 0); return k })() : cutout(raw)
+    if (c.tint === 'corrupt') { const x = can.getContext('2d'), w = can.width, hh = can.height
+      const t = document.createElement('canvas'); t.width = w; t.height = hh; const tx = t.getContext('2d'); tx.filter = 'saturate(1.35) contrast(1.25) brightness(.82) hue-rotate(-12deg)'; tx.drawImage(can, 0, 0)
+      x.clearRect(0, 0, w, hh); x.drawImage(t, 0, 0); x.globalCompositeOperation = 'source-atop'
+      x.globalAlpha = .38; x.fillStyle = '#5a0a6a'; x.globalCompositeOperation = 'multiply'; x.fillRect(0, 0, w, hh)
+      x.globalAlpha = .28; x.globalCompositeOperation = 'overlay'; x.fillStyle = '#ff1a3a'; x.fillRect(0, 0, w, hh)
+      const g = x.createRadialGradient(w / 2, hh * .4, Math.min(w, hh) * .25, w / 2, hh * .45, Math.max(w, hh) * .75); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(20,0,25,.75)')
+      x.globalAlpha = 1; x.globalCompositeOperation = 'source-atop'; x.fillStyle = g; x.fillRect(0, 0, w, hh); x.globalCompositeOperation = 'source-over' }
     setTimeout(() => can.toBlob(b => b && idbPut(ck, b), 'image/webp', .9), 1500)
     return ART[c.id] = can
   })())
