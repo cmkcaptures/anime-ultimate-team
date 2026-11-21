@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwpvylzp'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpvylzp'
-import * as ACC from './account.js?v=mwpvylzp'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpvylzp'
+import { createFX } from './fx2d.js?v=mwpwxrg7'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpwxrg7'
+import * as ACC from './account.js?v=mwpwxrg7'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpwxrg7'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwpvylzp'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwpwxrg7'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -371,13 +371,14 @@ PAGES.cards = (el) => {
   function draw() {
     chipRow(an, [['ALL', 'All series'], ...[...new Set(POOL.map(c => c.anime))].map(a => [a, ANAME(a)])], 'anime')
     chipRow(ra, [['ALL', 'All rarities'], ...ORDER.slice().reverse().filter(r => POOL.some(c => c.r === r)).map(r => [r, RARITY_MARK[r] + ' ' + TIER[r].name[0] + TIER[r].name.slice(1).toLowerCase()])], 'rar')
+    { const b = h('button', 'chip' + (CF.sort === 'NEW' ? ' on' : ''), CF.sort === 'NEW' ? '🆕 Newest' : '⭐ Best first'); b.onclick = () => { CF.sort = CF.sort === 'NEW' ? '' : 'NEW'; draw() }; ra.prepend(b) }
     q.style.display = ra.style.display = CF.mode === 'BINDER' ? 'none' : ''
     grid.className = 'cardgrid'
     if (CF.mode === 'BINDER') return drawBinder(grid)
     if (CF.mode === 'EVOLVE') return drawEvolve(grid)
     if (CF.mode === 'FUSE') return drawFuse(grid)
     const list = POOL.filter(c => (CF.mode === 'ALL' || club()[c.key]) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && (!CF.q || (c.name + ' ' + c.ver).toLowerCase().includes(CF.q)))
-      .sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
+      .sort((a, b) => (CF.sort === 'NEW' ? (b.added || 0) - (a.added || 0) : 0) || TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
     grid.innerHTML = ''
     if (!list.length) { grid.append(h('div', 'empty', `<b>${own.length ? 'Nothing here' : 'No cards yet'}</b>${own.length ? 'Try a different filter.' : 'Open your free pack on the home screen.'}`)); grid.firstChild.style.gridColumn = '1/-1'; return }
     for (const c of list) {
