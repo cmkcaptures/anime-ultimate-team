@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwpu23y3'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpu23y3'
-import * as ACC from './account.js?v=mwpu23y3'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpu23y3'
+import { createFX } from './fx2d.js?v=mwpu5f10'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpu5f10'
+import * as ACC from './account.js?v=mwpu5f10'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpu5f10'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwpu23y3'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwpu5f10'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -110,6 +110,11 @@ const PACKLOOK = {
   FT: { t: ['FAIRY', 'TAIL'], c: ['#ffd06a', '#ff5a1a', '#a0101e', '#2a0408', '#ffe06a'], set: 'FT' },
   JJBA: { t: ['BIZARRE', 'STANDS'], c: ['#ffd23a', '#c03dff', '#4a0a8a', '#12042a', '#ff5ad1'], set: 'JJ' },
   CSM: { t: ['CHAINSAW', 'DEVILS'], c: ['#ffb000', '#ff3d00', '#7a0a1a', '#1a0408', '#ff3d9a'], set: 'CS' },
+  PKM: { t: ['POKÉMON', 'TRAINERS'], c: ['#ffe14a', '#ffcb05', '#2a75bb', '#0a1a3a', '#ff3d3d'], set: 'PK' },
+  OPM: { t: ['ONE PUNCH', 'HEROES'], c: ['#fff04a', '#ffcc00', '#c81020', '#2a0408', '#ffffff'], set: 'PM' },
+  AOT: { t: ['ATTACK ON', 'TITAN'], c: ['#e8c890', '#c8a070', '#6a3a1a', '#1a0a04', '#ff6a3d'], set: 'AT' },
+  SL: { t: ['SOLO', 'LEVELING'], c: ['#9ad8ff', '#3a6aff', '#1a0a5a', '#05031a', '#b88cff'], set: 'SL' },
+  DAN: { t: ['DANDADAN', 'OCCULT'], c: ['#ff9ad0', '#ff3d9a', '#5a0a6a', '#14041a', '#7df9ff'], set: 'DD' },
 }
 const PACKABLE = () => POOL.filter(c => !c.season)
 const packPool = type => { const a = ST.packs[type] && ST.packs[type].anime; return a ? PACKABLE().filter(c => c.anime === a) : PACKABLE() }

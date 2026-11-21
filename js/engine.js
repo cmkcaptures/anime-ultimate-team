@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpu23y3'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwpu5f10'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -50,6 +50,11 @@ const PACKS = {
   BC: { name: 'Black Clover Pack', cost: 2500, anime: 'BC' },
   DS: { name: 'Demon Slayer Pack', cost: 2500, anime: 'DS' },
   BLE: { name: 'Bleach Pack', cost: 2500, anime: 'BLE' },
+  PKM: { name: 'Pokémon Pack', cost: 2500, anime: 'PKM' },
+  OPM: { name: 'One Punch Man Pack', cost: 2500, anime: 'OPM' },
+  AOT: { name: 'Attack on Titan Pack', cost: 2500, anime: 'AOT' },
+  SL: { name: 'Solo Leveling Pack', cost: 2500, anime: 'SL' },
+  DAN: { name: 'Dandadan Pack', cost: 2500, anime: 'DAN' },
   FF: { name: 'Fire Force Pack', cost: 2500, anime: 'FF' },
   HXH: { name: 'Hunter x Hunter Pack', cost: 2500, anime: 'HXH' },
   FT: { name: 'Fairy Tail Pack', cost: 2500, anime: 'FT' },
