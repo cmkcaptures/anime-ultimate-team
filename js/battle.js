@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqr7zw2'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqr7zw2'
-import { createFX } from './fx2d.js?v=mwqr7zw2'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqra4bb'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqra4bb'
+import { createFX } from './fx2d.js?v=mwqra4bb'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -41,13 +41,13 @@ export const LINKS = [
   { n: 'Kamado Bond', a: ['TANJIRO', 'NEZUKO', 'ZENITSU', 'INOSUKE', 'KAMABOKO'], pct: 10 }, { n: 'Hashira', a: ['RENGOKU', 'GIYU', 'TENGEN', 'SHINOBU', 'MITSURI', 'OBANAI'], pct: 8 },
   { n: 'Urameshi Team', a: ['YUSUKE', 'KUWABARA', 'KURAMA', 'HIEI', 'GENKAI', 'TEAM URAMESHI'], pct: 10 },
   { n: 'Deku & Kacchan', a: ['DEKU', 'BAKUGO', 'ALL MIGHT'], pct: 10 }, { n: 'Soul Reapers', a: ['ICHIGO', 'RUKIA', 'RENJI', 'URAHARA', 'YAMAMOTO', 'KENPACHI', 'BYAKUYA', 'UNOHANA'], pct: 8 },
-  { n: 'Seven Deadly Sins', a: ['MELIODAS', 'ESCANOR', 'BAN', 'KING', 'ELIZABETH'], pct: 10 }, { n: 'Hunters', a: ['GON', 'KILLUA', 'KURAPIKA', 'HISOKA'], pct: 8 },
+  { n: 'Seven Deadly Sins', a: ['MELIODAS', 'ESCANOR', 'BAN', 'KING', 'ELIZABETH'], pct: 10, anime: 'SDS' }, { n: 'Hunters', a: ['GON', 'KILLUA', 'KURAPIKA', 'HISOKA'], pct: 8 },
   { n: 'Survey Corps', a: ['LEVI', 'EREN', 'MIKASA', 'ARMIN', 'HANGE'], pct: 8 }, { n: 'Devil Hunters', a: ['DENJI', 'POWER', 'AKI', 'KISHIBE', 'KOBENI', 'MAKIMA'], pct: 8 },
   { n: 'Sword Masters', cat: 'Swordsmen', pct: 5 }, { n: 'Dark Alliance', cat: 'Villains', pct: 5 }, { n: 'Tag Partners', cat: 'Tag Teams', pct: 4 }, { n: 'Power Surge', cat: 'Transformations', pct: 4 },
   { n: 'Comrades', fac: 1, pct: 6 },
 ]
 const LINK_CAP = 30
-const memOf = (L, c) => L.a.filter(m => c.name === m || c.name.startsWith(m + ' ') || c.name.includes(' ' + m) || c.name.includes(m + ' &') || c.name.includes('& ' + m))
+const memOf = (L, c) => L.anime && c.anime !== L.anime ? [] : L.a.filter(m => c.name === m || c.name.startsWith(m + ' ') || c.name.includes(' ' + m) || c.name.includes(m + ' &') || c.name.includes('& ' + m))
 export function linkPair(c1, c2) { if (!c1 || !c2) return []; const out = []
   for (const L of LINKS) {
     if (L.a) { const m1 = memOf(L, c1), m2 = memOf(L, c2); if (m1.length && m2.length && new Set([...m1, ...m2]).size >= 2) out.push(L) }
@@ -434,6 +434,8 @@ export const ARENAS = {
   cosmos: { name: 'NULL VOID COLOSSEUM', sub: 'Tournament of Power' },
 }
 const ARENA_KEYS = Object.keys(ARENAS)
+// background art arenas: each one powers up a group (+5% HP and stats, both sides)
+const ARENA_BONUS = { 'grand-line': 'S:OP', 'blade-graveyard': 'Swordsmen', 'sky-kingdom': 'Gods & Kings', 'cbeccd318d5abbd98cde3d9b024f21bc': 'S:JJK', 'images': 'Pirates', 'images2': 'S:DS', 'images3': 'S:NAR', 'images4': 'Villains' }
 let ARENA_IMGS = null
 const arenaImgs = () => ARENA_IMGS || (ARENA_IMGS = fetch('arenas-list.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).catch(() => []))
 
@@ -1219,6 +1221,7 @@ export function startBattle(stage) {
     if (list.length) {
       const pick = stage.pvp || !stage.n ? list[Math.floor(Math.random() * list.length)] : list[(stage.n - 1) % list.length]
       ov.classList.add('has-img'); ov.style.setProperty('--bgimg', `url("${pick.url}")`); name = pick.name; sub = stage.pvp ? 'Ranked Arena' : 'Stage ' + stage.n
+      { const tag = ARENA_BONUS[pick.id]; if (tag && !B.arenaB) { B.arenaB = tag; for (const sd of [B.you, B.ai]) for (const f of sd.team) if (tagsOf(f.card).includes(tag)) { f.max = Math.round(f.max * 1.05); f.hp = Math.round(f.hp * 1.05); for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.05) } sub = '+5% to ' + (tag.startsWith('S:') ? X.ANAME(tag.slice(2)) : tag) + ' fighters'; try { draw() } catch { } } }
       // measure how bright the art is and pick a light or dark UI theme to match
       const im = new Image(); im.onload = () => { try { const c = document.createElement('canvas'); c.width = 32; c.height = 18; const x = c.getContext('2d'); x.drawImage(im, 0, 0, 32, 18); const d = x.getImageData(0, 0, 32, 18).data; let L = 0; for (let i = 0; i < d.length; i += 4) L += (.2126 * d[i] + .7152 * d[i + 1] + .0722 * d[i + 2]) / 255; L /= d.length / 4; ov.classList.toggle('lite', L > .42); ov.style.setProperty('--lum', L.toFixed(2)) } catch { } }; im.src = pick.url
     }
