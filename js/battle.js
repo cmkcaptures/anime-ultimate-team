@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqra4bb'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqra4bb'
-import { createFX } from './fx2d.js?v=mwqra4bb'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqre9ib'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqre9ib'
+import { createFX } from './fx2d.js?v=mwqre9ib'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }

@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqra4bb'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqra4bb'
+import { createFX } from './fx2d.js?v=mwqre9ib'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqre9ib'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqra4bb'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqra4bb'
+import * as ACC from './account.js?v=mwqre9ib'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqre9ib'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqra4bb'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqre9ib'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -476,7 +476,7 @@ function teamStats() {
   const chem = Math.round(links.reduce((a, l) => a + Math.max(0, l), 0) / 4 * 70 + benchMatch / 3 * 30)
   return { rating, chem, links, count: cs.length }
 }
-const TB = { target: 'best', series: 'ALL', role: 'ALL', rar: 'ALL' }
+const TB = { target: 'best', series: 'ALL', role: 'ALL', rar: 'ALL', tag: 'ALL' }
 const typeOfA = a => (ANIME[a] || {}).type || 'ki'
 function buildTargets() {
   const own = owned(), cnt = {}; for (const c of own) cnt[c.anime] = (cnt[c.anime] || 0) + 1
@@ -572,13 +572,14 @@ function teamPicker(slot) {
     const LD0 = slot !== 0 && P.team[0] && BYKEY[P.team[0]] && BYKEY[P.team[0]].lead, avail = owned().filter(c => !P.team.includes(c.key)).sort((x, y) => (LD0 ? leadHits(LD0, y) - leadHits(LD0, x) : 0) || y.ovr - x.ovr), teamAnime = synergy(P.team.map((k, i) => i !== slot && k && BYKEY[k])).anime
     const sel = (lbl, key, opts) => { const w = h('label', 'tp-f', `<span>${lbl}</span>`), s2 = document.createElement('select'); for (const [v, t] of opts) { const o = new Option(t, v); if (TB[key] === v) o.selected = true; s2.append(o) } s2.onchange = () => { TB[key] = s2.value; draw() }; w.append(s2); return w }
     const series = [...new Set(avail.map(c => c.anime))].sort((a, b) => ANAME(a).localeCompare(ANAME(b)))
+    const mates = P.team.map((k, j) => j !== slot && k && BYKEY[k]).filter(Boolean), fitsTeam = c => mates.some(m => auraHits(m, c) || auraHits(c, m))
     const bar = h('div', 'tp-bar')
-    bar.append(sel('SERIES', 'series', [['ALL', 'All series'], ...(teamAnime ? [['TEAM', 'Matches team (' + ANAME(teamAnime) + ')']] : []), ...series.map(a => [a, ANAME(a)])]), sel('ROLE', 'role', [['ALL', 'All roles'], ...['FIGHTER', 'ASSASSIN', 'TANK', 'SUPPORT', 'SHOOTER', 'STRIKER'].filter(r => avail.some(c => c.role === r)).map(r => [r, r])]), sel('RARITY', 'rar', [['ALL', 'All rarities'], ...ORDER.slice().reverse().filter(r => avail.some(c => c.r === r)).map(r => [r, TIER[r].name])]))
+    bar.append(sel('SERIES', 'series', [['ALL', 'All series'], ...(teamAnime ? [['TEAM', 'Matches team (' + ANAME(teamAnime) + ')']] : []), ...series.map(a => [a, ANAME(a)])]), sel('ROLE', 'role', [['ALL', 'All roles'], ...['FIGHTER', 'ASSASSIN', 'TANK', 'SUPPORT', 'SHOOTER', 'STRIKER'].filter(r => avail.some(c => c.role === r)).map(r => [r, r])]), sel('RARITY', 'rar', [['ALL', 'All rarities'], ...ORDER.slice().reverse().filter(r => avail.some(c => c.r === r)).map(r => [r, TIER[r].name])]), (() => { const cnt = {}; for (const c of avail) for (const t of new Set([...(c.cat || []), ...(c.aura || [])])) cnt[t] = (cnt[t] || 0) + 1; return sel('TAG / AURA', 'tag', [['ALL', 'All tags'], ['FIT', '✦ Fits my team'], ...Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).map(t => [t, auraTag(t) + ' · ' + cnt[t]])]) })())
     sh.append(bar)
     const g = h('div', 'cardgrid'); sh.append(g)
     function draw() {
       g.innerHTML = ''
-      const list = avail.filter(c => (TB.series === 'ALL' || (TB.series === 'TEAM' ? c.anime === teamAnime : c.anime === TB.series)) && (TB.role === 'ALL' || c.role === TB.role) && (TB.rar === 'ALL' || c.r === TB.rar)).sort((a, b) => scoreFor(b, TB.target) - scoreFor(a, TB.target))
+      const list = avail.filter(c => (TB.series === 'ALL' || (TB.series === 'TEAM' ? c.anime === teamAnime : c.anime === TB.series)) && (TB.role === 'ALL' || c.role === TB.role) && (TB.rar === 'ALL' || c.r === TB.rar) && (TB.tag === 'ALL' || (TB.tag === 'FIT' ? fitsTeam(c) : tagsOf(c).includes(TB.tag)))).sort((a, b) => scoreFor(b, TB.target) - scoreFor(a, TB.target))
       if (!list.length) g.append(h('div', 'empty', '<b>No cards match</b>Change the filters above.'))
       for (const c of list) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 240)); if (slot !== 0 && P.team[0] && BYKEY[P.team[0]] && leadHits(BYKEY[P.team[0]].lead, c)) b.append(h('span', 'syn-tag', 'BOOSTED')); b.onclick = async () => { const T = P.team.slice(); T[slot] = c.key; await act('team', { team: T }); closeModal(); rerender() }; g.append(b) }
     }
