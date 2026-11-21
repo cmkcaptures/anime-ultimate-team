@@ -105,3 +105,24 @@ export async function raidStatus(rid) {
   let top = []; try { top = (await F.getDocs(F.query(col, F.orderBy('dmg', 'desc'), F.limit(10)))).docs.map(d => ({ uid: d.id, ...d.data() })) } catch { }
   return { sum, top }
 }
+
+// ---------------- LIVE PVP ----------------
+const clean = o => JSON.parse(JSON.stringify(o))
+export async function pvpCreate(data) {
+  const code = Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('')
+  await F.setDoc(F.doc(db, 'matches', code), clean({ ...data, host: USER.uid, hostName: (PROFILE && PROFILE.name) || 'Player', status: 'open', at: Date.now(), seed: Math.floor(Math.random() * 2147483647) }))
+  return code
+}
+export async function pvpJoin(code, data) {
+  code = String(code || '').trim().toUpperCase(); const ref = F.doc(db, 'matches', code), d = await F.getDoc(ref)
+  if (!d.exists()) throw new Error('No match with that code.'); const m = d.data()
+  if (m.host === USER.uid) throw new Error('That is your own match. Send the code to a mate.')
+  if (m.status !== 'open') throw new Error('That match has already started or finished.')
+  const add = clean({ ...data, guest: USER.uid, guestName: (PROFILE && PROFILE.name) || 'Player', status: 'live' }); await F.updateDoc(ref, add)
+  return { code, ...m, ...add }
+}
+export function pvpWatch(code, cb) { return F.onSnapshot(F.doc(db, 'matches', code), d => cb(d.exists() ? d.data() : null)) }
+export function pvpMoves(code, cb) { return F.onSnapshot(F.query(F.collection(db, 'matches', code, 'moves'), F.orderBy('seq')), s => s.docChanges().forEach(c => { if (c.type === 'added') cb(c.doc.data()) })) }
+export async function pvpSend(code, role, n, a) { await F.setDoc(F.doc(db, 'matches', code, 'moves', role + String(n).padStart(5, '0')), { seq: Date.now() * 2 + (role === 'h' ? 0 : 1), n, by: USER.uid, a, at: Date.now() }) }
+export async function pvpFinish(code, winner) { try { await F.updateDoc(F.doc(db, 'matches', code), { status: 'done', winner, end: Date.now() }) } catch { } }
+export async function pvpCancel(code) { try { await F.updateDoc(F.doc(db, 'matches', code), { status: 'cancelled' }) } catch { } }

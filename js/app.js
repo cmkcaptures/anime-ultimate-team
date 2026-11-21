@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqrn1mi'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqrn1mi'
+import { createFX } from './fx2d.js?v=mwqw0319'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqw0319'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqrn1mi'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqrn1mi'
+import * as ACC from './account.js?v=mwqw0319'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqw0319'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqrn1mi'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqw0319'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -251,6 +251,7 @@ setInterval(() => {
 // ================= HOME =================
 let homeIdx = 0
 PAGES.home = (el) => {
+  if (new URLSearchParams(location.search).get('pvp') && !window.__pvpGo) { window.__pvpGo = 1; try { sessionStorage.setItem('bmode', 'live') } catch { } setTimeout(() => go('battle'), 0) }
   { const R = ST.rift; if (R && R.open && !R.done) { const inv = POOL.filter(c => c.name === R.invader).sort((a, b) => b.ovr - a.ovr)[0], b = h('button', 'rift-alert', `<i style="background-image:url('${inv ? inv.url : ''}')"></i><span><small>🌀 DIMENSIONAL RIFT · CLOSES IN ${Math.max(1, Math.ceil((R.closes - Date.now()) / 60000))} MIN</small><b>${R.title.toUpperCase()}!</b></span><em>SEAL IT ›</em>`); b.onclick = () => { try { sessionStorage.setItem('bmode', 'rift') } catch { } go('battle') }; el.append(b) } }
   const B = ST.banner, partner = P.avatar && BYKEY[P.avatar], feat = partner || (B ? BYKEY[B.featured[0]] : POOL.slice().sort((a, b) => b.ovr - a.ovr)[0])
   const lob = h('section', 'lobby')
@@ -1174,7 +1175,7 @@ document.addEventListener('click', e => { const b = e.target.closest('button'); 
 // ================= BATTLE =================
 PAGES.battle = el => battlePage(el)
 TITLES.battle = 'BATTLE'
-initBattle({ raidPost: (rid, t) => ACC.raidPost(rid, t), raidStatus: rid => ACC.raidStatus(rid), h, $, cardImg, eff, ST: () => ST, lb: f => ACC.leaderboard(f), get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
+initBattle({ ACC, raidPost: (rid, t) => ACC.raidPost(rid, t), raidStatus: rid => ACC.raidStatus(rid), h, $, cardImg, eff, ST: () => ST, lb: f => ACC.leaderboard(f), get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
 
 // ================= PLAYERS (accounts, leaderboard, friends, PvP) =================
 const PS = { tab: 0, sort: 'level' }
