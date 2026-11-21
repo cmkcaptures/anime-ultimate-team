@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqx24qh'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqx24qh'
+import { createFX } from './fx2d.js?v=mwqxmqmw'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqxmqmw'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqx24qh'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqx24qh'
+import * as ACC from './account.js?v=mwqxmqmw'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqxmqmw'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqx24qh'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqxmqmw'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
