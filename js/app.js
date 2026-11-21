@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqp5u25'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqp5u25'
+import { createFX } from './fx2d.js?v=mwqpepy6'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqpepy6'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqp5u25'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqp5u25'
+import * as ACC from './account.js?v=mwqpepy6'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqpepy6'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqp5u25'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqpepy6'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -510,17 +510,25 @@ PAGES.team = (el) => {
     top.append(t) }
   top.append(h('div', 'tm-pow', `<small>TEAM POWER</small><b>${teamPower(TC).toLocaleString()}</b>`))
   el.append(top)
-  { const AB = teamAuras(TC), n = AB.filter(Boolean).length; if (count) { const row = h('div', 'tm-auras', '<b>✦ TEAM AURAS</b>'); TC.forEach((c, i) => { if (!c) return; const t = h('span', 'ta' + (AB[i] ? ' on' : ''), `${c.name.split(' ')[0]} <em>+${AB[i]}%</em>`); t.title = (c.aura || []).map(auraTag).join(' · '); row.append(t) }); row.append(h('small', '', n ? 'Each card buffs teammates sharing its aura tags. Match tags to stack them.' : 'No aura matches yet: tap a card to see its aura tags.')); el.append(row) } }
+  const SB = slotBoosts(TC), filled = SB.filter(Boolean), avgB = filled.length ? Math.round(filled.reduce((n, b) => n + b.total, 0) / filled.length) : 0
+  const lowT = filled.length ? Math.min(...filled.map(b => b.total)) : 0, weakI = SB.findIndex(b => b && b.total === lowT && b.total < avgB * .6)
+  let tip = null
+  if (weakI >= 0 && count >= 6) { const base = teamScore(TC); for (const c of owned()) { if (P.team.includes(c.key)) continue; const T2 = TC.slice(); T2[weakI] = eff(c); const v = teamScore(T2); if (!tip || v > tip.v) tip = { c, v } } if (tip && tip.v <= base * 1.01) tip = null; else if (tip) tip.gain = Math.round((tip.v / base - 1) * 100) }
+  if (count) { const bar = h('div', 'tm-boost', `<div><small>TEAM BOOST</small><b>+${avgB}%</b></div><p>${avgB >= 30 ? '🟢 Great fit. Your cards boost each other.' : avgB >= 15 ? '🟡 Decent. Some cards don\'t link up.' : '🔴 Weak links. Cards aren\'t boosting each other.'}</p>`), dt = h('button', 'btn dark sm', TDET ? 'HIDE DETAILS' : 'DETAILS'); dt.onclick = () => { TDET = !TDET; rerender() }; bar.append(dt); el.append(bar)
+    if (TDET) { const t = h('div', 'tm-det', '<div class="tdr th"><span>CARD</span><span>👑 LEADER</span><span>📺 SERIES</span><span>✦ AURA</span><span>TOTAL</span></div>'); TC.forEach((c, i) => { const b = SB[i]; if (!c) return; t.append(h('div', 'tdr', `<span>${c.name}</span><span>+${b.lead}%</span><span>+${b.series}%</span><span title="${(c.aura || []).map(auraTag).join(' · ')}">+${b.aura}%</span><b>+${b.total}%</b>`)) }); t.append(h('small', '', 'Leader: boosts cards sharing its category. Series: 3+ cards from one anime. Aura: every card buffs teammates sharing its 2 tags (tap a card to see them).')); el.append(t) } }
   // leader + slots
   const main = h('section', 'tm-main'), L = TC[0]
   const lb = h('button', 'tm-lead tap' + (L ? '' : ' empty')); lb.append(h('span', 'tm-tag', 'LEADER'))
   if (L) { lb.append(cardImg(L, 420), h('div', 'tm-meta', `<b>${L.name}</b><span>${diaStr(L.dia || 3)} · Lv ${L.lv || 1}</span>`)) } else lb.append(h('div', 'tm-plus', '+<small>PICK A LEADER</small>'))
+  if (L && SB[0]) { const b = SB[0], k = weakI === 0 ? 'r' : b.total >= Math.max(15, avgB * .8) ? 'g' : 'y'; lb.classList.add('fit-' + k); lb.append(h('span', 'tm-badge fb-' + k, (k === 'g' ? '🟢 ' : k === 'y' ? '🟡 ' : '🔴 ') + '+' + b.total + '%')) }
   lb.onclick = () => teamPicker(0); main.append(lb)
   const right = h('div', 'tm-right')
   right.append(h('div', 'tm-skill', LI.lead ? `<b>👑 LEADER SKILL</b><span>${leadText(LI.lead)}</span><em>${LI.n}/${count} BOOSTED</em>` : '<b>👑 NO LEADER</b><span>Put a card in the Leader slot. Its skill boosts every fighter that shares a category with it.</span>'))
   const slot = i => { const c = TC[i], btn = h('button', 'tm-slot tap' + (c ? (c.boosted ? ' bst' : ' nob') : ' empty'))
-    if (c) { btn.append(cardImg(c, 260), h('span', 'tm-badge', c.boosted ? 'BOOSTED' : 'NOT BOOSTED'), h('div', 'tm-sm', `<span>${diaStr(c.dia || 3)}</span><span>Lv ${c.lv || 1}</span>`)) } else btn.append(h('div', 'tm-plus', '+'))
-    btn.onclick = () => teamPicker(i); return btn }
+    if (c) { const b = SB[i], k = i === weakI ? 'r' : b.total >= Math.max(15, avgB * .8) ? 'g' : 'y'; btn.classList.add('fit-' + k); btn.append(cardImg(c, 260), h('span', 'tm-badge fb-' + k, (k === 'g' ? '🟢 ' : k === 'y' ? '🟡 ' : '🔴 ') + '+' + b.total + '%'), h('div', 'tm-sm', `<span>${diaStr(c.dia || 3)}</span><span>Lv ${c.lv || 1}</span>`)) } else btn.append(h('div', 'tm-plus', '+'))
+    btn.onclick = () => teamPicker(i)
+    if (c && i === weakI && tip) { const w = h('div', 'tm-slotwrap'), sw = h('button', 'tm-swaptip', `⇄ Swap for <b>${tip.c.name}</b> <em>+${tip.gain}%</em>`); sw.onclick = async () => { const T = P.team.slice(); T[i] = tip.c.key; await act('team', { team: T }); rerender() }; w.append(btn, sw); return w }
+    return btn }
   right.append(h('div', 'tm-lbl', 'MAIN · FIGHT FIRST')); { const g = h('div', 'tm-mainrow'); g.append(slot(1), slot(2)); right.append(g) }
   right.append(h('div', 'tm-lbl', 'SUB · SWAP IN DURING BATTLE')); { const g = h('div', 'tm-subrow'); g.append(slot(3), slot(4), slot(5)); right.append(g) }
   main.append(right); el.append(main)
@@ -532,6 +540,13 @@ PAGES.team = (el) => {
   acts.append(ab, dk, cl); el.append(acts)
   if (TBX.show) teamBuilderPanel(el)
 }
+// ---- TEAM BOOST: leader + series synergy + auras rolled into one number per card ----
+function slotBoosts(TC) {
+  const LI = leaderInfo(TC[0] ? TC : []), syn = synergy(TC), AB = teamAuras(TC)
+  return TC.map((c, i) => { if (!c) return null; const lead = LI.lead && leadHits(LI.lead, c) ? LI.lead.pct : 0, series = syn.anime && c.anime === syn.anime ? syn.bonus : 0, aura = AB[i] || 0; return { lead, series, aura, total: lead + series + aura } })
+}
+const teamScore = TC => { const B = slotBoosts(TC); return TC.reduce((n, c, i) => n + (c ? c.ovr * (1 + (B[i] ? B[i].total : 0) / 100) : 0), 0) }
+let TDET = false
 function teamPicker(slot) {
   openModal(sh => {
     sh.append(h('div', 'sec', `<h3>${slot === 0 ? 'PICK YOUR LEADER' : slot < 3 ? 'PICK A STARTER' : 'PICK A BENCH CARD'}</h3>`))

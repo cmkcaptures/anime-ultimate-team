@@ -3126,3 +3126,14 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 .rz-tip, .rz-rw { margin: 0; font: 600 12px var(--eUI, Inter); color: #e8d0d4 } .rz-rw { color: #ffe27a }
 .rz-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px }
 @media (max-width: 600px) { .rz-st { flex-direction: column } .rz-art { width: 100%; min-height: 140px } }
+
+/* ================= TEAM BOOST (simplified team screen) ================= */
+.tm-boost { display: flex; align-items: center; gap: 14px; margin: 10px 0; padding: 10px 14px; border-radius: 16px; background: rgba(120,70,255,.18); box-shadow: 0 0 0 2px rgba(176,122,255,.5) inset }
+.tm-boost > div { display: grid } .tm-boost small { font: 800 11px var(--eUI, Inter); letter-spacing: .12em; color: #d8c4ff } .tm-boost b { font: italic 900 34px/1 var(--eD, 'Barlow Condensed'); color: #ffe27a }
+.tm-boost p { flex: 1; margin: 0; font: 700 13px var(--eUI, Inter); color: #fff }
+.tm-det { display: grid; gap: 2px; margin: -4px 0 10px; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,.25); font: 700 12px var(--eUI, Inter) }
+.tdr { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.06) } .tdr.th { color: #b8a8e0; font-size: 11px; letter-spacing: .06em } .tdr b { color: #ffe27a }
+.tm-det small { margin-top: 6px; opacity: .7; font-size: 11px }
+.tm-badge.fb-g { background: #1aa860 !important; color: #fff !important } .tm-badge.fb-y { background: #e0a800 !important; color: #1a0f3a !important } .tm-badge.fb-r { background: #e02a3a !important; color: #fff !important }
+.fit-r { box-shadow: 0 0 0 3px #e02a3a !important } .fit-g { box-shadow: 0 0 0 2px #1aa860 }
+.tm-slotwrap { display: grid; gap: 6px } .tm-swaptip { padding: 6px 8px; border: 0; border-radius: 10px; cursor: pointer; background: #ffcc00; color: #1a0f3a; font: 800 11px var(--eUI, Inter) } .tm-swaptip em { font-style: normal; color: #0a7a3a }
