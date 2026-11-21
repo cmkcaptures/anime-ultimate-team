@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqre9ib'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqrkvl4'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -263,6 +263,8 @@ function achList() {
     { id: 'rift10', g: 'MODES', name: 'Guardian of Worlds', d: 'Seal 10 Dimensional Rifts', p: P.riftN || 0, need: 10, rw: { coins: 50000, title: 'Guardian of Worlds' } },
     { id: 'dzany', g: 'MODES', name: 'Survived the Dead Zone', d: 'Clear any Dead Zone stage', p: Object.values(P.rz || {}).reduce((n, v) => n + v.length, 0), need: 1, rw: { coins: 15000 } },
     { id: 'dzic', g: 'MODES', name: 'Infinity Castle Conquered', d: 'Clear all 5 Infinity Castle stages', p: ((P.rz || {}).rz1 || []).length, need: 5, rw: { coins: 100000, title: 'Demon Slayer' } },
+    { id: 'dzdb', g: 'MODES', name: 'Universe Survivor', d: 'Clear all 5 Universe Survival stages', p: ((P.rz || {}).db1 || []).length, need: 5, rw: { coins: 100000, title: 'Universe Survivor' } },
+    { id: 'dzpk', g: 'MODES', name: 'Champion of Champions', d: 'Clear all 5 League Gauntlet stages', p: ((P.rz || {}).pk1 || []).length, need: 5, rw: { coins: 100000, title: 'Pokémon Master' } },
     { id: 'dzdt', g: 'MODES', name: 'Dark Tournament Champion', d: 'Clear all 5 Dark Tournament stages', p: ((P.rz || {}).dt1 || []).length, need: 5, rw: { coins: 100000, title: 'Dark Tournament Champion' } },
     { id: 'vil1', g: 'MODES', name: 'Lord of Darkness', d: 'Beat the Villain Campaign', p: (((P.vcamp || {}).stars || {})[6] || 0) > 0 ? 1 : 0, need: 1, rw: { coins: 50000, title: 'Lord of Darkness' } },
     { id: 'vil18', g: 'MODES', name: 'Perfect Villainy', d: 'Get all 18 stars in the Villain Campaign', p: Object.values((P.vcamp || {}).stars || {}).reduce((n, v) => n + v, 0), need: 18, rw: { coins: 75000 } },
@@ -774,7 +776,51 @@ const DARKT = { id: 'dt1', name: 'Dark Tournament', sub: 'Dead Zone · Yu Yu Hak
     weak: ['Urameshi Team', 'Rivals', 'S:YYH'], weakB: 55, resist: 55, tip: 'The Dark Tournament final. Full Urameshi Team, a Rival or two, and save your Awakened Ultimates for Toguro.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
-const DEADZONES = [REDZONE, DARKT]
+const DBZONE = { id: 'db1', name: 'Universe Survival', sub: 'Dead Zone · Dragon Ball', stages: [
+  { n: 1, name: 'Return of Frieza', boss: 'FRIEZA', enemy: ['FRIEZA', 'FRIEZA#83', 'CELL', 'MAJIN BUU'], boost: 2.4,
+    rules: [['Death Beam', 'Enemy Strikes pierce Guard', { pierceStrike: 1 }], ['Golden Form', 'Enemies deal +20% damage', { dmg: 20 }]],
+    weak: ['Saiyans', 'S:DBZ'], weakB: 60, resist: 50, tip: 'Frieza hates monkeys for a reason. Saiyans and Dragon Ball fighters hit him hardest. Guarding will not stop his Strikes, so heal instead.',
+    reward: { coins: 15000, premium: 1 } },
+  { n: 2, name: 'The Cell Games', boss: 'CELL', enemy: ['CELL', 'MAJIN BUU', 'FRIEZA#83', 'BROLY#78', 'GOKU BLACK#69'], boost: 2.2,
+    rules: [['Perfect Regeneration', 'Enemies heal 8% every turn', { regen: 8 }], ['Self-Destruct', 'Enemies survive their first KO', { endure: 1 }]],
+    weak: ['Saiyans', 'Mentors'], weakB: 60, resist: 50, tip: 'Cell out-heals slow teams and comes back once. Saiyans plus Mentors (Gohan and Piccolo) burst him down twice.',
+    reward: { coins: 20000, premium: 1 } },
+  { n: 3, name: "Kid Buu's Rampage", boss: 'MAJIN BUU', enemy: ['MAJIN BUU', 'CELL', 'BROLY#78', 'FRIEZA'], boost: 2.4,
+    rules: [['Pure Chaos', 'Enemies heal 10% every turn', { regen: 10 }], ['Planet Burst', 'Enemy Specials deal +30%', { spec: 30 }]],
+    weak: ['Tag Teams', 'Transformations'], weakB: 65, resist: 50, tip: 'Buu regenerates from anything but a huge burst. Fusions, tag units and transformations are the Spirit Bomb here.',
+    reward: { coins: 25000, premium: 1, shards: 2000 } },
+  { n: 4, name: 'Legendary Super Saiyan', boss: 'BROLY', enemy: ['BROLY', 'BROLY#78', 'CELL', 'FRIEZA'], boost: 2.3,
+    rules: [['Endless Rage', 'Enemies get +7% damage every turn (up to +56%)', { ramp: 7, rampMax: 56 }], ['Unstoppable', 'Enemies take 8% less damage', { dr: 8 }]],
+    weak: ['Transformations', 'Gods & Kings'], weakB: 60, resist: 50, tip: 'Broly gets scarier every turn. End it fast with transformations and Gods & Kings before his rage peaks.',
+    reward: { coins: 30000, premium: 2, shards: 3000 } },
+  { n: 5, name: 'Zero Mortal Plan', boss: 'GOKU BLACK', enemy: ['GOKU BLACK', 'GOKU BLACK#88', 'BROLY', 'CELL', 'FRIEZA', 'MAJIN BUU'], boost: 1.9, final: 1,
+    rules: [['Rosé', 'Enemies dodge 15% and reflect 15% damage', { dodge: 15, reflect: 15 }], ['Immortal Zamasu', 'Enemies deal +25% and heal 4% a turn', { dmg: 25, regen: 4 }]],
+    weak: ['Saiyans', 'Transformations', 'Tag Teams'], weakB: 55, resist: 55, tip: 'Every villain at once, led by Goku Black. Full Saiyan transformations and a fusion or two. Save Awakened Ultimates for Black.',
+    reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
+] }
+const PKZONE = { id: 'pk1', name: 'League Gauntlet', sub: 'Dead Zone · Pokémon', stages: [
+  { n: 1, name: 'Gym Challenge', boss: 'LT. SURGE & RAICHU', enemy: ['MISTY & GYARADOS', 'LT. SURGE & RAICHU', 'BEA & MACHAMP', 'KABU & CENTISKORCH', 'BLAINE & RAPIDASH', 'RAIHAN & DURALUDON'], boost: 2.6,
+    rules: [['Gym Badges', 'Enemies deal +20% damage', { dmg: 20 }], ['Home Turf', 'Enemies heal 4% every turn', { regen: 4 }]],
+    weak: ['S:PKM', 'Rivals'], weakB: 60, resist: 50, tip: 'Six Gym Leaders back to back. Pokémon trainers know their game: bring your own trainers and rival cards.',
+    reward: { coins: 15000, premium: 1 } },
+  { n: 2, name: 'Villain Teams', boss: 'GIOVANNI & MEWTWO', enemy: ['GIOVANNI & MEWTWO', 'GIOVANNI & NIDOKING', 'TEAM AQUA', 'TEAM MAGMA', 'VOLO & GIRATINA'], boost: 2.3,
+    rules: [['Psychic Barrier', 'Every enemy blocks the first 2 hits it takes', { firstNull: 2 }], ['Team Rocket Tricks', 'Enemies dodge 15%', { dodge: 15 }]],
+    weak: ['Tag Teams', 'Rivals'], weakB: 60, resist: 50, tip: "Mewtwo's barrier eats your first 2 hits on every enemy. Tag teams hit twice: use cheap Strikes to pop barriers, then go big.",
+    reward: { coins: 20000, premium: 1 } },
+  { n: 3, name: 'Legendary Dragons', boss: 'N & RESHIRAM', enemy: ['N & RESHIRAM', 'N & ZEKROM', 'WHITE & ZEKROM', 'VOLO & GIRATINA', 'CYNTHIA & GARCHOMP'], boost: 2.2,
+    rules: [['Dragon Force', 'Enemies deal +25% damage and dodge 10%', { dmg: 25, dodge: 10 }], ['Blue Flare', 'Enemy Strikes burn 5%', { burn: 5 }]],
+    weak: ['Dragons'], weakB: 75, resist: 50, tip: 'Dragons are weak to dragons. Charizards, Garchomp, Natsu, Shenron: anything with the Dragons tag shreds this stage.',
+    reward: { coins: 25000, premium: 1, shards: 2000 } },
+  { n: 4, name: 'Mega Evolution', boss: 'ALAIN & CHARIZARD X', enemy: ['ALAIN & CHARIZARD X', 'STEVEN & METAGROSS', 'ASH, MISTY & BROCK', 'LEON & CHARIZARD', 'PAUL & ELECTIVIRE'], boost: 2.1,
+    rules: [['Key Stone', 'Enemies survive their first KO', { endure: 1 }], ['Mega Power', 'Enemies deal +20% damage', { dmg: 20 }]],
+    weak: ['Transformations', 'Rivals'], weakB: 60, resist: 50, tip: 'Everyone Mega Evolves and gets back up once. Fight power with power: transformations and rivals.',
+    reward: { coins: 30000, premium: 2, shards: 3000 } },
+  { n: 5, name: 'Champion of Champions', boss: 'ASH & HIS TEAM', enemy: ['ASH & HIS TEAM', 'ASH & PIKACHU', 'RED & CHARIZARD', 'LEON & CHARIZARD', 'CYNTHIA & GARCHOMP', 'ASH & GRENINJA'], boost: 1.8, final: 1,
+    rules: [['Bond Phenomenon', 'Enemies reflect 15% damage and heal 5% a turn', { reflect: 15, regen: 5 }], ['World Monarch', 'Enemies deal +20% damage', { dmg: 20 }]],
+    weak: ['S:PKM', 'Rivals', 'Dragons'], weakB: 55, resist: 55, tip: 'Every champion, led by Ash at his peak. Your best trainers, rivals like Paul and Gary, and dragons. Save Awakened Ultimates for Ash.',
+    reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
+] }
+const DEADZONES = [REDZONE, DARKT, DBZONE, PKZONE]
 // ---------- VILLAIN CAMPAIGN ----------
 const VCAMP = { name: 'The Dark Alliance', sub: 'Villain Campaign · Every world\'s villains unite', boss: 'AIZEN', stages: [
   { n: 1, name: 'The Covenant Moves', coins: 2500, enemy: ['KAKASHI', 'ZORO', 'BAKUGO', 'MEGUMI', 'GOHAN', 'YAMAMOTO'],
