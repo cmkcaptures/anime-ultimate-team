@@ -288,7 +288,7 @@ export function thumbURL(c, w = 340, prio) {
     if (hit) return URL.createObjectURL(hit)
     await getArt(c) // art loads in parallel across workers; only the quick draw step is queued
     const job = (prio ? Promise.resolve() : QUEUE).then(async () => {
-      if (!prio) await new Promise(r => setTimeout(r, 0))
+      await new Promise(r => setTimeout(r, 0)) // always yield so a batch never blocks in one go
       const can = document.createElement('canvas'); can.width = bw; can.height = Math.round(bw * 952 / 680)
       const x = can.getContext('2d'); x.scale(bw / 680, bw / 680); drawCard(x, c)
       const blob = await new Promise(r => can.toBlob(r, 'image/webp', .84))

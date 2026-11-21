@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqpzifo'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqpzifo'
+import { createFX } from './fx2d.js?v=mwqqfjg0'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf } from './battle.js?v=mwqqfjg0'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqpzifo'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqpzifo'
+import * as ACC from './account.js?v=mwqqfjg0'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqqfjg0'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqpzifo'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqqfjg0'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -124,6 +124,8 @@ const packPool = type => { const a = ST.packs[type] && ST.packs[type].anime; ret
 const featured = type => packPool(type).slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)[type === 'premium' ? 1 : 0] || POOL[0]
 const PACKCANVAS = {}
 const PACKC = {}
+const PACKU = {}
+function packURL(type) { return PACKU[type] || (PACKU[type] = packCanvas(type, 400).then(pc => new Promise(res => pc.toBlob(b => res(b ? URL.createObjectURL(b) : pc.toDataURL('image/jpeg', .9)), 'image/jpeg', .9)))) }
 function packCanvas(type, w = 300) { const k = type + '|' + w; return PACKC[k] || (PACKC[k] = packCanvas0(type, w)) }
 async function packCanvas0(type, w = 300) {
   const k = type + w; if (PACKCANVAS[k]) return PACKCANVAS[k]
@@ -305,7 +307,7 @@ PAGES.pack = (el, type) => {
     const btns = [...sel.querySelectorAll('.pk3')]
     btns.forEach((b, i) => { const d = i - idx; b.className = 'pk3 ' + (d === 0 ? 'c' : 'l'); b.style.transform = `translateX(${d * 190}px) translateZ(${d ? -200 : 0}px) rotateY(${-d * 30}deg) scale(${d ? .78 : 1})`; b.style.opacity = Math.abs(d) > 1 ? 0 : 1; b.style.zIndex = 5 - Math.abs(d) })
     const t = types[idx], pk = ST.packs[t], pend = P.pending[t] || 0, pool = packPool(t)
-    history.replaceState(null, '', '#pack-' + t); CURARG = t
+    history.replaceState(null, '', '#pack-' + t); CURARG = t; (window.requestIdleCallback || setTimeout)(() => packURL(t).catch(() => {}))
     name.innerHTML = `<h2>${pk.name.toUpperCase()}</h2><p>${pool.length} cards · ${t === 'premium' ? 'guaranteed Epic or better' : pk.anime ? ANAME(pk.anime) + ' only' : 'every series'} · +5 pack points</p>${pk.anime ? (() => { const n = (ST.PITY_N || 10) - ((ST.spity || {})[t] || 0); return '<p class="pity">⭐ Legendary+ guaranteed ' + (n <= 1 ? '<b>next pack!</b>' : 'in <b>' + n + '</b> packs') + '</p>' })() : ''}`
     acts.innerHTML = ''
     const free = t === 'standard' && ST.free.charges > 0
@@ -904,6 +906,7 @@ async function openPack(type) {
   if (document.getElementById('opener')) return
   const cards = rollPackKeys(type), sigP = type === 'premium' || type === 'lightning' || type === 'banner' ? .04 : .02, sigs = cards.filter(() => Math.random() < sigP).map(c => c.key)
   const pre = cards.map(c => thumbURL(c, 440, true)) // start drawing the cards right away
+  for (const c of cards) if (TIER[c.r].rank >= 4) { const im = new Image(); im.src = c.url; if (im.decode) im.decode().catch(() => {}) } // walkout art decodes off the critical path
   const r = await act('openPack', { pack: type, keys: cards.map(c => c.key), sig: sigs })
   if (r.error) return
   const cnt = {}; cards.forEach(c => cnt[c.key] = (cnt[c.key] || 0) + 1); const isNew = k => (club()[k]?.n || 0) <= cnt[k]; const seenNew = new Set()
@@ -925,7 +928,7 @@ async function openPack(type) {
   function finish() { if (finished) return; finished = true; try { FXC.dispose() } catch { }; document.body.classList.remove('in-opener'); ov.classList.add('out'); setTimeout(() => ov.remove(), 350); go('results') }
 
   // ---- 1) the pack ----
-  const pc = await packCanvas(type, 400), purl = pc.toDataURL('image/jpeg', .9)
+  const purl = await packURL(type)
   const pk = h('div', 'o2-pack', `<div class="pk-shine"></div><div class="top" style="background-image:url(${purl})"></div><div class="body" style="background-image:url(${purl})"></div><div class="cut"><i></i></div>`)
   stage.append(pk); setArt(purl); hint.innerHTML = '<b>SWIPE</b> ACROSS THE TOP TO OPEN'
   await new Promise(res => {
@@ -1768,7 +1771,7 @@ function awakenSheet(key) {
 }
 
 // ================= TEAM BUILDER (auto build v2) =================
-const TBX = { goal: 'lead', series: [], types: [], roles: [], need: {}, rmin: 'C', rmax: 'X', faction: '', tag: 'any', locks: [], excl: [], fill: 'best', open: false }
+const TBX = { goal: 'lead', series: [], types: [], roles: [], atags: [], need: {}, rmin: 'C', rmax: 'X', faction: '', tag: 'any', locks: [], excl: [], fill: 'best', open: false }
 const GOALS = [['best', 'HIGHEST RATING', 'Strongest six'], ['lead', 'LEADER BOOST', 'All six boosted by the leader'], ['speed', 'SPEED', 'Move first, hit first'], ['tank', 'TANK WALL', 'Defence and survival'], ['burst', 'BURST DAMAGE', 'Power and energy hitters'], ['sustain', 'SUSTAIN', 'Heals, revives, endure'], ['dragon', 'DRAGON DECK', '3+ Dragons for Burst']]
 const ROLES = ['FIGHTER', 'ASSASSIN', 'SHOOTER', 'TANK', 'SUPPORT']
 const isDrg = isDragon
@@ -1805,6 +1808,7 @@ function builderPool() {
     if (TBX.series.length && !TBX.series.includes(c.anime)) return false
     if (TBX.types.length && !TBX.types.includes(c.t || typeOfA(c.anime))) return false
     if (TBX.roles.length && !TBX.roles.includes(c.role)) return false
+    if (TBX.atags.length && !TBX.atags.some(t => tagsOf(c).includes(t))) return false
     const ri = R.indexOf(c.r); if (ri < lo || ri > hi) return false
     if (TBX.faction && c.faction !== TBX.faction) return false
     if (TBX.tag === 'only' && !c.tag) return false; if (TBX.tag === 'none' && c.tag) return false
@@ -1842,7 +1846,7 @@ function teamBuilderPanel(el) {
   const gl = h('div', 'tb-targets'); const goals = GOALS.slice(); if (ST.event) goals.push(['vs:' + ST.event.anime, '⚡ COUNTER EVENT', 'Beat ' + ANAME(ST.event.anime)])
   for (const [id, l, sub] of goals) { const b = h('button', 'tb-t' + (TBX.goal === id ? ' on' : ''), `<b>${l}</b><small>${sub}</small>`); b.onclick = () => { TBX.goal = id; rerender() }; gl.append(b) }
   box.append(gl)
-  const nf = TBX.series.length + TBX.types.length + TBX.roles.length + Object.keys(TBX.need).length + (TBX.rmin !== 'C' || TBX.rmax !== 'X') + !!TBX.faction + (TBX.tag !== 'any') + TBX.locks.length + TBX.excl.length
+  const nf = TBX.series.length + TBX.types.length + TBX.roles.length + TBX.atags.length + Object.keys(TBX.need).length + (TBX.rmin !== 'C' || TBX.rmax !== 'X') + !!TBX.faction + (TBX.tag !== 'any') + TBX.locks.length + TBX.excl.length
   const tog = h('button', 'btn dark sm', (TBX.open ? '▾ HIDE FILTERS' : '▸ FILTERS') + (nf ? ' · ' + nf + ' ON' : '')); tog.onclick = () => { TBX.open = !TBX.open; rerender() }; box.append(tog)
   if (TBX.open) {
     const sec = (t, kids) => { const d = h('div', 'tb-f', `<small>${t}</small>`), w = h('div', 'tb-chips'); kids.forEach(k => w.append(k)); d.append(w); box.append(d) }
@@ -1850,6 +1854,7 @@ function teamBuilderPanel(el) {
     const cnt = {}; for (const c of own) cnt[c.anime] = (cnt[c.anime] || 0) + 1
     sec('SERIES', Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x]).map(a => chip(TBX.series.includes(a), ANAME(a) + ' · ' + cnt[a], () => flip(TBX.series, a))))
     const ty = [...new Set(own.map(c => c.t || typeOfA(c.anime)))]; sec('TYPE', ty.map(t => chip(TBX.types.includes(t), (TYPE[t] || {}).en || t, () => flip(TBX.types, t))))
+    { const cnt = {}; for (const c of own) for (const t of (c.aura || [])) cnt[t] = (cnt[t] || 0) + 1; const tags = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]); sec('CATEGORY / AURA TAG · cards that share the tag boost each other', tags.map(t => chip(TBX.atags.includes(t), auraTag(t) + ' · ' + cnt[t], () => flip(TBX.atags, t)))) }
     sec('ONLY THESE ROLES', ROLES.map(ro => chip(TBX.roles.includes(ro), ro, () => flip(TBX.roles, ro))))
     sec('AT LEAST (ROLES)', ROLES.map(ro => chip(!!TBX.need[ro], ro + (TBX.need[ro] ? ' ×' + TBX.need[ro] : ''), () => { TBX.need[ro] = ((TBX.need[ro] || 0) + 1) % 4; if (!TBX.need[ro]) delete TBX.need[ro]; rerender() })))
     const R = 'CURELMX'.split(''), rs = (v, f) => { const x = h('select', 'tb-sel'); x.innerHTML = R.map(q => `<option value="${q}" ${q === v ? 'selected' : ''}>${TIER[q].name}</option>`).join(''); x.onchange = () => { f(x.value); rerender() }; return x }
@@ -1860,7 +1865,7 @@ function teamBuilderPanel(el) {
     sec('LOCK CARDS FROM CURRENT TEAM', P.team.filter(Boolean).map(k => chip(TBX.locks.includes(k), '🔒 ' + BYKEY[k].name, () => flip(TBX.locks, k))))
     if (TBX.excl.length) sec('EXCLUDED (tap to allow again)', TBX.excl.map(k => chip(true, '✕ ' + (BYKEY[k] || {}).name, () => flip(TBX.excl, k))))
     sec('IF FILTERS LEAVE GAPS', [['best', 'FILL WITH BEST'], ['empty', 'LEAVE EMPTY']].map(([v, l]) => chip(TBX.fill === v, l, () => { TBX.fill = v; rerender() })))
-    const rs3 = h('button', 'btn dark sm', 'RESET FILTERS'); rs3.onclick = () => { Object.assign(TBX, { series: [], types: [], roles: [], need: {}, rmin: 'C', rmax: 'X', faction: '', tag: 'any', locks: [], excl: [] }); rerender() }; box.append(rs3)
+    const rs3 = h('button', 'btn dark sm', 'RESET FILTERS'); rs3.onclick = () => { Object.assign(TBX, { series: [], types: [], roles: [], atags: [], need: {}, rmin: 'C', rmax: 'X', faction: '', tag: 'any', locks: [], excl: [] }); rerender() }; box.append(rs3)
   }
   el.append(box)
   const row = h('div', 'grid2'); row.style.margin = '10px 0 4px'
