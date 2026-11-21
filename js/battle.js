@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqn4y3t'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqn4y3t'
-import { createFX } from './fx2d.js?v=mwqn4y3t'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqnd7n5'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqnd7n5'
+import { createFX } from './fx2d.js?v=mwqnd7n5'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -25,6 +25,13 @@ export function combosFor(cards) { const names = new Set(); for (const c of card
 export const SYN = { 3: 4, 4: 6, 5: 8, 6: 10 }
 // leader skill: the leader boosts every fighter that shares one of its categories
 export const leadHits = (lead, c) => !!(lead && c && lead.cats.some(k => k === c.anime || (c.cat || []).includes(k)))
+// ---- TEAM AURAS: every fighter buffs teammates that share one of its 2 aura tags; grows with diamonds ----
+const ROLE_TAG = { FIGHTER: 'Fighters', TANK: 'Tanks', SHOOTER: 'Shooters', ASSASSIN: 'Assassins', SUPPORT: 'Supports' }
+export const AURA_PCT = { 3: 3, 4: 4, 5: 5, 6: 7, 7: 10 }, AURA_CAP = 40
+export const tagsOf = c => ['S:' + c.anime, c.faction, ...(c.cat || []), ROLE_TAG[c.role] || 'Fighters']
+export const auraHits = (src, c) => !!(src && c && src.aura && src.aura.some(t => tagsOf(c).includes(t)))
+export function teamAuras(cards, defDia = 3) { return cards.map(c => { if (!c) return 0; let b = 0; for (const s of cards) if (s && auraHits(s, c)) b += AURA_PCT[Math.min(7, Math.max(3, s.dia || defDia))]; return Math.min(AURA_CAP, b) }) }
+function applyAuras(side, defDia) { const b = teamAuras(side.team.map(f => f.card), defDia); side.team.forEach((f, i) => { const x = b[i]; if (!x) return; f.max = f.hp = Math.round(f.max * (1 + x / 100)); const k = 1 + x / 200; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.auraB = x }); side.auraAvg = Math.round(b.reduce((n, v) => n + v, 0) / Math.max(1, b.length)) }
 export function leaderInfo(cards) { const L = cards[0], lead = L && L.lead; if (!lead) return { lead: null, n: 0 }; return { lead, leader: L, n: cards.filter(c => c && leadHits(lead, c)).length } }
 function applyLeader(side) { const L = side.team[0] && side.team[0].card, lead = L && L.lead; if (!lead) return; side.kiBonus = lead.ki || 0; let n = 0
   for (const f of side.team) if (leadHits(lead, f.card)) { n++; f.max = f.hp = Math.round(f.max * (1 + lead.pct / 100)); const k = 1 + lead.pct / 200; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.boosted = 1 }
@@ -748,7 +755,7 @@ export function startBattle(stage) {
       if (e.copyStat) { const best = Math.max(...foe.team.map(g => Math.max(g.pwr, g.ki, g.def))); f.pwr = Math.max(f.pwr, best) }
     }
   }
-  applyLeader(B.you); applyLeader(B.ai)
+  applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4)
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
   sealNow()
   refill(B.you); refill(B.ai)

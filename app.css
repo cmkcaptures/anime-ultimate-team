@@ -3102,3 +3102,12 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 .rift-alert { display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 14px; padding: 10px 14px; border: 0; border-radius: 16px; cursor: pointer; color: #fff; text-align: left; background: linear-gradient(100deg, #5a1aff, #b02aff 55%, #ff3d9a); box-shadow: 0 0 0 3px #fff, 0 0 30px rgba(170,80,255,.6); animation: riftP 1.6s ease-in-out infinite alternate }
 .rift-alert i { width: 54px; height: 54px; flex: none; border-radius: 12px; background-size: cover; background-position: 50% 20%; box-shadow: 0 0 0 2px #fff }
 .rift-alert span { display: grid; gap: 2px; flex: 1 } .rift-alert small { font: 800 11px var(--eUI, Inter); letter-spacing: .1em; color: #ffe0ff } .rift-alert b { font: italic 900 22px/1 var(--eD, 'Barlow Condensed') } .rift-alert em { font: 900 14px var(--eUI, Inter); font-style: normal; letter-spacing: .06em }
+
+/* ================= TEAM AURAS ================= */
+.aurabox { box-shadow: 0 0 0 2px #b07aff inset !important } .aurabox small { display: block; margin-top: 6px; opacity: .75; font-size: 11px }
+.atag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #6a3aff; color: #fff; font-weight: 800; font-size: 12px }
+.tm-auras { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0; padding: 10px 12px; border-radius: 14px; background: rgba(120,70,255,.18); box-shadow: 0 0 0 2px rgba(176,122,255,.5) inset }
+.tm-auras > b { font: 900 13px var(--eUI, Inter); letter-spacing: .1em; color: #d8c4ff; margin-right: 4px }
+.tm-auras .ta { padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.08); font: 800 12px var(--eUI, Inter); color: #cfc4e8 } .tm-auras .ta em { font-style: normal; color: #8a80a8 }
+.tm-auras .ta.on { background: #6a3aff; color: #fff } .tm-auras .ta.on em { color: #ffe27a }
+.tm-auras small { flex-basis: 100%; font-size: 11px; opacity: .7 }

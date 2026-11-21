@@ -1,9 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqn4y3t'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwqn4y3t'
-import * as ACC from './account.js?v=mwqn4y3t'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqn4y3t'
+import { createFX } from './fx2d.js?v=mwqnd7n5'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqnd7n5'
+const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
+import * as ACC from './account.js?v=mwqnd7n5'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqnd7n5'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqn4y3t'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqnd7n5'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -417,6 +418,7 @@ async function cardDetail(key) {
     if (false) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
     if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
     if (c.lead) d.append(h('div', 'movebox leadbox', `<b>👑 LEADER SKILL</b><p>${leadText(c.lead)}</p>`))
+    if (c.aura) { const dd = Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox aurabox', `<b>✦ TEAM AURA</b><p>From any slot: <b>+${AURA_PCT[dd]}%</b> to teammates tagged <span class="atag">${auraTag(c.aura[0])}</span> or <span class="atag">${auraTag(c.aura[1])}</span>.</p><small>Grows with diamonds: 3◆ +3% · 5◆ +5% · 7◆ +10%. Auras stack up to +40% per fighter.</small>`)) }
     d.append(h('div', 'catrow', [ANAME(c.anime), ...(c.cat || [])].map(x => `<span>${x}</span>`).join('')))
     d.append(h('span', 'eyebrow', `MARKET VALUE ~ ${fmt(ST.values[key])} COINS`))
     if (e) {
@@ -505,6 +507,7 @@ PAGES.team = (el) => {
     top.append(t) }
   top.append(h('div', 'tm-pow', `<small>TEAM POWER</small><b>${teamPower(TC).toLocaleString()}</b>`))
   el.append(top)
+  { const AB = teamAuras(TC), n = AB.filter(Boolean).length; if (count) { const row = h('div', 'tm-auras', '<b>✦ TEAM AURAS</b>'); TC.forEach((c, i) => { if (!c) return; const t = h('span', 'ta' + (AB[i] ? ' on' : ''), `${c.name.split(' ')[0]} <em>+${AB[i]}%</em>`); t.title = (c.aura || []).map(auraTag).join(' · '); row.append(t) }); row.append(h('small', '', n ? 'Each card buffs teammates sharing its aura tags. Match tags to stack them.' : 'No aura matches yet: tap a card to see its aura tags.')); el.append(row) } }
   // leader + slots
   const main = h('section', 'tm-main'), L = TC[0]
   const lb = h('button', 'tm-lead tap' + (L ? '' : ' empty')); lb.append(h('span', 'tm-tag', 'LEADER'))
