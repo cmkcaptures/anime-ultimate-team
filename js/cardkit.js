@@ -103,20 +103,13 @@ function cutWorker() { // small pool of workers so several cards process at once
 }
 export function getArt(c) {
   return ARTP[c.id] || (ARTP[c.id] = (async () => {
-    const ck = `v2|${c.key}|${c.mt}${c.nocut ? '|n' : ''}${c.tint ? '|t' + c.tint : ''}`
+    const ck = `v2|${c.key}|${c.mt}${c.nocut ? '|n' : ''}`
     const blob = await idbGet(ck)
     if (blob) return ART[c.id] = await loadImg(URL.createObjectURL(blob))
     // heavy part (decode + background removal) runs in a worker so the game never stutters
     const W = cutWorker()
-    if (W && !c.tint) { try { const r = await new Promise((res, rej) => { const id = ++WID; WJOBS.set(id, { res, rej }); W.postMessage({ id, url: new URL(c.url, location.href).href, nocut: !!c.nocut }) }); idbPut(ck, r.blob); return ART[c.id] = r.bmp } catch { } }
+    if (W) { try { const r = await new Promise((res, rej) => { const id = ++WID; WJOBS.set(id, { res, rej }); W.postMessage({ id, url: new URL(c.url, location.href).href, nocut: !!c.nocut }) }); idbPut(ck, r.blob); return ART[c.id] = r.bmp } catch { } }
     const raw = await loadImg(c.url), can = c.nocut ? (() => { const k = document.createElement('canvas'); k.width = raw.width; k.height = raw.height; k.getContext('2d').drawImage(raw, 0, 0); return k })() : cutout(raw)
-    if (c.tint === 'corrupt') { const x = can.getContext('2d'), w = can.width, hh = can.height
-      const t = document.createElement('canvas'); t.width = w; t.height = hh; const tx = t.getContext('2d'); tx.filter = 'saturate(1.35) contrast(1.25) brightness(.82) hue-rotate(-12deg)'; tx.drawImage(can, 0, 0)
-      x.clearRect(0, 0, w, hh); x.drawImage(t, 0, 0); x.globalCompositeOperation = 'source-atop'
-      x.globalAlpha = .38; x.fillStyle = '#5a0a6a'; x.globalCompositeOperation = 'multiply'; x.fillRect(0, 0, w, hh)
-      x.globalAlpha = .28; x.globalCompositeOperation = 'overlay'; x.fillStyle = '#ff1a3a'; x.fillRect(0, 0, w, hh)
-      const g = x.createRadialGradient(w / 2, hh * .4, Math.min(w, hh) * .25, w / 2, hh * .45, Math.max(w, hh) * .75); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(20,0,25,.75)')
-      x.globalAlpha = 1; x.globalCompositeOperation = 'source-atop'; x.fillStyle = g; x.fillRect(0, 0, w, hh); x.globalCompositeOperation = 'source-over' }
     setTimeout(() => can.toBlob(b => b && idbPut(ck, b), 'image/webp', .9), 1500)
     return ART[c.id] = can
   })())
@@ -133,6 +126,7 @@ export function drawCard(x, d) {
   else if (d.r === 'C') fg = stops(x.createLinearGradient(0, 0, W, H), ['#f3d1a8', '#b07a48', '#5a3418', '#e0b080', '#7a4a24'])
   else if (d.r === 'U') fg = stops(x.createLinearGradient(0, 0, W, H), ['#e6fff6', '#7fe0c0', '#2a7a64', '#c9fff0', '#3a8a74'])
   else fg = stops(x.createLinearGradient(0, 0, W, H), [c3, c1, c2, '#fff', c2, c1, c3])
+  if (d.tint === 'corrupt') fg = stops(x.createConicGradient(.4, W / 2, H / 2), ['#ff1a2e', '#3a0008', '#ff5a5a', '#8a0014', '#ffd0d0', '#ff1a2e', '#2a0006', '#ff3040', '#ff1a2e'])
   rr(0, 0, W, H, 34); x.fillStyle = fg; x.fill()
   x.save(); rr(14, 14, W - 28, H - 28, 22); x.clip()
   if (d.r === 'X') x.fillStyle = stops(x.createLinearGradient(0, 0, W, H), ['#ff7ab8', '#ffd95a', '#7dffb6', '#6ac8ff', '#b78cff', '#ff7ab8'])
@@ -158,6 +152,14 @@ export function drawCard(x, d) {
     const g = o.createLinearGradient(0, 0, dw, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.07, '#000'); g.addColorStop(.93, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)'); o.fillStyle = g; o.fillRect(0, 0, dw, dh)
     x.drawImage(off, ox2, oy2)
   } else x.drawImage(img, ox, oy, dw, dh)
+  if (d.tint === 'corrupt') { x.save(); x.filter = 'none'
+    x.globalCompositeOperation = 'multiply'; x.fillStyle = '#b0102a'; x.fillRect(0, 0, W, AH)
+    x.globalCompositeOperation = 'color'; x.globalAlpha = .45; x.fillStyle = '#7a0020'; x.fillRect(0, 0, W, AH)
+    x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1
+    const v = x.createRadialGradient(W / 2, AH * .45, AH * .2, W / 2, AH * .45, AH * .85); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(25,0,8,.85)'); x.fillStyle = v; x.fillRect(0, 0, W, AH)
+    x.globalCompositeOperation = 'screen' // red foil streaks
+    for (const [p, a] of [[.18, .35], [.42, .22], [.7, .3]]) { const g = x.createLinearGradient(W * p - 120, 0, W * p + 120, AH); g.addColorStop(0, 'rgba(255,40,60,0)'); g.addColorStop(.5, `rgba(255,60,80,${a})`); g.addColorStop(1, 'rgba(255,40,60,0)'); x.fillStyle = g; x.fillRect(0, 0, W, AH) }
+    x.restore() }
   x.filter = 'none'
   if (real) { } else if (d.r === 'X') {
     x.fillStyle = stops(x.createLinearGradient(0, 0, W, H), ['#ff3d9a', '#ffcf2d', '#2dff9a', '#2db4ff', '#9a4dff', '#ff3d9a'])
@@ -286,7 +288,7 @@ const sig = c => ['g1', c.key, c.dia || 0, c.lv || 0, c.maxed || 0, c.ovr, c.nam
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340, prio) {
-  const bw = bucket(w), k = 't11|' + sig(c) + '|' + bw
+  const bw = bucket(w), k = 't12|' + sig(c) + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
