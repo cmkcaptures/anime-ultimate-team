@@ -3039,3 +3039,8 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 .tban b { font-size: 26px !important }
 .cx-on-row { right: 18px !important } .cx-wrap .camp-st .cs-stars { margin-right: 150px }
 @media (max-width: 540px) { .cx-wrap .camp-st .cs-stars { margin-right: 0 } }
+/* tag assist ready: bench glows */
+.ar-bench.tag-ready { position: relative }
+.ar-bench.tag-ready::before { content: "TAG ASSIST READY · SWAP NOW"; position: absolute; left: 50%; top: -22px; transform: translateX(-50%); padding: 2px 10px; border-radius: 999px; background: #22d8ff; color: #04121a; font: 800 10px var(--eUI, Inter); letter-spacing: .12em; white-space: nowrap; animation: tagP 1s ease-in-out infinite alternate }
+.ar-bench.tag-ready .bslot:not(.ko) { box-shadow: 0 0 0 2px #22d8ff, 0 0 14px #22d8ff !important }
+@keyframes tagP { to { box-shadow: 0 0 12px #22d8ff } }

@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpu5f10'
-import { sfx, sfxOn, music } from './sfx.js?v=mwpu5f10'
-import { createFX } from './fx2d.js?v=mwpu5f10'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwpuwsh1'
+import { sfx, sfxOn, music } from './sfx.js?v=mwpuwsh1'
+import { createFX } from './fx2d.js?v=mwpuwsh1'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -236,7 +236,7 @@ const ultOf = c => c.tag ? ['DUO FINISH', 'Both partners strike · double hit'] 
 function ultimate(B, who) {
   const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], a = act(me), d = act(foe)
   if (me.gauge < GAUGE_MAX || a.ko || d.ko) return null
-  me.gauge = 0; me.seq = []
+  me.gauge = 0; me.seq = []; me.ultTurn = B.turn
   const [uname] = ultOf(a.card), ev = { who, art: 'ultimate', move: a.card.mv, ult: uname, hits: [] }
   const base = pctOf(a.card) * 6, stat = Math.max(a.pwr, a.ki), pierce = /Ignores Guard/.test(kitTxt(a.card))
   const H = (t, b, p) => { if (!t.ko) ev.hits.push({ t, ...hit(a, t, b, stat, p || PE(a).pierce, me, foe, 'ult') }) }
@@ -757,7 +757,7 @@ export function startBattle(stage) {
     let tg = a.querySelector('.mtag'); if (!tg) { tg = document.createElement('div'); a.append(tg) } tg.className = 'mtag ' + (mu > 1 ? 'adv' : mu < 1 ? 'weak' : 'none'); tg.textContent = mu > 1 ? 'ADVANTAGE' : mu < 1 ? 'WEAKNESS' : ''
     a.onclick = () => inspect(f, side)
     ov.querySelector('.ar-plate.' + side + ' .pe').innerHTML = `⚡<b>${s.ki}</b><small>/${KI_MAX}</small>`
-    { const bn0 = $a(`.ar-side.${side} .ar-bench`); bn0.classList.toggle('can-swap', side === 'you' && !B.you.switched && !B.busy && !B.over) }
+    { const bn0 = $a(`.ar-side.${side} .ar-bench`); bn0.classList.toggle('can-swap', side === 'you' && !B.you.switched && !B.busy && !B.over); bn0.classList.toggle('tag-ready', side === 'you' && !B.you.switched && !B.over && (B.you.seq.includes('special') || B.you.ultTurn === B.turn)) }
     ov.querySelector('.ar-plate.' + side + ' .pk').innerHTML = s.team.map(g => `<i class="${g.ko ? 'ko' : ''}"></i>`).join('')
     { const p = passives(s), chips = []; if (p.heal) chips.push(`<b class="pc heal">+${p.heal}% HEAL</b>`); if (p.dr) chips.push(`<b class="pc dr">-${p.dr}% DMG TAKEN</b>`); if (p.dmg) chips.push(`<b class="pc dmg">+${p.dmg}% DMG</b>`); if (p.crit) chips.push(`<b class="pc crit">+${p.crit}% CRIT</b>`); if (p.gauge) chips.push(`<b class="pc gg">+${p.gauge}% ULT/TURN</b>`); ov.querySelector('.ar-plate.' + side + ' .pp').innerHTML = chips.join('') }
     const bn = $a(`.ar-side.${side} .ar-bench`), bkey = s.active + '|' + s.team.map(g => g.key + (g.ko ? 'x' : '')).join(',')
@@ -926,7 +926,14 @@ export function startBattle(stage) {
   }
   async function doSwitch(i) {
     if (B.busy || B.over || B.you.switched || B.you.team[i].ko) return
+    const tag = B.you.seq.includes('special') || B.you.ultTurn === B.turn
     B.you.active = i; B.you.switched = true; sfx('bswitch'); log(`Go, ${act(B.you).card.name}!`); draw()
+    if (tag && !act(B.ai).ko) { // TAG ASSIST: tagging in right after a Special or Ultimate = free follow-up hit
+      B.busy = true; controls(); const a = act(B.you), d = act(B.ai)
+      const ev = { who: 'you', art: 'strike', move: 'TAG ASSIST', hits: [{ t: d, ...hit(a, d, 200, Math.max(a.pwr, a.ki), false, B.you, B.ai, 'strike') }] }
+      B.you.gauge = Math.min(GAUGE_MAX, B.you.gauge + 10); log(`TAG ASSIST! ${a.card.name} follows up!`); banner('TAG ASSIST', a.card.name + ' jumps in', '#22d8ff')
+      await show(ev); B.busy = false; if (!B.over) controls()
+    }
   }
   $a('.ar-ult').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); const e = ultimate(B, 'you'); if (e) await show(e); B.busy = false; if (!B.over) controls() }
   const mb = $a('.ar-mute'), mdraw = () => { mb.textContent = sfxOn() ? '🔊 SOUND' : '🔇 MUTED'; mb.classList.toggle('off', !sfxOn()) }
