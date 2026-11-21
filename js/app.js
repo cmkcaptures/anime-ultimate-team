@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqpepy6'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqpepy6'
+import { createFX } from './fx2d.js?v=mwqpo0xs'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqpo0xs'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqpepy6'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqpepy6'
+import * as ACC from './account.js?v=mwqpo0xs'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqpo0xs'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqpepy6'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqpo0xs'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -419,6 +419,7 @@ async function cardDetail(key) {
     if (false) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
     if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
     if (c.lead) d.append(h('div', 'movebox leadbox', `<b>👑 LEADER SKILL</b><p>${leadText(c.lead)}</p>`))
+    { const dd = Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox awkbox' + (dd >= 7 ? ' on' : ''), dd >= 7 ? `<b>✦ AWAKENED ULTIMATE · UNLOCKED</b><p>Ultimate deals <b>+35%</b>, gives <b>+2 Energy</b>, heals <b>15%</b> and plays a full cinematic.</p>` : `<b>✦ AWAKENED ULTIMATE · 🔒 7◆</b><p>Reach 7◆ (${dd}/7) to awaken: Ultimate +35% damage, +2 Energy, heals 15%, full cinematic.</p>`)) }
     if (c.aura) { const dd = Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox aurabox', `<b>✦ TEAM AURA</b><p>From any slot: <b>+${AURA_PCT[dd]}%</b> to teammates tagged <span class="atag">${auraTag(c.aura[0])}</span> or <span class="atag">${auraTag(c.aura[1])}</span>.</p><small>Grows with diamonds: 3◆ +3% · 5◆ +5% · 7◆ +10%. Auras stack up to +40% per fighter.</small>`)) }
     d.append(h('div', 'catrow', [ANAME(c.anime), ...(c.cat || [])].map(x => `<span>${x}</span>`).join('')))
     d.append(h('span', 'eyebrow', `MARKET VALUE ~ ${fmt(ST.values[key])} COINS`))

@@ -3137,3 +3137,23 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 .tm-badge.fb-g { background: #1aa860 !important; color: #fff !important } .tm-badge.fb-y { background: #e0a800 !important; color: #1a0f3a !important } .tm-badge.fb-r { background: #e02a3a !important; color: #fff !important }
 .fit-r { box-shadow: 0 0 0 3px #e02a3a !important } .fit-g { box-shadow: 0 0 0 2px #1aa860 }
 .tm-slotwrap { display: grid; gap: 6px } .tm-swaptip { padding: 6px 8px; border: 0; border-radius: 10px; cursor: pointer; background: #ffcc00; color: #1a0f3a; font: 800 11px var(--eUI, Inter) } .tm-swaptip em { font-style: normal; color: #0a7a3a }
+
+/* ================= AWAKENED ULTIMATE ================= */
+.awk-cut { position: absolute; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; --cc: #ffcc00 }
+.ak-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--cc) 35%, #000), #000 75%); animation: akIn .35s ease-out }
+.ak-streaks { position: absolute; inset: -50%; background: repeating-conic-gradient(from 0deg, transparent 0 4deg, color-mix(in srgb, var(--cc) 60%, transparent) 4.5deg 5deg); opacity: .5; animation: akSpin 2.4s linear infinite }
+.ak-art { position: absolute; left: 50%; top: 50%; width: min(46vh, 70vw); aspect-ratio: 680/952; transform: translate(-50%, -50%) scale(1.6) rotate(-6deg); opacity: 0; filter: drop-shadow(0 0 40px var(--cc)); animation: akArt 2.3s cubic-bezier(.2,.9,.3,1) forwards }
+.ak-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 18px; box-shadow: 0 0 0 4px #fff }
+.ak-flash { position: absolute; inset: 0; background: #fff; opacity: 0 } .awk-cut.hit .ak-flash { animation: akFlash .5s ease-out }
+.ak-txt { position: absolute; left: 0; right: 0; bottom: 9%; display: grid; justify-items: center; gap: 4px; text-align: center; padding: 0 16px; opacity: 0; transform: translateY(30px) }
+.awk-cut.hit .ak-txt { animation: akTxt .45s .15s cubic-bezier(.2,1.5,.4,1) forwards }
+.ak-txt small { font: 900 14px var(--eUI, Inter); letter-spacing: .3em; color: var(--cc); text-shadow: 0 0 14px var(--cc) }
+.ak-txt b { font: italic 900 clamp(38px, 8vw, 92px)/1 var(--eD, 'Barlow Condensed'); color: #fff; -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 0 30px var(--cc), 0 6px 0 var(--cc) }
+.ak-txt span { font: 800 14px var(--eUI, Inter); color: #fff; letter-spacing: .1em }
+.ak-bars i { position: absolute; left: 0; right: 0; height: 11vh; background: #000; z-index: 2 } .ak-bars i:first-child { top: 0; animation: akBarT .35s ease-out } .ak-bars i:last-child { bottom: 0; animation: akBarB .35s ease-out }
+.awk-cut.out { animation: akOut .35s forwards }
+@keyframes akIn { from { opacity: 0 } } @keyframes akSpin { to { transform: rotate(360deg) } }
+@keyframes akArt { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.8) rotate(-8deg) } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-3deg) } 100% { opacity: 1; transform: translate(-50%, -52%) scale(1.08) rotate(0deg) } }
+@keyframes akFlash { 0% { opacity: .9 } 100% { opacity: 0 } } @keyframes akTxt { to { opacity: 1; transform: none } }
+@keyframes akBarT { from { transform: translateY(-100%) } } @keyframes akBarB { from { transform: translateY(100%) } } @keyframes akOut { to { opacity: 0 } }
+.awkbox { box-shadow: 0 0 0 2px rgba(255,204,0,.4) inset !important } .awkbox.on { box-shadow: 0 0 0 2px #ffcc00 inset, 0 0 20px rgba(255,204,0,.35) !important }

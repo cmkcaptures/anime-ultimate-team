@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqpepy6'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqpepy6'
-import { createFX } from './fx2d.js?v=mwqpepy6'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqpo0xs'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqpo0xs'
+import { createFX } from './fx2d.js?v=mwqpo0xs'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -260,7 +260,8 @@ function ultimate(B, who) {
   if (me.gauge < GAUGE_MAX || a.ko || d.ko) return null
   me.gauge = 0; me.seq = []; me.ultTurn = B.turn
   const [uname] = ultOf(a.card), ev = { who, art: 'ultimate', move: a.card.mv, ult: uname, hits: [] }
-  const base = pctOf(a.card) * 6, stat = Math.max(a.pwr, a.ki), pierce = /Ignores Guard/.test(kitTxt(a.card))
+  const awk = !!(a.card.maxed || (a.card.dia || 0) >= 7); if (awk) { ev.awakened = 1; me.ki = Math.min(KI_MAX, me.ki + 2); a.hp = Math.min(a.max, a.hp + Math.round(a.max * .15)) }
+  const base = pctOf(a.card) * 6 * (awk ? 1.35 : 1), stat = Math.max(a.pwr, a.ki), pierce = /Ignores Guard/.test(kitTxt(a.card))
   const H = (t, b, p) => { if (!t.ko) ev.hits.push({ t, ...hit(a, t, b, stat, p || PE(a).pierce, me, foe, 'ult') }) }
   const ea = PE(a)
   if (ea.sacrifice) { for (const t of [d]) H(t, base * ea.sacrifice, true); a.hp = 0; a.ko = true; pasNote(a, 'GATE OF DEATH'); ev.kit = []; a.ultFired = 1; return ev }
@@ -913,6 +914,13 @@ export function startBattle(stage) {
     const [x1, y1] = ctr(from), [x2, y2] = ctr(to), len = Math.hypot(x2 - x1, y2 - y1), ang = Math.atan2(y2 - y1, x2 - x1)
     const b = document.createElement('i'); b.className = 'beam' + (wide ? ' wide' : ''); b.style.cssText = `left:${x1}px;top:${y1}px;width:${len}px;transform:rotate(${ang}rad);--sc:${col}`; FX().append(b); setTimeout(() => b.remove(), 650)
   }
+  async function awakenCut(card, ev, col) {
+    sfx('bcharge'); const c = document.createElement('div'); c.className = 'awk-cut'; c.style.setProperty('--cc', col)
+    c.innerHTML = `<div class="ak-bg"></div><div class="ak-streaks"></div><div class="ak-art"><img alt=""></div><div class="ak-flash"></div>
+      <div class="ak-txt"><small>✦ AWAKENED ULTIMATE ✦</small><b>${ev.move}</b><span>${card.name} · ${card.ver}</span></div><div class="ak-bars"><i></i><i></i></div>`
+    thumbURL(card, 720).then(u => c.querySelector('img').src = u)
+    FX().append(c); await wait(350); sfx('crit'); c.classList.add('hit'); await wait(1900); c.classList.add('out'); await wait(350); c.remove()
+  }
   function cutin(card, move, sub, col, ult, uname) {
     sfx('whoosh')
     const foe = sub === 'ENEMY', c = document.createElement('div'); c.className = 'cut2' + (ult ? ' ult' : '') + (foe ? ' foe' : '')
@@ -1024,7 +1032,7 @@ export function startBattle(stage) {
     atk.style.setProperty('--ac', col)
     const [tx, ty] = ctr(tgtEl), [ax, ay] = ctr(atk)
     // 1) wind-up: specials/ultimates gather energy into the card first
-    if (ev.art === 'ultimate') { ov.classList.add('ult'); sfx('bcharge'); atk.classList.add('charging'); FXC.gather(ax, ay, col, .7, 34); FXC.screen(col, .22, .6); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'ULTIMATE', col, true, ev.ult); await wait(1350) }
+    if (ev.art === 'ultimate') { ov.classList.add('ult'); sfx('bcharge'); atk.classList.add('charging'); FXC.gather(ax, ay, col, .7, 34); FXC.screen(col, .22, .6); if (ev.awakened) { await awakenCut(A.card, ev, col); FXC.rays(ax, ay, col, 24, 1100, 1.8); FXC.screen('#ffffff', .6, .4) } else { cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'ULTIMATE', col, true, ev.ult); await wait(1350) } }
     else if (big) { sfx('bcharge'); atk.classList.add('charging'); FXC.gather(ax, ay, col, .55, 24); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'SPECIAL', col); await wait(1000) }
     // 2) the card itself dashes into the target and slams it
     const reach = ev.art === 'blast' ? .42 : .82
