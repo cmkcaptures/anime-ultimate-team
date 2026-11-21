@@ -40,7 +40,8 @@ export function createFX(host) {
     twk(p, t) { const a = Math.sin(t * Math.PI), s = p.size * (.4 + a * .6); x.save(); x.translate(p.x, p.y); x.fillStyle = rgba('#ffffff', a); x.beginPath(); x.moveTo(0, -s); x.lineTo(s * .12, -s * .12); x.lineTo(s, 0); x.lineTo(s * .12, s * .12); x.lineTo(0, s); x.lineTo(-s * .12, s * .12); x.lineTo(-s, 0); x.lineTo(-s * .12, -s * .12); x.fill(); glow(0, 0, s * 1.4, p.col, a * .5); x.restore() },
     screen(p, t) { x.fillStyle = rgba(p.col, (1 - t) ** 2 * p.a); x.fillRect(0, 0, W, H) },
   }
-  const add = o => { P.push({ life: 0, ...o }); kick() }
+  const LOWFX = innerWidth < 800 || (navigator.hardwareConcurrency || 8) <= 4
+  const add = o => { if (LOWFX && o.k !== 'screen' && o.k !== 'ray' && P.length > 60 && Math.random() < .5) return; if (P.length > 400) return; P.push({ life: 0, ...o }); kick() }
   function dust(cx, cy, col, n, spd, sz) { for (let i = 0; i < n; i++) { const a = R(0, Math.PI * 2), v = R(spd * .3, spd); add({ k: 'dust', x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v * .7, max: R(.5, 1.1), size: R(sz * .5, sz), col }) } }
   return {
     hit(cx, cy, col, power = 1) {

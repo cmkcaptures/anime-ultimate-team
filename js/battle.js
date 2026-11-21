@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqpo0xs'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqpo0xs'
-import { createFX } from './fx2d.js?v=mwqpo0xs'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqpzifo'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqpzifo'
+import { createFX } from './fx2d.js?v=mwqpzifo'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -775,6 +775,7 @@ export function startBattle(stage) {
     }
   }
   if (stage.rules) for (const f of B.ai.team) { const r = { ...stage.rules }; f.pe = { ...(f.pe || {}), ...r, dmg: ((f.pe || {}).dmg || 0) + (r.dmg || 0), dodge: Math.min(60, ((f.pe || {}).dodge || 0) + (r.dodge || 0)), regen: ((f.pe || {}).regen || 0) + (r.regen || 0) }; if (r.endure) f.endure = (f.endure || 0) + r.endure }
+  { const all = [...B.you.team, ...B.ai.team], idle = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 1500 }) : setTimeout(f, 60)); let i = 0; const next = () => { const f = all[i++]; if (!f) return; thumbURL(f.card, 560).catch(() => {}).finally(() => idle(next)) }; setTimeout(() => idle(next), 200) }
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4)
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
   sealNow()
@@ -918,7 +919,7 @@ export function startBattle(stage) {
     sfx('bcharge'); const c = document.createElement('div'); c.className = 'awk-cut'; c.style.setProperty('--cc', col)
     c.innerHTML = `<div class="ak-bg"></div><div class="ak-streaks"></div><div class="ak-art"><img alt=""></div><div class="ak-flash"></div>
       <div class="ak-txt"><small>✦ AWAKENED ULTIMATE ✦</small><b>${ev.move}</b><span>${card.name} · ${card.ver}</span></div><div class="ak-bars"><i></i><i></i></div>`
-    thumbURL(card, 720).then(u => c.querySelector('img').src = u)
+    thumbURL(card, 560).then(u => c.querySelector('img').src = u)
     FX().append(c); await wait(350); sfx('crit'); c.classList.add('hit'); await wait(1900); c.classList.add('out'); await wait(350); c.remove()
   }
   function cutin(card, move, sub, col, ult, uname) {

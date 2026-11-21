@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqpo0xs'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqpo0xs'
+import { createFX } from './fx2d.js?v=mwqpzifo'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT } from './battle.js?v=mwqpzifo'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqpo0xs'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqpo0xs'
+import * as ACC from './account.js?v=mwqpzifo'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqpzifo'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqpo0xs'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqpzifo'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -820,7 +820,8 @@ const bootDone = () => { const o = document.getElementById('boot'); if (o) { o.c
   const hsh = location.hash.slice(1), [name, ...rest] = hsh.split('-')
   go(PAGES[name] ? name : 'home', rest.join('-') || null, { silent: !hsh }); bootDone()
   // warm the rest of your collection in the background (cached forever after)
-  setTimeout(async () => { for (const c of owned().sort((a, b) => b.ovr - a.ovr).slice(0, 80)) { try { await thumbURL(eff(c), 300) } catch { } await new Promise(r => setTimeout(r, 120)) } }, 4000)
+  { const low = innerWidth < 800 || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4, idle = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 2000 }) : setTimeout(f, 200))
+    setTimeout(async () => { for (const c of owned().sort((a, b) => b.ovr - a.ovr).slice(0, low ? 18 : 60)) { await new Promise(r => idle(r)); try { await thumbURL(eff(c), 300) } catch { } } }, low ? 9000 : 5000) }
   setInterval(async () => {
     await refresh()
     if (CUR === 'market' && MS.tab !== 0) { await loadMarket(); if ($('#modal').hidden) rerender() }
