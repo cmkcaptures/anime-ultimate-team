@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqmm0aj'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqmm0aj'
-import { createFX } from './fx2d.js?v=mwqmm0aj'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqmvmxq'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqmvmxq'
+import { createFX } from './fx2d.js?v=mwqmvmxq'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -433,7 +433,7 @@ function teamFrom(main, rating) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['camp', 'CAMPAIGN'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['story', 'STORY'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
+  for (const [k, n] of [['camp', 'CAMPAIGN'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)

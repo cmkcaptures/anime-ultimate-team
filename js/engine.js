@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqmm0aj'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqmvmxq'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -1296,6 +1296,7 @@ async function boot() {
   // newest save wins (cloud vs this device)
   S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
   const f = fresh(); S.profile = { ...f.profile, ...S.profile };
+  { const P = S.profile, MV = { 'Mythic/6a3757dfa1ec3cc09a1a5a0285629427.jpg': 'Epic/ymir fritz.jpg' }; for (const [o, n] of Object.entries(MV)) { const c = P.club.cards; if (c[o]) { if (c[n]) c[n].n = (c[n].n || 1) + (c[o].n || 1); else c[n] = c[o]; delete c[o] } for (const L of [P.team, ...((P.presets || []).map(p => p && p.team || p))]) if (Array.isArray(L)) L.forEach((k, i) => { if (k === o) L[i] = n }); if (P.avatar === o) P.avatar = n } }
   { const P = S.profile; if (P.allBak) { P.club.cards = P.allBak; delete P.allBak } }
   { const g = new URLSearchParams(location.search).get('gift'), P = S.profile; if (g === 'e705e4bd7329' && Date.now() < 1795496511384 && !(P.gifts || {})[g]) { (P.gifts = P.gifts || {})[g] = 1; giveCard('Story/ab4c25df0a27d36e85485d0a795650ad.jpg'); P.last = ['Story/ab4c25df0a27d36e85485d0a795650ad.jpg']; S.savedAt = Date.now() } }
   { const g = new URLSearchParams(location.search).get('gift'), P = S.profile; if (g === '7325c9533d65' && Date.now() < 1795368062184 && !(P.gifts || {})[g]) { (P.gifts = P.gifts || {})[g] = 1; P.coins += 10000000; S.savedAt = Date.now(); setTimeout(save, 500) } if (g) history.replaceState(null, '', location.pathname) }
