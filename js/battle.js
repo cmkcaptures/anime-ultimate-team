@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqxuyzw'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqxuyzw'
-import { createFX } from './fx2d.js?v=mwqxuyzw'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqxwt53'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqxwt53'
+import { createFX } from './fx2d.js?v=mwqxwt53'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -150,10 +150,10 @@ function refill(s) {
   for (let t = 0; t < 3 && !s.hand.some(a => ATTACK_ARTS.includes(a)); t++) { s.hand.shift(); s.hand.push(drawOne(s)) }
 }
 function hit(att, def, base, stat, pierce, A, D, kind) {
-  const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = PE(def)
+  const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = ea.antiKit ? {} : PE(def) // Toji: enemy defensive kit is cancelled
   // defensive dodges / nullifies first
   if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
-  if (def.firstNull > 0) { def.firstNull--; pasNote(def, 'NULLIFIED'); return { dmg: 0, crit: false, mu: 1, miss: 'NULLIFIED' } }
+  if (def.firstNull > 0 && !ea.antiKit) { def.firstNull--; pasNote(def, 'NULLIFIED'); return { dmg: 0, crit: false, mu: 1, miss: 'NULLIFIED' } }
   if (kind === 'ult' && def.ultDodge > 0) { def.ultDodge--; pasNote(def, 'ERASED'); return { dmg: 0, crit: false, mu: 1, miss: 'ERASED' } }
   if (ed.dodge && rnd(A || D) * 100 < ed.dodge) { pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
   if (ea.onePunch && kind === 'strike' && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; def.ko = true; att.kos++; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
@@ -171,6 +171,7 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (ea.vsHigh && def.card.ovr > att.card.ovr) m += ea.vsHigh / 100
   if (ea.vsAnime && def.card.anime === ea.vsAnime) m += ea.vsAnimeB / 100
   if (ea.rika) m += ea.rika / 100 // Rika joins every attack
+  if (ea.blackflash && rnd(A || D) * 100 < ea.blackflash) { m *= 2.5; pasNote(att, "BLACK FLASH") }
   if (ed.weakTo) { if (ed.weakTo.some(t => tagsOf(att.card).includes(t))) { m += (ed.weakB || 50) / 100; att.hitWeak = 1 } else m -= (ed.resist || 0) / 100 }
   if (ea.vsRole && def.card.role === ea.vsRole) m += ea.vsRoleB / 100
   if (ea.vsType && ea.vsType.includes(def.card.t)) m += ea.vsTypeB / 100
@@ -187,8 +188,8 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   dmg *= m
   if (pa.dmg) dmg *= 1 + pa.dmg / 100
   if (pd.dr) dmg *= 1 - pd.dr / 100
-  if (ed.dr) dmg *= 1 - ed.dr / 100
-  if (ed.adapt) dmg *= 1 - Math.min(ed.adaptMax || 30, ed.adapt * def.hitsTaken) / 100
+  if (ed.dr && !ea.trueDmg) dmg *= 1 - ed.dr / 100
+  if (ed.adapt && !ea.trueDmg) dmg *= 1 - Math.min(ed.adaptMax || 30, ed.adapt * def.hitsTaken) / 100
   if (ed.wheel) { const seen = def.wheelSeen || (def.wheelSeen = {}); dmg *= 1 - Math.min(48, 12 * def.hitsTaken) / 100; if (seen[kind]) dmg *= .8; else seen[kind] = 1; if (def.hitsTaken < 4) pasNote(def, def.hitsTaken === 3 ? 'FULLY ADAPTED' : 'WHEEL TURNS · ' + (def.hitsTaken + 1)) }
   if (def.fort) dmg *= .7
   const pierceAll = pierce || ea.pierce || (ea.wheel && att.hitsTaken >= 4) || (kind === 'strike' && ea.pierceStrike) || (kind === 'special' && ea.pierceSpec)
