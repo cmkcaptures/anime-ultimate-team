@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwpwxrg7'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpwxrg7'
-import * as ACC from './account.js?v=mwpwxrg7'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpwxrg7'
+import { createFX } from './fx2d.js?v=mwpx1603'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpx1603'
+import * as ACC from './account.js?v=mwpx1603'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpx1603'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwpwxrg7'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwpx1603'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -115,6 +115,7 @@ const PACKLOOK = {
   AOT: { t: ['ATTACK ON', 'TITAN'], c: ['#e8c890', '#c8a070', '#6a3a1a', '#1a0a04', '#ff6a3d'], set: 'AT' },
   SL: { t: ['SOLO', 'LEVELING'], c: ['#9ad8ff', '#3a6aff', '#1a0a5a', '#05031a', '#b88cff'], set: 'SL' },
   DAN: { t: ['DANDADAN', 'OCCULT'], c: ['#ff9ad0', '#ff3d9a', '#5a0a6a', '#14041a', '#7df9ff'], set: 'DD' },
+  SDS: { t: ['SEVEN DEADLY', 'SINS'], c: ['#ffe27a', '#e0a020', '#6a1a0a', '#160806', '#ff5a3a'], set: 'SDS' },
 }
 const PACKABLE = () => POOL.filter(c => !c.season)
 const packPool = type => { const a = ST.packs[type] && ST.packs[type].anime; return a ? PACKABLE().filter(c => c.anime === a) : PACKABLE() }
