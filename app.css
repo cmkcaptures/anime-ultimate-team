@@ -3028,3 +3028,12 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 .confetti { position: absolute; inset: 0; z-index: 99; pointer-events: none; overflow: hidden } .confetti i { position: absolute; top: -20px; left: var(--x); width: 10px; height: 16px; border-radius: 2px; background: hsl(var(--h), 95%, 60%); animation: conf 2.8s cubic-bezier(.3,.6,.4,1) var(--d) forwards }
 @keyframes conf { to { transform: translateY(110vh) rotate(var(--r)); opacity: .6 } }
 #arena .arena-title { display: none !important }
+
+/* ===== battle declutter: readable popups, banner off the cards ===== */
+.ftag { animation-duration: 2.4s !important; transform-origin: left center }
+@keyframes ftag { 0% { transform: translate(-10%, 8px) scale(.7); opacity: 0 } 10% { transform: translate(-10%, 0) scale(1.06); opacity: 1 } 16% { transform: translate(-10%, 0) scale(1) } 85% { opacity: 1 } 100% { transform: translate(-10%, -8px); opacity: 0 } }
+.pas-pop { animation-duration: 2.6s !important }
+.dmg { animation-duration: 1.9s !important }
+@keyframes dmgPop { 0% { transform: translate(-50%, 20px) scale(.3); opacity: 0 } 10% { transform: translate(-50%, -6px) scale(1.2); opacity: 1 } 18% { transform: translate(-50%, 0) scale(1) } 80% { transform: translate(-50%, -10px); opacity: 1 } 100% { transform: translate(-50%, -34px); opacity: 0 } }
+.tban { top: 10% !important; height: 46px !important; margin-top: 0 !important; animation-duration: 1.2s !important }
+.tban b { font-size: 26px !important }

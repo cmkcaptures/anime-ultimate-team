@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwpjhbjv'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpjhbjv'
-import * as ACC from './account.js?v=mwpjhbjv'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpjhbjv'
+import { createFX } from './fx2d.js?v=mwptqbha'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwptqbha'
+import * as ACC from './account.js?v=mwptqbha'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwptqbha'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwpjhbjv'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwptqbha'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }

@@ -25,7 +25,7 @@ export function createFX(host) {
     flare(p, t) {
       const a = t < .08 ? t / .08 : (1 - t) ** 2, r = p.size * (.6 + ease(t) * .6)
       glow(p.x, p.y, r, p.col, a * .9)
-      const sw = p.size * 4 * (.5 + ease(t)), sh = Math.max(2, p.size * .07 * (1 - t))
+      const sw = p.size * 2 * (.5 + ease(t)), sh = Math.max(2, p.size * .07 * (1 - t))
       const g = x.createLinearGradient(p.x - sw, 0, p.x + sw, 0); g.addColorStop(0, rgba(p.col, 0)); g.addColorStop(.5, rgba('#ffffff', a)); g.addColorStop(1, rgba(p.col, 0))
       x.fillStyle = g; x.fillRect(p.x - sw, p.y - sh / 2, sw * 2, sh)
     },
@@ -45,9 +45,9 @@ export function createFX(host) {
   return {
     hit(cx, cy, col, power = 1) {
       add({ k: 'flare', x: cx, y: cy, max: .35 + power * .12, size: 60 + 40 * power, col })
-      add({ k: 'ring', x: cx, y: cy, max: .45 + power * .1, size: 90 + 70 * power, w: 3, col: '#ffffff' })
-      if (power > 1.1) add({ k: 'ring', x: cx, y: cy, max: .6, delay: .05, size: 140 + 90 * power, w: 2, col })
-      if (power > 1.5) add({ k: 'ring', x: cx, y: cy + 40, max: .7, size: 320 * power, w: 2, col, flat: .28 })
+      add({ k: 'ring', x: cx, y: cy, max: .45 + power * .1, size: 55 + 30 * power, w: 3, col: '#ffffff' })
+      if (power > 1.1) add({ k: 'ring', x: cx, y: cy, max: .6, delay: .05, size: 80 + 40 * power, w: 2, col })
+      if (power > 1.5) add({ k: 'ring', x: cx, y: cy + 40, max: .7, size: 130 * power, w: 2, col, flat: .3 })
       dust(cx, cy, col, Math.round(8 + 10 * power), 260 + 120 * power, 7 + 3 * power)
     },
     gather(cx, cy, col, dur = .55, n = 26) { for (let i = 0; i < n; i++) { const a = R(0, Math.PI * 2), d = R(120, 260); add({ k: 'gather', x: cx, y: cy, sx: cx + Math.cos(a) * d, sy: cy + Math.sin(a) * d, max: dur, delay: R(0, .15), size: R(5, 10), col }) } add({ k: 'flare', x: cx, y: cy, max: dur + .2, delay: dur * .6, size: 70, col }) },
