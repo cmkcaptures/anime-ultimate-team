@@ -3092,3 +3092,13 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 
 /* series pack pity */
 .pity { margin-top: 4px; font: 800 12px var(--eUI, Inter); color: #ffd45a; letter-spacing: .04em } .pity b { color: #fff }
+
+/* ================= VILLAIN CAMPAIGN + RIFTS ================= */
+.rift-ic { width: 110px; height: 140px; flex: none; border-radius: 16px; background-size: cover; background-position: 50% 20%; box-shadow: 0 0 0 3px #fff, 0 0 24px #b07aff }
+.villain-hero { background: linear-gradient(135deg, #2a0618, #120318 60%, #3a0a10) !important; box-shadow: 0 0 0 3px #ff3d6a, 0 0 30px rgba(255,40,80,.35) !important }
+.rift-hero { background: radial-gradient(120% 120% at 80% 20%, #5a1aff, #12062a 60%) !important }
+.rift-hero.open { animation: riftP 2s ease-in-out infinite alternate } @keyframes riftP { to { box-shadow: 0 0 0 3px #b07aff, 0 0 50px rgba(150,80,255,.7) } }
+.rift-t { margin-top: 8px; font: 800 13px var(--eUI, Inter); letter-spacing: .08em; color: #d8c4ff } .rift-t b { color: #fff }
+.rift-alert { display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 14px; padding: 10px 14px; border: 0; border-radius: 16px; cursor: pointer; color: #fff; text-align: left; background: linear-gradient(100deg, #5a1aff, #b02aff 55%, #ff3d9a); box-shadow: 0 0 0 3px #fff, 0 0 30px rgba(170,80,255,.6); animation: riftP 1.6s ease-in-out infinite alternate }
+.rift-alert i { width: 54px; height: 54px; flex: none; border-radius: 12px; background-size: cover; background-position: 50% 20%; box-shadow: 0 0 0 2px #fff }
+.rift-alert span { display: grid; gap: 2px; flex: 1 } .rift-alert small { font: 800 11px var(--eUI, Inter); letter-spacing: .1em; color: #ffe0ff } .rift-alert b { font: italic 900 22px/1 var(--eD, 'Barlow Condensed') } .rift-alert em { font: 900 14px var(--eUI, Inter); font-style: normal; letter-spacing: .06em }

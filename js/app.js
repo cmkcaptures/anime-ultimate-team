@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwqmcy3w'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwqmcy3w'
-import * as ACC from './account.js?v=mwqmcy3w'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqmcy3w'
+import { createFX } from './fx2d.js?v=mwqmm0aj'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwqmm0aj'
+import * as ACC from './account.js?v=mwqmm0aj'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqmm0aj'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqmcy3w'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqmm0aj'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -247,6 +247,7 @@ setInterval(() => {
 // ================= HOME =================
 let homeIdx = 0
 PAGES.home = (el) => {
+  { const R = ST.rift; if (R && R.open && !R.done) { const inv = POOL.filter(c => c.name === R.invader).sort((a, b) => b.ovr - a.ovr)[0], b = h('button', 'rift-alert', `<i style="background-image:url('${inv ? inv.url : ''}')"></i><span><small>🌀 DIMENSIONAL RIFT · CLOSES IN ${Math.max(1, Math.ceil((R.closes - Date.now()) / 60000))} MIN</small><b>${R.title.toUpperCase()}!</b></span><em>SEAL IT ›</em>`); b.onclick = () => { try { sessionStorage.setItem('bmode', 'rift') } catch { } go('battle') }; el.append(b) } }
   const B = ST.banner, partner = P.avatar && BYKEY[P.avatar], feat = partner || (B ? BYKEY[B.featured[0]] : POOL.slice().sort((a, b) => b.ovr - a.ovr)[0])
   const lob = h('section', 'lobby')
   // featured sticker card

@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqmcy3w'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqmm0aj'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -716,6 +716,73 @@ const CAMPAIGN = [
         ['ICHIGO', '(from the other side) Hey! Is anyone over there?! Something just came out of the rift into Soul Society!']] },
   ] },
 ]
+// ---------- VILLAIN CAMPAIGN ----------
+const VCAMP = { name: 'The Dark Alliance', sub: 'Villain Campaign · Every world\'s villains unite', boss: 'AIZEN', stages: [
+  { n: 1, name: 'The Covenant Moves', coins: 2500, enemy: ['KAKASHI', 'ZORO', 'BAKUGO', 'MEGUMI', 'GOHAN', 'YAMAMOTO'],
+    scene: [['MADARA', 'They sealed Kisame yesterday. Orochimaru the day before. The heroes of every world have joined hands. They call it the Covenant of Light.'],
+      ['FRIEZA', 'How dramatic. Heroes holding hands across universes. I may be sick.'],
+      ['MADARA', 'Laugh while you can. Your name is on their list too.'],
+      ['FRIEZA', '...Fine. Point me at the first monkey.']],
+    outro: [['FRIEZA', 'Ohoho. They bleed just like everyone else.'], ['MADARA', 'Don\'t celebrate. Those were scouts.']] },
+  { n: 2, name: 'King of Curses', coins: 3000, enemy: ['ITADORI', 'YUTA', 'DEKU', 'SASUKE', 'MINATO', 'KENPACHI'],
+    scene: [['SUKUNA', 'You want my help, Uchiha? Amusing.'],
+      ['MADARA', 'I want your hatred. The brat who carries you is leading their vanguard.'],
+      ['SUKUNA', 'Itadori. So the vessel plays hero again. Fine. I will carve him out of my way.']],
+    outro: [['SUKUNA', 'Pathetic. Even together, they hesitate before every killing blow.'], ['MADARA', 'That hesitation is the only weapon we need.']] },
+  { n: 3, name: 'The Demon\'s Bargain', coins: 3500, enemy: ['TANJIRO', 'RENGOKU', 'GIYU', 'URAHARA', 'ENDEAVOR', 'SHANKS'],
+    scene: [['MUZAN', 'You came for an alliance? I have no allies. Only subordinates.'],
+      ['ALL FOR ONE', 'How refreshing. A man who understands what power is for.'],
+      ['MUZAN', 'The Kamado boy has followed me across worlds. Kill him, and I will consider your offer.'],
+      ['ALL FOR ONE', 'Consider it done. I so enjoy breaking a hopeful young face.']],
+    outro: [['MUZAN', 'The boy with the earrings still breathes.'], ['ALL FOR ONE', 'Then he will live long enough to watch the rest of it fall.']] },
+  { n: 4, name: 'Gods Take Sides', coins: 4000, enemy: ['BEERUS', 'WHIS', 'JIREN', 'VEGETA', 'GOHAN', 'ALL MIGHT'],
+    scene: [['AIZEN', 'Madara. Your little rebellion has drawn the attention of gods.'],
+      ['BEERUS', 'Someone is shaking every universe at once. It\'s ruining my nap.'],
+      ['WHIS', 'Lord Beerus, these appear to be the villains of several worlds. Working together.'],
+      ['BEERUS', 'Then I\'ll destroy them together. Efficient.'],
+      ['FRIEZA', '...Of course it\'s him.']],
+    outro: [['BEERUS', 'Hmph. You lot are more annoying than you look. Whis, we\'re leaving.'], ['WHIS', 'Leaving? My lord, you lost.'], ['BEERUS', 'I allowed it.'],
+      ['AIZEN', 'Interesting. The gods withdrew. Which means someone asked them to come.']] },
+  { n: 5, name: 'Where the Light Gathers', coins: 5000, enemy: ['NARUTO', 'ICHIGO', 'LUFFY', 'ALL MIGHT', 'SASUKE', 'DEKU'],
+    scene: [['MADARA', 'The Covenant\'s leaders. Uzumaki. Kurosaki. Monkey D. Luffy.'],
+      ['NARUTO', 'Madara! We don\'t even want this fight. Somebody told us you were going to burn every world down!'],
+      ['MADARA', 'Somebody?'],
+      ['ICHIGO', 'A Soul Reaper captain. Said he saw it with his own eyes.'],
+      ['AIZEN', '(smiling) Ah. I did say that, didn\'t I.'],
+      ['LUFFY', 'Wait. Who\'s the creepy guy with the hair?']],
+    outro: [['NARUTO', 'You... you used both sides.'],
+      ['AIZEN', 'I used everyone. Heroes to cull the villains. Villains to break the heroes. And now, only one remains standing.'],
+      ['MADARA', 'You think you can stand above all of us?'],
+      ['AIZEN', 'I have always stood above you. You simply never looked up.']] },
+  { n: 6, name: 'The One Above All', coins: 8000, boss: 1, enemy: ['AIZEN', 'GOJO', 'GOKU', 'ICHIGO', 'JIREN', 'SHANKS'],
+    scene: [['SUKUNA', 'The Six Eyes brat. Standing guard for a man with a sword. How far the strongest has fallen.'],
+      ['AIZEN', 'Kyoka Suigetsu shows them a world where you have already won. They fight to stop a future that does not exist.'],
+      ['FRIEZA', 'So we have to beat the strongest heroes of every world AND the smug one.'],
+      ['MADARA', 'Yes.'],
+      ['FRIEZA', '...I hate this alliance.'],
+      ['SUKUNA', 'Stop whining, lizard. I have wanted to fight Gojo again since the day I woke up.']],
+    outro: [['AIZEN', 'Impossible... villains... standing together?'],
+      ['MADARA', 'Not together. We simply refuse to be anyone\'s pieces.'],
+      ['SUKUNA', 'The heroes are waking up. Shall we kill them while they\'re dazed?'],
+      ['MADARA', '...No. Let them remember who saved their worlds today. That will hurt them far more.'],
+      ['FRIEZA', 'Ohoho. Now THAT is villainy.']] },
+] }
+function vcampP() { const P = S.profile; return P.vcamp || (P.vcamp = { stars: {} }) }
+// ---------- DIMENSIONAL RIFTS ----------
+// a rift opens for 90 minutes at the start of every 3-hour block; same schedule for everyone
+const RIFT_BLOCK = 3 * 3600e3, RIFT_OPEN = 90 * 60e3
+const RIFTS = [
+  { invader: 'SUKUNA', world: 'OP', place: 'Wano', title: 'Sukuna has invaded Wano' },
+  { invader: 'MADARA', world: 'BLE', place: 'Soul Society', title: 'Madara has torn into Soul Society' },
+  { invader: 'FRIEZA', world: 'JJK', place: 'Shibuya', title: 'Frieza has landed in Shibuya' },
+  { invader: 'MUZAN', world: 'NAR', place: 'the Hidden Leaf', title: 'Muzan stalks the Hidden Leaf' },
+  { invader: 'AIZEN', world: 'DBZ', place: 'Planet Namek', title: 'Aizen has reached Namek' },
+  { invader: 'ALL FOR ONE', world: 'DS', place: 'the Infinity Castle', title: 'All For One breaches the Infinity Castle' },
+  { invader: 'KAIDO', world: 'MHA', place: 'U.A. High', title: 'Kaido crashes into U.A. High' },
+  { invader: 'MERUEM', world: 'BC', place: 'the Clover Kingdom', title: 'Meruem marches on the Clover Kingdom' },
+]
+function riftNow(t = Date.now()) { const id = Math.floor(t / RIFT_BLOCK), start = id * RIFT_BLOCK, R = RIFTS[((id * 7) % RIFTS.length + RIFTS.length) % RIFTS.length]
+  return { id, ...R, opens: start, closes: start + RIFT_OPEN, next: start + RIFT_BLOCK, open: t < start + RIFT_OPEN, done: !!((S.profile.rifts || {})[id]) } }
 const CAMP_CHEST = [{ at: 9, coins: 5000, pack: 'jumbo' }, { at: 18, coins: 10000, pack: 'premium', shards: 2000 }]
 function campP() { const P = S.profile; return P.camp || (P.camp = { stars: {}, chests: [] }) }
 // ---------- TOWER / ARCS / EVENTS ----------
@@ -996,6 +1063,25 @@ function act(a) {
         P.tower.best = n; P.coins += T.coins; if (T.pack) P.pending[T.pack] = (P.pending[T.pack] || 0) + 1
         return { msg: `Floor ${n} cleared! +${T.coins.toLocaleString()} coins${T.pack ? ' and a ' + PACKS[T.pack].name : ''}.` }
       }
+      if (a.mode === 'villain') {
+        const n = +a.id, st = VCAMP.stages.find(s => s.n === n), C = vcampP(); if (!st) return { error: 'Unknown stage.' }
+        if (n > 1 && !(C.stars[n - 1] > 0)) return { error: 'Stage locked.' }
+        if (!a.won) { addXP(10); return {} }
+        const got = 1 + ((a.ko || 0) <= 1 ? 1 : 0) + ((a.turns || 99) <= 12 ? 1 : 0), had = C.stars[n] || 0; C.stars[n] = Math.max(had, got); addXP(had ? 20 : 80)
+        if (had) { P.coins += 400; return { msg: '★'.repeat(got) + ' Replayed. +400 coins.' } }
+        P.coins += st.coins; let extra = ''
+        if (st.boss) { P.pending.premium = (P.pending.premium || 0) + 2; P.shards = (P.shards || 0) + 3000; P.tickets = (P.tickets || 0) + 5; extra = ', 2 Premium Drops, ◆3,000 shards and 5 Training Tickets' }
+        return { msg: `${'★'.repeat(got)} ${st.name} cleared! +${st.coins.toLocaleString()} coins${extra}.` }
+      }
+      if (a.mode === 'rift') {
+        const R = riftNow(); if (+a.id !== R.id || !R.open) return { error: 'This rift has closed.' }
+        if (R.done) return { error: 'You already sealed this rift.' }
+        if (!a.won) { addXP(10); return {} }
+        ;(P.rifts = P.rifts || {})[R.id] = 1; for (const k of Object.keys(P.rifts)) if (+k < R.id - 20) delete P.rifts[k]
+        P.coins += 8000; P.shards = (P.shards || 0) + 1500; P.pending.premium = (P.pending.premium || 0) + 1; addXP(100)
+        const bonus = Math.random() < .25; if (bonus) P.pending.premium++
+        return { msg: `Rift sealed! +8,000 coins, ◆1,500 shards and ${bonus ? '2 Premium Drops (lucky!)' : 'a Premium Drop'}.` }
+      }
       if (a.mode === 'camp') {
         const hard = String(a.id).startsWith('H'), [ci, si] = String(a.id).replace(/^H/, '').split(':').map(Number), ch = CAMPAIGN.find(c => c.id === ci), st = ch && ch.stages.find(s => s.n === si); if (!st) return { error: 'Unknown stage.' }
         const C = campP()
@@ -1179,7 +1265,7 @@ function state() {
     raid: { ...raidNow(), me: raidP() },
     presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
-    camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST,
+    camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST, vcamp: VCAMP, vcampP: vcampP(), rift: riftNow(),
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }

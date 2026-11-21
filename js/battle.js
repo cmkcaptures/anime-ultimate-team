@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqmcy3w'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqmcy3w'
-import { createFX } from './fx2d.js?v=mwqmcy3w'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqmm0aj'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqmm0aj'
+import { createFX } from './fx2d.js?v=mwqmm0aj'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -433,7 +433,7 @@ function teamFrom(main, rating) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['camp', 'CAMPAIGN'], ['raid', 'RAID'], ['story', 'STORY'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
+  for (const [k, n] of [['camp', 'CAMPAIGN'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['story', 'STORY'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -589,6 +589,43 @@ function campTeam(specs) {
   return out
 }
 const CHARD = {}
+function villainPage(el, ok) {
+  { let pend = null; try { pend = JSON.parse(sessionStorage.getItem('vOutro') || 'null') } catch { }
+    if (pend) { sessionStorage.removeItem('vOutro'); const C0 = X.ST().vcampP || { stars: {} }, st0 = X.ST().vcamp.stages.find(s => s.n === pend.s); if (st0 && st0.outro && (C0.stars[pend.s] || 0) > 0 && !pend.had) setTimeout(() => scene(st0.outro, 'AFTER · ' + st0.name, null, () => X.go('battle')), 300) } }
+  const { h } = X, ST = X.ST(), V = ST.vcamp, C = ST.vcampP || { stars: {} }, boss = X.POOL.filter(c => c.name === V.boss).sort((a, b) => b.ovr - a.ovr)[0]
+  el.append(h('section', 'bhero camp-hero villain-hero', `<div><span class="sh-tag">${V.sub.toUpperCase()}</span><h2>😈 ${V.name.toUpperCase()}</h2><p>Play the story from the villains' side. <b>Villain cards on your team get +15% stats</b> in this campaign. Beat the final stage for 2 Premium Drops, ◆3,000 shards and 5 Training Tickets.</p></div><div class="bstat"><b>${Object.values(C.stars).reduce((n, v) => n + v, 0)}</b><span>/ 18 STARS</span></div>`))
+  const list = h('div', 'camp-list')
+  for (const st of V.stages) {
+    const s = C.stars[st.n] || 0, open = st.n === 1 || (C.stars[st.n - 1] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
+    const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>V-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${st.enemy.join(', ')}</em></span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
+    row.disabled = !ok || !open
+    row.onclick = () => scene(st.scene, 'V-' + st.n + ' · ' + st.name, foe && foe.url, () => {
+      try { sessionStorage.setItem('vOutro', JSON.stringify({ s: st.n, had: s > 0 })) } catch { }
+      go2({ mode: 'villain', id: st.n, label: 'Villains · ' + st.name, name: st.name, level: st.boss ? 5 : Math.min(5, 2 + Math.floor(st.n / 2)), boost: (st.boss ? 1.45 : 1.15 + st.n * .05), youCat: 'Villains', team: campTeam(st.enemy) })
+    })
+    list.append(row)
+  }
+  el.append(list)
+}
+const fmtT = ms => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? h + 'h ' + m + 'm' : m + 'm ' + (s % 60) + 's' }
+function riftTeam(R) {
+  const inv = campTeam([R.invader]), used = new Set(inv)
+  const locals = X.POOL.filter(c => c.anime === R.world && !used.has(c.key)).sort((a, b) => ((b.cat || []).includes('Villains') - (a.cat || []).includes('Villains')) || b.ovr - a.ovr)
+  const out = inv.slice(); for (const c of locals) { if (out.length >= 6) break; if (!out.some(k => X.BYKEY[k].name === c.name)) out.push(c.key) }
+  return out
+}
+function riftPage(el, ok) {
+  const { h } = X, R = X.ST().rift; if (!R) return
+  const inv = X.POOL.filter(c => c.name === R.invader).sort((a, b) => b.ovr - a.ovr)[0], now = Date.now()
+  const box = h('section', 'bhero rift-hero' + (R.open ? ' open' : ''), `<div><span class="sh-tag">🌀 DIMENSIONAL RIFT</span><h2>${R.open ? R.title.toUpperCase() : 'NO RIFT OPEN'}</h2><p>${R.open ? `A villain has broken through into ${R.place}. Seal the rift before it closes: <b>8,000 coins, ◆1,500 shards and a Premium Drop</b> (25% chance of a second one). One clear per rift.` : 'Rifts tear open every 3 hours and stay open for 90 minutes. Check back soon.'}</p><p class="rift-t">${R.open ? (R.done ? '✓ SEALED · closes in ' : '⏳ CLOSES IN ') + '<b>' + fmtT(R.closes - now) + '</b>' : 'NEXT RIFT IN <b>' + fmtT(R.next - now) + '</b>'}</p></div><div class="rift-ic" style="background-image:url('${inv ? inv.url : ''}')"></div>`)
+  el.append(box)
+  if (R.open && !R.done) {
+    const team = riftTeam(R), b = h('button', 'btn gold big', '⚔️ SEAL THE RIFT'); b.disabled = !ok
+    b.onclick = () => go2({ mode: 'rift', id: R.id, label: 'Rift · ' + R.place, name: R.title, level: 5, boost: 1.4, team })
+    el.append(b)
+    { const cb = cxBtn(() => team.map(k => X.BYKEY[k]), 'Rift · ' + R.title); el.append(cb) }
+  }
+}
 function campPage(el, ok) {
   { let pend = null; try { pend = JSON.parse(sessionStorage.getItem('campOutro') || 'null') } catch { }
     if (pend) { sessionStorage.removeItem('campOutro'); const C0 = X.ST().campP || { stars: {} }; const ch0 = X.ST().camp.find(c => c.id === pend.c), st0 = ch0 && ch0.stages.find(s => s.n === pend.s)
@@ -660,12 +697,13 @@ function eventPage(el, ok) {
 }
 export function battlePage(el) {
   const { h, P } = X
+  try { const m = sessionStorage.getItem('bmode'); if (m) { sessionStorage.removeItem('bmode'); MODE = m } } catch { }
   const prog = (P.battle && P.battle.cleared) || 0
   const team = P.team.filter(Boolean)
   modeTabs(el)
   if (MODE !== 'story') {
     if (team.length < 6) { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
-    return (MODE === 'raid' ? raidPage : MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
+    return (MODE === 'villain' ? villainPage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
   }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)
@@ -695,6 +733,7 @@ export function startBattle(stage) {
   PASLOG = []
   { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
   if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * .88); f.ki = Math.round(f.ki * .88); f.def = Math.round(f.def * 1.15) }
+  if (stage.youCat) for (const f of B.you.team) if ((f.card.cat || []).includes(stage.youCat)) for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.15)
   if (stage.boost && stage.boost !== 1) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boost); for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * (1 + (stage.boost - 1) * .6)) }
   for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) {
     for (const f of me.team) {
