@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqr2yzk'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqr2yzk'
+import { createFX } from './fx2d.js?v=mwqr7zw2'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqr7zw2'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqr2yzk'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqr2yzk'
+import * as ACC from './account.js?v=mwqr7zw2'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqr7zw2'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqr2yzk'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqr7zw2'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -72,7 +72,7 @@ function toast(text, kind = 'ok') {
 const LAZY = 'IntersectionObserver' in window ? new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) { LAZY.unobserve(e.target); e.target._draw() } }, { rootMargin: '300px' }) : null
 function cardImg(c, w = 340) {
   const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, grade ${gradeOf(c.ovr)}`; im.decoding = 'async'; im.draggable = false
-  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r; if (c.sig) im.dataset.sig = 1; if (c.maxed) im.dataset.max = 1
+  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r; if (c.key) im.dataset.key = c.key; if (c.sig) im.dataset.sig = 1; if (c.maxed) im.dataset.max = 1
   im._draw = () => thumbURL(c, w).then(u => im.src = u)
   if (LAZY) { LAZY.observe(im); setTimeout(() => { if (!im.src && im.isConnected && im.getBoundingClientRect().top < innerHeight + 300) { LAZY.unobserve(im); im._draw() } }, 50) } else im._draw()
   return im
@@ -403,6 +403,14 @@ function segmented(labels, on, pick) {
 }
 
 // ---- card detail sheet ----
+// press-and-hold (or right-click) any card to open its full profile
+{ let t = null, sx = 0, sy = 0, fired = false
+  const cardAt = e => { const im = e.target.closest && e.target.closest('img[data-key]'); return im && im.dataset.key }
+  addEventListener('pointerdown', e => { const k = cardAt(e); if (!k || document.getElementById('opener') || document.querySelector('#arena')) return; fired = false; sx = e.clientX; sy = e.clientY; clearTimeout(t); t = setTimeout(() => { fired = true; if (navigator.vibrate) navigator.vibrate(15); cardDetail(k) }, 480) }, true)
+  addEventListener('pointermove', e => { if (t && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) { clearTimeout(t); t = null } }, true)
+  for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, () => { clearTimeout(t); t = null }, true)
+  addEventListener('click', e => { if (fired) { fired = false; e.preventDefault(); e.stopPropagation() } }, true)
+  addEventListener('contextmenu', e => { const k = cardAt(e); if (!k || document.getElementById('opener')) return; e.preventDefault(); clearTimeout(t); cardDetail(k) }, true) }
 async function cardDetail(key) {
   const base = BYKEY[key]; if (!base) return
   const c = eff(base), e = club()[key], inTeam = P.team.includes(key), spare = e ? e.n - (inTeam ? 1 : 0) : 0, lvl = e ? e.lvl || 0 : 0
