@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqlnn0p'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqls9ox'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -293,10 +293,17 @@ function fusionRecipes() {
 const ITEMS = {
   senzu: { name: 'SENZU BEAN', anime: 'DBZ', art: 'items/senzu.jpg', cost: 2, desc: 'Fully heals your active fighter and clears burn and freeze.' },
   cylinder: { name: 'MAGIC CYLINDER', anime: 'YGO', art: 'items/cylinder.jpg', cost: 2, desc: 'Trap: the next attack on your active fighter is sent straight back at the attacker.' },
+  rumble: { name: "RUMBLE BALL", anime: 'OP', art: 'items/rumble.jpg', cost: 2, desc: "Chopper's Rumble Ball: heals your active fighter 35% and their next attack deals +25%." },
+  finger: { name: "CURSED FINGER", anime: 'JJK', art: 'items/finger.jpg', cost: 1, desc: "Sukuna's finger: your next attack deals +60%, but your fighter loses 10% HP." },
+  deathnote: { name: "DEATH NOTE", anime: 'DN', art: 'items/deathnote.jpg', cost: 3, desc: "Write their name: the enemy's active fighter is KO'd after 3 of their turns unless they Cleanse." },
+  hogyoku: { name: "HOGYOKU", anime: 'BLE', art: 'items/hogyoku.jpg', cost: 2, desc: "The Hogyoku evolves its holder: survives the next KO and gains +15% PWR, ENG and DEF." },
+  wing: { name: "RAINBOW WING", anime: 'PKM', art: 'items/wing.jpg', cost: 3, desc: "Ho-Oh's Rainbow Wing: brings back your first KO'd fighter at 40% HP." },
+  scroll: { name: "SEALING SCROLL", anime: 'NAR', art: 'items/scroll.jpg', cost: 2, desc: "Seals the enemy active fighter's passive ability." },
+  clock: { name: "TIME MAGIC CLOCK", anime: 'BC', art: 'items/clock.jpg', cost: 3, desc: "Julius's Time Magic: the enemy loses their next turn." },
 }
 const ITEM_MAX = 2
-function itemsP() { const P = S.profile; if (!P.items) P.items = { senzu: 1, cylinder: 1 }; return P.items }
-const DECK_SIZE = 20, DECK_MAX = { strike: 10, blast: 10, guard: 5, special: 4, burst: 3, charge: 3, transfer: 3, heal: 3, cleanse: 3, senzu: 1, cylinder: 1 }, TACTICS = ['burst', 'charge', 'transfer', 'heal', 'cleanse']
+function itemsP() { const P = S.profile; if (!P.items) P.items = { senzu: 1, cylinder: 1 }; if (!P.itemGift1) { P.itemGift1 = 1; for (const k of ['rumble', 'finger', 'deathnote', 'hogyoku', 'wing', 'scroll', 'clock']) P.items[k] = Math.max(1, P.items[k] || 0) } return P.items }
+const DECK_SIZE = 20, DECK_MAX = { strike: 10, blast: 10, guard: 5, special: 4, burst: 3, charge: 3, transfer: 3, heal: 3, cleanse: 3, senzu: 1, cylinder: 1, rumble: 1, finger: 1, deathnote: 1, hogyoku: 1, wing: 1, scroll: 1, clock: 1 }, TACTICS = ['burst', 'charge', 'transfer', 'heal', 'cleanse']
 const STARTER_DECKS = [
   { name: 'Balanced', c: { strike: 8, blast: 6, guard: 3, special: 3 } },
   { name: 'Dragon Burst', c: { strike: 6, blast: 5, guard: 2, special: 2, burst: 3, transfer: 2 } },

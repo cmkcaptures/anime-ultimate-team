@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwqlnn0p'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwqlnn0p'
-import * as ACC from './account.js?v=mwqlnn0p'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqlnn0p'
+import { createFX } from './fx2d.js?v=mwqls9ox'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwqls9ox'
+import * as ACC from './account.js?v=mwqls9ox'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqls9ox'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqlnn0p'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqls9ox'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -1649,7 +1649,7 @@ const DECK_INFO = {
   strike: ['STRIKE', 'Physical hit using PWR. Cheap, chains into combos.', 1], blast: ['BLAST', 'Energy blast using ENG. Hits harder than a Strike.', 2], guard: ['GUARD', 'Halves the next hit you take.', 1], special: ['SPECIAL', "Your active fighter's signature move.", 4],
   burst: ['BURST', 'Spend ALL your Energy on one huge hit. Field 3+ Dragons for Dragon Fury (+50%).', 'ALL'], charge: ['POWER CHARGE', 'Your next attack deals +35%. Stack them for a one-card carry.', 1],
   transfer: ['ENERGY LINK', 'Your bench feeds you +2 Energy.', 0], heal: ['RECOVER', 'Heal your active fighter 18%.', 2], cleanse: ['CLEANSE', 'Remove burn and freeze, and Guard up.', 1],
-  senzu: ['SENZU BEAN', 'Fully heals your active fighter and clears burn and freeze.', 2], cylinder: ['MAGIC CYLINDER', 'Trap: the next attack on your fighter bounces back at the attacker.', 2] }
+  senzu: ['SENZU BEAN', 'Fully heals your active fighter and clears burn and freeze.', 2], cylinder: ['MAGIC CYLINDER', 'Trap: the next attack on your fighter bounces back at the attacker.', 2], rumble: ["RUMBLE BALL", "Chopper's Rumble Ball: heals your active fighter 35% and their next attack deals +25%.", 2], finger: ["CURSED FINGER", "Sukuna's finger: your next attack deals +60%, but your fighter loses 10% HP.", 1], deathnote: ["DEATH NOTE", "Write their name: the enemy's active fighter is KO'd after 3 of their turns unless they Cleanse.", 3], hogyoku: ["HOGYOKU", "The Hogyoku evolves its holder: survives the next KO and gains +15% PWR, ENG and DEF.", 2], wing: ["RAINBOW WING", "Ho-Oh's Rainbow Wing: brings back your first KO'd fighter at 40% HP.", 3], scroll: ["SEALING SCROLL", "Seals the enemy active fighter's passive ability.", 2], clock: ["TIME MAGIC CLOCK", "Julius's Time Magic: the enemy loses their next turn.", 3] }
 PAGES.deck = (el) => {
   if (DK.i == null) DK.i = ST.deckOn
   const D = ST.decks[DK.i]; if (!DK.c) { DK.c = { ...D.c }; DK.name = D.name }

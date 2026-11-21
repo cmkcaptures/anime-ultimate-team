@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqlnn0p'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqlnn0p'
-import { createFX } from './fx2d.js?v=mwqlnn0p'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqls9ox'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqls9ox'
+import { createFX } from './fx2d.js?v=mwqls9ox'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -50,12 +50,19 @@ const ARTS = {
   cleanse: { name: 'CLEANSE', cost: 1, col: '#c9a8ff', desc: 'Remove burn/freeze · Guard up', tactic: 1 },
   senzu: { name: 'SENZU BEAN', cost: 2, col: '#6ad04a', desc: 'Full heal · clears burn/freeze', tactic: 1, item: 'items/senzu.jpg' },
   cylinder: { name: 'MAGIC CYLINDER', cost: 2, col: '#ff3d6a', desc: 'Next hit bounces back', tactic: 1, item: 'items/cylinder.jpg' },
+  rumble: { name: "RUMBLE BALL", cost: 2, col: '#ff7ab0', desc: "Heal 35% · next attack +25%", tactic: 1, item: 'items/rumble.jpg' },
+  finger: { name: "CURSED FINGER", cost: 1, col: '#8a0a2a', desc: "Next attack +60% · lose 10% HP", tactic: 1, item: 'items/finger.jpg' },
+  deathnote: { name: "DEATH NOTE", cost: 3, col: '#111', desc: "Enemy KO'd in 3 turns", tactic: 1, item: 'items/deathnote.jpg' },
+  hogyoku: { name: "HOGYOKU", cost: 2, col: '#7a3aff', desc: "Survive a KO · +15% stats", tactic: 1, item: 'items/hogyoku.jpg' },
+  wing: { name: "RAINBOW WING", cost: 3, col: '#ff9a1a', desc: "Revive a KO'd ally at 40%", tactic: 1, item: 'items/wing.jpg' },
+  scroll: { name: "SEALING SCROLL", cost: 2, col: '#c8a050', desc: "Seal the enemy passive", tactic: 1, item: 'items/scroll.jpg' },
+  clock: { name: "TIME MAGIC CLOCK", cost: 3, col: '#3a8aff', desc: "Enemy skips their next turn", tactic: 1, item: 'items/clock.jpg' },
 }
 // tribes: field 3+ of a tribe for its bonus
 // real dragons and dragon slayers (not Dragon Ball)
 export const DRAGONS = ['NATSU', 'ACNOLOGIA', 'SHENRON', 'GARCHOMP', 'DURALUDON', 'CHARIZARD', 'RESHIRAM', 'ZEKROM', 'SLIFER']
 export const isDragon = c => DRAGONS.some(n => c.name.includes(n)) || (/KAIDO/.test(c.name) && /DRAGON/.test(c.ver || ''))
-const TAC_ICON = { burst: '💥', charge: '⚡', transfer: '🔗', heal: '✚', cleanse: '✦', senzu: '', cylinder: '' }
+const TAC_ICON = { burst: '💥', charge: '⚡', transfer: '🔗', heal: '✚', cleanse: '✦', senzu: '', cylinder: '', rumble: '', finger: '', deathnote: '', hogyoku: '', wing: '', scroll: '', clock: '' }
 const pctOf = c => { const m = /(\d+)%\s*PWR/.exec((c.tx || []).join(' ')); return m ? +m[1] : 220 }
 const isAoe = c => /all enemies/i.test((c.tx || []).join(' '))
 const kitTxt = c => (c.tx || []).join(' ')
@@ -195,9 +202,16 @@ function playArt(B, who, idx) {
     if (art === 'charge') { me.chargeNext = (me.chargeNext || 0) + 35; ev.tactic = 'NEXT ATTACK +' + me.chargeNext + '%' }
     else if (art === 'transfer') { me.ki = Math.min(KI_MAX, me.ki + 2); ev.tactic = '+2 ENERGY' }
     else if (art === 'heal') { const h = Math.round(a.max * .18); a.hp = Math.min(a.max, a.hp + h); ev.tactic = '+' + h.toLocaleString() + ' HP' }
-    else if (art === 'cleanse') { a.burnT = 0; a.frozen = 0; a.guard = 1; ev.tactic = 'CLEANSED · GUARD UP' }
+    else if (art === 'cleanse') { a.burnT = 0; a.frozen = 0; a.doom = 0; a.guard = 1; ev.tactic = 'CLEANSED · GUARD UP' }
     else if (art === 'senzu') { const h = a.max - a.hp; a.hp = a.max; a.burnT = 0; a.frozen = 0; ev.tactic = 'SENZU BEAN · +' + h.toLocaleString() + ' HP' }
     else if (art === 'cylinder') { a.cylinder = 1; ev.tactic = 'TRAP SET · MAGIC CYLINDER' }
+    else if (art === 'rumble') { const h = Math.round(a.max * .35); a.hp = Math.min(a.max, a.hp + h); me.chargeNext = (me.chargeNext || 0) + 25; ev.tactic = 'RUMBLE BALL · +' + h.toLocaleString() + ' HP · NEXT +25%' }
+    else if (art === 'finger') { a.hp = Math.max(1, a.hp - Math.round(a.max * .1)); me.chargeNext = (me.chargeNext || 0) + 60; ev.tactic = 'CURSED FINGER · NEXT ATTACK +60%' }
+    else if (art === 'deathnote') { d.doom = 3; ev.tactic = 'DEATH NOTE · ' + d.card.name + ' HAS 3 TURNS' }
+    else if (art === 'hogyoku') { a.endure = (a.endure || 0) + 1; for (const k of ['pwr', 'ki', 'def']) a[k] = Math.round(a[k] * 1.15); ev.tactic = 'HOGYOKU · EVOLVED' }
+    else if (art === 'wing') { const f = me.team.find(x => x.ko); if (f) { f.ko = false; f.hp = Math.round(f.max * .4); ev.tactic = 'RAINBOW WING · ' + f.card.name + ' REVIVED' } else ev.tactic = 'RAINBOW WING · NO ONE TO REVIVE' }
+    else if (art === 'scroll') { d.sealed = 1; ev.tactic = 'SEALED · ' + d.card.name + "'S PASSIVE" }
+    else if (art === 'clock') { foe.skip = 1; ev.tactic = 'TIME STOP · ENEMY LOSES A TURN' }
     return ev
   }
   me.seq.push(art)
@@ -350,6 +364,7 @@ function planTurn(B, level, who = 'ai') {
       const si = me.hand.indexOf('senzu'), yi = me.hand.indexOf('cylinder')
       if (si >= 0 && me.ki >= 2 && mine.hp / mine.max < .35) pick = ['senzu', si]
       else if (yi >= 0 && me.ki >= 2 && !mine.cylinder && mine.hp / mine.max < .7) pick = ['cylinder', yi]
+      else { const IU = { rumble: mine.hp / mine.max < .6, finger: mine.hp / mine.max > .4, deathnote: 1, hogyoku: mine.hp / mine.max < .5, wing: me.team.some(x => x.ko), scroll: 1, clock: 1 }; for (const k in IU) { const ii = me.hand.indexOf(k); if (ii >= 0 && IU[k] && me.ki >= ARTS[k].cost) { pick = [k, ii]; break } } }
       else if (hi >= 0 && me.ki >= 2 && mine.hp / mine.max < .5) pick = ['heal', hi]
       else if (ti >= 0 && me.ki <= KI_MAX - 2) pick = ['transfer', ti]
       else if (cl >= 0 && me.ki >= 1 && (mine.burnT > 0)) pick = ['cleanse', cl]
@@ -778,7 +793,7 @@ export function startBattle(stage) {
     if (hand.dataset.k === hkey && hand.children.length === s.hand.length) { s.hand.forEach((a, i) => { const d = ARTS[a], el = hand.children[i]; el.disabled = !my || s.ki < d.cost || (a === 'burst' && s.ki < 2) }) }
     else { hand.dataset.k = hkey; hand.innerHTML = ''
     const rc = X.tierCol(f.card.r), fx = Math.round((f.card.fx ?? .5) * 100), fy = Math.round((f.card.fy ?? .22) * 100)
-    const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['ENERGY', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'], burst: ['TACTIC', '#ff3b6b', '#ffd0dc'], senzu: ['ITEM', '#3aa83a', '#d8ffb0'], cylinder: ['ITEM', '#c8102e', '#ffd23a'], charge: ['TACTIC', '#ff9a00', '#ffe2a8'], transfer: ['TACTIC', '#3ab8ff', '#c8ecff'], heal: ['TACTIC', '#2fe0b0', '#c8fff0'], cleanse: ['TACTIC', '#a46bff', '#e8d8ff'] }
+    const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['ENERGY', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'], burst: ['TACTIC', '#ff3b6b', '#ffd0dc'], senzu: ['ITEM', '#3aa83a', '#d8ffb0'], cylinder: ['ITEM', '#c8102e', '#ffd23a'], rumble: ['ITEM', '#ff7ab0', '#ffe0ee'], finger: ['ITEM', '#8a0a2a', '#ffb0c0'], deathnote: ['ITEM', '#111', '#e0e0e0'], hogyoku: ['ITEM', '#7a3aff', '#e0d0ff'], wing: ['ITEM', '#ff9a1a', '#fff0a0'], scroll: ['ITEM', '#c8a050', '#fff3d0'], clock: ['ITEM', '#3a8aff', '#d0e8ff'], charge: ['TACTIC', '#ff9a00', '#ffe2a8'], transfer: ['TACTIC', '#3ab8ff', '#c8ecff'], heal: ['TACTIC', '#2fe0b0', '#c8fff0'], cleanse: ['TACTIC', '#a46bff', '#e8d8ff'] }
     s.hand.forEach((a, i) => {
       const d = ARTS[a], sp = a === 'special', [kind, c1, c2] = KIND[a], b = document.createElement('button')
       b.className = 'art2 ' + a + (d.item ? ' item' : '')
@@ -1056,6 +1071,7 @@ export function startBattle(stage) {
     if (e.bleed) a0.hp = Math.max(1, a0.hp - Math.round(a0.max * e.bleed / 100))
     if (e.emperor) a0.hp = Math.max(1, a0.hp - Math.round(a0.max * .03))
     if (a0.burnT > 0) { a0.hp = Math.max(1, a0.hp - Math.round(a0.max * a0.burn / 100)); a0.burnT-- }
+    if (a0.doom > 0 && --a0.doom === 0) { a0.hp = 0; a0.ko = true; log(a0.card.name + ' — the Death Note takes effect.') }
     if (e.guardAuto) a0.guard = 1
     if (e.energyTurn) s.ki = Math.min(KI_MAX, s.ki + e.energyTurn)
     if (e.haki) { const o = act(foe); if (o && o.card.ovr < a0.card.ovr) foe.ki = Math.max(0, foe.ki - e.haki) }
