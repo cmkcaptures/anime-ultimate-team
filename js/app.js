@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqqz7q1'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqqz7q1'
+import { createFX } from './fx2d.js?v=mwqr2yzk'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqr2yzk'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqqz7q1'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqqz7q1'
+import * as ACC from './account.js?v=mwqr2yzk'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqr2yzk'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqqz7q1'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqr2yzk'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -1856,7 +1856,7 @@ function teamBuilderPanel(el) {
     const cnt = {}; for (const c of own) cnt[c.anime] = (cnt[c.anime] || 0) + 1
     sec('SERIES', Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x]).map(a => chip(TBX.series.includes(a), ANAME(a) + ' · ' + cnt[a], () => flip(TBX.series, a))))
     const ty = [...new Set(own.map(c => c.t || typeOfA(c.anime)))]; sec('TYPE', ty.map(t => chip(TBX.types.includes(t), (TYPE[t] || {}).en || t, () => flip(TBX.types, t))))
-    { const cnt = {}; for (const c of own) for (const t of (c.aura || [])) cnt[t] = (cnt[t] || 0) + 1; const tags = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]); sec('CATEGORY / AURA TAG · cards that share the tag boost each other', tags.map(t => chip(TBX.atags.includes(t), auraTag(t) + ' · ' + cnt[t], () => flip(TBX.atags, t)))) }
+    { const cnt = {}; for (const c of own) for (const t of new Set([...(c.cat || []), ...(c.aura || [])])) cnt[t] = (cnt[t] || 0) + 1; const tags = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]); sec('CATEGORY / AURA TAG · cards that share the tag boost each other', tags.map(t => chip(TBX.atags.includes(t), auraTag(t) + ' · ' + cnt[t], () => flip(TBX.atags, t)))) }
     sec('ONLY THESE ROLES', ROLES.map(ro => chip(TBX.roles.includes(ro), ro, () => flip(TBX.roles, ro))))
     sec('AT LEAST (ROLES)', ROLES.map(ro => chip(!!TBX.need[ro], ro + (TBX.need[ro] ? ' ×' + TBX.need[ro] : ''), () => { TBX.need[ro] = ((TBX.need[ro] || 0) + 1) % 4; if (!TBX.need[ro]) delete TBX.need[ro]; rerender() })))
     const R = 'CURELMX'.split(''), rs = (v, f) => { const x = h('select', 'tb-sel'); x.innerHTML = R.map(q => `<option value="${q}" ${q === v ? 'selected' : ''}>${TIER[q].name}</option>`).join(''); x.onchange = () => { f(x.value); rerender() }; return x }
