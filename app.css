@@ -3063,3 +3063,29 @@ img[data-max] { animation: rbGlow 2.4s linear infinite; border-radius: 10px }
 .ar-active.aura { box-shadow: 0 0 0 3px #ffcc00, 0 0 34px 8px rgba(255,204,0,.7) !important; animation: auraP 1.4s ease-in-out infinite alternate }
 .ar-active.formed { box-shadow: 0 0 0 3px #fff, 0 0 40px 10px rgba(255,90,200,.7) !important; animation: auraP 1.4s ease-in-out infinite alternate }
 @keyframes auraP { to { filter: brightness(1.12) } }
+
+/* ================= SERIES PACK OPENINGS ================= */
+.pfx { position: absolute; inset: 0; z-index: 40; pointer-events: none; display: grid; place-items: center; overflow: hidden }
+.pfx i { position: absolute; display: block }
+.pfx-t { position: relative; font: italic 900 clamp(40px, 9vw, 110px)/1 var(--eD, 'Barlow Condensed'); color: #fff; -webkit-text-stroke: 3px var(--p2); paint-order: stroke fill; text-shadow: 0 0 30px var(--p1), 0 6px 0 var(--p1); opacity: 0; transform: scale(2.4) skewX(-8deg); text-align: center; padding: 0 16px }
+.pfx.go .pfx-t { animation: pfxT .45s cubic-bezier(.2,1.6,.4,1) forwards } @keyframes pfxT { to { opacity: 1; transform: scale(1) skewX(-8deg) } }
+.pfx.out { animation: pfxOut .3s forwards } @keyframes pfxOut { to { opacity: 0; transform: scale(1.15) } }
+.pfx-beam .pfx-a { left: -10%; right: -10%; top: 50%; height: 0; transform: translateY(-50%); background: linear-gradient(180deg, transparent, var(--p1) 25%, var(--p2) 50%, var(--p1) 75%, transparent); box-shadow: 0 0 80px 20px var(--p1) }
+.pfx-beam.go .pfx-a { animation: pfxBeam .9s ease-out forwards } @keyframes pfxBeam { 0% { height: 0 } 30% { height: 38vh } 100% { height: 22vh; opacity: .55 } }
+.pfx-crack .pfx-a, .pfx-crack .pfx-b { inset: 0; background: conic-gradient(from 10deg, transparent 0 8deg, var(--p1) 9deg 10deg, transparent 11deg 52deg, var(--p1) 53deg 55deg, transparent 56deg 118deg, var(--p1) 119deg 120deg, transparent 121deg 190deg, var(--p1) 191deg 193deg, transparent 194deg 262deg, var(--p1) 263deg 264deg, transparent 265deg 320deg, var(--p1) 321deg 323deg, transparent 324deg); opacity: 0; filter: drop-shadow(0 0 12px var(--p1)) }
+.pfx-crack .pfx-b { rotate: 27deg }
+.pfx-crack.go .pfx-a, .pfx-crack.go .pfx-b { animation: pfxCrack .9s steps(4) forwards } .pfx-crack.go { background: radial-gradient(circle, transparent 20%, color-mix(in srgb, var(--p2) 70%, transparent)) }
+@keyframes pfxCrack { 0% { opacity: 0; transform: scale(.2) } 20% { opacity: 1 } 100% { opacity: .8; transform: scale(1.4) } }
+.pfx-spiral .pfx-a { width: 50vmin; height: 50vmin; border-radius: 50%; background: conic-gradient(var(--p1), var(--p2), var(--p1), transparent, var(--p1)); filter: blur(2px) drop-shadow(0 0 40px var(--p1)); transform: scale(0); animation: pfxSpin .5s linear infinite }
+.pfx-spiral .pfx-b { width: 30vmin; height: 30vmin; border-radius: 50%; background: radial-gradient(circle, #fff, var(--p1) 60%, transparent 70%); transform: scale(0) }
+.pfx-spiral.go .pfx-a { animation: pfxSpin .5s linear infinite, pfxGrow .6s ease-out forwards } .pfx-spiral.go .pfx-b { animation: pfxGrow .5s ease-out forwards }
+@keyframes pfxSpin { to { rotate: 360deg } } @keyframes pfxGrow { to { transform: scale(1.6) } }
+.pfx-slash .pfx-a { width: 160vmax; height: 26vmin; left: 50%; top: 50%; border-radius: 50%; border-top: 3vmin solid var(--p1); box-shadow: 0 -10px 60px var(--p1), inset 0 20px 40px var(--p2); transform: translate(-50%, -50%) rotate(-24deg) scaleX(0) }
+.pfx-slash.go .pfx-a { animation: pfxSlash .5s cubic-bezier(.2,.9,.3,1) forwards } @keyframes pfxSlash { to { transform: translate(-50%, -50%) rotate(-24deg) scaleX(1) } }
+.pfx-slash.go { background: linear-gradient(156deg, transparent 48%, color-mix(in srgb, var(--p2) 60%, transparent) 50%, transparent 52%) }
+.pfx-impact .pfx-a, .pfx-impact .pfx-b { width: 20vmin; height: 20vmin; border-radius: 50%; border: 2vmin solid var(--p1); box-shadow: 0 0 40px var(--p1), inset 0 0 40px var(--p2); transform: scale(0) }
+.pfx-impact.go .pfx-a { animation: pfxRing .8s ease-out forwards } .pfx-impact.go .pfx-b { animation: pfxRing .8s .15s ease-out forwards; border-color: var(--p2) }
+@keyframes pfxRing { to { transform: scale(7); opacity: 0 } }
+.pfx-bolt .pfx-a { left: 50%; top: -5%; width: 6vmin; height: 0; background: linear-gradient(var(--p2), var(--p1), #fff); clip-path: polygon(40% 0, 100% 0, 60% 40%, 95% 40%, 20% 100%, 45% 55%, 5% 55%); filter: drop-shadow(0 0 30px var(--p1)); transform: translateX(-50%) scaleX(3) }
+.pfx-bolt.go .pfx-a { animation: pfxBolt .35s ease-in forwards } @keyframes pfxBolt { to { height: 60vh } }
+.pfx-bolt.go { animation: pfxFlash .9s } @keyframes pfxFlash { 0%, 30% { background: color-mix(in srgb, var(--p1) 40%, transparent) } 100% { background: transparent } }

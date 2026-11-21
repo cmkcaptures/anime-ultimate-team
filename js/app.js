@@ -1,9 +1,9 @@
-import { createFX } from './fx2d.js?v=mwpy0uec'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwpy0uec'
-import * as ACC from './account.js?v=mwpy0uec'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwpy0uec'
+import { createFX } from './fx2d.js?v=mwqlds54'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo } from './battle.js?v=mwqlds54'
+import * as ACC from './account.js?v=mwqlds54'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqlds54'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwpy0uec'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqlds54'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -853,6 +853,28 @@ function rollPackKeys(type) {
   return out.sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr) // worst first, best revealed last
 }
 
+// series packs get their own opening moment between the tear and the reveal
+const PACK_FX = {
+  JJK: ['BLACK FLASH', 'crack', '#ff1a3a', '#000'], DBZ: ['KAMEHAMEHA', 'beam', '#4ad8ff', '#fff'], OP: ["CONQUEROR'S HAKI", 'crack', '#ff2a2a', '#1a0010'],
+  NAR: ['RASENGAN', 'spiral', '#5ac8ff', '#fff'], BLE: ['GETSUGA TENSHO', 'slash', '#ff2a40', '#000'], DS: ['WATER BREATHING', 'spiral', '#3aa8ff', '#e0f6ff'],
+  MHA: ['UNITED STATES OF SMASH', 'impact', '#ffd23a', '#2a7aff'], BC: ['BLACK DIVIDER', 'slash', '#1a1a1a', '#e0ffe0'], PKM: ['I CHOOSE YOU!', 'impact', '#ff3a3a', '#fff'],
+  OPM: ['SERIOUS PUNCH', 'impact', '#ffe04a', '#fff'], AOT: ['TITAN SHIFT', 'bolt', '#ffd23a', '#ff8a2a'], SL: ['ARISE', 'spiral', '#7a4aff', '#000'],
+  DAN: ['OCCULT AWAKENING', 'spiral', '#ff3d9a', '#7df9ff'], SDS: ['FULL COUNTER', 'slash', '#ffcc33', '#5a0a1a'], FF: ['ADOLLA BURST', 'beam', '#ff7a1a', '#ffe04a'],
+  HXH: ['NEN AWAKENS', 'spiral', '#5aff9a', '#fff'], FT: ['DRAGON SLAYER', 'beam', '#ff5a1a', '#ffd23a'], JJBA: ['ZA WARUDO', 'impact', '#ffd23a', '#7a2aff'],
+}
+async function packIntro(ov, FXC, anime, shake) {
+  const F = PACK_FX[anime]; if (!F) return
+  const [name, kind, c1, c2] = F, el = h('div', 'pfx pfx-' + kind)
+  el.style.setProperty('--p1', c1); el.style.setProperty('--p2', c2)
+  el.innerHTML = '<i class="pfx-a"></i><i class="pfx-b"></i><b class="pfx-t">' + name + '</b>'
+  ov.append(el); sfx('charge', 4)
+  const cx = innerWidth / 2, cy = innerHeight * .45
+  try { FXC.gather(cx, cy, c1, 1, 30) } catch { }
+  await wait(700)
+  el.classList.add('go'); sfx('crit'); shake(3)
+  try { FXC.hit(cx, cy, c1, 2.2); FXC.rays(cx, cy, c1, 18, 900, 1.4); FXC.screen(c1, .5, .3) } catch { }
+  await wait(1200); el.classList.add('out'); await wait(300); el.remove()
+}
 async function openPack(type) {
   if (document.getElementById('opener')) return
   const cards = rollPackKeys(type), sigP = type === 'premium' || type === 'lightning' || type === 'banner' ? .04 : .02, sigs = cards.filter(() => Math.random() < sigP).map(c => c.key)
@@ -892,6 +914,8 @@ async function openPack(type) {
   hint.textContent = ''
   { const rr = pk.getBoundingClientRect(); sfx('tear'); pk.classList.add('torn'); shake(2); FXC.hit(rr.left + rr.width / 2, rr.top + rr.height * .16, bcol, 1.6); FXC.screen('#ffffff', .55, .35) }
   await wait(600); pk.remove()
+  if (!skipping) { const an = (ST.packs[type] && ST.packs[type].anime) || type; try { await packIntro(ov, FXC, an, shake) } catch { } }
+  if (skipping) return
 
   // ---- 2) rarity tease: a beam of light in the best card's colour ----
   ov.classList.add('beam', 'b' + Math.min(bestRk, 6)); sfx('charge', bestRk)
