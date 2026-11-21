@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqls9ox'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqls9ox'
-import { createFX } from './fx2d.js?v=mwqls9ox'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqlwus0'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqlwus0'
+import { createFX } from './fx2d.js?v=mwqlwus0'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -364,7 +364,7 @@ function planTurn(B, level, who = 'ai') {
       const si = me.hand.indexOf('senzu'), yi = me.hand.indexOf('cylinder')
       if (si >= 0 && me.ki >= 2 && mine.hp / mine.max < .35) pick = ['senzu', si]
       else if (yi >= 0 && me.ki >= 2 && !mine.cylinder && mine.hp / mine.max < .7) pick = ['cylinder', yi]
-      else { const IU = { rumble: mine.hp / mine.max < .6, finger: mine.hp / mine.max > .4, deathnote: 1, hogyoku: mine.hp / mine.max < .5, wing: me.team.some(x => x.ko), scroll: 1, clock: 1 }; for (const k in IU) { const ii = me.hand.indexOf(k); if (ii >= 0 && IU[k] && me.ki >= ARTS[k].cost) { pick = [k, ii]; break } } }
+      else if ((pick = (() => { const IU = { rumble: mine.hp / mine.max < .6, finger: mine.hp / mine.max > .4, deathnote: 1, hogyoku: mine.hp / mine.max < .5, wing: me.team.some(x => x.ko), scroll: 1, clock: 1 }; for (const k in IU) { const ii = me.hand.indexOf(k); if (ii >= 0 && IU[k] && me.ki >= ARTS[k].cost) return [k, ii] } return null })())) { }
       else if (hi >= 0 && me.ki >= 2 && mine.hp / mine.max < .5) pick = ['heal', hi]
       else if (ti >= 0 && me.ki <= KI_MAX - 2) pick = ['transfer', ti]
       else if (cl >= 0 && me.ki >= 1 && (mine.burnT > 0)) pick = ['cleanse', cl]
