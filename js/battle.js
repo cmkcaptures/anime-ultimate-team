@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqqlrhk'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqqlrhk'
-import { createFX } from './fx2d.js?v=mwqqlrhk'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqqz7q1'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqqz7q1'
+import { createFX } from './fx2d.js?v=mwqqz7q1'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -32,6 +32,32 @@ export const tagsOf = c => ['S:' + c.anime, c.faction, ...(c.cat || []), ROLE_TA
 export const auraHits = (src, c) => !!(src && c && src.aura && src.aura.some(t => tagsOf(c).includes(t)))
 export function teamAuras(cards, defDia = 3) { return cards.map(c => { if (!c) return 0; let b = 0; for (const s of cards) if (s && auraHits(s, c)) b += AURA_PCT[Math.min(7, Math.max(3, s.dia || defDia))]; return Math.min(AURA_CAP, b) }) }
 function applyAuras(side, defDia) { const b = teamAuras(side.team.map(f => f.card), defDia); side.team.forEach((f, i) => { const x = b[i]; if (!x) return; f.max = f.hp = Math.round(f.max * (1 + x / 100)); const k = 1 + x / 200; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.auraB = x }); side.auraAvg = Math.round(b.reduce((n, v) => n + v, 0) / Math.max(1, b.length)) }
+// ---- LINK SKILLS: neighbours in the lineup (Leader → Main 1 → Main 2 → Sub 1 → Sub 2 → Sub 3) link up ----
+export const LINKS = [
+  { n: 'Saiyan Rivals', a: ['GOKU', 'VEGETA'], pct: 12 }, { n: 'Father & Son', a: ['GOKU', 'GOHAN', 'GOTEN'], pct: 10 }, { n: 'Mentor & Student', a: ['GOHAN', 'PICCOLO'], pct: 10 },
+  { n: 'Team 7', a: ['NARUTO', 'SASUKE', 'SAKURA', 'KAKASHI'], pct: 10 }, { n: 'Uchiha Blood', a: ['SASUKE', 'ITACHI', 'MADARA', 'OBITO'], pct: 8 },
+  { n: 'Monster Trio', a: ['LUFFY', 'ZORO', 'SANJI'], pct: 10 }, { n: 'ASL Brothers', a: ['LUFFY', 'ACE', 'SABO'], pct: 10 }, { n: 'Emperors', a: ['SHANKS', 'KAIDO', 'BIG MOM', 'BLACKBEARD', 'LUFFY'], pct: 8 },
+  { n: 'The Strongest', a: ['GOJO', 'YUTA', 'ITADORI', 'MEGUMI', 'NOBARA'], pct: 10 }, { n: 'King of Curses', a: ['SUKUNA', 'MAHITO', 'JOGO', 'GETO', 'KENJAKU'], pct: 8 },
+  { n: 'Kamado Bond', a: ['TANJIRO', 'NEZUKO', 'ZENITSU', 'INOSUKE', 'KAMABOKO'], pct: 10 }, { n: 'Hashira', a: ['RENGOKU', 'GIYU', 'TENGEN', 'SHINOBU', 'MITSURI', 'OBANAI'], pct: 8 },
+  { n: 'Urameshi Team', a: ['YUSUKE', 'KUWABARA', 'KURAMA', 'HIEI', 'GENKAI', 'TEAM URAMESHI'], pct: 10 },
+  { n: 'Deku & Kacchan', a: ['DEKU', 'BAKUGO', 'ALL MIGHT'], pct: 10 }, { n: 'Soul Reapers', a: ['ICHIGO', 'RUKIA', 'RENJI', 'URAHARA', 'YAMAMOTO', 'KENPACHI', 'BYAKUYA', 'UNOHANA'], pct: 8 },
+  { n: 'Seven Deadly Sins', a: ['MELIODAS', 'ESCANOR', 'BAN', 'KING', 'ELIZABETH'], pct: 10 }, { n: 'Hunters', a: ['GON', 'KILLUA', 'KURAPIKA', 'HISOKA'], pct: 8 },
+  { n: 'Survey Corps', a: ['LEVI', 'EREN', 'MIKASA', 'ARMIN', 'HANGE'], pct: 8 }, { n: 'Devil Hunters', a: ['DENJI', 'POWER', 'AKI', 'KISHIBE', 'KOBENI', 'MAKIMA'], pct: 8 },
+  { n: 'Sword Masters', cat: 'Swordsmen', pct: 5 }, { n: 'Dark Alliance', cat: 'Villains', pct: 5 }, { n: 'Tag Partners', cat: 'Tag Teams', pct: 4 }, { n: 'Power Surge', cat: 'Transformations', pct: 4 },
+  { n: 'Comrades', fac: 1, pct: 6 },
+]
+const LINK_CAP = 30
+const memOf = (L, c) => L.a.filter(m => c.name === m || c.name.startsWith(m + ' ') || c.name.includes(' ' + m) || c.name.includes(m + ' &') || c.name.includes('& ' + m))
+export function linkPair(c1, c2) { if (!c1 || !c2) return []; const out = []
+  for (const L of LINKS) {
+    if (L.a) { const m1 = memOf(L, c1), m2 = memOf(L, c2); if (m1.length && m2.length && new Set([...m1, ...m2]).size >= 2) out.push(L) }
+    else if (L.cat) { if ((c1.cat || []).includes(L.cat) && (c2.cat || []).includes(L.cat)) out.push(L) }
+    else if (L.fac && c1.faction && c1.faction === c2.faction) out.push(L)
+  } return out }
+export function teamLinks(cards) { const pct = cards.map(() => 0), active = []
+  for (let i = 0; i < cards.length - 1; i++) { const L = linkPair(cards[i], cards[i + 1]); if (!L.length) continue; const v = L.reduce((n, x) => n + x.pct, 0); pct[i] += v; pct[i + 1] += v; active.push({ i, j: i + 1, links: L }) }
+  return { pct: pct.map(v => Math.min(LINK_CAP, v)), active } }
+function applyLinks(side) { const { pct } = teamLinks(side.team.map(f => f.card)); side.team.forEach((f, i) => { const x = pct[i]; if (!x) return; f.max = f.hp = Math.round(f.max * (1 + x / 100)); const k = 1 + x / 200; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.linkB = x }) }
 export function leaderInfo(cards) { const L = cards[0], lead = L && L.lead; if (!lead) return { lead: null, n: 0 }; return { lead, leader: L, n: cards.filter(c => c && leadHits(lead, c)).length } }
 function applyLeader(side) { const L = side.team[0] && side.team[0].card, lead = L && L.lead; if (!lead) return; side.kiBonus = lead.ki || 0; let n = 0
   for (const f of side.team) if (leadHits(lead, f.card)) { n++; f.max = f.hp = Math.round(f.max * (1 + lead.pct / 100)); const k = 1 + lead.pct / 200; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.boosted = 1 }
@@ -598,9 +624,12 @@ function campTeam(specs) {
   return out
 }
 const CHARD = {}
+let DZSEL = null
 const rzTag = t => t.startsWith('S:') ? X.ANAME(t.slice(2)) : t
 function redzonePage(el, ok) {
-  const { h } = X, ST = X.ST(), Z = ST.redzone, done = ST.rzP || []; if (!Z) return
+  const { h } = X, ST = X.ST(), ZS = ST.deadzones || []; if (!ZS.length) return
+  const Z = ZS.find(z => z.id === DZSEL) || ZS[ZS.length - 1], done = (ST.rzAll || {})[Z.id] || []
+  { const t = h('div', 'mtabs dz-tabs'); for (const z of ZS) { const n = ((ST.rzAll || {})[z.id] || []).length, b = h('button', 'mtab' + (z === Z ? ' on' : ''), z.name.toUpperCase() + ' · ' + n + '/' + z.stages.length); b.onclick = () => { DZSEL = z.id; X.go('battle') }; t.append(b) } el.append(t) }
   el.append(h('section', 'bhero rz-hero', `<div><span class="sh-tag">💀 DEAD ZONE · ${Z.sub.toUpperCase()}</span><h2>${Z.name.toUpperCase()}</h2><p>The hardest fights in the game. Every stage has <b>brutal rules</b> and <b>weaknesses</b>: fighters with a weakness tag deal bonus damage, <b>everyone else deals much less</b>. New and strong is not enough. Build for the stage.</p></div><div class="bstat"><b>${done.length}</b><span>/ ${Z.stages.length} CLEARED</span></div>`))
   for (const st of Z.stages) {
     const open = st.n === 1 || done.includes(st.n - 1), clr = done.includes(st.n), boss = X.POOL.filter(c => c.name === st.boss).sort((a, b) => b.ovr - a.ovr)[0], team = campTeam(st.enemy)
@@ -611,7 +640,7 @@ function redzonePage(el, ok) {
       <div class="rz-weak"><b>WEAK TO</b>${st.weak.map(t => `<span>${rzTag(t)} +${st.weakB}%</span>`).join('')}<i>Everyone else −${st.resist}% damage</i></div>
       <p class="rz-tip">💡 ${st.tip}</p><p class="rz-rw">🎁 First clear: ${rw}</p></div>`)
     const acts = h('div', 'rz-acts'), go = h('button', 'btn gold', open ? (clr ? 'REPLAY' : '💀 ENTER') : '🔒 LOCKED'); go.disabled = !ok || !open
-    go.onclick = () => go2({ mode: 'redzone', id: st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
+    go.onclick = () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
     acts.append(go, cxBtn(() => team.map(k => X.BYKEY[k]), 'DZ-' + st.n + ' · ' + st.name)); box.querySelector('.rz-body').append(acts); el.append(box)
   }
 }
@@ -776,7 +805,7 @@ export function startBattle(stage) {
   }
   if (stage.rules) for (const f of B.ai.team) { const r = { ...stage.rules }; f.pe = { ...(f.pe || {}), ...r, dmg: ((f.pe || {}).dmg || 0) + (r.dmg || 0), dodge: Math.min(60, ((f.pe || {}).dodge || 0) + (r.dodge || 0)), regen: ((f.pe || {}).regen || 0) + (r.regen || 0) }; if (r.endure) f.endure = (f.endure || 0) + r.endure }
   { const all = [...B.you.team, ...B.ai.team], idle = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 1500 }) : setTimeout(f, 60)); let i = 0; const next = () => { const f = all[i++]; if (!f) return; thumbURL(f.card, 560).catch(() => {}).finally(() => idle(next)) }; setTimeout(() => idle(next), 200) }
-  applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4)
+  applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
   sealNow()
   refill(B.you); refill(B.ai)

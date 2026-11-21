@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqqlrhk'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=mwqqz7q1'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -259,6 +259,16 @@ function achList() {
     { id: 'boss100k', g: 'BATTLE', name: 'Boss Breaker', d: 'Deal 100,000 damage to a Daily Boss in one fight', p: Math.max(P.bossBestEver || 0, (P.boss && P.boss.best) || 0), need: 100000, rw: { coins: 8000, title: 'Boss Breaker' } },
     { id: 'pvp10', g: 'SOCIAL', name: 'Rival', d: 'Win 10 battles against other players', p: B.pvpW || 0, need: 10, rw: { coins: 5000, title: 'Duelist' } },
     { id: 'streak7', g: 'SOCIAL', name: 'Dedicated', d: 'Reach a 7-day login streak', p: P.login ? P.login.streak : 0, need: 7, rw: { coins: 5000, title: 'Dedicated' } },
+    { id: 'rift1', g: 'MODES', name: 'Rift Sealer', d: 'Seal a Dimensional Rift', p: P.riftN || 0, need: 1, rw: { coins: 10000 } },
+    { id: 'rift10', g: 'MODES', name: 'Guardian of Worlds', d: 'Seal 10 Dimensional Rifts', p: P.riftN || 0, need: 10, rw: { coins: 50000, title: 'Guardian of Worlds' } },
+    { id: 'dzany', g: 'MODES', name: 'Survived the Dead Zone', d: 'Clear any Dead Zone stage', p: Object.values(P.rz || {}).reduce((n, v) => n + v.length, 0), need: 1, rw: { coins: 15000 } },
+    { id: 'dzic', g: 'MODES', name: 'Infinity Castle Conquered', d: 'Clear all 5 Infinity Castle stages', p: ((P.rz || {}).rz1 || []).length, need: 5, rw: { coins: 100000, title: 'Demon Slayer' } },
+    { id: 'dzdt', g: 'MODES', name: 'Dark Tournament Champion', d: 'Clear all 5 Dark Tournament stages', p: ((P.rz || {}).dt1 || []).length, need: 5, rw: { coins: 100000, title: 'Dark Tournament Champion' } },
+    { id: 'vil1', g: 'MODES', name: 'Lord of Darkness', d: 'Beat the Villain Campaign', p: (((P.vcamp || {}).stars || {})[6] || 0) > 0 ? 1 : 0, need: 1, rw: { coins: 50000, title: 'Lord of Darkness' } },
+    { id: 'vil18', g: 'MODES', name: 'Perfect Villainy', d: 'Get all 18 stars in the Villain Campaign', p: Object.values((P.vcamp || {}).stars || {}).reduce((n, v) => n + v, 0), need: 18, rw: { coins: 75000 } },
+    { id: 'awk1', g: 'COLLECTION', name: 'Awakened', d: 'Get a card to 7◆ to awaken its Ultimate', p: Object.values(P.club.cards).some(o => (o.dia || 3) >= 7) ? 1 : 0, need: 1, rw: { coins: 20000 } },
+    { id: 'awk5', g: 'COLLECTION', name: 'Fully Awakened Squad', d: 'Get 5 different cards to 7◆', p: Object.values(P.club.cards).filter(o => (o.dia || 3) >= 7).length, need: 5, rw: { coins: 60000, title: 'Awakened' } },
+    { id: 'streak30', g: 'SOCIAL', name: 'Devoted', d: 'Reach a 30-day login streak', p: P.login ? P.login.streak : 0, need: 30, rw: { coins: 50000, title: 'Devoted' } },
     { id: 'master', g: 'SOCIAL', name: 'Mastery', d: 'Get a card to Mastery 4', p: Math.max(0, ...Object.values(P.mast || {}).map(mastLv)) - 1, need: 4, rw: { coins: 6000, title: 'Master' } },
   ]
   for (const a of Object.keys(ANIME_NAMES)) { const s = C.filter(c => c.anime === a); if (s.length < 5) continue; L.push({ id: 'set_' + a, g: 'SERIES SETS', name: ANIME_NAMES[a] + ' Master', d: 'Own every ' + ANIME_NAMES[a] + ' card', p: s.filter(c => own(c.key)).length, need: s.length, rw: { coins: 4000 + s.length * 300, title: ANIME_NAMES[a] + ' Master' } }) }
@@ -742,6 +752,29 @@ const REDZONE = { id: 'rz1', name: 'Infinity Castle', sub: 'Dead Zone · Demon S
     weak: ['S:DS', 'Swordsmen', 'Demon Slayer Corps'], weakB: 50, resist: 55, tip: 'Everything at once. Full Demon Slayer teams, a sealer for Muzan and a Cleanse or two. Raw power alone will not get through.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
+const DARKT = { id: 'dt1', name: 'Dark Tournament', sub: 'Dead Zone · Yu Yu Hakusho', stages: [
+  { n: 1, name: 'Opening Rounds', boss: 'ITSUKI', enemy: ['ITSUKI', 'DIO', 'CHOSO', 'IGRIS', 'ANNIE'], boost: 2.6,
+    rules: [['Shadow Beast', 'Every enemy swallows the first hit it takes', { firstNull: 1 }], ['Bloodthirsty Crowd', 'Enemies deal +20% damage', { dmg: 20 }]],
+    weak: ['S:YYH', 'Rivals'], weakB: 60, resist: 50, tip: 'Every enemy eats your first hit, so open with cheap Strikes, not your big moves. Yu Yu Hakusho fighters and Rivals hit hardest here.',
+    reward: { coins: 15000, premium: 1 } },
+  { n: 2, name: 'The Black Chapter', boss: 'SENSUI', enemy: ['SENSUI', 'ITSUKI', 'MAKIMA', 'KARS', 'NEFERPITOU'], boost: 2.3,
+    rules: [['Sacred Energy', 'Enemy Specials ignore Guard and deal +30%', { pierceSpec: 1, spec: 30 }], ['Territory', 'Enemies dodge 15%', { dodge: 15 }]],
+    weak: ['Urameshi Team', 'Mentors'], weakB: 60, resist: 50, tip: 'Guarding will not save you from Sensui. Out-damage him: the Urameshi Team and Mentors like Genkai are the answer.',
+    reward: { coins: 20000, premium: 1 } },
+  { n: 3, name: 'Team Toguro', boss: 'TOGURO', enemy: ['TOGURO#88', 'MAJIN BUU', 'CELL', 'BERU', 'KARS'], boost: 2.3,
+    rules: [['Muscle Control', 'Enemies take 6% less damage with every hit (up to 36%)', { adapt: 6, adaptMax: 36 }], ['Regeneration', 'Enemies heal 5% every turn', { regen: 5 }]],
+    weak: ['Urameshi Team', 'Swordsmen'], weakB: 60, resist: 50, tip: 'They get tougher the longer the fight goes. Burst them down fast: big Ultimates and Swordsmen like Hiei and Kuwabara.',
+    reward: { coins: 25000, premium: 1, shards: 2000 } },
+  { n: 4, name: "Raizen's Hunger", boss: 'RAIZEN', enemy: ['RAIZEN', 'MERUEM', 'BOROS', 'GAROU', 'MAHORAGA'], boost: 2.2,
+    rules: [['Starving King', 'Enemies get +6% damage every turn (up to +48%)', { ramp: 6, rampMax: 48 }], ['Demon World', 'Enemies survive their first KO', { endure: 1 }]],
+    weak: ['S:YYH', 'Transformations'], weakB: 60, resist: 50, tip: 'Every turn they get stronger. Transformations and Yu Yu Hakusho fighters end it before Raizen snowballs.',
+    reward: { coins: 30000, premium: 2, shards: 3000 } },
+  { n: 5, name: '100% Full Power', boss: 'TOGURO', enemy: ['TOGURO', 'RAIZEN', 'SENSUI', 'KANEKI', 'SUKUNA', 'BOROS'], boost: 2.0, final: 1,
+    rules: [['More Than Human', 'Enemies take 5% less damage per hit (up to 30%) and deal +25%', { adapt: 5, adaptMax: 30, dmg: 25 }], ['The Final', 'Enemies heal 4% every turn', { regen: 4 }]],
+    weak: ['Urameshi Team', 'Rivals', 'S:YYH'], weakB: 55, resist: 55, tip: 'The Dark Tournament final. Full Urameshi Team, a Rival or two, and save your Awakened Ultimates for Toguro.',
+    reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
+] }
+const DEADZONES = [REDZONE, DARKT]
 // ---------- VILLAIN CAMPAIGN ----------
 const VCAMP = { name: 'The Dark Alliance', sub: 'Villain Campaign · Every world\'s villains unite', boss: 'AIZEN', stages: [
   { n: 1, name: 'The Covenant Moves', coins: 2500, enemy: ['KAKASHI', 'ZORO', 'BAKUGO', 'MEGUMI', 'GOHAN', 'YAMAMOTO'],
@@ -1090,8 +1123,8 @@ function act(a) {
         return { msg: `Floor ${n} cleared! +${T.coins.toLocaleString()} coins${T.pack ? ' and a ' + PACKS[T.pack].name : ''}.` }
       }
       if (a.mode === 'redzone') {
-        const n = +a.id, st = REDZONE.stages.find(s => s.n === n); if (!st) return { error: 'Unknown stage.' }
-        const R = (P.rz = P.rz || {}), done = R[REDZONE.id] || (R[REDZONE.id] = [])
+        const [zid, ns] = String(a.id).includes(':') ? String(a.id).split(':') : ['rz1', a.id], Z = DEADZONES.find(z => z.id === zid), n = +ns, st = Z && Z.stages.find(s => s.n === n); if (!st) return { error: 'Unknown stage.' }
+        const R = (P.rz = P.rz || {}), done = R[Z.id] || (R[Z.id] = [])
         if (n > 1 && !done.includes(n - 1)) return { error: 'Clear the previous Dead Zone stage first.' }
         if (!a.won) { addXP(20); return {} }
         if (done.includes(n)) { P.coins += 1500; addXP(30); return { msg: 'Dead Zone stage replayed. +1,500 coins.' } }
@@ -1117,7 +1150,7 @@ function act(a) {
         if (R.done) return { error: 'You already sealed this rift.' }
         if (!a.won) { addXP(10); return {} }
         ;(P.rifts = P.rifts || {})[R.id] = 1; for (const k of Object.keys(P.rifts)) if (+k < R.id - 20) delete P.rifts[k]
-        P.coins += 8000; P.shards = (P.shards || 0) + 1500; P.pending.premium = (P.pending.premium || 0) + 1; addXP(100)
+        P.riftN = (P.riftN || 0) + 1; P.coins += 8000; P.shards = (P.shards || 0) + 1500; P.pending.premium = (P.pending.premium || 0) + 1; addXP(100)
         const bonus = Math.random() < .25; if (bonus) P.pending.premium++
         return { msg: `Rift sealed! +8,000 coins, ◆1,500 shards and ${bonus ? '2 Premium Drops (lucky!)' : 'a Premium Drop'}.` }
       }
@@ -1306,7 +1339,7 @@ function state() {
     raid: { ...raidNow(), me: raidP() },
     presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
-    camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST, vcamp: VCAMP, vcampP: vcampP(), rift: riftNow(), redzone: REDZONE, rzP: (S.profile.rz || {})[REDZONE.id] || [],
+    camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST, vcamp: VCAMP, vcampP: vcampP(), rift: riftNow(), deadzones: DEADZONES, rzAll: S.profile.rz || {},
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }

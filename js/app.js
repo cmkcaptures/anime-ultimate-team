@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwqqlrhk'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf } from './battle.js?v=mwqqlrhk'
+import { createFX } from './fx2d.js?v=mwqqz7q1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwqqz7q1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwqqlrhk'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqqlrhk'
+import * as ACC from './account.js?v=mwqqz7q1'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwqqz7q1'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqqlrhk'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwqqz7q1'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -518,7 +518,8 @@ PAGES.team = (el) => {
   let tip = null
   if (weakI >= 0 && count >= 6) { const base = teamScore(TC); for (const c of owned()) { if (P.team.includes(c.key)) continue; const T2 = TC.slice(); T2[weakI] = eff(c); const v = teamScore(T2); if (!tip || v > tip.v) tip = { c, v } } if (tip && tip.v <= base * 1.01) tip = null; else if (tip) tip.gain = Math.round((tip.v / base - 1) * 100) }
   if (count) { const bar = h('div', 'tm-boost', `<div><small>TEAM BOOST</small><b>+${avgB}%</b></div><p>${avgB >= 30 ? '🟢 Great fit. Your cards boost each other.' : avgB >= 15 ? '🟡 Decent. Some cards don\'t link up.' : '🔴 Weak links. Cards aren\'t boosting each other.'}</p>`), dt = h('button', 'btn dark sm', TDET ? 'HIDE DETAILS' : 'DETAILS'); dt.onclick = () => { TDET = !TDET; rerender() }; bar.append(dt); el.append(bar)
-    if (TDET) { const t = h('div', 'tm-det', '<div class="tdr th"><span>CARD</span><span>👑 LEADER</span><span>📺 SERIES</span><span>✦ AURA</span><span>TOTAL</span></div>'); TC.forEach((c, i) => { const b = SB[i]; if (!c) return; t.append(h('div', 'tdr', `<span>${c.name}</span><span>+${b.lead}%</span><span>+${b.series}%</span><span title="${(c.aura || []).map(auraTag).join(' · ')}">+${b.aura}%</span><b>+${b.total}%</b>`)) }); t.append(h('small', '', 'Leader: boosts cards sharing its category. Series: 3+ cards from one anime. Aura: every card buffs teammates sharing its 2 tags (tap a card to see them).')); el.append(t) } }
+    { const LA = teamLinks(TC).active; const lr = h('div', 'tm-links', '<b>🔗 LINKS</b>'); if (LA.length) for (const x of LA) lr.append(h('span', 'tl', `${TC[x.i].name.split(' ')[0]} ↔ ${TC[x.j].name.split(' ')[0]} <em>${x.links.map(l => l.n).join(' · ')} +${x.links.reduce((n, l) => n + l.pct, 0)}%</em>`)); else lr.append(h('small', '', 'No links yet. Put characters who belong together next to each other: Goku ↔ Vegeta, Luffy ↔ Zoro, two Swordsmen, same faction…')); el.append(lr) }
+    if (TDET) { const t = h('div', 'tm-det', '<div class="tdr th"><span>CARD</span><span>👑 LEADER</span><span>📺 SERIES</span><span>✦ AURA</span><span>🔗 LINK</span><span>TOTAL</span></div>'); TC.forEach((c, i) => { const b = SB[i]; if (!c) return; t.append(h('div', 'tdr', `<span>${c.name}</span><span>+${b.lead}%</span><span>+${b.series}%</span><span title="${(c.aura || []).map(auraTag).join(' · ')}">+${b.aura}%</span><span>+${b.link}%</span><b>+${b.total}%</b>`)) }); t.append(h('small', '', 'Leader: boosts cards sharing its category. Series: 3+ cards from one anime. Aura: every card buffs teammates sharing its 2 tags. Link: neighbours in lineup order (Leader → Main 1 → Main 2 → Sub 1 → Sub 2 → Sub 3) that belong together.')); el.append(t) } }
   // leader + slots
   const main = h('section', 'tm-main'), L = TC[0]
   const lb = h('button', 'tm-lead tap' + (L ? '' : ' empty')); lb.append(h('span', 'tm-tag', 'LEADER'))
@@ -545,8 +546,8 @@ PAGES.team = (el) => {
 }
 // ---- TEAM BOOST: leader + series synergy + auras rolled into one number per card ----
 function slotBoosts(TC) {
-  const LI = leaderInfo(TC[0] ? TC : []), syn = synergy(TC), AB = teamAuras(TC)
-  return TC.map((c, i) => { if (!c) return null; const lead = LI.lead && leadHits(LI.lead, c) ? LI.lead.pct : 0, series = syn.anime && c.anime === syn.anime ? syn.bonus : 0, aura = AB[i] || 0; return { lead, series, aura, total: lead + series + aura } })
+  const LI = leaderInfo(TC[0] ? TC : []), syn = synergy(TC), AB = teamAuras(TC), LK = teamLinks(TC).pct
+  return TC.map((c, i) => { if (!c) return null; const lead = LI.lead && leadHits(LI.lead, c) ? LI.lead.pct : 0, series = syn.anime && c.anime === syn.anime ? syn.bonus : 0, aura = AB[i] || 0, link = LK[i] || 0; return { lead, series, aura, link, total: lead + series + aura + link } })
 }
 const teamScore = TC => { const B = slotBoosts(TC); return TC.reduce((n, c, i) => n + (c ? c.ovr * (1 + (B[i] ? B[i].total : 0) / 100) : 0), 0) }
 let TDET = false
