@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqxtz4l'
-import { sfx, sfxOn, music } from './sfx.js?v=mwqxtz4l'
-import { createFX } from './fx2d.js?v=mwqxtz4l'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwqxuyzw'
+import { sfx, sfxOn, music } from './sfx.js?v=mwqxuyzw'
+import { createFX } from './fx2d.js?v=mwqxuyzw'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -170,6 +170,7 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (ea.exec && def.hp / def.max < .4) m += ea.exec / 100
   if (ea.vsHigh && def.card.ovr > att.card.ovr) m += ea.vsHigh / 100
   if (ea.vsAnime && def.card.anime === ea.vsAnime) m += ea.vsAnimeB / 100
+  if (ea.rika) m += ea.rika / 100 // Rika joins every attack
   if (ed.weakTo) { if (ed.weakTo.some(t => tagsOf(att.card).includes(t))) { m += (ed.weakB || 50) / 100; att.hitWeak = 1 } else m -= (ed.resist || 0) / 100 }
   if (ea.vsRole && def.card.role === ea.vsRole) m += ea.vsRoleB / 100
   if (ea.vsType && ea.vsType.includes(def.card.t)) m += ea.vsTypeB / 100
