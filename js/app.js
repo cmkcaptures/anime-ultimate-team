@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwsup69y'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwsup69y'
+import { createFX } from './fx2d.js?v=mwsuqo95'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwsuqo95'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwsup69y'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwsup69y'
+import * as ACC from './account.js?v=mwsuqo95'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwsuqo95'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwsup69y'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwsuqo95'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -1286,6 +1286,7 @@ function bannerBlock(el) {
 async function multiOpen(type, n) {
   if (document.getElementById('opener')) return
   const packs = type === 'banner' ? rollBannerKeys(n) : Array.from({ length: n }, () => rollPackKeys(type))
+  const hadBefore = new Set(Object.keys(club()).filter(k => (club()[k].n || 0) > 0)), newShown = new Set()
   for (const pk of packs) { const sg = pk.filter(() => Math.random() < .04).map(c => c.key); const r = await act('openPack', { pack: type, keys: pk.map(c => c.key), sig: sg }); if (r.error) break }
   const all = packs.flat().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
   const urls = await Promise.all(all.map(c => thumbURL(c, 260, true)))
@@ -1293,7 +1294,7 @@ async function multiOpen(type, n) {
   ov.innerHTML = `<div class="mo-bg"></div><div class="mo-head"><b>${n}× PULL</b><span>${all.length} cards</span><button class="o2-skip">REVEAL ALL</button></div><div class="mo-grid"></div><button class="btn gold mo-done">CONTINUE</button>`
   document.body.append(ov); document.body.classList.add('in-opener')
   const grid = ov.querySelector('.mo-grid'), FXC = createFX(ov)
-  const els = all.map((c, i) => { const e = h('div', 'mo-c', `<div class="in"><div class="f"></div><div class="b"></div></div>`); e.dataset.tier = c.r; e.style.setProperty('--rc', tierCol(c.r)); const im = new Image(); im.src = urls[i]; e.querySelector('.f').append(im); grid.append(e); return e })
+  const els = all.map((c, i) => { const e = h('div', 'mo-c', `<div class="in"><div class="f"></div><div class="b"></div></div>`); e.dataset.tier = c.r; e.style.setProperty('--rc', tierCol(c.r)); if (!hadBefore.has(c.key) && !newShown.has(c.key)) { newShown.add(c.key); e.classList.add('is-new'); setTimeout(() => e.querySelector('.f').append(h('span', 'o2-new', 'NEW')), 0) } const im = new Image(); im.src = urls[i]; e.querySelector('.f').append(im); grid.append(e); return e })
   let skip = false, closed = false; ov.querySelector('.o2-skip').onclick = () => { skip = true }
   const fin = e => { if (e) { e.preventDefault(); e.stopPropagation() } if (closed) return; closed = true; skip = true; ov.style.display = 'none'; doneB.style.display = 'none'; setTimeout(() => { try { FXC.dispose() } catch { } document.body.classList.remove('in-opener'); ov.remove(); doneB.remove(); document.querySelectorAll('#opener, body > .mo-done').forEach(o => o.remove()); go('shop') }, 20) }
   const doneB = ov.querySelector('.mo-done'); document.body.append(doneB); doneB.onclick = fin; doneB.onpointerup = fin
