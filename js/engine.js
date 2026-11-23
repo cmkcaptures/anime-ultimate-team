@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=chimera-story'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=chimera-duels'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -904,8 +904,8 @@ const ARCS = [
   { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', bad: ['MERUEM', 'NEFERPITOU', 'SHAIAPOUF', 'HISOKA'],
     synopsis: 'A Royal Guard cuts off the Hunters’ retreat. As the King comes into his own, Kite, Netero and Gon each face the cost of standing their ground.',
     chapters: [
-      { name: 'Buy Them Time', player: 'kite_crazy_slots', enemy: 'neferpitou_royal_guard', level: 2, boost: .75, survive: 2,
-        objective: 'Survive two enemy turns as Kite so Gon and Killua can escape.',
+      { name: 'Buy Them Time', player: 'kite_crazy_slots', enemy: 'neferpitou_royal_guard', level: 4, boost: 1.02, playerBoost: 1.55,
+        matchup: 'Pitou strikes first. Kite has to fight from behind.',
         scene: [
           ['kite_crazy_slots', 'Keep moving, both of you. Whatever happens behind you, keep moving.'],
           ['neferpitou_royal_guard', 'They ran as soon as you told them to. They must trust you.'],
@@ -917,8 +917,8 @@ const ARCS = [
           ['Narrator', 'Gon and Killua escape. Kite stays behind with the Royal Guard. By the time the Hunters mount their assault, Gon has only one thing on his mind.'],
         ],
       },
-      { name: 'The King’s Name', player: 'netero_100_type_guanyin', enemy: 'meruem_the_king', level: 3, boost: 1.05, enemyHP: .5,
-        objective: 'Bring Meruem to half HP as Netero to reach the last stand.',
+      { name: 'The King’s Name', player: 'netero_100_type_guanyin', enemy: 'meruem_the_king', level: 5, boost: 1.85,
+        matchup: 'Meruem has the edge in raw power. Netero’s Ultimate can swing the fight.',
         scene: [
           ['meruem_the_king', 'There is a name I was given. You know it, don’t you?'],
           ['netero_100_type_guanyin', 'I do. You’ll have to earn the answer.'],
@@ -930,8 +930,8 @@ const ARCS = [
           ['Narrator', 'Meruem withstands Netero’s final technique. With his last breath, the Chairman triggers the Poor Man’s Rose.'],
         ],
       },
-      { name: 'The Price of Power', player: 'gon_adult_form', enemy: 'neferpitou_royal_guard', level: 4, boost: 1.35,
-        objective: 'Defeat Neferpitou as Adult Gon.',
+      { name: 'The Price of Power', player: 'gon_adult_form', enemy: 'neferpitou_royal_guard', level: 4, boost: 2.05,
+        matchup: 'Pitou can still hit hard, but Adult Gon has the edge.',
         scene: [
           ['neferpitou_royal_guard', 'I told you I would take you to Kite. There was never anything I could do to bring him back.'],
           ['Narrator', 'Gon gives up the power he might have had one day for the strength to fight now.'],

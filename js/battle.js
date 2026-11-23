@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=chimera-story'
-import { sfx, sfxOn, music } from './sfx.js?v=chimera-story'
-import { createFX } from './fx2d.js?v=chimera-story'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=chimera-duels'
+import { sfx, sfxOn, music } from './sfx.js?v=chimera-duels'
+import { createFX } from './fx2d.js?v=chimera-duels'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -791,7 +791,7 @@ function storyArcPage(el, arc, cast, done) {
       else fight()
     }
     const row = h('div', 'camp-st' + (i < done ? ' done' : '') + (i > done ? ' locked' : ''),
-      `<span class="cs-art" style="background-image:url('${enemy.url}')"></span><span class="cs-tx"><small>${label}</small><b>${player.name} vs. ${enemy.name}</b><small>${chapter.objective}</small></span>`)
+      `<span class="cs-art" style="background-image:url('${enemy.url}')"></span><span class="cs-tx"><small>${label}</small><b>${player.name} vs. ${enemy.name}</b><small>${chapter.matchup}</small></span>`)
     const play = h('button', 'btn gold sm', i < done ? 'REPLAY STORY' : i === done ? 'CONTINUE STORY' : 'LOCKED')
     play.disabled = i > done
     play.onclick = () => start(true)
@@ -900,7 +900,13 @@ export function startBattle(stage) {
   if (LV) { B.you.deck = LV.myDeck || null; B.ai.deck = LV.oppDeck || null; B.you.hand = []; B.ai.hand = []; B.you.pile = B.ai.pile = null; B.you.rngS = (LV.seed + (LV.role === 'h' ? 1 : 2)) | 0; B.ai.rngS = (LV.seed + (LV.role === 'h' ? 2 : 1)) | 0 }
   if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * .88); f.ki = Math.round(f.ki * .88); f.def = Math.round(f.def * 1.15) }
   if (stage.youCat) for (const f of B.you.team) if ((f.card.cat || []).includes(stage.youCat)) for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.15)
-  if (stage.boost && stage.boost !== 1) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boost); for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * (1 + (stage.boost - 1) * .6)) }
+  for (const [side, boost] of [[B.ai, stage.boost], [B.you, stage.playerBoost]]) {
+    if (!boost || boost === 1) continue
+    for (const f of side.team) {
+      f.hp = f.max = Math.round(f.max * boost)
+      for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * (1 + (boost - 1) * .6))
+    }
+  }
   for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) {
     for (const f of me.team) {
       const e = PE(f)
@@ -941,7 +947,7 @@ export function startBattle(stage) {
   // 3D engine removed for performance; the stage is a static CSS scene
   const log = t => { const l = $a('.ar-log'); l.textContent = t; l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop') }
   let SPEED = 1; try { SPEED = +localStorage.getItem('aut-bspeed') || 1 } catch { }
-  let AUTO = false, enemyTurns = 0
+  let AUTO = false
   const wait = ms => new Promise(r => setTimeout(r, ms / SPEED))
   const IMG = new Map()
   const img = (f, w) => { const im = new Image(); im.alt = f.card.name; im.draggable = false; const k = f.key + w; if (!IMG.has(k)) IMG.set(k, thumbURL(f.card, w)); IMG.get(k).then(u => im.src = u); return im }
@@ -1215,7 +1221,6 @@ export function startBattle(stage) {
       if (other === 'you') { await pickReplacement() } else { log(`Enemy sends out ${act(foe).card.name}`); sfx('nav') }
       draw(); await wait(400)
     }
-    if (stage.enemyHP && act(B.ai).hp <= act(B.ai).max * stage.enemyHP) return end(true)
   }
   function pickReplacement() {
     return new Promise(res => {
@@ -1255,13 +1260,7 @@ export function startBattle(stage) {
 
   // safety net: nobody can sit on 0 HP without being knocked out, and a KO'd active fighter is always replaced
   function sweepKO() { for (const [side, sd] of [['you', B.you], ['ai', B.ai]]) { for (const f of sd.team) if (!f.ko && f.hp <= 0.5) { f.hp = 0; f.ko = true } if (act(sd).ko && !nextAlive(sd)) { end(side === 'ai'); return true } }
-    if (stage.enemyHP && act(B.ai).hp <= act(B.ai).max * stage.enemyHP) { end(true); return true }
     draw(); return false
-  }
-  function survivedEnemyTurn() {
-    if (!stage.survive || ++enemyTurns < stage.survive) return false
-    end(true)
-    return true
   }
   async function aiPhase() {
     if (B.over || sweepKO()) return
@@ -1281,10 +1280,9 @@ export function startBattle(stage) {
     }
     B.busy = true; controls()
     const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN + (s.kiBonus || 0)); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
-    if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; if (survivedEnemyTurn()) return; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
+    if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
     log('Enemy turn'); turnBanner('ENEMY TURN', false); draw(); await wait(800)
     for (const ev of aiTurn(B, stage.mode === 'ranked' && (stage.rating || 0) >= 80 ? 5 : stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
-    if (survivedEnemyTurn()) return
     if (B.you.skip || act(B.you).frozen) { B.you.skip = 0; act(B.you).frozen = 0; log('You lose your turn!'); turnBanner('TIME STOPPED', true); await wait(900); B.turn++; return aiPhase() }
     B.turn++
     if (B.over || sweepKO()) return
