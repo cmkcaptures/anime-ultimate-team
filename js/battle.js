@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=three-story-arcs'
-import { sfx, sfxOn, music } from './sfx.js?v=three-story-arcs'
-import { createFX } from './fx2d.js?v=three-story-arcs'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=five-story-arcs'
+import { sfx, sfxOn, music } from './sfx.js?v=five-story-arcs'
+import { createFX } from './fx2d.js?v=five-story-arcs'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -779,12 +779,12 @@ function storyArcPage(el, arc, cast, done) {
   const { h } = X
   const back = h('button', 'btn dark sm', '‹ ALL STORY ARCS')
   back.onclick = () => { selectedStoryArc = null; X.go('battle') }
-  el.append(back, h('section', 'bhero camp-hero', `<div><span class="sh-tag">${X.ANAME(arc.anime)}</span><h2>${arc.name.toUpperCase()}</h2><p>${arc.synopsis}</p></div><div class="bstat"><b>${done}/3</b><span>CHAPTERS CLEARED</span></div>`))
+  el.append(back, h('section', 'bhero camp-hero', `<div><span class="sh-tag">${X.ANAME(arc.anime)}</span><h2>${arc.name.toUpperCase()}</h2><p>${arc.synopsis}</p></div><div class="bstat"><b>${done}/${arc.chapters.length}</b><span>CHAPTERS CLEARED</span></div>`))
   const reward = X.POOL.find(c => c.id === arc.rewardCard && c.arcReward === arc.id)
   if (reward) {
     const panel = h('div', 'panel pad')
     const unlocked = X.P.arcRewards?.[arc.id]
-    panel.append(h('b', '', (unlocked ? '✓ ARC REWARD EARNED · ' : 'CLEAR ALL THREE CHAPTERS · ') + reward.name + ' · ' + reward.ver))
+    panel.append(h('b', '', (unlocked ? '✓ ARC REWARD EARNED · ' : 'CLEAR EVERY CHAPTER · ') + reward.name + ' · ' + reward.ver))
     panel.append(h('p', 'muted', unlocked ? 'Extra copies are available in the Pack Point Exchange.' : 'Clearing this arc also unlocks extra copies in the Pack Point Exchange.'))
     el.append(panel)
   }
@@ -822,7 +822,7 @@ function arcsPage(el) {
   const selected = available.find(({ arc }) => arc.id === selectedStoryArc)
   if (selected) return storyArcPage(el, selected.arc, selected.cast, A[selected.arc.id] || 0)
   const total = available.length, cleared = available.filter(({ arc }) => (A[arc.id] || 0) >= arc.chapters.length).length
-  el.append(h('section', 'bhero', `<div><h2>STORY ARCS</h2><p>Play three battles with the fighters from each scene. Clear an arc to earn its card, a Premium Drop and ◆1,000 shards.</p></div><div class="bstat"><b>${cleared}</b><span>/ ${total} ARCS</span></div>`))
+  el.append(h('section', 'bhero', `<div><h2>STORY ARCS</h2><p>Fight as the characters from each scene. Clear an arc to earn its card, a Premium Drop and ◆1,000 shards.</p></div><div class="bstat"><b>${cleared}</b><span>/ ${total} ARCS</span></div>`))
   const grid = h('div', 'arcs')
   for (const { arc, cast } of available) {
     const done = A[arc.id] || 0, count = arc.chapters.length, boss = cast.get(arc.chapters[count - 1].enemy)
@@ -913,6 +913,7 @@ export function startBattle(stage) {
     }
   }
   if (stage.rules) for (const f of B.ai.team) { const r = { ...stage.rules }; f.pe = { ...(f.pe || {}), ...r, dmg: ((f.pe || {}).dmg || 0) + (r.dmg || 0), dodge: Math.min(60, ((f.pe || {}).dodge || 0) + (r.dodge || 0)), regen: ((f.pe || {}).regen || 0) + (r.regen || 0) }; if (r.endure) f.endure = (f.endure || 0) + r.endure }
+  if (stage.rules?.ultStart) B.ai.gauge = Math.max(B.ai.gauge, stage.rules.ultStart)
   { const all = [...B.you.team, ...B.ai.team], idle = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 1500 }) : setTimeout(f, 60)); let i = 0; const next = () => { const f = all[i++]; if (!f) return; thumbURL(f.card, 560).catch(() => {}).finally(() => idle(next)) }; setTimeout(() => idle(next), 200) }
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }

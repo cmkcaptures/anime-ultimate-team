@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=three-story-arcs'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=five-story-arcs'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -253,7 +253,7 @@ function achList() {
     { id: 'story', g: 'BATTLE', name: 'Story Complete', d: 'Clear all 10 story stages', p: B.cleared || 0, need: 10, rw: { coins: 5000 } },
     { id: 'tower25', g: 'BATTLE', name: 'Halfway Up', d: 'Clear Tower floor 25', p: (P.tower && P.tower.best) || 0, need: 25, rw: { coins: 6000, shards: 300 } },
     { id: 'tower50', g: 'BATTLE', name: 'Top of the Tower', d: 'Clear Tower floor 50', p: (P.tower && P.tower.best) || 0, need: 50, rw: { coins: 25000, title: 'Tower Master' } },
-    { id: 'arcs', g: 'BATTLE', name: 'Arc Hunter', d: 'Complete all 3 Story Arcs', p: Object.values(P.arcs || {}).filter(x => x >= 3).length >= 5 ? 3 : ARCS.filter(arc => (P.arcs?.[arc.id] || 0) >= ARC_CH.length).length, need: 3, rw: { coins: 12000, title: 'Arc Hunter' } },
+    { id: 'arcs', g: 'BATTLE', name: 'Arc Hunter', d: 'Complete 3 Story Arcs', p: Object.entries(P.arcs || {}).filter(([id, count]) => count >= 3 && !ARCS.some(a => a.id === id && a.chapters.length > 3)).length >= 5 ? 3 : ARCS.filter(arc => arcCleared(P, arc)).length, need: 3, rw: { coins: 12000, title: 'Arc Hunter' } },
     { id: 'diamond', g: 'BATTLE', name: 'Diamond Hands', d: 'Reach Diamond in Ranked', p: P.rank ? P.rank.best : 0, need: 4, rw: { coins: 10000, title: 'Diamond' } },
     { id: 'legend', g: 'BATTLE', name: 'Living Legend', d: 'Reach Legend in Ranked', p: P.rank ? P.rank.best : 0, need: 6, rw: { coins: 30000, title: 'Legend' } },
     { id: 'boss100k', g: 'BATTLE', name: 'Boss Breaker', d: 'Deal 100,000 damage to a Daily Boss in one fight', p: Math.max(P.bossBestEver || 0, (P.boss && P.boss.best) || 0), need: 100000, rw: { coins: 8000, title: 'Boss Breaker' } },
@@ -1027,6 +1027,114 @@ const ARCS = [
       },
     ],
   },
+  { id: 'tournament-final-stand', anime: 'DBZ', name: 'Tournament of Power: Final Stand', rewardCard: 'jiren_full_power',
+    synopsis: 'Universe 7 is running out of time. Jiren stands between its last fighters and survival.',
+    chapters: [
+      { name: 'Instinct Returns', player: 'goku_ui', enemy: 'jiren_full_power', level: 4, boost: 1.38,
+        matchup: 'Ultra Instinct lets Goku slip past attacks. Jiren grows stronger as he takes hits.',
+        scene: [
+          ['Narrator', 'Vegeta is out. Goku is cornered against the broken edge of the arena, and his body begins to move on its own again.'],
+          ['jiren_full_power', 'You can dodge me. Can you reach me before your strength gives out?'],
+          ['goku_ui', 'I don’t know how long I’ve got. I only need long enough to find an opening.'],
+        ],
+        outro: [
+          ['Narrator', 'Goku slips through the barrage. He stops trying to think his way through each hit and lets the attack come to him.'],
+          ['jiren_full_power', 'The way you’re moving has changed again.'],
+        ],
+      },
+      { name: 'Beyond the Limit', player: 'goku_mui', enemy: 'jiren_full_power', level: 5, boost: 1.55,
+        matchup: 'Mastered Ultra Instinct gives Goku the first move. Jiren can still outlast him.',
+        scene: [
+          ['goku_mui', 'I can finally see what you’re doing. Every time I step forward, you’re already there.'],
+          ['jiren_full_power', 'Then you know what it takes to move me.'],
+          ['Narrator', 'Jiren puts everything into his next attack. Goku steps toward it.'],
+        ],
+        outro: [
+          ['goku_mui', 'I think that’s enough, Jiren.'],
+          ['Narrator', 'Before Goku can finish the fight, Ultra Instinct gives out. He falls near the edge of the arena.'],
+        ],
+      },
+      { name: 'The Opening', player: 'frieza_golden_frieza', enemy: 'jiren_full_power', level: 4, boost: 1.05, playerBoost: 1.28,
+        matchup: 'Frieza presses an exhausted Jiren while Goku recovers.',
+        scene: [
+          ['frieza_golden_frieza', 'I thought I’d be watching you throw him over the edge. Now I find myself standing in the way.'],
+          ['jiren_full_power', 'You waited for both of us to run out of strength.'],
+          ['frieza_golden_frieza', 'I waited for an opening. You’re standing in it.'],
+        ],
+        outro: [
+          ['Narrator', 'With Android 17 covering him, Frieza forces Jiren back. Jiren rises again, and Frieza’s golden glow fades.'],
+          ['Narrator', 'Goku pulls himself up. They have one last chance to take Jiren out of bounds.'],
+        ],
+      },
+      { name: 'Over the Edge', player: ['frieza_emperor_of_the_universe', 'goku_base'], enemy: 'jiren_full_power', level: 5, boost: 1.4, playerBoost: 1.7,
+        matchup: 'Switch fighters to share the damage while Jiren tries to hold the centre.',
+        scene: [
+          ['frieza_emperor_of_the_universe', 'If I take him over, you’d better be there to make sure he stays over.'],
+          ['goku_base', 'I’ll be there. We go together.'],
+          ['jiren_full_power', 'Neither of you has enough left.'],
+          ['goku_base', 'Then we’ll put what we have left together.'],
+        ],
+        outro: [
+          ['Narrator', 'Goku and Frieza take Jiren over the edge together. Android 17 is the last fighter in the ring.'],
+          ['Narrator', 'The winning wish brings the erased universes back.'],
+        ],
+      },
+    ],
+  },
+  { id: 'dark-matter-invasion', anime: 'OPM', name: 'The Dark Matter Invasion', rewardCard: 'boros_meteoric_burst',
+    synopsis: 'Saitama boards the ship above City A and finds Boros waiting for a fight.',
+    chapters: [
+      { name: 'Break the Armour', player: 'saitama_hero', enemy: 'boros_dominator_of_the_univers', level: 3, boost: 1.25,
+        matchup: 'Boros recovers HP between turns. Keep pressing after a big hit.',
+        scene: [
+          ['boros_dominator_of_the_univers', 'I crossed the stars to find someone who could make me fight. Are you that person?'],
+          ['saitama_hero', 'You’re in charge of the ship, right? Tell it to stop shooting at the city.'],
+          ['boros_dominator_of_the_univers', 'First, show me what you did to get up here.'],
+        ],
+        outro: [
+          ['Narrator', 'Saitama’s punch shatters the armour holding Boros’s power back. Boros tests his released strength, then pushes his body into Meteoric Burst.'],
+          ['saitama_hero', 'You’re a lot louder without the armour on.'],
+        ],
+      },
+      { name: 'Meteoric Burst', player: 'saitama_hero', enemy: 'boros_meteoric_burst', level: 4, boost: 1, playerBoost: 1.35,
+        matchup: 'Boros trades his own HP for harder hits. Make him pay for every exchange.',
+        scene: [
+          ['boros_meteoric_burst', 'This speeds up everything inside me. Even I can’t keep it going for long.'],
+          ['saitama_hero', 'So what happens when you get tired?'],
+          ['boros_meteoric_burst', 'You won’t be here to find out.'],
+        ],
+        outro: [
+          ['Narrator', 'Boros catches Saitama with a kick that sends him out of the atmosphere. Saitama lands on the Moon, checks his footing, and jumps back.'],
+          ['saitama_hero', 'Okay. Same ship. Good.'],
+        ],
+      },
+      { name: 'Back on Deck', player: 'saitama_hero', enemy: 'boros_meteoric_burst', level: 4, boost: 1.06, playerBoost: 1.37,
+        matchup: 'Boros keeps attacking through the recoil. Force him to spend his remaining strength.',
+        scene: [
+          ['boros_meteoric_burst', 'You came back on your own. All the way from there?'],
+          ['saitama_hero', 'Yeah. What were we doing?'],
+          ['Narrator', 'Saitama closes the distance. Boros’s body starts coming apart under the punches and pulls itself back together.'],
+        ],
+        outro: [
+          ['boros_meteoric_burst', 'I have enough left for one attack. There won’t be a reason to hold back after this.'],
+          ['saitama_hero', 'All right. I’ll take this one seriously.'],
+        ],
+      },
+      { name: 'Serious Punch', player: 'saitama_serious', enemy: 'boros_meteoric_burst', level: 5, boost: 1.52, playerBoost: 1.16,
+        rules: { ultStart: 50 },
+        matchup: 'Boros starts with 50% Ultimate gauge. Close the fight before he can fire at full power.',
+        scene: [
+          ['boros_meteoric_burst', 'I’m putting everything I have left into this. Let’s see if you can stop it.'],
+          ['saitama_serious', 'I can. I just needed to see where you were aiming.'],
+        ],
+        outro: [
+          ['Narrator', 'Saitama’s punch splits the beam and leaves the ship falling. Boros is still alive long enough to speak.'],
+          ['boros_meteoric_burst', 'You had plenty left. I was the only one who had to use everything.'],
+          ['saitama_serious', 'You made it a good fight.'],
+        ],
+      },
+    ],
+  },
 ]
 function grantArcCard(arc) {
   if (!arc.rewardCard) return null
@@ -1039,7 +1147,7 @@ function grantArcCard(arc) {
   P.last = [card.key]
   return card
 }
-const ARC_CH = [{ name: 'Chapter 1', level: 2, boost: 1, coins: 2000 }, { name: 'Chapter 2', level: 3, boost: 1.12, coins: 3000 }, { name: 'Final Boss', level: 5, boost: 1.3, coins: 5000 }]
+const arcCleared = (P, arc) => !!arc && (P.arcs?.[arc.id] || 0) >= arc.chapters.length
 const EVENT_ANIME = ['JJK', 'DS', 'DBZ', 'OP', 'NAR', 'MHA', 'JJBA', 'HXH', 'BLE', 'BC', 'FT', 'FF']
 function eventNow() { const wk = Math.floor((Date.now() / 864e5 + 3) / 7), a = EVENT_ANIME[wk % EVENT_ANIME.length]; return { id: 'e' + wk, anime: a, pack: PACKS[a] ? a : 'standard', ends: (wk + 1) * 7 * 864e5 - 3 * 864e5, tiers: [{ name: 'Normal', level: 2, boost: 1, coins: 1500 }, { name: 'Hard', level: 4, boost: 1.2, coins: 3000 }, { name: 'Nightmare', level: 5, boost: 1.45, coins: 5000, pack: true }] } }
 
@@ -1177,7 +1285,7 @@ function act(a) {
     }
     case 'ppBuy': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
-      if (c.arcReward && ((P.arcs || {})[c.arcReward] || 0) < ARC_CH.length) return { error: 'Clear its Story Arc to unlock this card.' }
+      if (c.arcReward && !arcCleared(P, ARCS.find(arc => arc.id === c.arcReward))) return { error: 'Clear its Story Arc to unlock this card.' }
       const cost = PP_COST[c.r]; if ((P.pp || 0) < cost) return { error: `You need ${cost} pack points.` }
       P.pp -= cost; giveCard(a.key); P.last = [a.key]; addXP(10)
       return { msg: `Got ${cardName(a.key)} for ${cost} pack points.` }
@@ -1365,16 +1473,17 @@ function act(a) {
         return { msg: `${'★'.repeat(got)} ${st.name} cleared! +${st.coins.toLocaleString()} coins${extra}.` }
       }
       if (a.mode === 'arc') {
-        const [id, ch] = String(a.id).split(':'), arc = ARCS.find(x => x.id === id), c = +ch; if (!arc || !ARC_CH[c]) return { error: 'Unknown chapter.' }
+        const [id, ch] = String(a.id).split(':'), arc = ARCS.find(x => x.id === id), c = Number(ch), chapter = arc?.chapters[c]; if (!ch || !Number.isInteger(c) || !chapter) return { error: 'Unknown chapter.' }
         const A = (P.arcs = P.arcs || {}), done = A[id] || 0; if (c > done) return { error: 'Chapter locked.' }
         if (!a.won) { addXP(10); return {} }
         addXP(40); if (c < done) { P.coins += 300; return { msg: 'Chapter replayed. +300 coins.' } }
-        A[id] = c + 1; P.coins += ARC_CH[c].coins; let extra = ''
-        if (c === 2) { P.pending.premium = (P.pending.premium || 0) + 1; P.shards = (P.shards || 0) + 1000; extra = ', a Premium Drop and ◆1,000 shards'
+        const final = c === arc.chapters.length - 1, coins = final ? 5000 : 2000 + c * 1000
+        A[id] = c + 1; P.coins += coins; let extra = ''
+        if (final) { P.pending.premium = (P.pending.premium || 0) + 1; P.shards = (P.shards || 0) + 1000; extra = ', a Premium Drop and ◆1,000 shards'
           const reward = grantArcCard(arc)
           if (reward) extra += ' and ' + reward.name + ' · ' + reward.ver
         }
-        return { msg: `${arc.name}: ${(arc.chapters?.[c] || ARC_CH[c]).name} cleared! +${ARC_CH[c].coins.toLocaleString()} coins${extra}.` }
+        return { msg: `${arc.name}: ${chapter.name} cleared! +${coins.toLocaleString()} coins${extra}.` }
       }
       if (a.mode === 'event') {
         const E = eventNow(), t = +a.id, T = E.tiers[t]; if (!T) return { error: 'Unknown event fight.' }
@@ -1534,7 +1643,7 @@ function state() {
     presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
     camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST, vcamp: VCAMP, vcampP: vcampP(), rift: riftNow(), deadzones: DEADZONES, rzAll: S.profile.rz || {},
-    mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
+    mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
   return JSON.parse(JSON.stringify(out))
@@ -1591,7 +1700,7 @@ async function boot() {
     for (const w of S.wonder) w.keys = w.keys.map(fix)
     S.market.won = (S.market.won || []).map(w => ({ ...w, key: fix(w.key) })) }
   for (const arc of ARCS) {
-    if ((S.profile.arcs?.[arc.id] || 0) < ARC_CH.length) continue
+    if (!arcCleared(S.profile, arc)) continue
     const reward = grantArcCard(arc)
     if (reward) notice(arc.name + ' clear reward: ' + reward.name + ' · ' + reward.ver, 'ok')
   }

@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=three-story-arcs'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=three-story-arcs'
+import { createFX } from './fx2d.js?v=five-story-arcs'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=five-story-arcs'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=three-story-arcs'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=three-story-arcs'
+import * as ACC from './account.js?v=five-story-arcs'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=five-story-arcs'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=three-story-arcs'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=five-story-arcs'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -486,7 +486,7 @@ function buildTargets() {
   const own = owned(), cnt = {}; for (const c of own) cnt[c.anime] = (cnt[c.anime] || 0) + 1
   const T = [{ id: 'best', label: 'BEST OVERALL', sub: 'Highest power, with synergy if it pays off' }]
   if (ST.event) T.push({ id: 'vs:' + ST.event.anime, label: '⚡ EVENT · ' + ANAME(ST.event.anime).toUpperCase(), sub: 'Counter this week\'s event enemies', hot: 1 })
-  for (const arc of ST.arcs || []) if (((P.arcs || {})[arc.id] || 0) < 3 && POOL.some(c => c.anime === arc.anime)) T.push({ id: 'vs:' + arc.anime, label: 'ARC · ' + arc.name.toUpperCase(), sub: 'Counter ' + ANAME(arc.anime) + ' fighters' })
+  for (const arc of ST.arcs || []) if (((P.arcs || {})[arc.id] || 0) < arc.chapters.length && POOL.some(c => c.anime === arc.anime)) T.push({ id: 'vs:' + arc.anime, label: 'ARC · ' + arc.name.toUpperCase(), sub: 'Counter ' + ANAME(arc.anime) + ' fighters' })
   for (const a of Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x])) if (cnt[a] >= 3) T.push({ id: 'series:' + a, label: ANAME(a).toUpperCase() + ' TEAM', sub: cnt[a] + ' owned · up to +' + (SYN[Math.min(6, cnt[a])] || 0) + '% synergy' })
   return T.filter((t, i, L) => L.findIndex(u => u.id === t.id) === i)
 }
@@ -735,7 +735,8 @@ PAGES.shop = (el) => {
   el.append(h('div', 'sec', `<h3>PACK POINT EXCHANGE</h3><span class="cur"><i class="pp-i"></i>${fmt(P.pp || 0)}</span>`))
   el.append(h('p', 'muted', '<small style="font-weight:700">Every pack you open gives 5 pack points. Spend them on the exact card you want.</small>'))
   const g = h('div', 'ppgrid')
-  const exchangeCards = POOL.filter(c => c.arcReward ? ((P.arcs || {})[c.arcReward] || 0) >= ST.arcCh.length : !c.season)
+  const clearedArcs = new Set(ST.arcs.filter(arc => (P.arcs?.[arc.id] || 0) >= arc.chapters.length).map(arc => arc.id))
+  const exchangeCards = POOL.filter(c => c.arcReward ? clearedArcs.has(c.arcReward) : !c.season)
   for (const c of exchangeCards.sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr)) {
     const cost = ST.ppCost[c.r], b = h('button', 'cg' + ((P.pp || 0) < cost ? ' dimmed' : ''))
     b.append(cardImg(c, 240), h('span', 'cost', `<i></i>${cost}`)); if ((P.pp || 0) < cost) b.style.opacity = .55
