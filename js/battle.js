@@ -172,7 +172,13 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (ea.vsAnime && def.card.anime === ea.vsAnime) m += ea.vsAnimeB / 100
   if (ea.rika) { m += ea.rika / 100; pasNote(att, 'RIKA +' + ea.rika + '%') }
   if (ea.blackflash && rnd(A || D) * 100 < ea.blackflash) { m *= 2.5; pasNote(att, "BLACK FLASH") }
-  if (ed.weakTo) { if (ed.weakTo.some(t => tagsOf(att.card).includes(t))) { m += (ed.weakB || 50) / 100; att.hitWeak = 1 } else m -= (ed.resist || 0) / 100 }
+  const isSpecialOrUltimate = kind === 'special' || kind === 'ult'
+  if (ed.weakTo) {
+    const hitsWeakness = ed.weakTo.some(t => tagsOf(att.card).includes(t)) ||
+      (ed.championWeakness && ea.championWeakness && isSpecialOrUltimate)
+    if (hitsWeakness) { m += (ed.weakB || 50) / 100; att.hitWeak = 1 }
+    else m -= (ed.resist || 0) / 100
+  }
   if (ea.vsRole && def.card.role === ea.vsRole) m += ea.vsRoleB / 100
   if (ea.vsType && ea.vsType.includes(def.card.t)) m += ea.vsTypeB / 100
   if (ea.avenge && A && A.team.some(f => f.ko && f !== att)) m += ea.avenge / 100
@@ -199,7 +205,7 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   def.hp = Math.max(0, def.hp - dmg); if (def.hp < 1) def.hp = 0; att.dealt += dmg; def.hitsTaken++
   // on-hit passives
   if (ea.drain && !ea.noHeal) att.hp = Math.min(att.max, att.hp + Math.round(dmg * ea.drain / 100))
-  if (ed.reflect && dmg > 0) { const rf = Math.round(dmg * ed.reflect / 100); att.hp = Math.max(1, att.hp - rf); pasNote(def, 'REFLECT ' + rf) }
+  if (ed.reflect && dmg > 0 && !(ea.pierceReflect && isSpecialOrUltimate)) { const rf = Math.round(dmg * ed.reflect / 100); att.hp = Math.max(1, att.hp - rf); pasNote(def, 'REFLECT ' + rf) }
   if (ed.thorns) att.hp = Math.max(1, att.hp - Math.round(att.max * ed.thorns / 100))
   if (ea.shred) def.shred = Math.min(30, (def.shred || 0) + ea.shred)
   if (ea.burn) { def.burn = Math.max(def.burn, ea.burn); def.burnT = 3 }

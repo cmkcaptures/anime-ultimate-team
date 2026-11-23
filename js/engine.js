@@ -816,8 +816,8 @@ const PKZONE = { id: 'pk1', name: 'League Gauntlet', sub: 'Dead Zone · Pokémon
     weak: ['Transformations', 'Rivals'], weakB: 60, resist: 60, tip: 'Everyone Mega Evolves and gets back up once. Fight power with power: transformations and rivals.',
     reward: { coins: 30000, premium: 2, shards: 3000 } },
   { n: 5, name: 'Champion of Champions', boss: 'ASH & HIS TEAM', enemy: ['ASH & HIS TEAM', 'ASH & PIKACHU', 'RED & CHARIZARD', 'LEON & CHARIZARD', 'CYNTHIA & GARCHOMP', 'ASH & GRENINJA'], boost: 2.3, final: 1,
-    rules: [['Bond Phenomenon', 'Enemies reflect 15% damage and heal 5% a turn', { reflect: 15, regen: 5 }], ['World Monarch', 'Enemies deal +20% damage', { dmg: 20 }]],
-    weak: ['S:PKM', 'Rivals', 'Dragons'], weakB: 55, resist: 65, tip: 'Every champion, led by Ash at his peak. Your best trainers, rivals like Paul and Gary, and dragons. Save Awakened Ultimates for Ash.',
+    rules: [['Bond Phenomenon', 'Enemies reflect 15% damage and heal 5% a turn', { reflect: 15, regen: 5, championWeakness: 1 }], ['World Monarch', 'Enemies deal +20% damage', { dmg: 20 }]],
+    weak: ['S:PKM', 'Rivals', 'Dragons'], weakB: 55, resist: 65, tip: 'Every champion, led by Ash at his peak. Your best trainers, rivals like Paul and Gary, and dragons. Kizaru’s Specials and Ultimates also hit this weakness. Save Awakened Ultimates for Ash.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
 const DEADZONES = [REDZONE, DARKT, DBZONE, PKZONE]
