@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=icewall91'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=chimera-story'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -901,7 +901,52 @@ const ARCS = [
   { id: 'dbz', anime: 'DBZ', name: 'Tournament of Power', bad: ['BROLY', 'GOKU BLACK'] },
   { id: 'jjba', anime: 'JJBA', name: 'Golden Wind Finale', bad: ['DIAVOLO', 'KIRA', 'DIEGO'] },
   { id: 'ble', anime: 'BLE', name: 'Thousand-Year Blood War', bad: ['YHWACH', 'AIZEN', 'ULQUIORRA', 'GRIMMJOW'] },
-  { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', bad: ['MERUEM', 'NEFERPITOU', 'SHAIAPOUF', 'HISOKA'] },
+  { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', bad: ['MERUEM', 'NEFERPITOU', 'SHAIAPOUF', 'HISOKA'],
+    synopsis: 'A Royal Guard cuts off the Hunters’ retreat. As the King comes into his own, Kite, Netero and Gon each face the cost of standing their ground.',
+    chapters: [
+      { name: 'Buy Them Time', player: 'kite_crazy_slots', enemy: 'neferpitou_royal_guard', level: 2, boost: .75, survive: 2,
+        objective: 'Survive two enemy turns as Kite so Gon and Killua can escape.',
+        scene: [
+          ['kite_crazy_slots', 'Keep moving, both of you. Whatever happens behind you, keep moving.'],
+          ['neferpitou_royal_guard', 'They ran as soon as you told them to. They must trust you.'],
+          ['kite_crazy_slots', 'I’d like them to live long enough to be angry about it.'],
+          ['neferpitou_royal_guard', 'Then let’s see how much time you can buy.'],
+        ],
+        outro: [
+          ['kite_crazy_slots', 'The footsteps are gone. Good.'],
+          ['Narrator', 'Gon and Killua escape. Kite stays behind with the Royal Guard. By the time the Hunters mount their assault, Gon has only one thing on his mind.'],
+        ],
+      },
+      { name: 'The King’s Name', player: 'netero_100_type_guanyin', enemy: 'meruem_the_king', level: 3, boost: 1.05, enemyHP: .5,
+        objective: 'Bring Meruem to half HP as Netero to reach the last stand.',
+        scene: [
+          ['meruem_the_king', 'There is a name I was given. You know it, don’t you?'],
+          ['netero_100_type_guanyin', 'I do. You’ll have to earn the answer.'],
+          ['meruem_the_king', 'How many hands does that statue need before you’ll put them down and talk?'],
+          ['netero_100_type_guanyin', 'Let’s find out how many you can count.'],
+        ],
+        outro: [
+          ['netero_100_type_guanyin', 'Meruem. That’s your name.'],
+          ['Narrator', 'Meruem withstands Netero’s final technique. With his last breath, the Chairman triggers the Poor Man’s Rose.'],
+        ],
+      },
+      { name: 'The Price of Power', player: 'gon_adult_form', enemy: 'neferpitou_royal_guard', level: 4, boost: 1.35,
+        objective: 'Defeat Neferpitou as Adult Gon.',
+        scene: [
+          ['neferpitou_royal_guard', 'I told you I would take you to Kite. There was never anything I could do to bring him back.'],
+          ['Narrator', 'Gon gives up the power he might have had one day for the strength to fight now.'],
+          ['gon_adult_form', 'Then I only need enough for this.'],
+          ['neferpitou_royal_guard', 'If he could reach the King with that power… I have to stop him here.'],
+        ],
+        outro: [
+          ['Narrator', 'Pitou falls. Killua reaches Gon as the strength he borrowed gives way.'],
+          ['Narrator', 'Elsewhere, the poison from the Rose reaches the palace. Meruem has one last game to play.'],
+          ['meruem_komugi_gungi', 'Tell me when it’s my turn, Komugi. I can’t see the board anymore.', 'MERUEM'],
+          ['meruem_komugi_gungi', 'Your turn, sir. I’m right here.', 'KOMUGI'],
+        ],
+      },
+    ],
+  },
   { id: 'bc', anime: 'BC', name: 'Spade Kingdom Raid', bad: ['ZAGRED'] },
   { id: 'ft', anime: 'FT', name: 'Alvarez Empire War', bad: ['ZEREF', 'ACNOLOGIA'] },
   { id: 'ff', anime: 'FF', name: 'The Great Cataclysm', bad: ['THE EVANGELIST', 'HAUMEA', 'SHO'] },
@@ -1227,7 +1272,7 @@ function act(a) {
         addXP(40); if (c < done) { P.coins += 300; return { msg: 'Chapter replayed. +300 coins.' } }
         A[id] = c + 1; P.coins += ARC_CH[c].coins; let extra = ''
         if (c === 2) { P.pending.premium = (P.pending.premium || 0) + 1; P.shards = (P.shards || 0) + 1000; extra = ', a Premium Drop and ◆1,000 shards' }
-        return { msg: `${arc.name}: ${ARC_CH[c].name} cleared! +${ARC_CH[c].coins.toLocaleString()} coins${extra}.` }
+        return { msg: `${arc.name}: ${(arc.chapters?.[c] || ARC_CH[c]).name} cleared! +${ARC_CH[c].coins.toLocaleString()} coins${extra}.` }
       }
       if (a.mode === 'event') {
         const E = eventNow(), t = +a.id, T = E.tiers[t]; if (!T) return { error: 'Unknown event fight.' }

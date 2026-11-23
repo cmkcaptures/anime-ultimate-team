@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=icewall91'
-import { sfx, sfxOn, music } from './sfx.js?v=icewall91'
-import { createFX } from './fx2d.js?v=icewall91'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=chimera-story'
+import { sfx, sfxOn, music } from './sfx.js?v=chimera-story'
+import { createFX } from './fx2d.js?v=chimera-story'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -603,10 +603,10 @@ export function counterSheet(enemy, title) {
 const cxBtn = (enemyFn, title) => { const b = X.h('button', 'cx-btn', '🎯 COUNTERS'); b.onclick = ev => { ev.stopPropagation(); counterSheet(enemyFn(), title) }; return b }
 // ================= STORY CAMPAIGN =================
 const byName = n => X.POOL.filter(c => c.name === n).sort((a, b) => b.ovr - a.ovr)[0]
-function scene(lines, title, bg, done) {
+function scene(lines, title, bg, done, cast) {
   const { h } = X, o = h('div', 'scn'); let i = 0
   o.innerHTML = `<div class="scn-bg" style="background-image:url('${bg || ''}')"></div><div class="scn-top"><b>${title}</b><button class="btn dark sm scn-skip">SKIP ›</button></div><div class="scn-who"></div><div class="scn-box"><small></small><p></p><em>TAP TO CONTINUE</em></div>`
-  const show = () => { const [who, t] = lines[i], c = byName(who); o.querySelector('.scn-who').style.backgroundImage = c ? `url("${c.url}")` : 'none'; o.querySelector('.scn-who').style.setProperty('--fy', Math.round((c && c.fy != null ? c.fy : .22) * 100) + '%'); o.querySelector('.scn-box small').textContent = who; o.querySelector('.scn-box p').textContent = t; o.querySelector('.scn-who').classList.remove('in'); void o.offsetWidth; o.querySelector('.scn-who').classList.add('in') }
+  const show = () => { const [who, t, speaker] = lines[i], c = cast ? cast.get(who) : byName(who); o.querySelector('.scn-who').style.backgroundImage = c ? `url("${c.url}")` : 'none'; o.querySelector('.scn-who').style.setProperty('--fy', Math.round((c && c.fy != null ? c.fy : .22) * 100) + '%'); o.querySelector('.scn-box small').textContent = speaker || (c && cast ? c.name : who); o.querySelector('.scn-box p').textContent = t; o.querySelector('.scn-who').classList.remove('in'); void o.offsetWidth; o.querySelector('.scn-who').classList.add('in') }
   const end = () => { o.remove(); done() }
   o.onclick = e => { if (e.target.closest('.scn-skip')) return end(); i++; i >= lines.length ? end() : show() }
   document.body.append(o); show()
@@ -762,8 +762,57 @@ function campPage(el, ok) {
     el.append(list)
   }
 }
+let selectedStoryArc = null
+function storyArcCast(arc) {
+  const cast = new Map()
+  for (const chapter of arc.chapters) {
+    for (const id of [chapter.player, chapter.enemy, ...chapter.scene.map(([id]) => id), ...chapter.outro.map(([id]) => id)]) {
+      if (id === 'Narrator' || cast.has(id)) continue
+      const card = X.POOL.find(c => c.id === id && c.anime === arc.anime)
+      if (!card) return null
+      cast.set(id, card)
+    }
+  }
+  return cast
+}
+function storyArcPage(el, arc, cast, done) {
+  const { h } = X
+  const back = h('button', 'btn dark sm', '‹ ALL STORY ARCS')
+  back.onclick = () => { selectedStoryArc = null; X.go('battle') }
+  el.append(back, h('section', 'bhero camp-hero', `<div><span class="sh-tag">${X.ANAME(arc.anime)}</span><h2>${arc.name.toUpperCase()}</h2><p>${arc.synopsis}</p></div><div class="bstat"><b>${done}/3</b><span>CHAPTERS CLEARED</span></div>`))
+  const list = h('div', 'camp-list')
+  arc.chapters.forEach((chapter, i) => {
+    const player = cast.get(chapter.player), enemy = cast.get(chapter.enemy)
+    const label = `Chapter ${i + 1} · ${chapter.name}`
+    const start = withStory => {
+      const fight = () => go2({ ...chapter, mode: 'arc', id: arc.id + ':' + i, label, team: [enemy.key], storyPlayer: player.key,
+        afterWin: withStory ? () => scene(chapter.outro, chapter.name, enemy.url, () => {}, cast) : null })
+      if (withStory) scene(chapter.scene, label, enemy.url, fight, cast)
+      else fight()
+    }
+    const row = h('div', 'camp-st' + (i < done ? ' done' : '') + (i > done ? ' locked' : ''),
+      `<span class="cs-art" style="background-image:url('${enemy.url}')"></span><span class="cs-tx"><small>${label}</small><b>${player.name} vs. ${enemy.name}</b><small>${chapter.objective}</small></span>`)
+    const play = h('button', 'btn gold sm', i < done ? 'REPLAY STORY' : i === done ? 'CONTINUE STORY' : 'LOCKED')
+    play.disabled = i > done
+    play.onclick = () => start(true)
+    row.append(play)
+    if (i < done) {
+      const rematch = h('button', 'btn dark sm', 'REMATCH')
+      rematch.onclick = () => start(false)
+      row.append(rematch)
+    }
+    const wrap = h('div', 'cx-wrap')
+    const counters = cxBtn(() => [enemy], chapter.name)
+    wrap.append(row, counters)
+    list.append(wrap)
+  })
+  el.append(list)
+}
 function arcsPage(el, ok) {
   const { h, P } = X, ST = X.ST(), A = P.arcs || {}
+  const selected = ST.arcs.find(arc => arc.id === selectedStoryArc && arc.chapters)
+  const selectedCast = selected && storyArcCast(selected)
+  if (selectedCast) return storyArcPage(el, selected, selectedCast, A[selected.id] || 0)
   el.append(h('section', 'bhero', `<div><span class="sh-tag">STORY ARCS</span><h2>STORY ARCS</h2><p>Relive the big fights. Each arc has three chapters against that anime's fighters, ending with its villains as a powered-up final boss. Clearing an arc gives a Premium Drop and ◆1,000 shards.</p></div><div class="bstat"><b>${ST.arcs.filter(a => (A[a.id] || 0) >= 3).length}</b><span>/ ${ST.arcs.length} ARCS</span></div>`))
   const g = h('div', 'arcs')
   for (const arc of ST.arcs) {
@@ -773,6 +822,14 @@ function arcsPage(el, ok) {
     card.style.setProperty('--art', `url("${boss.url}")`)
     card.innerHTML = `<div class="arc-art"></div><div class="arc-info"><small>${X.ANAME(arc.anime)}</small><b>${arc.name}</b><span>${done >= 3 ? 'ARC COMPLETE' : done + ' / 3 chapters'}</span><div class="arc-ch"></div></div>`
     const chs = card.querySelector('.arc-ch')
+    const cast = arc.chapters && storyArcCast(arc)
+    if (cast) {
+      const open = h('button', 'btn gold sm', 'OPEN STORY')
+      open.onclick = () => { selectedStoryArc = arc.id; X.go('battle') }
+      chs.append(open)
+      g.append(card)
+      continue
+    }
     ST.arcCh.forEach((C, i) => {
       const b = h('button', 'btn ' + (i === 2 ? 'gold' : 'dark') + ' sm', `${i < done ? '✓ ' : ''}${C.name}`); b.disabled = !ok || i > done
       b.onclick = () => {
@@ -809,7 +866,7 @@ export function battlePage(el) {
   const team = P.team.filter(Boolean)
   modeTabs(el)
   if (MODE !== 'story') {
-    if (team.length < 6) { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
+    if (team.length < 6 && MODE !== 'arcs') { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
     return (MODE === 'live' ? livePage : MODE === 'redzone' ? redzonePage : MODE === 'villain' ? villainPage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
   }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
@@ -836,10 +893,10 @@ export function battlePage(el) {
 export function startBattle(stage) {
   const { h, cardImg, eff, BYKEY, P } = X
   const LV = stage.live || null
-  const yours = LV ? LV.myTeam : P.team.filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
+  const yours = LV ? LV.myTeam : stage.storyPlayer ? [BYKEY[stage.storyPlayer]] : P.team.filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
-  { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
+  { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (!stage.storyPlayer && D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
   if (LV) { B.you.deck = LV.myDeck || null; B.ai.deck = LV.oppDeck || null; B.you.hand = []; B.ai.hand = []; B.you.pile = B.ai.pile = null; B.you.rngS = (LV.seed + (LV.role === 'h' ? 1 : 2)) | 0; B.ai.rngS = (LV.seed + (LV.role === 'h' ? 2 : 1)) | 0 }
   if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * .88); f.ki = Math.round(f.ki * .88); f.def = Math.round(f.def * 1.15) }
   if (stage.youCat) for (const f of B.you.team) if ((f.card.cat || []).includes(stage.youCat)) for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.15)
@@ -884,7 +941,7 @@ export function startBattle(stage) {
   // 3D engine removed for performance; the stage is a static CSS scene
   const log = t => { const l = $a('.ar-log'); l.textContent = t; l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop') }
   let SPEED = 1; try { SPEED = +localStorage.getItem('aut-bspeed') || 1 } catch { }
-  let AUTO = false
+  let AUTO = false, enemyTurns = 0
   const wait = ms => new Promise(r => setTimeout(r, ms / SPEED))
   const IMG = new Map()
   const img = (f, w) => { const im = new Image(); im.alt = f.card.name; im.draggable = false; const k = f.key + w; if (!IMG.has(k)) IMG.set(k, thumbURL(f.card, w)); IMG.get(k).then(u => im.src = u); return im }
@@ -1087,7 +1144,7 @@ export function startBattle(stage) {
     draw()
   }
   // ================= TRANSFORMATIONS (S / Z / Ω, once per fighter, under 50% HP) =================
-  function canTransform(f) { return !!f && !f.ko && !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5 }
+  function canTransform(f) { return !stage.storyPlayer && !!f && !f.ko && !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5 }
   async function transform(side, who) {
     const f = act(side); if (!canTransform(f)) return
     const full = !!f.card.form, k = full ? 1.25 : 1.15
@@ -1158,6 +1215,7 @@ export function startBattle(stage) {
       if (other === 'you') { await pickReplacement() } else { log(`Enemy sends out ${act(foe).card.name}`); sfx('nav') }
       draw(); await wait(400)
     }
+    if (stage.enemyHP && act(B.ai).hp <= act(B.ai).max * stage.enemyHP) return end(true)
   }
   function pickReplacement() {
     return new Promise(res => {
@@ -1196,7 +1254,15 @@ export function startBattle(stage) {
     if (stage.pvp) { FXC.dispose(); document.body.classList.remove('in-battle'); music('menu'); B.closed = true; ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('players'); return } FXC.dispose(); document.body.classList.remove('in-battle'); music('menu'); B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
 
   // safety net: nobody can sit on 0 HP without being knocked out, and a KO'd active fighter is always replaced
-  function sweepKO() { for (const [side, sd] of [['you', B.you], ['ai', B.ai]]) { for (const f of sd.team) if (!f.ko && f.hp <= 0.5) { f.hp = 0; f.ko = true } if (act(sd).ko && !nextAlive(sd)) { end(side === 'ai'); return true } } draw(); return false }
+  function sweepKO() { for (const [side, sd] of [['you', B.you], ['ai', B.ai]]) { for (const f of sd.team) if (!f.ko && f.hp <= 0.5) { f.hp = 0; f.ko = true } if (act(sd).ko && !nextAlive(sd)) { end(side === 'ai'); return true } }
+    if (stage.enemyHP && act(B.ai).hp <= act(B.ai).max * stage.enemyHP) { end(true); return true }
+    draw(); return false
+  }
+  function survivedEnemyTurn() {
+    if (!stage.survive || ++enemyTurns < stage.survive) return false
+    end(true)
+    return true
+  }
   async function aiPhase() {
     if (B.over || sweepKO()) return
     if ((stage.level || 1) >= 5 && canTransform(act(B.ai))) await transform(B.ai, 'ai')
@@ -1215,9 +1281,10 @@ export function startBattle(stage) {
     }
     B.busy = true; controls()
     const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN + (s.kiBonus || 0)); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
-    if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
+    if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; if (survivedEnemyTurn()) return; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
     log('Enemy turn'); turnBanner('ENEMY TURN', false); draw(); await wait(800)
     for (const ev of aiTurn(B, stage.mode === 'ranked' && (stage.rating || 0) >= 80 ? 5 : stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
+    if (survivedEnemyTurn()) return
     if (B.you.skip || act(B.you).frozen) { B.you.skip = 0; act(B.you).frozen = 0; log('You lose your turn!'); turnBanner('TIME STOPPED', true); await wait(900); B.turn++; return aiPhase() }
     B.turn++
     if (B.over || sweepKO()) return
@@ -1312,11 +1379,11 @@ export function startBattle(stage) {
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
     if (won) { const cf = document.createElement('div'); cf.className = 'confetti'; cf.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="--x:${Math.random() * 100}%;--d:${(Math.random() * .8).toFixed(2)}s;--h:${Math.round(Math.random() * 360)};--r:${Math.round(Math.random() * 720 - 360)}deg"></i>`).join(''); ov.append(cf); setTimeout(() => cf.remove(), 4000) }
-    box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : won ? (r.msg || 'Stage cleared.') : 'Your team was knocked out. Tweak your lineup and try again.'}</p>
+    box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : won ? (r.msg || 'Stage cleared.') : (stage.storyPlayer ? 'Your story fighter was knocked out. Try again.' : 'Your team was knocked out. Tweak your lineup and try again.')}</p>
       <div class="rs-body"><div class="rs-mvp"><span>MVP</span><div class="rs-card"></div><b>${mvp.card.name}</b><small>${mvp.dealt.toLocaleString()} DMG · ${mvp.kos} KO</small></div>
-      <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/6</b><span>SURVIVED</span></div></div></div>`
+      <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/${B.you.team.length}</b><span>SURVIVED</span></div></div></div>`
     box.querySelector('.rs-card').append(img(mvp, 360))
-    const b = document.createElement('button'); b.className = 'btn gold'; b.textContent = 'CONTINUE'; b.onclick = close; box.append(b)
+    const b = document.createElement('button'); b.className = 'btn gold'; b.textContent = 'CONTINUE'; b.onclick = () => { close(); if (won && !r.error && stage.afterWin) stage.afterWin() }; box.append(b)
     ov.append(box)
   }
 
