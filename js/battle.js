@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=aokiji91'
-import { sfx, sfxOn, music } from './sfx.js?v=aokiji91'
-import { createFX } from './fx2d.js?v=aokiji91'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=icewall91'
+import { sfx, sfxOn, music } from './sfx.js?v=icewall91'
+import { createFX } from './fx2d.js?v=icewall91'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -197,6 +197,7 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (pa.dmg) dmg *= 1 + pa.dmg / 100
   if (pd.dr) dmg *= 1 - pd.dr / 100
   if (ed.dr && !ea.trueDmg) { dmg *= 1 - ed.dr / 100; if (ed.dr >= 10) pasNote(def, '-' + ed.dr + '% DMG') }
+  if (worldMonarch) { dmg *= .6; pasNote(def, 'ICE WALL · -40% DMG') }
   if (ed.adapt && !ea.trueDmg) dmg *= 1 - Math.min(ed.adaptMax || 30, ed.adapt * def.hitsTaken) / 100
   if (ed.wheel) { const seen = def.wheelSeen || (def.wheelSeen = {}); dmg *= 1 - Math.min(48, 12 * def.hitsTaken) / 100; if (seen[kind]) dmg *= .8; else seen[kind] = 1; if (def.hitsTaken < 4) pasNote(def, def.hitsTaken === 3 ? 'FULLY ADAPTED' : 'WHEEL TURNS · ' + (def.hitsTaken + 1)) }
   if (def.fort) dmg *= .7
