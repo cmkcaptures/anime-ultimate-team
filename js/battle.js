@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=chimera-duels'
-import { sfx, sfxOn, music } from './sfx.js?v=chimera-duels'
-import { createFX } from './fx2d.js?v=chimera-duels'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=chimera-reward'
+import { sfx, sfxOn, music } from './sfx.js?v=chimera-reward'
+import { createFX } from './fx2d.js?v=chimera-reward'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -780,6 +780,13 @@ function storyArcPage(el, arc, cast, done) {
   const back = h('button', 'btn dark sm', '‹ ALL STORY ARCS')
   back.onclick = () => { selectedStoryArc = null; X.go('battle') }
   el.append(back, h('section', 'bhero camp-hero', `<div><span class="sh-tag">${X.ANAME(arc.anime)}</span><h2>${arc.name.toUpperCase()}</h2><p>${arc.synopsis}</p></div><div class="bstat"><b>${done}/3</b><span>CHAPTERS CLEARED</span></div>`))
+  const reward = X.POOL.find(c => c.id === arc.rewardCard && c.arcReward === arc.id)
+  if (reward) {
+    const panel = h('div', 'panel pad')
+    const unlocked = X.P.arcRewards?.[arc.id]
+    panel.append(h('b', '', (unlocked ? '✓ ARC REWARD EARNED · ' : 'CLEAR ALL THREE CHAPTERS · ') + reward.name + ' · ' + reward.ver))
+    el.append(panel)
+  }
   const list = h('div', 'camp-list')
   arc.chapters.forEach((chapter, i) => {
     const player = cast.get(chapter.player), enemy = cast.get(chapter.enemy)

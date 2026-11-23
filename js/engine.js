@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=chimera-duels'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=chimera-reward'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -901,7 +901,7 @@ const ARCS = [
   { id: 'dbz', anime: 'DBZ', name: 'Tournament of Power', bad: ['BROLY', 'GOKU BLACK'] },
   { id: 'jjba', anime: 'JJBA', name: 'Golden Wind Finale', bad: ['DIAVOLO', 'KIRA', 'DIEGO'] },
   { id: 'ble', anime: 'BLE', name: 'Thousand-Year Blood War', bad: ['YHWACH', 'AIZEN', 'ULQUIORRA', 'GRIMMJOW'] },
-  { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', bad: ['MERUEM', 'NEFERPITOU', 'SHAIAPOUF', 'HISOKA'],
+  { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', rewardCard: 'meruem_rose_aftermath', bad: ['MERUEM', 'NEFERPITOU', 'SHAIAPOUF', 'HISOKA'],
     synopsis: 'A Royal Guard cuts off the Hunters’ retreat. As the King comes into his own, Kite, Netero and Gon each face the cost of standing their ground.',
     chapters: [
       { name: 'Buy Them Time', player: 'kite_crazy_slots', enemy: 'neferpitou_royal_guard', level: 4, boost: 1.02, playerBoost: 1.55,
@@ -951,6 +951,17 @@ const ARCS = [
   { id: 'ft', anime: 'FT', name: 'Alvarez Empire War', bad: ['ZEREF', 'ACNOLOGIA'] },
   { id: 'ff', anime: 'FF', name: 'The Great Cataclysm', bad: ['THE EVANGELIST', 'HAUMEA', 'SHO'] },
 ]
+function grantArcCard(arc) {
+  if (!arc.rewardCard) return null
+  const card = CARDS.find(c => c.id === arc.rewardCard && c.arcReward === arc.id)
+  if (!card) return null
+  const P = S.profile, claimed = P.arcRewards || (P.arcRewards = {})
+  if (claimed[arc.id]) return null
+  giveCard(card.key)
+  claimed[arc.id] = true
+  P.last = [card.key]
+  return card
+}
 const ARC_CH = [{ name: 'Chapter 1', level: 2, boost: 1, coins: 2000 }, { name: 'Chapter 2', level: 3, boost: 1.12, coins: 3000 }, { name: 'Final Boss', level: 5, boost: 1.3, coins: 5000 }]
 const EVENT_ANIME = ['JJK', 'DS', 'DBZ', 'OP', 'NAR', 'MHA', 'JJBA', 'HXH', 'BLE', 'BC', 'FT', 'FF']
 function eventNow() { const wk = Math.floor((Date.now() / 864e5 + 3) / 7), a = EVENT_ANIME[wk % EVENT_ANIME.length]; return { id: 'e' + wk, anime: a, pack: PACKS[a] ? a : 'standard', ends: (wk + 1) * 7 * 864e5 - 3 * 864e5, tiers: [{ name: 'Normal', level: 2, boost: 1, coins: 1500 }, { name: 'Hard', level: 4, boost: 1.2, coins: 3000 }, { name: 'Nightmare', level: 5, boost: 1.45, coins: 5000, pack: true }] } }
@@ -1025,6 +1036,12 @@ function placeBid(l, who, amount) {
 }
 function tick(noSave) {
   const M = S.market, now = Date.now(), all = cards().filter(c => !c.season)
+  M.listings = M.listings.filter(l => {
+    if (!byKey(l.key)?.arcReward) return true
+    if (l.bidder === 'YOU') S.profile.coins += l.bid
+    if (l.you) giveCard(l.key, l.lvl)
+    return false
+  })
   for (const c of all) { const d = M.demand[c.key] || 1; M.demand[c.key] = Math.max(.7, Math.min(1.6, d * (1 + (Math.random() - .5) * .06))) }
   for (const l of [...M.listings]) if (l.exp <= now) {
     if (l.bid) settle(l, 'bid')
@@ -1044,7 +1061,7 @@ function tick(noSave) {
     const nb = nextBid(l)
     if (nb < v * .92 && (!l.bin || nb < l.bin) && Math.random() < (l.you ? .35 : .12)) placeBid(l, pick(TRADERS.filter(t => t !== l.seller)), nb)
   }
-  S.wonder = S.wonder.filter(w => w.exp > now)
+  S.wonder = S.wonder.filter(w => w.exp > now && !w.keys.some(k => byKey(k)?.arcReward))
   while (S.wonder.length < 6) S.wonder.push({ id: M.seq++, who: pick(TRADERS), keys: aiPack(), exp: now + (60 + Math.random() * 240) * 60000 })
   if (!noSave) save()
 }
@@ -1071,6 +1088,7 @@ function act(a) {
       P.coins -= cost; P.pending[a.pack] = (P.pending[a.pack] || 0) + n; return {}
     }
     case 'openPack': {
+      if ((a.keys || []).some(k => byKey(k)?.arcReward)) return { error: 'Story Arc rewards are earned by clearing the arc.' }
       if (!(P.pending[a.pack] > 0)) return { error: 'No unopened pack of that type.' }
       P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = []; let itemMsg = ''
       if (Math.random() < (a.pack === 'bronze' || a.pack === 'silver' ? .04 : .08)) { const ks = Object.keys(ITEMS), ik = ks[Math.floor(Math.random() * ks.length)], it = itemsP(); it[ik] = (it[ik] || 0) + 1; itemMsg = 'Bonus item: ' + ITEMS[ik].name + '!' }
@@ -1082,6 +1100,7 @@ function act(a) {
     }
     case 'ppBuy': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
+      if (c.arcReward) return { error: 'Clear its Story Arc to unlock this card.' }
       const cost = PP_COST[c.r]; if ((P.pp || 0) < cost) return { error: `You need ${cost} pack points.` }
       P.pp -= cost; giveCard(a.key); P.last = [a.key]; addXP(10)
       return { msg: `Got ${cardName(a.key)} for ${cost} pack points.` }
@@ -1098,6 +1117,7 @@ function act(a) {
     case 'showcase': { P.showcase = (a.keys || []).filter(k => own(k)).slice(0, 5); return {} }
     case 'team': { if (Array.isArray(a.team) && a.team.length === 6) P.team = a.team.map(k => (k && own(k) ? k : null)); return {} }
     case 'quickSell': {
+      if (byKey(a.key)?.arcReward && (own(a.key)?.n || 0) <= 1) return { error: 'Your last Story Arc reward copy cannot be sold.' }
       const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }
       if (spare(a.key) < 1) return { error: 'That card is in your team. Remove it first.' }
       const got = quickSell(c, e.lvl || 0); P.coins += got; e.n--; if (e.n <= 0) delete P.club.cards[a.key]
@@ -1111,6 +1131,7 @@ function act(a) {
     }
     case 'craft': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
+      if (c.arcReward) return { error: 'Clear its Story Arc to unlock this card.' }
       const cost = SHARD_COST[c.r]; if ((P.shards || 0) < cost) return { error: `You need ${cost.toLocaleString()} shards.` }
       P.shards -= cost; giveCard(a.key); P.last = [a.key]; addXP(10); return { msg: `Crafted ${cardName(a.key)}.` }
     }
@@ -1140,6 +1161,7 @@ function act(a) {
     }
     case 'list': {
       const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }
+      if (c.arcReward) return { error: 'Story Arc rewards cannot be listed.' }
       if (spare(a.key) < 1) return { error: 'That card is in your team. Remove it first, or get a duplicate.' }
       const start = Math.round(+a.start / 50) * 50, bin = Math.round(+a.bin / 50) * 50, hours = [1, 3, 6, 12].includes(+a.hours) ? +a.hours : 1
       if (!(start >= 50 && start <= 9999950)) return { error: 'Set a start price between 50 and 9,999,950.' }
@@ -1271,7 +1293,10 @@ function act(a) {
         if (!a.won) { addXP(10); return {} }
         addXP(40); if (c < done) { P.coins += 300; return { msg: 'Chapter replayed. +300 coins.' } }
         A[id] = c + 1; P.coins += ARC_CH[c].coins; let extra = ''
-        if (c === 2) { P.pending.premium = (P.pending.premium || 0) + 1; P.shards = (P.shards || 0) + 1000; extra = ', a Premium Drop and ◆1,000 shards' }
+        if (c === 2) { P.pending.premium = (P.pending.premium || 0) + 1; P.shards = (P.shards || 0) + 1000; extra = ', a Premium Drop and ◆1,000 shards'
+          const reward = grantArcCard(arc)
+          if (reward) extra += ' and ' + reward.name + ' · ' + reward.ver
+        }
         return { msg: `${arc.name}: ${(arc.chapters?.[c] || ARC_CH[c]).name} cleared! +${ARC_CH[c].coins.toLocaleString()} coins${extra}.` }
       }
       if (a.mode === 'event') {
@@ -1308,6 +1333,7 @@ function act(a) {
     case 'tradeEscrow': { if (P.allBak) return { error: 'Trading is off while the temporary all-cards unlock is on.' } }
     // falls through
     case 'tradeEscrow_': {
+      if (byKey(a.want)?.arcReward || (a.offer || []).some(k => byKey(k)?.arcReward)) return { error: 'Story Arc rewards cannot be traded.' }
       const offer = a.offer || [], coins = Math.max(0, Math.round(+a.coins || 0)); if (P.coins < coins) return { error: 'Not enough coins.' }
       const use = {}; for (const k of offer) use[k] = (use[k] || 0) + 1
       for (const k in use) if (spare(k) < use[k]) return { error: 'You can only offer cards you own that are not in your team.' }
@@ -1487,6 +1513,11 @@ async function boot() {
     for (const l of S.market.listings) l.key = fix(l.key)
     for (const w of S.wonder) w.keys = w.keys.map(fix)
     S.market.won = (S.market.won || []).map(w => ({ ...w, key: fix(w.key) })) }
+  for (const arc of ARCS) {
+    if ((S.profile.arcs?.[arc.id] || 0) < ARC_CH.length) continue
+    const reward = grantArcCard(arc)
+    if (reward) notice(arc.name + ' clear reward: ' + reward.name + ' · ' + reward.ver, 'ok')
+  }
   if (!S.market.listings.length) { for (let i = 0; i < 15; i++) tick(true) } else tick(true)
   save(); publish(summary(), true)
   setInterval(() => tick(), 10000)
