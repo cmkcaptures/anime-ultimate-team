@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=mwrxqwn3'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwrxqwn3'
+import { createFX } from './fx2d.js?v=mwsugpd7'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mwsugpd7'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=mwrxqwn3'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwrxqwn3'
+import * as ACC from './account.js?v=mwsugpd7'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=mwsugpd7'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwrxqwn3'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=mwsugpd7'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -369,7 +369,7 @@ PAGES.cards = (el) => {
   el.append(head)
   { const mu = h('button', 'btn violet', 'ギャラリー · CARD MUSEUM'); mu.style.marginTop = '4px'; mu.onclick = () => go('museum'); el.append(mu) }
   const tools = h('div', ''); tools.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:14px'
-  const MODES = ['OWNED', 'ALL', 'BINDER']; const seg = segmented(['OWNED', 'ALL', 'BINDER'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
+  const MODES = ['OWNED', 'UNOWNED', 'ALL', 'BINDER']; const seg = segmented(['OWNED', 'UNOWNED', 'ALL', 'BINDER'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
   const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search characters or forms'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
   const an = h('div', 'chips'), ra = h('div', 'chips')
   tools.append(seg, q, an, ra); el.append(tools)
@@ -384,7 +384,7 @@ PAGES.cards = (el) => {
     if (CF.mode === 'BINDER') return drawBinder(grid)
     if (CF.mode === 'EVOLVE') return drawEvolve(grid)
     if (CF.mode === 'FUSE') return drawFuse(grid)
-    const list = POOL.filter(c => (CF.mode === 'ALL' || club()[c.key]) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && (!CF.q || (c.name + ' ' + c.ver).toLowerCase().includes(CF.q)))
+    const list = POOL.filter(c => (CF.mode === 'ALL' || (CF.mode === 'UNOWNED' ? !club()[c.key] : club()[c.key])) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && (!CF.q || (c.name + ' ' + c.ver).toLowerCase().includes(CF.q)))
       .sort((a, b) => (CF.sort === 'NEW' ? (b.added || 0) - (a.added || 0) : 0) || TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
     grid.innerHTML = ''
     if (!list.length) { grid.append(h('div', 'empty', `<b>${own.length ? 'Nothing here' : 'No cards yet'}</b>${own.length ? 'Try a different filter.' : 'Open your free pack on the home screen.'}`)); grid.firstChild.style.gridColumn = '1/-1'; return }

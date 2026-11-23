@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwrxqwn3'
-import { sfx, sfxOn, music } from './sfx.js?v=mwrxqwn3'
-import { createFX } from './fx2d.js?v=mwrxqwn3'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwsugpd7'
+import { sfx, sfxOn, music } from './sfx.js?v=mwsugpd7'
+import { createFX } from './fx2d.js?v=mwsugpd7'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -133,7 +133,7 @@ const act = s => s.team[s.active]
 const alive = s => s.team.filter(f => !f.ko)
 const PE = f => (f && !f.sealed && f.pe) || {}
 let PASLOG = null // events the UI shows when a passive triggers
-const pasNote = (f, extra) => { if (PASLOG && f.card.pas) PASLOG.push({ f, name: f.card.pas.n, extra }) }
+const pasNote = (f, extra) => { if (PASLOG && f && f.card && f.card.pas) PASLOG.push({ f, name: f.card.pas.n, extra }) }
 // bench passives: everyone waiting on the bench helps the active fighter
 const PASSIVE = { SUPPORT: ['heal', 4, 'MEDIC'], TANK: ['dr', 6, 'BULWARK'], ASSASSIN: ['crit', 4, 'KILLER INSTINCT'], FIGHTER: ['dmg', 3, 'BATTLE CRY'], SHOOTER: ['gauge', 5, 'SPOTTER'], STRIKER: ['gauge', 5, 'SPOTTER'] }
 function passives(s) {
@@ -167,10 +167,10 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (ea.stack) m += Math.min(ea.stackMax || 99, ea.stack * att.hitsTaken) / 100
   if (ea.dmgLow && att.hp / att.max * 100 < (ea.lowAt || 50)) m += ea.dmgLow / 100
   if (ea.ablaze && att.hp / att.max < .3) m += ea.ablaze / 100
-  if (ea.exec && def.hp / def.max < .4) m += ea.exec / 100
+  if (ea.exec && def.hp / def.max < .4) { m += ea.exec / 100; pasNote(att, 'EXECUTE +' + ea.exec + '%') }
   if (ea.vsHigh && def.card.ovr > att.card.ovr) m += ea.vsHigh / 100
   if (ea.vsAnime && def.card.anime === ea.vsAnime) m += ea.vsAnimeB / 100
-  if (ea.rika) m += ea.rika / 100 // Rika joins every attack
+  if (ea.rika) { m += ea.rika / 100; pasNote(att, 'RIKA +' + ea.rika + '%') }
   if (ea.blackflash && rnd(A || D) * 100 < ea.blackflash) { m *= 2.5; pasNote(att, "BLACK FLASH") }
   if (ed.weakTo) { if (ed.weakTo.some(t => tagsOf(att.card).includes(t))) { m += (ed.weakB || 50) / 100; att.hitWeak = 1 } else m -= (ed.resist || 0) / 100 }
   if (ea.vsRole && def.card.role === ea.vsRole) m += ea.vsRoleB / 100
@@ -188,7 +188,7 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   dmg *= m
   if (pa.dmg) dmg *= 1 + pa.dmg / 100
   if (pd.dr) dmg *= 1 - pd.dr / 100
-  if (ed.dr && !ea.trueDmg) dmg *= 1 - ed.dr / 100
+  if (ed.dr && !ea.trueDmg) { dmg *= 1 - ed.dr / 100; if (ed.dr >= 10) pasNote(def, '-' + ed.dr + '% DMG') }
   if (ed.adapt && !ea.trueDmg) dmg *= 1 - Math.min(ed.adaptMax || 30, ed.adapt * def.hitsTaken) / 100
   if (ed.wheel) { const seen = def.wheelSeen || (def.wheelSeen = {}); dmg *= 1 - Math.min(48, 12 * def.hitsTaken) / 100; if (seen[kind]) dmg *= .8; else seen[kind] = 1; if (def.hitsTaken < 4) pasNote(def, def.hitsTaken === 3 ? 'FULLY ADAPTED' : 'WHEEL TURNS · ' + (def.hitsTaken + 1)) }
   if (def.fort) dmg *= .7
@@ -360,6 +360,13 @@ function smartTurn(B, who) {
     else if (hpP < .45 && can('heal')) pick = can('heal')
     else if (mine.burnT > 0 && hpP < .6 && can('cleanse')) pick = can('cleanse')
     else if (can('transfer') && me.ki <= KI_MAX - 2) pick = can('transfer')
+    else if (can('deathnote') && !opp.doom && opp.hp / opp.max > .3) pick = can('deathnote')
+    else if (can('clock') && !foe.skip) pick = can('clock')
+    else if (can('scroll') && !opp.sealed && opp.pe && Object.keys(opp.pe).length) pick = can('scroll')
+    else if (can('wing') && me.team.some(x => x.ko)) pick = can('wing')
+    else if (can('hogyoku') && hpP < .5 && !mine.endure) pick = can('hogyoku')
+    else if (can('rumble') && hpP < .6) pick = can('rumble')
+    else if (can('finger') && hpP > .4 && !me.chargeNext && (can('special') || me.ki >= 3)) pick = can('finger')
     if (pick) { const e = playArt(B, who, pick[1]); if (e) { evs.push(e); continue } }
     // 5) lethal check: best single attack that kills right now
     const atks = ['special', 'burst', 'blast', 'strike'].map(a => [a, can(a)]).filter(([, p]) => p)
@@ -1011,7 +1018,8 @@ export function startBattle(stage) {
   const TAGN = new Map()
   function floatTag(el, text, cls) { const [x, y] = ctr(el); const n = TAGN.get(el) || 0; TAGN.set(el, n + 1); const t = document.createElement('div'); t.className = 'ftag ' + cls; t.textContent = text; t.style.left = (x + el.getBoundingClientRect().width * .62) + 'px'; t.style.top = (y - 60 + n * 34) + 'px'; FX().append(t); setTimeout(() => { t.remove(); TAGN.set(el, Math.max(0, (TAGN.get(el) || 1) - 1)) }, 2400) }
 
-  function pasPop(n) { const el = $a(`.ar-side.${n.f === act(B.you) || B.you.team.includes(n.f) ? 'you' : 'ai'} .ar-active`); if (!el) return; const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'pas-pop'; t.innerHTML = `<small>${n.extra || 'PASSIVE'}</small><b>${n.name}</b>`; t.style.left = x + 'px'; t.style.top = (y - 120) + 'px'; FX().append(t); setTimeout(() => t.remove(), 2600) }
+  function flushPas() { if (!PASLOG || !PASLOG.length) return; const seen = new Set(); let d = 0; for (const n of PASLOG.splice(0)) { const k = n.f.card.name + n.name; if (seen.has(k)) continue; seen.add(k); setTimeout(() => pasPop(n), d); d += 450 } }
+  function pasPop(n) { const el = $a(`.ar-side.${n.f === act(B.you) || B.you.team.includes(n.f) ? 'you' : 'ai'} .ar-active`); if (!el) return; const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'pas-pop'; t.innerHTML = `<small>✦ ${n.f.card.name} · PASSIVE</small><b>${n.name}</b><em>${n.extra || 'ACTIVATED'}</em>`; try { log('✦ ' + n.f.card.name + ': ' + n.name + (n.extra ? ' · ' + n.extra : '')) } catch { } t.style.left = x + 'px'; t.style.top = (y - 120) + 'px'; FX().append(t); setTimeout(() => t.remove(), 2600) }
   // ================= CLASH REACTIONS =================
   const CLASH = {
     JJK: ['DOMAIN CLASH', 'Domain Expansion vs Domain Expansion', 'Enemy passive sealed'],
@@ -1129,7 +1137,7 @@ export function startBattle(stage) {
     if (ev.rally) floatTag(atk, 'TEAM HEALED 20%', 'adv')
     if (ev.fort) floatTag(atk, 'FORTRESS · -30% DMG', 'adv')
     if (ev.kit && ev.kit.length) { const [kx, ky] = ctr(atk); const t = document.createElement('div'); t.className = 'ftag kit'; t.textContent = ev.kit.join('  ·  '); t.style.left = kx + 'px'; t.style.top = (ky - 90) + 'px'; FX().append(t); setTimeout(() => t.remove(), 1500) }
-    if (PASLOG && PASLOG.length) { const seen = new Set(); for (const n of PASLOG.splice(0)) { if (seen.has(n.name)) continue; seen.add(n.name); pasPop(n) } }
+    flushPas()
     ov.classList.remove('ult')
     draw(); await wait(big ? 650 : 420)
     // knockouts
@@ -1205,7 +1213,7 @@ export function startBattle(stage) {
     B.turn++
     if (B.over || sweepKO()) return
     const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN + (y.kiBonus || 0)); refill(y); y.switched = false; y.seq = []; startTurn(y); act(B.ai).fort = 0
-    B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); if (AUTO) autoTurn()
+    B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); flushPas(); if (AUTO) autoTurn()
   }
   async function endTurn() { if (B.busy || B.over) return; if (LV) { lvSend({ t: 'end' }); return remotePhase() } await aiPhase() }
   // ================= LIVE PVP =================
@@ -1258,6 +1266,7 @@ export function startBattle(stage) {
   function startTurn(s) {
     const a0 = act(s), e = PE(a0), foe = s === B.you ? B.ai : B.you
     a0.turns++
+    { const tags = []; if (e.regen && !e.noHeal) tags.push('REGEN +' + e.regen + '%'); if (e.teamHeal) tags.push('TEAM HEAL +' + e.teamHeal + '%'); if (e.ramp) tags.push('POWER +' + Math.min(e.rampMax || 99, e.ramp * a0.turns) + '%'); if (e.energyTurn) tags.push('+' + e.energyTurn + ' ENERGY'); if (tags.length) pasNote(a0, tags.join(' · ')) }
     if (e.regen && !e.noHeal) a0.hp = Math.min(a0.max, a0.hp + Math.round(a0.max * e.regen / 100))
     if (e.bleed) a0.hp = Math.max(1, a0.hp - Math.round(a0.max * e.bleed / 100))
     if (e.emperor) a0.hp = Math.max(1, a0.hp - Math.round(a0.max * .03))
