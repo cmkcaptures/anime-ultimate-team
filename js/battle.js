@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=five-story-arcs'
-import { sfx, sfxOn, music } from './sfx.js?v=five-story-arcs'
-import { createFX } from './fx2d.js?v=five-story-arcs'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=story-scene-art'
+import { sfx, sfxOn, music } from './sfx.js?v=story-scene-art'
+import { createFX } from './fx2d.js?v=story-scene-art'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -603,10 +603,23 @@ export function counterSheet(enemy, title) {
 const cxBtn = (enemyFn, title) => { const b = X.h('button', 'cx-btn', '🎯 COUNTERS'); b.onclick = ev => { ev.stopPropagation(); counterSheet(enemyFn(), title) }; return b }
 // ================= STORY CAMPAIGN =================
 const byName = n => X.POOL.filter(c => c.name === n).sort((a, b) => b.ovr - a.ovr)[0]
-function scene(lines, title, bg, done, cast) {
+function scene(lines, title, bg, done, cast, narratorArt) {
   const { h } = X, o = h('div', 'scn'); let i = 0
   o.innerHTML = `<div class="scn-bg" style="background-image:url('${bg || ''}')"></div><div class="scn-top"><b>${title}</b><button class="btn dark sm scn-skip">SKIP ›</button></div><div class="scn-who"></div><div class="scn-box"><small></small><p></p><em>TAP TO CONTINUE</em></div>`
-  const show = () => { const [who, t, speaker] = lines[i], c = cast ? cast.get(who) : byName(who); o.querySelector('.scn-who').style.backgroundImage = c ? `url("${c.url}")` : 'none'; o.querySelector('.scn-who').style.setProperty('--fy', Math.round((c && c.fy != null ? c.fy : .22) * 100) + '%'); o.querySelector('.scn-box small').textContent = speaker || (c && cast ? c.name : who); o.querySelector('.scn-box p').textContent = t; o.querySelector('.scn-who').classList.remove('in'); void o.offsetWidth; o.querySelector('.scn-who').classList.add('in') }
+  const portrait = o.querySelector('.scn-who')
+  const show = () => {
+    const [who, line, speaker] = lines[i]
+    const character = cast ? cast.get(who) : byName(who)
+    const art = character || (who === 'Narrator' ? narratorArt : null)
+    portrait.style.visibility = art ? '' : 'hidden'
+    portrait.style.backgroundImage = art ? `url("${art.url}")` : 'none'
+    portrait.style.setProperty('--fy', Math.round((art?.fy ?? .22) * 100) + '%')
+    o.querySelector('.scn-box small').textContent = speaker || (character && cast ? character.name : who)
+    o.querySelector('.scn-box p').textContent = line
+    portrait.classList.remove('in')
+    void o.offsetWidth
+    portrait.classList.add('in')
+  }
   const end = () => { o.remove(); done() }
   o.onclick = e => { if (e.target.closest('.scn-skip')) return end(); i++; i >= lines.length ? end() : show() }
   document.body.append(o); show()
@@ -794,8 +807,8 @@ function storyArcPage(el, arc, cast, done) {
     const label = `Chapter ${i + 1} · ${chapter.name}`
     const start = withStory => {
       const fight = () => go2({ ...chapter, mode: 'arc', id: arc.id + ':' + i, label, team: [enemy.key], storyTeam: players.map(c => c.key),
-        afterWin: withStory ? () => scene(chapter.outro, chapter.name, enemy.url, () => {}, cast) : null })
-      if (withStory) scene(chapter.scene, label, enemy.url, fight, cast)
+        afterWin: withStory ? () => scene(chapter.outro, chapter.name, enemy.url, () => {}, cast, players[0]) : null })
+      if (withStory) scene(chapter.scene, label, enemy.url, fight, cast, players[0])
       else fight()
     }
     const row = h('div', 'camp-st' + (i < done ? ' done' : '') + (i > done ? ' locked' : ''),
