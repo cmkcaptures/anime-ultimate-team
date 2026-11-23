@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=story-scene-art'
-import { sfx, sfxOn, music } from './sfx.js?v=story-scene-art'
-import { createFX } from './fx2d.js?v=story-scene-art'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=db-card-wave'
+import { sfx, sfxOn, music } from './sfx.js?v=db-card-wave'
+import { createFX } from './fx2d.js?v=db-card-wave'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -131,7 +131,32 @@ const rnd = s => { if (!s || s.rngS == null) return Math.random(); const a = s.r
 function newSide(cards) { return { team: cards.map(c => fighter(c)), active: 0, ki: 4, gauge: 0, hand: [], switched: false, seq: [] } }
 const act = s => s.team[s.active]
 const alive = s => s.team.filter(f => !f.ko)
-const PE = f => (f && !f.sealed && f.pe) || {}
+const PE = f => (f && !f.sealed && (f.friezaSide ? f.pe.partner : f.pe)) || {}
+const canTagPartner = (f, turn) => !!f.pe.partner && !f.ko && f.partnerTurn !== turn
+function tagPartner(f, turn) {
+  if (!canTagPartner(f, turn)) return false
+  f.partnerTurn = turn
+  f.friezaSide = !f.friezaSide
+  pasNote(f, f.friezaSide ? 'GOLDEN FRIEZA TAGS IN' : 'ANDROID 17 TAGS IN')
+  return true
+}
+function autoTagPartner(f, turn) {
+  if ((f.hp >= f.max * .6) !== !!f.friezaSide) tagPartner(f, turn)
+}
+const rangedHit = (fighter, kind) => kind === 'blast' || kind === 'burst' || (kind === 'special' && fighter.card.rangedSpecial)
+// Avoid feeding an absorber if a different attack is affordable. Otherwise
+// spend an Art so an all-ranged hand can draw a replacement next turn.
+function avoidAbsorbedArts(side, target) {
+  const fighter = act(side)
+  return PE(target).absorbRanged && !PE(fighter).antiKit &&
+    side.hand.some(kind => ATTACK_ARTS.includes(kind) && !rangedHit(fighter, kind) && ARTS[kind].cost <= side.ki)
+}
+function absorbBlast(att, def) {
+  if (def.absorbSource !== att.key) { def.absorbSource = att.key; def.absorbed = 0 }
+  const steps = Math.max(1, 4 - def.absorbed)
+  def.absorbed = Math.min(4, def.absorbed + 1)
+  for (const k of ['pwr', 'ki', 'def']) def[k] += Math.ceil(Math.max(0, att[k] - def[k]) / steps)
+}
 let PASLOG = null // events the UI shows when a passive triggers
 const pasNote = (f, extra) => { if (PASLOG && f && f.card && f.card.pas) PASLOG.push({ f, name: f.card.pas.n, extra }) }
 // bench passives: everyone waiting on the bench helps the active fighter
@@ -149,10 +174,16 @@ function refill(s) {
   // never get stuck: a hand with no attacks swaps its oldest card for a fresh draw (up to 3 tries)
   for (let t = 0; t < 3 && !s.hand.some(a => ATTACK_ARTS.includes(a)); t++) { s.hand.shift(); s.hand.push(drawOne(s)) }
 }
-function hit(att, def, base, stat, pierce, A, D, kind) {
+function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, kind)) {
   const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = ea.antiKit ? {} : PE(def) // Toji: enemy defensive kit is cancelled
   // defensive dodges / nullifies first
   if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
+  if (ed.absorbRanged && ranged) {
+    if (kind === 'blast') absorbBlast(att, def)
+    if (D) D.ki = Math.min(KI_MAX, D.ki + 1)
+    pasNote(def, kind === 'blast' ? `BLAST ABSORBED · ${def.absorbed}/4 · +1 ENERGY` : 'ENERGY ABSORBED · +1 ENERGY')
+    return { dmg: 0, crit: false, mu: 1, miss: 'ABSORBED' }
+  }
   if (def.firstNull > 0 && !ea.antiKit) { def.firstNull--; pasNote(def, 'NULLIFIED'); return { dmg: 0, crit: false, mu: 1, miss: 'NULLIFIED' } }
   if (kind === 'ult' && def.ultDodge > 0) { def.ultDodge--; pasNote(def, 'ERASED'); return { dmg: 0, crit: false, mu: 1, miss: 'ERASED' } }
   if (ed.dodge && rnd(A || D) * 100 < ed.dodge) { pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
@@ -171,6 +202,7 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   if (ea.ablaze && att.hp / att.max < .3) m += ea.ablaze / 100
   if (ea.exec && def.hp / def.max < .4) { m += ea.exec / 100; pasNote(att, 'EXECUTE +' + ea.exec + '%') }
   if (ea.vsHigh && def.card.ovr > att.card.ovr) m += ea.vsHigh / 100
+  if (ea.vsCat?.some(tag => (def.card.cat || []).includes(tag))) m += ea.vsCatB / 100
   if (ea.vsAnime && def.card.anime === ea.vsAnime) m += ea.vsAnimeB / 100
   if (ea.rika) { m += ea.rika / 100; pasNote(att, 'RIKA +' + ea.rika + '%') }
   if (ea.blackflash && rnd(A || D) * 100 < ea.blackflash) { m *= 2.5; pasNote(att, "BLACK FLASH") }
@@ -276,7 +308,7 @@ function playArt(B, who, idx) {
     if (ea.benchChip) { const b = alive(foe).filter(f => f !== d)[0]; if (b) ev.hits.push({ t: b, ...hit(a, b, 260 * ea.benchChip / 100, a.pwr, false, me, foe, 'strike') }) }
     if (ea.chainBoost) a.rage = Math.min(40, (a.rage || 0) + ea.chainBoost)
   }
-  else if (art === 'burst') { const k = me.ki + cost, spent = me.ki; me.ki = 0; const drag = me.team.filter(f => !f.ko && isDragon(f.card)).length >= 3; ev.move = 'BURST · ' + spent + ' ENERGY' + (drag ? ' · DRAGON FURY' : ''); ev.hits.push({ t: d, ...hit(a, d, 210 * spent * chain * (drag ? 1.5 : 1), Math.max(a.pwr, a.ki), false, me, foe, 'special') }) }
+  else if (art === 'burst') { const k = me.ki + cost, spent = me.ki; me.ki = 0; const drag = me.team.filter(f => !f.ko && isDragon(f.card)).length >= 3; ev.move = 'BURST · ' + spent + ' ENERGY' + (drag ? ' · DRAGON FURY' : ''); ev.hits.push({ t: d, ...hit(a, d, 210 * spent * chain * (drag ? 1.5 : 1), Math.max(a.pwr, a.ki), false, me, foe, 'special', true) }) }
   else if (art === 'blast') ev.hits.push({ t: d, ...hit(a, d, 420 * chain, a.ki, false, me, foe, 'blast') })
   else if (art === 'special') {
     const base = pctOf(a.card) * 3.2 * chain
@@ -330,6 +362,7 @@ function estHit(att, def, base, stat, pierce) {
 }
 function estArt(me, foe, a, chainN) {
   const at = act(me), d = act(foe), chain = 1 + Math.min(.32, Math.max(0, chainN) * .08), pierce = /Ignores Guard/.test(kitTxt(at.card)), ch = me.chargeNext ? 1 + me.chargeNext / 100 : 1
+  if (PE(d).absorbRanged && !PE(at).antiKit && rangedHit(at, a)) return 0
   if (a === 'strike') return estHit(at, d, 260 * chain * ch, at.pwr, false)
   if (a === 'blast') return estHit(at, d, 420 * chain * ch, at.ki, false)
   if (a === 'special') return estHit(at, d, pctOf(at.card) * 3.2 * chain * ch * (isAoe(at.card) ? .75 : 1), Math.max(at.pwr, at.ki), pierce)
@@ -357,7 +390,8 @@ function smartTurn(B, who) {
       const ultD = estHit(mine, opp, pctOf(mine.card) * 6, Math.max(mine.pwr, mine.ki), /Ignores Guard/.test(kitTxt(mine.card)))
       if (ultD >= opp.hp || !opp.guard || foe.gauge >= 85 || opp.cylinder) { const e = ultimate(B, who); if (e) { evs.push(e); continue } }
     }
-    const hand = me.hand.map((a, i) => [a, i]), can = a => hand.find(([x]) => x === a && ARTS[x].cost <= me.ki && !(x === 'burst' && me.ki < 2))
+    const avoidRanged = avoidAbsorbedArts(me, opp)
+    const hand = me.hand.map((a, i) => [a, i]), can = a => hand.find(([x]) => x === a && ARTS[x].cost <= me.ki && !(x === 'burst' && me.ki < 2) && !(avoidRanged && rangedHit(mine, x)))
     const chainN = me.seq.length, dmgOf = a => estArt(me, foe, a, chainN)
     // 3) pop a Magic Cylinder trap with the cheapest hit first
     if (opp.cylinder) { const p = can('strike') || can('blast'); if (p) { const e = playArt(B, who, p[1]); if (e) { evs.push(e); continue } } }
@@ -411,7 +445,8 @@ function planTurn(B, level, who = 'ai') {
   for (let n = 0; n < 8; n++) {
     if (act(foe).ko || act(me).ko) break
     if (me.gauge >= GAUGE_MAX && (clever || Math.random() < .7)) { const e = ultimate(B, who); if (e) { evs.push(e); continue } }
-    const playable = me.hand.map((a, i) => [a, i]).filter(([a]) => ARTS[a].cost <= me.ki)
+    const avoidRanged = avoidAbsorbedArts(me, act(foe))
+    const playable = me.hand.map((a, i) => [a, i]).filter(([a]) => ARTS[a].cost <= me.ki && !(avoidRanged && rangedHit(act(me), a)))
     if (!playable.length) break
     const hasSpecial = me.hand.includes('special'), opp = act(foe), mine = act(me)
     let pick = null
@@ -1026,7 +1061,13 @@ export function startBattle(stage) {
       b.onclick = () => doArt(i)
       hand.append(b)
     }) }
-    { const tb = $a('.ar-trans'), fA = act(s), ok = canTransform(fA); tb.hidden = !ok; tb.disabled = !my || !ok; if (ok) tb.querySelector('small').textContent = fA.card.form ? fA.card.form.name : 'POWER UP' }
+    {
+      const tb = $a('.ar-trans'), partner = !!f.pe.partner, ok = partner ? canTagPartner(f, B.turn) : canTransform(f)
+      tb.hidden = !partner && !ok
+      tb.disabled = !my || !ok
+      tb.querySelector('b').textContent = partner ? 'TAG' : 'TRANSFORM'
+      tb.querySelector('small').textContent = partner ? (f.friezaSide ? '→ ANDROID 17' : '→ GOLDEN FRIEZA') : f.card.form?.name || 'POWER UP'
+    }
     const u = $a('.ar-ult'); u.disabled = !my || s.gauge < GAUGE_MAX; u.classList.toggle('ready', s.gauge >= GAUGE_MAX)
     u.style.setProperty('--g', s.gauge / GAUGE_MAX); u.querySelector('small').textContent = s.gauge >= GAUGE_MAX ? ultOf(f.card)[0] : Math.floor(s.gauge) + '%'; u.title = ultOf(f.card).join(': ')
     $a('.ar-end').disabled = !my
@@ -1156,7 +1197,7 @@ export function startBattle(stage) {
     draw()
   }
   // ================= TRANSFORMATIONS (S / Z / Ω, once per fighter, under 50% HP) =================
-  function canTransform(f) { return !stage.storyTeam && !!f && !f.ko && !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5 }
+  function canTransform(f) { return !stage.storyTeam && !!f && !f.pe.partner && !f.ko && !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5 }
   async function transform(side, who) {
     const f = act(side); if (!canTransform(f)) return
     const full = !!f.card.form, k = full ? 1.25 : 1.15
@@ -1254,7 +1295,11 @@ export function startBattle(stage) {
       await show(ev); B.busy = false; if (!B.over) controls()
     }
   }
-  $a('.ar-trans').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); await transform(B.you, 'you'); lvSend({ t: 'tr' }); B.busy = false; if (!B.over) controls() }
+  $a('.ar-trans').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); const f = act(B.you)
+    if (f.pe.partner) {
+      if (tagPartner(f, B.turn)) { lvSend({ t: 'partner' }); draw(); flushPas() }
+    } else { await transform(B.you, 'you'); lvSend({ t: 'tr' }) }
+     B.busy = false; if (!B.over) controls() }
   $a('.ar-ult').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); const e = ultimate(B, 'you'); if (e) { lvSend({ t: 'ult' }); await show(e) } B.busy = false; if (!B.over) controls() }
   const mb = $a('.ar-mute'), mdraw = () => { mb.textContent = sfxOn() ? '🔊 SOUND' : '🔇 MUTED'; mb.classList.toggle('off', !sfxOn()) }
   mb.onclick = () => { sfxOn(!sfxOn()); mdraw() }; mdraw()
@@ -1288,6 +1333,8 @@ export function startBattle(stage) {
     const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN + (s.kiBonus || 0)); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
     if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
     log('Enemy turn'); turnBanner('ENEMY TURN', false); draw(); await wait(800)
+    autoTagPartner(act(B.ai), B.turn)
+    flushPas()
     for (const ev of aiTurn(B, stage.mode === 'ranked' && (stage.rating || 0) >= 80 ? 5 : stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
     if (B.you.skip || act(B.you).frozen) { B.you.skip = 0; act(B.you).frozen = 0; log('You lose your turn!'); turnBanner('TIME STOPPED', true); await wait(900); B.turn++; return aiPhase() }
     B.turn++
@@ -1335,6 +1382,7 @@ export function startBattle(stage) {
       if (a.t === 'art') { const ev = playArt(B, 'ai', a.i); lvApply(a.sn); if (ev) await show(ev) }
       else if (a.t === 'ult') { const ev = ultimate(B, 'ai'); lvApply(a.sn); if (ev) await show(ev) }
       else if (a.t === 'sw') await remoteSwitch(a.i, a.sn)
+      else if (a.t === 'partner') { tagPartner(act(B.ai), B.turn); lvApply(a.sn); draw(); flushPas() }
       else if (a.t === 'tr') { await transform(B.ai, 'ai'); lvApply(a.sn) }
       if (B.over) return }
     B.turn++
@@ -1365,6 +1413,10 @@ export function startBattle(stage) {
     if (!AUTO || B.busy || B.over) return
     B.busy = true; controls(); await wait(350)
     if (canTransform(act(B.you))) await transform(B.you, 'you')
+    const f = act(B.you)
+    const side = f.friezaSide
+    autoTagPartner(f, B.turn)
+    if (side !== f.friezaSide) { lvSend({ t: 'partner' }); draw(); flushPas() }
     for (const ev of planTurn(B, 5, 'you')) { if (B.over) return; await show(ev); if (B.over) return }
     // auto Tag Assist: after a Special/Ultimate, tag in the best bench fighter for a free hit
     if (!B.over && !B.you.switched && (B.you.seq.includes('special') || B.you.ultTurn === B.turn)) { const foe = act(B.ai), cur = act(B.you), sc = f => (matchup(f, foe) - matchup(foe, f)) * 2 + f.hp / f.max, best = B.you.team.map((f, i) => [f, i]).filter(([f, i]) => !f.ko && i !== B.you.active && f.hp / f.max > .35).sort((x, y) => sc(y[0]) - sc(x[0]))[0]; if (best && sc(best[0]) >= sc(cur) - .3) { B.busy = false; await doSwitch(best[1]); B.busy = true } }
