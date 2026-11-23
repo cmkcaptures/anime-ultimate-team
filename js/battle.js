@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=chimera-story'
-import { sfx, sfxOn, music } from './sfx.js?v=chimera-story'
-import { createFX } from './fx2d.js?v=chimera-story'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=five-story-arcs'
+import { sfx, sfxOn, music } from './sfx.js?v=five-story-arcs'
+import { createFX } from './fx2d.js?v=five-story-arcs'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -766,7 +766,7 @@ let selectedStoryArc = null
 function storyArcCast(arc) {
   const cast = new Map()
   for (const chapter of arc.chapters) {
-    for (const id of [chapter.player, chapter.enemy, ...chapter.scene.map(([id]) => id), ...chapter.outro.map(([id]) => id)]) {
+    for (const id of [...[chapter.player].flat(), chapter.enemy, ...chapter.scene.map(([id]) => id), ...chapter.outro.map(([id]) => id)]) {
       if (id === 'Narrator' || cast.has(id)) continue
       const card = X.POOL.find(c => c.id === id && c.anime === arc.anime)
       if (!card) return null
@@ -779,19 +779,27 @@ function storyArcPage(el, arc, cast, done) {
   const { h } = X
   const back = h('button', 'btn dark sm', '‹ ALL STORY ARCS')
   back.onclick = () => { selectedStoryArc = null; X.go('battle') }
-  el.append(back, h('section', 'bhero camp-hero', `<div><span class="sh-tag">${X.ANAME(arc.anime)}</span><h2>${arc.name.toUpperCase()}</h2><p>${arc.synopsis}</p></div><div class="bstat"><b>${done}/3</b><span>CHAPTERS CLEARED</span></div>`))
+  el.append(back, h('section', 'bhero camp-hero', `<div><span class="sh-tag">${X.ANAME(arc.anime)}</span><h2>${arc.name.toUpperCase()}</h2><p>${arc.synopsis}</p></div><div class="bstat"><b>${done}/${arc.chapters.length}</b><span>CHAPTERS CLEARED</span></div>`))
+  const reward = X.POOL.find(c => c.id === arc.rewardCard && c.arcReward === arc.id)
+  if (reward) {
+    const panel = h('div', 'panel pad')
+    const unlocked = X.P.arcRewards?.[arc.id]
+    panel.append(h('b', '', (unlocked ? '✓ ARC REWARD EARNED · ' : 'CLEAR EVERY CHAPTER · ') + reward.name + ' · ' + reward.ver))
+    panel.append(h('p', 'muted', unlocked ? 'Extra copies are available in the Pack Point Exchange.' : 'Clearing this arc also unlocks extra copies in the Pack Point Exchange.'))
+    el.append(panel)
+  }
   const list = h('div', 'camp-list')
   arc.chapters.forEach((chapter, i) => {
-    const player = cast.get(chapter.player), enemy = cast.get(chapter.enemy)
+    const players = [chapter.player].flat().map(id => cast.get(id)), enemy = cast.get(chapter.enemy)
     const label = `Chapter ${i + 1} · ${chapter.name}`
     const start = withStory => {
-      const fight = () => go2({ ...chapter, mode: 'arc', id: arc.id + ':' + i, label, team: [enemy.key], storyPlayer: player.key,
+      const fight = () => go2({ ...chapter, mode: 'arc', id: arc.id + ':' + i, label, team: [enemy.key], storyTeam: players.map(c => c.key),
         afterWin: withStory ? () => scene(chapter.outro, chapter.name, enemy.url, () => {}, cast) : null })
       if (withStory) scene(chapter.scene, label, enemy.url, fight, cast)
       else fight()
     }
     const row = h('div', 'camp-st' + (i < done ? ' done' : '') + (i > done ? ' locked' : ''),
-      `<span class="cs-art" style="background-image:url('${enemy.url}')"></span><span class="cs-tx"><small>${label}</small><b>${player.name} vs. ${enemy.name}</b><small>${chapter.objective}</small></span>`)
+      `<span class="cs-art" style="background-image:url('${enemy.url}')"></span><span class="cs-tx"><small>${label}</small><b>${players.map(c => c.name).join(' & ')} vs. ${enemy.name}</b><small>${chapter.matchup}</small></span>`)
     const play = h('button', 'btn gold sm', i < done ? 'REPLAY STORY' : i === done ? 'CONTINUE STORY' : 'LOCKED')
     play.disabled = i > done
     play.onclick = () => start(true)
@@ -808,41 +816,25 @@ function storyArcPage(el, arc, cast, done) {
   })
   el.append(list)
 }
-function arcsPage(el, ok) {
+function arcsPage(el) {
   const { h, P } = X, ST = X.ST(), A = P.arcs || {}
-  const selected = ST.arcs.find(arc => arc.id === selectedStoryArc && arc.chapters)
-  const selectedCast = selected && storyArcCast(selected)
-  if (selectedCast) return storyArcPage(el, selected, selectedCast, A[selected.id] || 0)
-  el.append(h('section', 'bhero', `<div><span class="sh-tag">STORY ARCS</span><h2>STORY ARCS</h2><p>Relive the big fights. Each arc has three chapters against that anime's fighters, ending with its villains as a powered-up final boss. Clearing an arc gives a Premium Drop and ◆1,000 shards.</p></div><div class="bstat"><b>${ST.arcs.filter(a => (A[a.id] || 0) >= 3).length}</b><span>/ ${ST.arcs.length} ARCS</span></div>`))
-  const g = h('div', 'arcs')
-  for (const arc of ST.arcs) {
-    const pool = X.POOL.filter(c => c.anime === arc.anime); if (!pool.length) continue
-    const done = A[arc.id] || 0, boss = pool.filter(c => arc.bad.includes(c.name)).sort((a, b) => b.ovr - a.ovr)[0] || pool[0]
-    const card = h('div', 'arc' + (done >= 3 ? ' done' : ''))
+  const available = ST.arcs.map(arc => ({ arc, cast: storyArcCast(arc) })).filter(entry => entry.cast)
+  const selected = available.find(({ arc }) => arc.id === selectedStoryArc)
+  if (selected) return storyArcPage(el, selected.arc, selected.cast, A[selected.arc.id] || 0)
+  const total = available.length, cleared = available.filter(({ arc }) => (A[arc.id] || 0) >= arc.chapters.length).length
+  el.append(h('section', 'bhero', `<div><h2>STORY ARCS</h2><p>Fight as the characters from each scene. Clear an arc to earn its card, a Premium Drop and ◆1,000 shards.</p></div><div class="bstat"><b>${cleared}</b><span>/ ${total} ARCS</span></div>`))
+  const grid = h('div', 'arcs')
+  for (const { arc, cast } of available) {
+    const done = A[arc.id] || 0, count = arc.chapters.length, boss = cast.get(arc.chapters[count - 1].enemy)
+    const card = h('div', 'arc' + (done >= count ? ' done' : ''))
     card.style.setProperty('--art', `url("${boss.url}")`)
-    card.innerHTML = `<div class="arc-art"></div><div class="arc-info"><small>${X.ANAME(arc.anime)}</small><b>${arc.name}</b><span>${done >= 3 ? 'ARC COMPLETE' : done + ' / 3 chapters'}</span><div class="arc-ch"></div></div>`
-    const chs = card.querySelector('.arc-ch')
-    const cast = arc.chapters && storyArcCast(arc)
-    if (cast) {
-      const open = h('button', 'btn gold sm', 'OPEN STORY')
-      open.onclick = () => { selectedStoryArc = arc.id; X.go('battle') }
-      chs.append(open)
-      g.append(card)
-      continue
-    }
-    ST.arcCh.forEach((C, i) => {
-      const b = h('button', 'btn ' + (i === 2 ? 'gold' : 'dark') + ' sm', `${i < done ? '✓ ' : ''}${C.name}`); b.disabled = !ok || i > done
-      b.onclick = () => {
-        const bad = pool.filter(c => arc.bad.includes(c.name)).sort((a, b) => b.ovr - a.ovr), good = pool.filter(c => !arc.bad.includes(c.name)).sort((a, b) => a.ovr - b.ovr)
-        const main = i === 2 ? bad.concat(good.reverse()) : i === 1 ? good.slice(-3).concat(bad.slice(-1), good) : good.concat(bad.slice(-1))
-        go2({ mode: 'arc', id: arc.id + ':' + i, label: arc.name + ' · ' + C.name, name: arc.name, level: C.level, boost: C.boost, team: teamFrom([...new Set(main)], 78 + i * 7) })
-      }
-      chs.append(b)
-    })
-    { const bad = pool.filter(c => arc.bad.includes(c.name)).sort((a, b) => b.ovr - a.ovr), good = pool.filter(c => !arc.bad.includes(c.name)).sort((a, b) => b.ovr - a.ovr); card.querySelector('.arc-info').append(cxBtn(() => bad.concat(good).slice(0, 6), arc.name)) }
-    g.append(card)
+    card.innerHTML = `<div class="arc-art"></div><div class="arc-info"><small>${X.ANAME(arc.anime)}</small><b>${arc.name}</b><span>${done >= count ? 'ARC COMPLETE' : done + ' / ' + count + ' chapters'}</span><div class="arc-ch"></div></div>`
+    const open = h('button', 'btn gold sm', 'OPEN STORY')
+    open.onclick = () => { selectedStoryArc = arc.id; X.go('battle') }
+    card.querySelector('.arc-ch').append(open)
+    grid.append(card)
   }
-  el.append(g)
+  el.append(grid)
 }
 function eventPage(el, ok) {
   const { h } = X, E = X.ST().event, pool = X.POOL.filter(c => c.anime === E.anime).sort((a, b) => b.ovr - a.ovr)
@@ -893,14 +885,20 @@ export function battlePage(el) {
 export function startBattle(stage) {
   const { h, cardImg, eff, BYKEY, P } = X
   const LV = stage.live || null
-  const yours = LV ? LV.myTeam : stage.storyPlayer ? [BYKEY[stage.storyPlayer]] : P.team.filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
+  const yours = LV ? LV.myTeam : stage.storyTeam ? stage.storyTeam.map(k => BYKEY[k]) : P.team.filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
-  { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (!stage.storyPlayer && D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
+  { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (!stage.storyTeam && D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
   if (LV) { B.you.deck = LV.myDeck || null; B.ai.deck = LV.oppDeck || null; B.you.hand = []; B.ai.hand = []; B.you.pile = B.ai.pile = null; B.you.rngS = (LV.seed + (LV.role === 'h' ? 1 : 2)) | 0; B.ai.rngS = (LV.seed + (LV.role === 'h' ? 2 : 1)) | 0 }
   if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * .88); f.ki = Math.round(f.ki * .88); f.def = Math.round(f.def * 1.15) }
   if (stage.youCat) for (const f of B.you.team) if ((f.card.cat || []).includes(stage.youCat)) for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.15)
-  if (stage.boost && stage.boost !== 1) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boost); for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * (1 + (stage.boost - 1) * .6)) }
+  for (const [side, boost] of [[B.ai, stage.boost], [B.you, stage.playerBoost]]) {
+    if (!boost || boost === 1) continue
+    for (const f of side.team) {
+      f.hp = f.max = Math.round(f.max * boost)
+      for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * (1 + (boost - 1) * .6))
+    }
+  }
   for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) {
     for (const f of me.team) {
       const e = PE(f)
@@ -915,6 +913,7 @@ export function startBattle(stage) {
     }
   }
   if (stage.rules) for (const f of B.ai.team) { const r = { ...stage.rules }; f.pe = { ...(f.pe || {}), ...r, dmg: ((f.pe || {}).dmg || 0) + (r.dmg || 0), dodge: Math.min(60, ((f.pe || {}).dodge || 0) + (r.dodge || 0)), regen: ((f.pe || {}).regen || 0) + (r.regen || 0) }; if (r.endure) f.endure = (f.endure || 0) + r.endure }
+  if (stage.rules?.ultStart) B.ai.gauge = Math.max(B.ai.gauge, stage.rules.ultStart)
   { const all = [...B.you.team, ...B.ai.team], idle = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 1500 }) : setTimeout(f, 60)); let i = 0; const next = () => { const f = all[i++]; if (!f) return; thumbURL(f.card, 560).catch(() => {}).finally(() => idle(next)) }; setTimeout(() => idle(next), 200) }
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
@@ -941,7 +940,7 @@ export function startBattle(stage) {
   // 3D engine removed for performance; the stage is a static CSS scene
   const log = t => { const l = $a('.ar-log'); l.textContent = t; l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop') }
   let SPEED = 1; try { SPEED = +localStorage.getItem('aut-bspeed') || 1 } catch { }
-  let AUTO = false, enemyTurns = 0
+  let AUTO = false
   const wait = ms => new Promise(r => setTimeout(r, ms / SPEED))
   const IMG = new Map()
   const img = (f, w) => { const im = new Image(); im.alt = f.card.name; im.draggable = false; const k = f.key + w; if (!IMG.has(k)) IMG.set(k, thumbURL(f.card, w)); IMG.get(k).then(u => im.src = u); return im }
@@ -1144,7 +1143,7 @@ export function startBattle(stage) {
     draw()
   }
   // ================= TRANSFORMATIONS (S / Z / Ω, once per fighter, under 50% HP) =================
-  function canTransform(f) { return !stage.storyPlayer && !!f && !f.ko && !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5 }
+  function canTransform(f) { return !stage.storyTeam && !!f && !f.ko && !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5 }
   async function transform(side, who) {
     const f = act(side); if (!canTransform(f)) return
     const full = !!f.card.form, k = full ? 1.25 : 1.15
@@ -1215,7 +1214,6 @@ export function startBattle(stage) {
       if (other === 'you') { await pickReplacement() } else { log(`Enemy sends out ${act(foe).card.name}`); sfx('nav') }
       draw(); await wait(400)
     }
-    if (stage.enemyHP && act(B.ai).hp <= act(B.ai).max * stage.enemyHP) return end(true)
   }
   function pickReplacement() {
     return new Promise(res => {
@@ -1255,13 +1253,7 @@ export function startBattle(stage) {
 
   // safety net: nobody can sit on 0 HP without being knocked out, and a KO'd active fighter is always replaced
   function sweepKO() { for (const [side, sd] of [['you', B.you], ['ai', B.ai]]) { for (const f of sd.team) if (!f.ko && f.hp <= 0.5) { f.hp = 0; f.ko = true } if (act(sd).ko && !nextAlive(sd)) { end(side === 'ai'); return true } }
-    if (stage.enemyHP && act(B.ai).hp <= act(B.ai).max * stage.enemyHP) { end(true); return true }
     draw(); return false
-  }
-  function survivedEnemyTurn() {
-    if (!stage.survive || ++enemyTurns < stage.survive) return false
-    end(true)
-    return true
   }
   async function aiPhase() {
     if (B.over || sweepKO()) return
@@ -1281,10 +1273,9 @@ export function startBattle(stage) {
     }
     B.busy = true; controls()
     const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN + (s.kiBonus || 0)); refill(s); s.switched = false; s.seq = []; startTurn(s); act(B.you).fort = 0
-    if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; if (survivedEnemyTurn()) return; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
+    if (s.skip || act(s).frozen) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
     log('Enemy turn'); turnBanner('ENEMY TURN', false); draw(); await wait(800)
     for (const ev of aiTurn(B, stage.mode === 'ranked' && (stage.rating || 0) >= 80 ? 5 : stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
-    if (survivedEnemyTurn()) return
     if (B.you.skip || act(B.you).frozen) { B.you.skip = 0; act(B.you).frozen = 0; log('You lose your turn!'); turnBanner('TIME STOPPED', true); await wait(900); B.turn++; return aiPhase() }
     B.turn++
     if (B.over || sweepKO()) return
@@ -1379,7 +1370,7 @@ export function startBattle(stage) {
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
     if (won) { const cf = document.createElement('div'); cf.className = 'confetti'; cf.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="--x:${Math.random() * 100}%;--d:${(Math.random() * .8).toFixed(2)}s;--h:${Math.round(Math.random() * 360)};--r:${Math.round(Math.random() * 720 - 360)}deg"></i>`).join(''); ov.append(cf); setTimeout(() => cf.remove(), 4000) }
-    box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : won ? (r.msg || 'Stage cleared.') : (stage.storyPlayer ? 'Your story fighter was knocked out. Try again.' : 'Your team was knocked out. Tweak your lineup and try again.')}</p>
+    box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : won ? (r.msg || 'Stage cleared.') : (stage.storyTeam ? 'Your story lineup was knocked out. Try again.' : 'Your team was knocked out. Tweak your lineup and try again.')}</p>
       <div class="rs-body"><div class="rs-mvp"><span>MVP</span><div class="rs-card"></div><b>${mvp.card.name}</b><small>${mvp.dealt.toLocaleString()} DMG · ${mvp.kos} KO</small></div>
       <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/${B.you.team.length}</b><span>SURVIVED</span></div></div></div>`
     box.querySelector('.rs-card').append(img(mvp, 360))

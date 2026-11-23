@@ -1,10 +1,10 @@
-import { createFX } from './fx2d.js?v=chimera-story'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=chimera-story'
+import { createFX } from './fx2d.js?v=five-story-arcs'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=five-story-arcs'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=chimera-story'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=chimera-story'
+import * as ACC from './account.js?v=five-story-arcs'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=five-story-arcs'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=chimera-story'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=five-story-arcs'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -439,15 +439,18 @@ async function cardDetail(key) {
       const add = (cls, label, dis, fn) => { const b = h('button', 'btn sm ' + cls, label); b.disabled = !!dis; b.onclick = fn; a.append(b) }
       add('violet', inTeam ? 'IN TEAM' : 'ADD TO TEAM', inTeam, () => { const T = P.team.slice(), i = T.indexOf(null); closeModal(); if (i < 0) { toast('Your team is full. Swap a card on the Team page.'); go('team'); return } T[i] = key; act('team', { team: T }).then(() => go('team')) })
       if (false) add('green', lvl >= 5 ? 'MAX ★' : `LEVEL UP ★${lvl + 1}`, !(e.n > 1 && lvl < 5), async () => { await act('awaken', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
-      add('gold', 'SELL ON MARKET', spare < 1, () => listSheet(key))
-      add('dark', `QUICK SELL ${fmt(ST.quick[key])}`, spare < 1, async () => { await act('quickSell', { key }); if (club()[key]) cardDetail(key); else closeModal(); if (CUR === 'cards') rerender() })
+      if (!c.arcReward) add('gold', 'SELL ON MARKET', spare < 1, () => listSheet(key))
+      add('dark', `QUICK SELL ${fmt(ST.quick[key])}`, spare < 1 || (c.arcReward && e.n <= 1), async () => { await act('quickSell', { key }); if (club()[key]) cardDetail(key); else closeModal(); if (CUR === 'cards') rerender() })
       if (e.n > 1) add('dark', `SHRED ${e.n - 1} → ◆${fmt((e.n - 1) * ST.shardGet[c.r])}`, spare < 1, async () => { await act('shred', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       d.append(a)
       d.append(h('span', 'muted', `<small style="font-weight:700">Duplicates add a Diamond (max 7◆). Spare copies after that can be sold or shredded.</small>`))
-    } else {
+    } else if (!c.arcReward) {
       const b = h('button', 'btn block', 'FIND ON MARKET'); b.onclick = () => { MS.q = c.name.toLowerCase(); MS.view = 'results'; go('market') }; d.append(b)
     }
-    if (c.season) d.append(h('span', 'season-tag', c.season === 99 ? 'STORY EXCLUSIVE · Campaign boss reward' : `SEASON ${c.season} EXCLUSIVE · Season Pass only`))
+    if (c.arcReward) {
+      const arc = (ST.arcs || []).find(a => a.id === c.arcReward)
+      d.append(h('span', 'season-tag', 'STORY ARC REWARD · ' + (arc?.name || 'Clear its Story Arc')))
+    } else if (c.season) d.append(h('span', 'season-tag', c.season === 99 ? 'STORY EXCLUSIVE · Campaign boss reward' : `SEASON ${c.season} EXCLUSIVE · Season Pass only`))
     else { const cost = ST.shardCost[c.r], cb = h('button', 'btn block dark', `CRAFT FOR ◆${fmt(cost)} SHARDS <small>(you have ${fmt(P.shards || 0)})</small>`); cb.disabled = (P.shards || 0) < cost; cb.onclick = async () => { const r = await act('craft', { key }); if (!r.error) cardDetail(key) }; d.append(cb) }
     sh.append(d)
   })
@@ -483,7 +486,7 @@ function buildTargets() {
   const own = owned(), cnt = {}; for (const c of own) cnt[c.anime] = (cnt[c.anime] || 0) + 1
   const T = [{ id: 'best', label: 'BEST OVERALL', sub: 'Highest power, with synergy if it pays off' }]
   if (ST.event) T.push({ id: 'vs:' + ST.event.anime, label: '⚡ EVENT · ' + ANAME(ST.event.anime).toUpperCase(), sub: 'Counter this week\'s event enemies', hot: 1 })
-  for (const arc of ST.arcs || []) if (((P.arcs || {})[arc.id] || 0) < 3 && POOL.some(c => c.anime === arc.anime)) T.push({ id: 'vs:' + arc.anime, label: 'ARC · ' + arc.name.toUpperCase(), sub: 'Counter ' + ANAME(arc.anime) + ' fighters' })
+  for (const arc of ST.arcs || []) if (((P.arcs || {})[arc.id] || 0) < arc.chapters.length && POOL.some(c => c.anime === arc.anime)) T.push({ id: 'vs:' + arc.anime, label: 'ARC · ' + arc.name.toUpperCase(), sub: 'Counter ' + ANAME(arc.anime) + ' fighters' })
   for (const a of Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x])) if (cnt[a] >= 3) T.push({ id: 'series:' + a, label: ANAME(a).toUpperCase() + ' TEAM', sub: cnt[a] + ' owned · up to +' + (SYN[Math.min(6, cnt[a])] || 0) + '% synergy' })
   return T.filter((t, i, L) => L.findIndex(u => u.id === t.id) === i)
 }
@@ -732,7 +735,9 @@ PAGES.shop = (el) => {
   el.append(h('div', 'sec', `<h3>PACK POINT EXCHANGE</h3><span class="cur"><i class="pp-i"></i>${fmt(P.pp || 0)}</span>`))
   el.append(h('p', 'muted', '<small style="font-weight:700">Every pack you open gives 5 pack points. Spend them on the exact card you want.</small>'))
   const g = h('div', 'ppgrid')
-  for (const c of PACKABLE().sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr)) {
+  const clearedArcs = new Set(ST.arcs.filter(arc => (P.arcs?.[arc.id] || 0) >= arc.chapters.length).map(arc => arc.id))
+  const exchangeCards = POOL.filter(c => c.arcReward ? clearedArcs.has(c.arcReward) : !c.season)
+  for (const c of exchangeCards.sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr)) {
     const cost = ST.ppCost[c.r], b = h('button', 'cg' + ((P.pp || 0) < cost ? ' dimmed' : ''))
     b.append(cardImg(c, 240), h('span', 'cost', `<i></i>${cost}`)); if ((P.pp || 0) < cost) b.style.opacity = .55
     b.onclick = () => openModal(sh => {
@@ -1490,12 +1495,12 @@ function tradeSheet(p) {
     const g2 = h('div', 'cardgrid tpick'); sh.append(g2)
     const cw = h('label', 'tp-f', '<span>COINS</span>'), ci = h('input', 'field'); ci.inputMode = 'numeric'; ci.placeholder = '0'; ci.oninput = () => { pick.coins = Math.max(0, Math.min(P.coins, +ci.value || 0)); draw() }; cw.append(ci); sh.append(cw)
     const send = h('button', 'btn gold block big', 'SEND REQUEST'); send.style.marginTop = '14px'; sh.append(send)
-    const spareList = owned().filter(c => { const e = club()[c.key]; return e.n - (P.team.includes(c.key) ? 1 : 0) >= 1 && e.n > 1 })
+    const spareList = owned().filter(c => { const e = club()[c.key]; return !c.arcReward && e.n - (P.team.includes(c.key) ? 1 : 0) >= 1 && e.n > 1 })
     function draw() {
       sum.innerHTML = `<b>Want:</b> ${pick.want ? BYKEY[pick.want].name + ' · ' + BYKEY[pick.want].ver : 'pick a card'} &nbsp; <b>Offer:</b> ${pick.offer.map(k => BYKEY[k].name).join(', ') || 'no cards'}${pick.coins ? ' + ' + fmt(pick.coins) + ' coins' : ''}`
       send.disabled = !pick.want || (!pick.offer.length && !pick.coins)
       const qq = q.value.trim().toLowerCase(); g1.innerHTML = ''
-      for (const c of POOL.filter(c => !qq || (c.name + ' ' + c.ver).toLowerCase().includes(qq)).sort((a, b) => b.ovr - a.ovr).slice(0, 18)) { const bt = h('button', 'cg' + (pick.want === c.key ? ' sel' : '')); bt.append(cardImg(eff(c), 200)); bt.onclick = () => { pick.want = c.key; draw() }; g1.append(bt) }
+      for (const c of POOL.filter(c => !c.arcReward && (!qq || (c.name + ' ' + c.ver).toLowerCase().includes(qq))).sort((a, b) => b.ovr - a.ovr).slice(0, 18)) { const bt = h('button', 'cg' + (pick.want === c.key ? ' sel' : '')); bt.append(cardImg(eff(c), 200)); bt.onclick = () => { pick.want = c.key; draw() }; g1.append(bt) }
       g2.innerHTML = ''
       if (!spareList.length) g2.append(h('div', 'empty', '<b>No spare duplicates</b>You can still offer coins.'))
       for (const c of spareList) { const on = pick.offer.includes(c.key), bt = h('button', 'cg' + (on ? ' sel' : '')); bt.append(cardImg(eff(c), 200)); bt.onclick = () => { if (on) pick.offer = pick.offer.filter(k => k !== c.key); else if (pick.offer.length < 3) pick.offer.push(c.key); draw() }; g2.append(bt) }
@@ -1503,7 +1508,7 @@ function tradeSheet(p) {
     q.oninput = draw; draw()
     send.onclick = async () => {
       send.disabled = true
-      const x = await act('tradeEscrow', { offer: pick.offer, coins: pick.coins }); if (x.error) { send.disabled = false; return }
+      const x = await act('tradeEscrow', { want: pick.want, offer: pick.offer, coins: pick.coins }); if (x.error) { send.disabled = false; return }
       try { await ACC.tradeCreate({ to: p.uid, toName: p.name, want: pick.want, offer: pick.offer, coins: pick.coins }); toast('Request sent to ' + p.name + '!'); closeModal() }
       catch { await act('tradeRefund', { offer: pick.offer, coins: pick.coins }); toast('Could not send the request. Your offer was returned.', 'err'); send.disabled = false }
     }

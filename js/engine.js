@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=chimera-story'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=five-story-arcs'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -253,7 +253,7 @@ function achList() {
     { id: 'story', g: 'BATTLE', name: 'Story Complete', d: 'Clear all 10 story stages', p: B.cleared || 0, need: 10, rw: { coins: 5000 } },
     { id: 'tower25', g: 'BATTLE', name: 'Halfway Up', d: 'Clear Tower floor 25', p: (P.tower && P.tower.best) || 0, need: 25, rw: { coins: 6000, shards: 300 } },
     { id: 'tower50', g: 'BATTLE', name: 'Top of the Tower', d: 'Clear Tower floor 50', p: (P.tower && P.tower.best) || 0, need: 50, rw: { coins: 25000, title: 'Tower Master' } },
-    { id: 'arcs', g: 'BATTLE', name: 'Arc Hunter', d: 'Complete 5 Story Arcs', p: Object.values(P.arcs || {}).filter(x => x >= 3).length, need: 5, rw: { coins: 12000, title: 'Arc Hunter' } },
+    { id: 'arcs', g: 'BATTLE', name: 'Arc Hunter', d: 'Complete 3 Story Arcs', p: Object.entries(P.arcs || {}).filter(([id, count]) => count >= 3 && !ARCS.some(a => a.id === id && a.chapters.length > 3)).length >= 5 ? 3 : ARCS.filter(arc => arcCleared(P, arc)).length, need: 3, rw: { coins: 12000, title: 'Arc Hunter' } },
     { id: 'diamond', g: 'BATTLE', name: 'Diamond Hands', d: 'Reach Diamond in Ranked', p: P.rank ? P.rank.best : 0, need: 4, rw: { coins: 10000, title: 'Diamond' } },
     { id: 'legend', g: 'BATTLE', name: 'Living Legend', d: 'Reach Legend in Ranked', p: P.rank ? P.rank.best : 0, need: 6, rw: { coins: 30000, title: 'Legend' } },
     { id: 'boss100k', g: 'BATTLE', name: 'Boss Breaker', d: 'Deal 100,000 damage to a Daily Boss in one fight', p: Math.max(P.bossBestEver || 0, (P.boss && P.boss.best) || 0), need: 100000, rw: { coins: 8000, title: 'Boss Breaker' } },
@@ -893,19 +893,11 @@ function campP() { const P = S.profile; return P.camp || (P.camp = { stars: {}, 
 // ---------- TOWER / ARCS / EVENTS ----------
 const towerFloor = n => ({ rating: Math.min(95, 68 + Math.round(n * .55)), level: Math.min(5, 1 + Math.floor(n / 10)), boost: 1 + Math.max(0, n - 25) * .012, coins: 300 + n * 40, pack: n % 10 === 0 ? (n === 50 ? 'lightning' : n >= 30 ? 'premium' : 'jumbo') : null })
 const ARCS = [
-  { id: 'jjk', anime: 'JJK', name: 'Shibuya Incident', bad: ['SUKUNA', 'MAHITO & NANAMI', 'MAHORAGA', 'HIGURUMA'] },
-  { id: 'ds', anime: 'DS', name: 'Entertainment District', bad: ['GYUTARO', 'DOMA', 'AKAZA', 'HANTENGU'] },
-  { id: 'mha', anime: 'MHA', name: 'Paranormal Liberation War', bad: ['SHIGARAKI', 'DABI'] },
-  { id: 'nar', anime: 'NAR', name: "Pain's Assault", bad: ['PAIN'] },
-  { id: 'op', anime: 'OP', name: 'Onigashima Raid', bad: ['KING', 'GOL D. ROGER'] },
-  { id: 'dbz', anime: 'DBZ', name: 'Tournament of Power', bad: ['BROLY', 'GOKU BLACK'] },
-  { id: 'jjba', anime: 'JJBA', name: 'Golden Wind Finale', bad: ['DIAVOLO', 'KIRA', 'DIEGO'] },
-  { id: 'ble', anime: 'BLE', name: 'Thousand-Year Blood War', bad: ['YHWACH', 'AIZEN', 'ULQUIORRA', 'GRIMMJOW'] },
-  { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', bad: ['MERUEM', 'NEFERPITOU', 'SHAIAPOUF', 'HISOKA'],
+  { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', rewardCard: 'meruem_rose_aftermath',
     synopsis: 'A Royal Guard cuts off the Hunters’ retreat. As the King comes into his own, Kite, Netero and Gon each face the cost of standing their ground.',
     chapters: [
-      { name: 'Buy Them Time', player: 'kite_crazy_slots', enemy: 'neferpitou_royal_guard', level: 2, boost: .75, survive: 2,
-        objective: 'Survive two enemy turns as Kite so Gon and Killua can escape.',
+      { name: 'Buy Them Time', player: 'kite_crazy_slots', enemy: 'neferpitou_royal_guard', level: 4, boost: 1.02, playerBoost: 1.55,
+        matchup: 'Pitou strikes first. Kite has to fight from behind.',
         scene: [
           ['kite_crazy_slots', 'Keep moving, both of you. Whatever happens behind you, keep moving.'],
           ['neferpitou_royal_guard', 'They ran as soon as you told them to. They must trust you.'],
@@ -917,8 +909,8 @@ const ARCS = [
           ['Narrator', 'Gon and Killua escape. Kite stays behind with the Royal Guard. By the time the Hunters mount their assault, Gon has only one thing on his mind.'],
         ],
       },
-      { name: 'The King’s Name', player: 'netero_100_type_guanyin', enemy: 'meruem_the_king', level: 3, boost: 1.05, enemyHP: .5,
-        objective: 'Bring Meruem to half HP as Netero to reach the last stand.',
+      { name: 'The King’s Name', player: 'netero_100_type_guanyin', enemy: 'meruem_the_king', level: 5, boost: 1.85,
+        matchup: 'Meruem has the edge in raw power. Netero’s Ultimate can swing the fight.',
         scene: [
           ['meruem_the_king', 'There is a name I was given. You know it, don’t you?'],
           ['netero_100_type_guanyin', 'I do. You’ll have to earn the answer.'],
@@ -930,8 +922,8 @@ const ARCS = [
           ['Narrator', 'Meruem withstands Netero’s final technique. With his last breath, the Chairman triggers the Poor Man’s Rose.'],
         ],
       },
-      { name: 'The Price of Power', player: 'gon_adult_form', enemy: 'neferpitou_royal_guard', level: 4, boost: 1.35,
-        objective: 'Defeat Neferpitou as Adult Gon.',
+      { name: 'The Price of Power', player: 'gon_adult_form', enemy: 'neferpitou_royal_guard', level: 4, boost: 2.05,
+        matchup: 'Pitou can still hit hard, but Adult Gon has the edge.',
         scene: [
           ['neferpitou_royal_guard', 'I told you I would take you to Kite. There was never anything I could do to bring him back.'],
           ['Narrator', 'Gon gives up the power he might have had one day for the strength to fight now.'],
@@ -947,11 +939,215 @@ const ARCS = [
       },
     ],
   },
-  { id: 'bc', anime: 'BC', name: 'Spade Kingdom Raid', bad: ['ZAGRED'] },
-  { id: 'ft', anime: 'FT', name: 'Alvarez Empire War', bad: ['ZEREF', 'ACNOLOGIA'] },
-  { id: 'ff', anime: 'FF', name: 'The Great Cataclysm', bad: ['THE EVANGELIST', 'HAUMEA', 'SHO'] },
+  { id: 'shiganshina', anime: 'AOT', name: 'Return to Shiganshina', rewardCard: 'levi_vs_beast_titan',
+    synopsis: 'The Scouts return to seal the gates and reach Eren’s basement. The Warriors turn the district into a trap.',
+    chapters: [
+      { name: 'Under the Wall', player: 'eren_attack_titan', enemy: 'reiner_armored_titan', level: 4, boost: 1.02, playerBoost: 1.7,
+        matchup: 'Reiner has the armour. Eren has to find a way through it.',
+        scene: [
+          ['armin_scout_cadet', 'Three cups. Someone was here before us, and they had time to wait.'],
+          ['Narrator', 'Reiner emerges from the Wall and transforms. Eren moves away from the horses to draw him out.'],
+          ['eren_attack_titan', 'Come after me, Reiner. You know what happens if I make it to that basement.'],
+          ['reiner_armored_titan', 'I know. That’s why you’re staying here.'],
+        ],
+        outro: [
+          ['Narrator', 'Eren holds Reiner in place long enough for the Scouts to break his armour with Thunder Spears.'],
+          ['armin_scout_cadet', 'That bought us time inside the Wall. The horses are still trapped on the other side.'],
+        ],
+      },
+      { name: 'The Beast Hunt', player: 'levi_humanity_s_strongest', enemy: 'zeke_beast_titan_epic', level: 4, boost: 1.55,
+        matchup: 'Zeke hits hard. Levi has the speed to take the fight to him.',
+        scene: [
+          ['erwin_dedicate_your_hearts', 'If he’s looking at our charge, he won’t be looking for you.'],
+          ['levi_humanity_s_strongest', 'I’ll make that count.'],
+          ['zeke_beast_titan_epic', 'Still coming? What do they think they’re going to reach?'],
+          ['Narrator', 'The charge draws Zeke’s attention. Levi works his way around the line of Titans and closes in.'],
+        ],
+        outro: [
+          ['levi_humanity_s_strongest', 'I got him, Erwin. Now I need to keep hold of him.'],
+          ['Narrator', 'The Cart Titan pulls Zeke out before Levi can finish him. Inside the district, the Colossal Titan is still standing.'],
+        ],
+      },
+      { name: 'The Last Breath', player: ['armin_scout_cadet', 'eren_attack_titan'], enemy: 'bertholdt_colossal_titan', level: 5, boost: 1.65, playerBoost: 1.3,
+        matchup: 'Armin draws Bertholdt’s attention. Switch to Eren when you can press the attack.',
+        scene: [
+          ['armin_scout_cadet', 'His steam costs him muscle. As long as he’s looking at me, he won’t see you move.'],
+          ['eren_attack_titan', 'You’ll have to let go before it’s too late.'],
+          ['armin_scout_cadet', 'You’ll get one chance, Eren. Watch him, not me.'],
+          ['bertholdt_colossal_titan', 'I wish you’d found somewhere else to stand, Armin.'],
+        ],
+        outro: [
+          ['Narrator', 'Armin holds on as the steam burns him. Eren leaves his hardened Titan behind and strikes from outside its shell.'],
+          ['eren_attack_titan', 'I got Bertholdt. Armin? Can you hear me?'],
+          ['Narrator', 'The Scouts take the district. After one final decision, Armin survives and the way to the basement is open.'],
+        ],
+      },
+    ],
+  },
+  { id: 'shinobi-war', anime: 'NAR', name: 'Fourth Shinobi World War', rewardCard: 'madara_ten_tails',
+    synopsis: 'Madara becomes the Ten-Tails’ jinchūriki. Three battles follow the fight from Guy’s last gate to Naruto and Sasuke’s attempt to seal Kaguya.',
+    chapters: [
+      { name: 'The Eighth Gate', player: 'guy_eightgates', enemy: 'madara_ten_tails', level: 4, boost: 1, playerBoost: 2.15,
+        matchup: 'Guy’s Ultimate costs him his life. Use it when it can finish Madara.',
+        scene: [
+          ['madara_ten_tails', 'That colour. How much of your life did you spend to reach me?'],
+          ['guy_eightgates', 'Enough to make sure you remember who hit you.'],
+          ['Narrator', 'Guy opens the final gate. The ground breaks under his first step.'],
+          ['madara_ten_tails', 'Then show me what you bought with it.'],
+        ],
+        outro: [
+          ['Narrator', 'Night Guy tears through Madara’s defences. Madara regenerates as Guy’s strength gives out.'],
+          ['naruto_vs_madara', 'Guy-sensei, you’ve done enough. Let me take it from here.'],
+        ],
+      },
+      { name: 'A Second Wind', player: 'naruto_vs_madara', enemy: 'madara_ten_tails', level: 4, boost: 1.04, playerBoost: 2.1,
+        matchup: 'Six Paths power closes the gap. Madara can land a second hit with his Strikes.',
+        scene: [
+          ['naruto_vs_madara', 'You were about to kill him because you thought the fight was over. I’m here now.'],
+          ['madara_ten_tails', 'You came back with a different kind of chakra. Who gave it to you?'],
+          ['naruto_vs_madara', 'Someone who knew what you’d do if nobody stood in your way.'],
+        ],
+        outro: [
+          ['Narrator', 'Naruto lands a clean hit, but Madara slips away. The Infinite Tsukuyomi rises over the battlefield.'],
+          ['Narrator', 'Before the fight can resume, Black Zetsu turns on Madara. Kaguya emerges from his body.'],
+        ],
+      },
+      { name: 'Two Seals', player: 'naruto_sasuke_team7', enemy: 'kaguya_rabbit_goddess', level: 5, boost: 1.47,
+        matchup: 'Naruto and Sasuke have to land the finishing blow together against the strongest opponent in the arc.',
+        scene: [
+          ['kaguya_rabbit_goddess', 'That chakra was mine long before either of you had a name.'],
+          ['naruto_sasuke_team7', 'She keeps moving us the moment we get close. We need to come at her from both sides.', 'NARUTO'],
+          ['naruto_sasuke_team7', 'Watch my hand. If you get an opening, take it with me.', 'SASUKE'],
+          ['kaguya_rabbit_goddess', 'Come closer, then. I’ll take it back myself.'],
+        ],
+        outro: [
+          ['Narrator', 'Team 7 creates the opening. Naruto and Sasuke reach Kaguya together and seal her away.'],
+          ['naruto_sasuke_team7', 'We got her. Let’s bring everyone home.', 'NARUTO'],
+        ],
+      },
+    ],
+  },
+  { id: 'tournament-final-stand', anime: 'DBZ', name: 'Tournament of Power: Final Stand', rewardCard: 'jiren_full_power',
+    synopsis: 'Universe 7 is running out of time. Jiren stands between its last fighters and survival.',
+    chapters: [
+      { name: 'Instinct Returns', player: 'goku_ui', enemy: 'jiren_full_power', level: 4, boost: 1.38,
+        matchup: 'Ultra Instinct lets Goku slip past attacks. Jiren grows stronger as he takes hits.',
+        scene: [
+          ['Narrator', 'Vegeta is out. Goku is cornered against the broken edge of the arena, and his body begins to move on its own again.'],
+          ['jiren_full_power', 'You can dodge me. Can you reach me before your strength gives out?'],
+          ['goku_ui', 'I don’t know how long I’ve got. I only need long enough to find an opening.'],
+        ],
+        outro: [
+          ['Narrator', 'Goku slips through the barrage. He stops trying to think his way through each hit and lets the attack come to him.'],
+          ['jiren_full_power', 'The way you’re moving has changed again.'],
+        ],
+      },
+      { name: 'Beyond the Limit', player: 'goku_mui', enemy: 'jiren_full_power', level: 5, boost: 1.55,
+        matchup: 'Mastered Ultra Instinct gives Goku the first move. Jiren can still outlast him.',
+        scene: [
+          ['goku_mui', 'I can finally see what you’re doing. Every time I step forward, you’re already there.'],
+          ['jiren_full_power', 'Then you know what it takes to move me.'],
+          ['Narrator', 'Jiren puts everything into his next attack. Goku steps toward it.'],
+        ],
+        outro: [
+          ['goku_mui', 'I think that’s enough, Jiren.'],
+          ['Narrator', 'Before Goku can finish the fight, Ultra Instinct gives out. He falls near the edge of the arena.'],
+        ],
+      },
+      { name: 'The Opening', player: 'frieza_golden_frieza', enemy: 'jiren_full_power', level: 4, boost: 1.05, playerBoost: 1.28,
+        matchup: 'Frieza presses an exhausted Jiren while Goku recovers.',
+        scene: [
+          ['frieza_golden_frieza', 'I thought I’d be watching you throw him over the edge. Now I find myself standing in the way.'],
+          ['jiren_full_power', 'You waited for both of us to run out of strength.'],
+          ['frieza_golden_frieza', 'I waited for an opening. You’re standing in it.'],
+        ],
+        outro: [
+          ['Narrator', 'With Android 17 covering him, Frieza forces Jiren back. Jiren rises again, and Frieza’s golden glow fades.'],
+          ['Narrator', 'Goku pulls himself up. They have one last chance to take Jiren out of bounds.'],
+        ],
+      },
+      { name: 'Over the Edge', player: ['frieza_emperor_of_the_universe', 'goku_base'], enemy: 'jiren_full_power', level: 5, boost: 1.4, playerBoost: 1.7,
+        matchup: 'Switch fighters to share the damage while Jiren tries to hold the centre.',
+        scene: [
+          ['frieza_emperor_of_the_universe', 'If I take him over, you’d better be there to make sure he stays over.'],
+          ['goku_base', 'I’ll be there. We go together.'],
+          ['jiren_full_power', 'Neither of you has enough left.'],
+          ['goku_base', 'Then we’ll put what we have left together.'],
+        ],
+        outro: [
+          ['Narrator', 'Goku and Frieza take Jiren over the edge together. Android 17 is the last fighter in the ring.'],
+          ['Narrator', 'The winning wish brings the erased universes back.'],
+        ],
+      },
+    ],
+  },
+  { id: 'dark-matter-invasion', anime: 'OPM', name: 'The Dark Matter Invasion', rewardCard: 'boros_meteoric_burst',
+    synopsis: 'Saitama boards the ship above City A and finds Boros waiting for a fight.',
+    chapters: [
+      { name: 'Break the Armour', player: 'saitama_hero', enemy: 'boros_dominator_of_the_univers', level: 3, boost: 1.25,
+        matchup: 'Boros recovers HP between turns. Keep pressing after a big hit.',
+        scene: [
+          ['boros_dominator_of_the_univers', 'I crossed the stars to find someone who could make me fight. Are you that person?'],
+          ['saitama_hero', 'You’re in charge of the ship, right? Tell it to stop shooting at the city.'],
+          ['boros_dominator_of_the_univers', 'First, show me what you did to get up here.'],
+        ],
+        outro: [
+          ['Narrator', 'Saitama’s punch shatters the armour holding Boros’s power back. Boros tests his released strength, then pushes his body into Meteoric Burst.'],
+          ['saitama_hero', 'You’re a lot louder without the armour on.'],
+        ],
+      },
+      { name: 'Meteoric Burst', player: 'saitama_hero', enemy: 'boros_meteoric_burst', level: 4, boost: 1, playerBoost: 1.35,
+        matchup: 'Boros trades his own HP for harder hits. Make him pay for every exchange.',
+        scene: [
+          ['boros_meteoric_burst', 'This speeds up everything inside me. Even I can’t keep it going for long.'],
+          ['saitama_hero', 'So what happens when you get tired?'],
+          ['boros_meteoric_burst', 'You won’t be here to find out.'],
+        ],
+        outro: [
+          ['Narrator', 'Boros catches Saitama with a kick that sends him out of the atmosphere. Saitama lands on the Moon, checks his footing, and jumps back.'],
+          ['saitama_hero', 'Okay. Same ship. Good.'],
+        ],
+      },
+      { name: 'Back on Deck', player: 'saitama_hero', enemy: 'boros_meteoric_burst', level: 4, boost: 1.06, playerBoost: 1.37,
+        matchup: 'Boros keeps attacking through the recoil. Force him to spend his remaining strength.',
+        scene: [
+          ['boros_meteoric_burst', 'You came back on your own. All the way from there?'],
+          ['saitama_hero', 'Yeah. What were we doing?'],
+          ['Narrator', 'Saitama closes the distance. Boros’s body starts coming apart under the punches and pulls itself back together.'],
+        ],
+        outro: [
+          ['boros_meteoric_burst', 'I have enough left for one attack. There won’t be a reason to hold back after this.'],
+          ['saitama_hero', 'All right. I’ll take this one seriously.'],
+        ],
+      },
+      { name: 'Serious Punch', player: 'saitama_serious', enemy: 'boros_meteoric_burst', level: 5, boost: 1.52, playerBoost: 1.16,
+        rules: { ultStart: 50 },
+        matchup: 'Boros starts with 50% Ultimate gauge. Close the fight before he can fire at full power.',
+        scene: [
+          ['boros_meteoric_burst', 'I’m putting everything I have left into this. Let’s see if you can stop it.'],
+          ['saitama_serious', 'I can. I just needed to see where you were aiming.'],
+        ],
+        outro: [
+          ['Narrator', 'Saitama’s punch splits the beam and leaves the ship falling. Boros is still alive long enough to speak.'],
+          ['boros_meteoric_burst', 'You had plenty left. I was the only one who had to use everything.'],
+          ['saitama_serious', 'You made it a good fight.'],
+        ],
+      },
+    ],
+  },
 ]
-const ARC_CH = [{ name: 'Chapter 1', level: 2, boost: 1, coins: 2000 }, { name: 'Chapter 2', level: 3, boost: 1.12, coins: 3000 }, { name: 'Final Boss', level: 5, boost: 1.3, coins: 5000 }]
+function grantArcCard(arc) {
+  if (!arc.rewardCard) return null
+  const card = CARDS.find(c => c.id === arc.rewardCard && c.arcReward === arc.id)
+  if (!card) return null
+  const P = S.profile, claimed = P.arcRewards || (P.arcRewards = {})
+  if (claimed[arc.id]) return null
+  giveCard(card.key)
+  claimed[arc.id] = true
+  P.last = [card.key]
+  return card
+}
+const arcCleared = (P, arc) => !!arc && (P.arcs?.[arc.id] || 0) >= arc.chapters.length
 const EVENT_ANIME = ['JJK', 'DS', 'DBZ', 'OP', 'NAR', 'MHA', 'JJBA', 'HXH', 'BLE', 'BC', 'FT', 'FF']
 function eventNow() { const wk = Math.floor((Date.now() / 864e5 + 3) / 7), a = EVENT_ANIME[wk % EVENT_ANIME.length]; return { id: 'e' + wk, anime: a, pack: PACKS[a] ? a : 'standard', ends: (wk + 1) * 7 * 864e5 - 3 * 864e5, tiers: [{ name: 'Normal', level: 2, boost: 1, coins: 1500 }, { name: 'Hard', level: 4, boost: 1.2, coins: 3000 }, { name: 'Nightmare', level: 5, boost: 1.45, coins: 5000, pack: true }] } }
 
@@ -1025,6 +1221,12 @@ function placeBid(l, who, amount) {
 }
 function tick(noSave) {
   const M = S.market, now = Date.now(), all = cards().filter(c => !c.season)
+  M.listings = M.listings.filter(l => {
+    if (!byKey(l.key)?.arcReward) return true
+    if (l.bidder === 'YOU') S.profile.coins += l.bid
+    if (l.you) giveCard(l.key, l.lvl)
+    return false
+  })
   for (const c of all) { const d = M.demand[c.key] || 1; M.demand[c.key] = Math.max(.7, Math.min(1.6, d * (1 + (Math.random() - .5) * .06))) }
   for (const l of [...M.listings]) if (l.exp <= now) {
     if (l.bid) settle(l, 'bid')
@@ -1044,7 +1246,7 @@ function tick(noSave) {
     const nb = nextBid(l)
     if (nb < v * .92 && (!l.bin || nb < l.bin) && Math.random() < (l.you ? .35 : .12)) placeBid(l, pick(TRADERS.filter(t => t !== l.seller)), nb)
   }
-  S.wonder = S.wonder.filter(w => w.exp > now)
+  S.wonder = S.wonder.filter(w => w.exp > now && !w.keys.some(k => byKey(k)?.arcReward))
   while (S.wonder.length < 6) S.wonder.push({ id: M.seq++, who: pick(TRADERS), keys: aiPack(), exp: now + (60 + Math.random() * 240) * 60000 })
   if (!noSave) save()
 }
@@ -1071,6 +1273,7 @@ function act(a) {
       P.coins -= cost; P.pending[a.pack] = (P.pending[a.pack] || 0) + n; return {}
     }
     case 'openPack': {
+      if ((a.keys || []).some(k => byKey(k)?.arcReward)) return { error: 'Story Arc rewards are earned by clearing the arc.' }
       if (!(P.pending[a.pack] > 0)) return { error: 'No unopened pack of that type.' }
       P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = []; let itemMsg = ''
       if (Math.random() < (a.pack === 'bronze' || a.pack === 'silver' ? .04 : .08)) { const ks = Object.keys(ITEMS), ik = ks[Math.floor(Math.random() * ks.length)], it = itemsP(); it[ik] = (it[ik] || 0) + 1; itemMsg = 'Bonus item: ' + ITEMS[ik].name + '!' }
@@ -1082,6 +1285,7 @@ function act(a) {
     }
     case 'ppBuy': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
+      if (c.arcReward && !arcCleared(P, ARCS.find(arc => arc.id === c.arcReward))) return { error: 'Clear its Story Arc to unlock this card.' }
       const cost = PP_COST[c.r]; if ((P.pp || 0) < cost) return { error: `You need ${cost} pack points.` }
       P.pp -= cost; giveCard(a.key); P.last = [a.key]; addXP(10)
       return { msg: `Got ${cardName(a.key)} for ${cost} pack points.` }
@@ -1098,6 +1302,7 @@ function act(a) {
     case 'showcase': { P.showcase = (a.keys || []).filter(k => own(k)).slice(0, 5); return {} }
     case 'team': { if (Array.isArray(a.team) && a.team.length === 6) P.team = a.team.map(k => (k && own(k) ? k : null)); return {} }
     case 'quickSell': {
+      if (byKey(a.key)?.arcReward && (own(a.key)?.n || 0) <= 1) return { error: 'Your last Story Arc reward copy cannot be sold.' }
       const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }
       if (spare(a.key) < 1) return { error: 'That card is in your team. Remove it first.' }
       const got = quickSell(c, e.lvl || 0); P.coins += got; e.n--; if (e.n <= 0) delete P.club.cards[a.key]
@@ -1111,6 +1316,7 @@ function act(a) {
     }
     case 'craft': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
+      if (c.arcReward) return { error: 'Clear its Story Arc, then visit the Pack Point Exchange.' }
       const cost = SHARD_COST[c.r]; if ((P.shards || 0) < cost) return { error: `You need ${cost.toLocaleString()} shards.` }
       P.shards -= cost; giveCard(a.key); P.last = [a.key]; addXP(10); return { msg: `Crafted ${cardName(a.key)}.` }
     }
@@ -1140,6 +1346,7 @@ function act(a) {
     }
     case 'list': {
       const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }
+      if (c.arcReward) return { error: 'Story Arc rewards cannot be listed.' }
       if (spare(a.key) < 1) return { error: 'That card is in your team. Remove it first, or get a duplicate.' }
       const start = Math.round(+a.start / 50) * 50, bin = Math.round(+a.bin / 50) * 50, hours = [1, 3, 6, 12].includes(+a.hours) ? +a.hours : 1
       if (!(start >= 50 && start <= 9999950)) return { error: 'Set a start price between 50 and 9,999,950.' }
@@ -1266,13 +1473,17 @@ function act(a) {
         return { msg: `${'★'.repeat(got)} ${st.name} cleared! +${st.coins.toLocaleString()} coins${extra}.` }
       }
       if (a.mode === 'arc') {
-        const [id, ch] = String(a.id).split(':'), arc = ARCS.find(x => x.id === id), c = +ch; if (!arc || !ARC_CH[c]) return { error: 'Unknown chapter.' }
+        const [id, ch] = String(a.id).split(':'), arc = ARCS.find(x => x.id === id), c = Number(ch), chapter = arc?.chapters[c]; if (!ch || !Number.isInteger(c) || !chapter) return { error: 'Unknown chapter.' }
         const A = (P.arcs = P.arcs || {}), done = A[id] || 0; if (c > done) return { error: 'Chapter locked.' }
         if (!a.won) { addXP(10); return {} }
         addXP(40); if (c < done) { P.coins += 300; return { msg: 'Chapter replayed. +300 coins.' } }
-        A[id] = c + 1; P.coins += ARC_CH[c].coins; let extra = ''
-        if (c === 2) { P.pending.premium = (P.pending.premium || 0) + 1; P.shards = (P.shards || 0) + 1000; extra = ', a Premium Drop and ◆1,000 shards' }
-        return { msg: `${arc.name}: ${(arc.chapters?.[c] || ARC_CH[c]).name} cleared! +${ARC_CH[c].coins.toLocaleString()} coins${extra}.` }
+        const final = c === arc.chapters.length - 1, coins = final ? 5000 : 2000 + c * 1000
+        A[id] = c + 1; P.coins += coins; let extra = ''
+        if (final) { P.pending.premium = (P.pending.premium || 0) + 1; P.shards = (P.shards || 0) + 1000; extra = ', a Premium Drop and ◆1,000 shards'
+          const reward = grantArcCard(arc)
+          if (reward) extra += ' and ' + reward.name + ' · ' + reward.ver
+        }
+        return { msg: `${arc.name}: ${chapter.name} cleared! +${coins.toLocaleString()} coins${extra}.` }
       }
       if (a.mode === 'event') {
         const E = eventNow(), t = +a.id, T = E.tiers[t]; if (!T) return { error: 'Unknown event fight.' }
@@ -1308,6 +1519,7 @@ function act(a) {
     case 'tradeEscrow': { if (P.allBak) return { error: 'Trading is off while the temporary all-cards unlock is on.' } }
     // falls through
     case 'tradeEscrow_': {
+      if (byKey(a.want)?.arcReward || (a.offer || []).some(k => byKey(k)?.arcReward)) return { error: 'Story Arc rewards cannot be traded.' }
       const offer = a.offer || [], coins = Math.max(0, Math.round(+a.coins || 0)); if (P.coins < coins) return { error: 'Not enough coins.' }
       const use = {}; for (const k of offer) use[k] = (use[k] || 0) + 1
       for (const k in use) if (spare(k) < use[k]) return { error: 'You can only offer cards you own that are not in your team.' }
@@ -1431,7 +1643,7 @@ function state() {
     presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
     camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST, vcamp: VCAMP, vcampP: vcampP(), rift: riftNow(), deadzones: DEADZONES, rzAll: S.profile.rz || {},
-    mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, arcCh: ARC_CH, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
+    mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
   return JSON.parse(JSON.stringify(out))
@@ -1487,6 +1699,11 @@ async function boot() {
     for (const l of S.market.listings) l.key = fix(l.key)
     for (const w of S.wonder) w.keys = w.keys.map(fix)
     S.market.won = (S.market.won || []).map(w => ({ ...w, key: fix(w.key) })) }
+  for (const arc of ARCS) {
+    if (!arcCleared(S.profile, arc)) continue
+    const reward = grantArcCard(arc)
+    if (reward) notice(arc.name + ' clear reward: ' + reward.name + ' · ' + reward.ver, 'ok')
+  }
   if (!S.market.listings.length) { for (let i = 0; i < 15; i++) tick(true) } else tick(true)
   save(); publish(summary(), true)
   setInterval(() => tick(), 10000)
