@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=arc-exchange'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=three-story-arcs'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -253,7 +253,7 @@ function achList() {
     { id: 'story', g: 'BATTLE', name: 'Story Complete', d: 'Clear all 10 story stages', p: B.cleared || 0, need: 10, rw: { coins: 5000 } },
     { id: 'tower25', g: 'BATTLE', name: 'Halfway Up', d: 'Clear Tower floor 25', p: (P.tower && P.tower.best) || 0, need: 25, rw: { coins: 6000, shards: 300 } },
     { id: 'tower50', g: 'BATTLE', name: 'Top of the Tower', d: 'Clear Tower floor 50', p: (P.tower && P.tower.best) || 0, need: 50, rw: { coins: 25000, title: 'Tower Master' } },
-    { id: 'arcs', g: 'BATTLE', name: 'Arc Hunter', d: 'Complete 5 Story Arcs', p: Object.values(P.arcs || {}).filter(x => x >= 3).length, need: 5, rw: { coins: 12000, title: 'Arc Hunter' } },
+    { id: 'arcs', g: 'BATTLE', name: 'Arc Hunter', d: 'Complete all 3 Story Arcs', p: Object.values(P.arcs || {}).filter(x => x >= 3).length >= 5 ? 3 : ARCS.filter(arc => (P.arcs?.[arc.id] || 0) >= ARC_CH.length).length, need: 3, rw: { coins: 12000, title: 'Arc Hunter' } },
     { id: 'diamond', g: 'BATTLE', name: 'Diamond Hands', d: 'Reach Diamond in Ranked', p: P.rank ? P.rank.best : 0, need: 4, rw: { coins: 10000, title: 'Diamond' } },
     { id: 'legend', g: 'BATTLE', name: 'Living Legend', d: 'Reach Legend in Ranked', p: P.rank ? P.rank.best : 0, need: 6, rw: { coins: 30000, title: 'Legend' } },
     { id: 'boss100k', g: 'BATTLE', name: 'Boss Breaker', d: 'Deal 100,000 damage to a Daily Boss in one fight', p: Math.max(P.bossBestEver || 0, (P.boss && P.boss.best) || 0), need: 100000, rw: { coins: 8000, title: 'Boss Breaker' } },
@@ -893,15 +893,7 @@ function campP() { const P = S.profile; return P.camp || (P.camp = { stars: {}, 
 // ---------- TOWER / ARCS / EVENTS ----------
 const towerFloor = n => ({ rating: Math.min(95, 68 + Math.round(n * .55)), level: Math.min(5, 1 + Math.floor(n / 10)), boost: 1 + Math.max(0, n - 25) * .012, coins: 300 + n * 40, pack: n % 10 === 0 ? (n === 50 ? 'lightning' : n >= 30 ? 'premium' : 'jumbo') : null })
 const ARCS = [
-  { id: 'jjk', anime: 'JJK', name: 'Shibuya Incident', bad: ['SUKUNA', 'MAHITO & NANAMI', 'MAHORAGA', 'HIGURUMA'] },
-  { id: 'ds', anime: 'DS', name: 'Entertainment District', bad: ['GYUTARO', 'DOMA', 'AKAZA', 'HANTENGU'] },
-  { id: 'mha', anime: 'MHA', name: 'Paranormal Liberation War', bad: ['SHIGARAKI', 'DABI'] },
-  { id: 'nar', anime: 'NAR', name: "Pain's Assault", bad: ['PAIN'] },
-  { id: 'op', anime: 'OP', name: 'Onigashima Raid', bad: ['KING', 'GOL D. ROGER'] },
-  { id: 'dbz', anime: 'DBZ', name: 'Tournament of Power', bad: ['BROLY', 'GOKU BLACK'] },
-  { id: 'jjba', anime: 'JJBA', name: 'Golden Wind Finale', bad: ['DIAVOLO', 'KIRA', 'DIEGO'] },
-  { id: 'ble', anime: 'BLE', name: 'Thousand-Year Blood War', bad: ['YHWACH', 'AIZEN', 'ULQUIORRA', 'GRIMMJOW'] },
-  { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', rewardCard: 'meruem_rose_aftermath', bad: ['MERUEM', 'NEFERPITOU', 'SHAIAPOUF', 'HISOKA'],
+  { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', rewardCard: 'meruem_rose_aftermath',
     synopsis: 'A Royal Guard cuts off the Hunters’ retreat. As the King comes into his own, Kite, Netero and Gon each face the cost of standing their ground.',
     chapters: [
       { name: 'Buy Them Time', player: 'kite_crazy_slots', enemy: 'neferpitou_royal_guard', level: 4, boost: 1.02, playerBoost: 1.55,
@@ -947,9 +939,94 @@ const ARCS = [
       },
     ],
   },
-  { id: 'bc', anime: 'BC', name: 'Spade Kingdom Raid', bad: ['ZAGRED'] },
-  { id: 'ft', anime: 'FT', name: 'Alvarez Empire War', bad: ['ZEREF', 'ACNOLOGIA'] },
-  { id: 'ff', anime: 'FF', name: 'The Great Cataclysm', bad: ['THE EVANGELIST', 'HAUMEA', 'SHO'] },
+  { id: 'shiganshina', anime: 'AOT', name: 'Return to Shiganshina', rewardCard: 'levi_vs_beast_titan',
+    synopsis: 'The Scouts return to seal the gates and reach Eren’s basement. The Warriors turn the district into a trap.',
+    chapters: [
+      { name: 'Under the Wall', player: 'eren_attack_titan', enemy: 'reiner_armored_titan', level: 4, boost: 1.02, playerBoost: 1.7,
+        matchup: 'Reiner has the armour. Eren has to find a way through it.',
+        scene: [
+          ['armin_scout_cadet', 'Three cups. Someone was here before us, and they had time to wait.'],
+          ['Narrator', 'Reiner emerges from the Wall and transforms. Eren moves away from the horses to draw him out.'],
+          ['eren_attack_titan', 'Come after me, Reiner. You know what happens if I make it to that basement.'],
+          ['reiner_armored_titan', 'I know. That’s why you’re staying here.'],
+        ],
+        outro: [
+          ['Narrator', 'Eren holds Reiner in place long enough for the Scouts to break his armour with Thunder Spears.'],
+          ['armin_scout_cadet', 'That bought us time inside the Wall. The horses are still trapped on the other side.'],
+        ],
+      },
+      { name: 'The Beast Hunt', player: 'levi_humanity_s_strongest', enemy: 'zeke_beast_titan_epic', level: 4, boost: 1.55,
+        matchup: 'Zeke hits hard. Levi has the speed to take the fight to him.',
+        scene: [
+          ['erwin_dedicate_your_hearts', 'If he’s looking at our charge, he won’t be looking for you.'],
+          ['levi_humanity_s_strongest', 'I’ll make that count.'],
+          ['zeke_beast_titan_epic', 'Still coming? What do they think they’re going to reach?'],
+          ['Narrator', 'The charge draws Zeke’s attention. Levi works his way around the line of Titans and closes in.'],
+        ],
+        outro: [
+          ['levi_humanity_s_strongest', 'I got him, Erwin. Now I need to keep hold of him.'],
+          ['Narrator', 'The Cart Titan pulls Zeke out before Levi can finish him. Inside the district, the Colossal Titan is still standing.'],
+        ],
+      },
+      { name: 'The Last Breath', player: ['armin_scout_cadet', 'eren_attack_titan'], enemy: 'bertholdt_colossal_titan', level: 5, boost: 1.65, playerBoost: 1.3,
+        matchup: 'Armin draws Bertholdt’s attention. Switch to Eren when you can press the attack.',
+        scene: [
+          ['armin_scout_cadet', 'His steam costs him muscle. As long as he’s looking at me, he won’t see you move.'],
+          ['eren_attack_titan', 'You’ll have to let go before it’s too late.'],
+          ['armin_scout_cadet', 'You’ll get one chance, Eren. Watch him, not me.'],
+          ['bertholdt_colossal_titan', 'I wish you’d found somewhere else to stand, Armin.'],
+        ],
+        outro: [
+          ['Narrator', 'Armin holds on as the steam burns him. Eren leaves his hardened Titan behind and strikes from outside its shell.'],
+          ['eren_attack_titan', 'I got Bertholdt. Armin? Can you hear me?'],
+          ['Narrator', 'The Scouts take the district. After one final decision, Armin survives and the way to the basement is open.'],
+        ],
+      },
+    ],
+  },
+  { id: 'shinobi-war', anime: 'NAR', name: 'Fourth Shinobi World War', rewardCard: 'madara_ten_tails',
+    synopsis: 'Madara becomes the Ten-Tails’ jinchūriki. Three battles follow the fight from Guy’s last gate to Naruto and Sasuke’s attempt to seal Kaguya.',
+    chapters: [
+      { name: 'The Eighth Gate', player: 'guy_eightgates', enemy: 'madara_ten_tails', level: 4, boost: 1, playerBoost: 2.15,
+        matchup: 'Guy’s Ultimate costs him his life. Use it when it can finish Madara.',
+        scene: [
+          ['madara_ten_tails', 'That colour. How much of your life did you spend to reach me?'],
+          ['guy_eightgates', 'Enough to make sure you remember who hit you.'],
+          ['Narrator', 'Guy opens the final gate. The ground breaks under his first step.'],
+          ['madara_ten_tails', 'Then show me what you bought with it.'],
+        ],
+        outro: [
+          ['Narrator', 'Night Guy tears through Madara’s defences. Madara regenerates as Guy’s strength gives out.'],
+          ['naruto_vs_madara', 'Guy-sensei, you’ve done enough. Let me take it from here.'],
+        ],
+      },
+      { name: 'A Second Wind', player: 'naruto_vs_madara', enemy: 'madara_ten_tails', level: 4, boost: 1.04, playerBoost: 2.1,
+        matchup: 'Six Paths power closes the gap. Madara can land a second hit with his Strikes.',
+        scene: [
+          ['naruto_vs_madara', 'You were about to kill him because you thought the fight was over. I’m here now.'],
+          ['madara_ten_tails', 'You came back with a different kind of chakra. Who gave it to you?'],
+          ['naruto_vs_madara', 'Someone who knew what you’d do if nobody stood in your way.'],
+        ],
+        outro: [
+          ['Narrator', 'Naruto lands a clean hit, but Madara slips away. The Infinite Tsukuyomi rises over the battlefield.'],
+          ['Narrator', 'Before the fight can resume, Black Zetsu turns on Madara. Kaguya emerges from his body.'],
+        ],
+      },
+      { name: 'Two Seals', player: 'naruto_sasuke_team7', enemy: 'kaguya_rabbit_goddess', level: 5, boost: 1.47,
+        matchup: 'Naruto and Sasuke have to land the finishing blow together against the strongest opponent in the arc.',
+        scene: [
+          ['kaguya_rabbit_goddess', 'That chakra was mine long before either of you had a name.'],
+          ['naruto_sasuke_team7', 'She keeps moving us the moment we get close. We need to come at her from both sides.', 'NARUTO'],
+          ['naruto_sasuke_team7', 'Watch my hand. If you get an opening, take it with me.', 'SASUKE'],
+          ['kaguya_rabbit_goddess', 'Come closer, then. I’ll take it back myself.'],
+        ],
+        outro: [
+          ['Narrator', 'Team 7 creates the opening. Naruto and Sasuke reach Kaguya together and seal her away.'],
+          ['naruto_sasuke_team7', 'We got her. Let’s bring everyone home.', 'NARUTO'],
+        ],
+      },
+    ],
+  },
 ]
 function grantArcCard(arc) {
   if (!arc.rewardCard) return null
