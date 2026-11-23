@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=chimera-reward'
-import { sfx, sfxOn, music } from './sfx.js?v=chimera-reward'
-import { createFX } from './fx2d.js?v=chimera-reward'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=arc-exchange'
+import { sfx, sfxOn, music } from './sfx.js?v=arc-exchange'
+import { createFX } from './fx2d.js?v=arc-exchange'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -785,6 +785,7 @@ function storyArcPage(el, arc, cast, done) {
     const panel = h('div', 'panel pad')
     const unlocked = X.P.arcRewards?.[arc.id]
     panel.append(h('b', '', (unlocked ? '✓ ARC REWARD EARNED · ' : 'CLEAR ALL THREE CHAPTERS · ') + reward.name + ' · ' + reward.ver))
+    panel.append(h('p', 'muted', unlocked ? 'Extra copies are available in the Pack Point Exchange.' : 'Clearing this arc also unlocks extra copies in the Pack Point Exchange.'))
     el.append(panel)
   }
   const list = h('div', 'camp-list')

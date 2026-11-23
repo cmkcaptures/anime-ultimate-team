@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=chimera-reward'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=arc-exchange'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -1100,7 +1100,7 @@ function act(a) {
     }
     case 'ppBuy': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
-      if (c.arcReward) return { error: 'Clear its Story Arc to unlock this card.' }
+      if (c.arcReward && ((P.arcs || {})[c.arcReward] || 0) < ARC_CH.length) return { error: 'Clear its Story Arc to unlock this card.' }
       const cost = PP_COST[c.r]; if ((P.pp || 0) < cost) return { error: `You need ${cost} pack points.` }
       P.pp -= cost; giveCard(a.key); P.last = [a.key]; addXP(10)
       return { msg: `Got ${cardName(a.key)} for ${cost} pack points.` }
@@ -1131,7 +1131,7 @@ function act(a) {
     }
     case 'craft': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
-      if (c.arcReward) return { error: 'Clear its Story Arc to unlock this card.' }
+      if (c.arcReward) return { error: 'Clear its Story Arc, then visit the Pack Point Exchange.' }
       const cost = SHARD_COST[c.r]; if ((P.shards || 0) < cost) return { error: `You need ${cost.toLocaleString()} shards.` }
       P.shards -= cost; giveCard(a.key); P.last = [a.key]; addXP(10); return { msg: `Crafted ${cardName(a.key)}.` }
     }
