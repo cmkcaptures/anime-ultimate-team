@@ -1,8 +1,8 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=mwsuqo95'
-import { sfx, sfxOn, music } from './sfx.js?v=mwsuqo95'
-import { createFX } from './fx2d.js?v=mwsuqo95'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=aokiji91'
+import { sfx, sfxOn, music } from './sfx.js?v=aokiji91'
+import { createFX } from './fx2d.js?v=aokiji91'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -162,7 +162,9 @@ function hit(att, def, base, stat, pierce, A, D, kind) {
   let dmg = base * (stat / 80) * (100 / (60 + def.def * .5 * (1 - (def.shred || 0) / 100))) * (0.92 + rnd(A || D) * .16) * (crit ? (ea.critMult || 1.5) : 1) * mu
   const tagB = att.card.tag ? kitNum(att.card, /\+(\d+)% damage/) : 0; if (tagB) dmg *= 1 + tagB / 100
   // attacker passive multipliers
-  let m = 1 + (ea.dmg || 0) / 100 + (att.rage || 0) / 100 + (att.arise || 0) / 100
+  // Aokiji cancels the stage bonus when he takes the hit.
+  const worldMonarch = ed.stopWorldMonarch ? (ea.worldMonarch || 0) : 0
+  let m = 1 + ((ea.dmg || 0) - worldMonarch) / 100 + (att.rage || 0) / 100 + (att.arise || 0) / 100
   if (ea.ramp) m += Math.min(ea.rampMax || 99, ea.ramp * att.turns) / 100
   if (ea.stack) m += Math.min(ea.stackMax || 99, ea.stack * att.hitsTaken) / 100
   if (ea.dmgLow && att.hp / att.max * 100 < (ea.lowAt || 50)) m += ea.dmgLow / 100
