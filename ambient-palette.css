@@ -1,0 +1,5 @@
+/* Keep the standard backdrop dark across the time-of-day cycle. */
+body:is([data-tod="dawn"], [data-tod="day"], [data-tod="dusk"], [data-tod="night"]) #app,
+body:is([data-tod="dawn"], [data-tod="day"], [data-tod="dusk"], [data-tod="night"]) #backdrop {
+  background: linear-gradient(115deg, #3a1a8a 0 26%, #1a0b3a 26%) !important;
+}
