@@ -1,10 +1,11 @@
-import { createFX } from './fx2d.js?v=signature-cards'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=signature-cards'
+import { formCard } from './transformations.js?v=naruto-forms'
+import { createFX } from './fx2d.js?v=naruto-forms'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=naruto-forms'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=signature-cards'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=signature-cards'
+import * as ACC from './account.js?v=naruto-forms'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=naruto-forms'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=signature-cards'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=naruto-forms'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -412,6 +413,47 @@ function segmented(labels, on, pick) {
   for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, () => { clearTimeout(t); t = null }, true)
   addEventListener('click', e => { if (fired) { fired = false; e.preventDefault(); e.stopPropagation() } }, true)
   addEventListener('contextmenu', e => { const k = cardAt(e); if (!k || document.getElementById('opener')) return; e.preventDefault(); clearTimeout(t); cardDetail(k) }, true) }
+function showForms(card) {
+  const dialog = document.createElement('dialog')
+  dialog.className = 'forms-preview'
+  const header = h('header')
+  const close = h('button', 'btn dark sm', 'CLOSE')
+  close.onclick = () => dialog.close()
+  header.append(h('h2', '', card.name + ' · FORMS'), close)
+  const tabs = h('div', 'forms-tabs')
+  tabs.setAttribute('role', 'group')
+  tabs.setAttribute('aria-label', 'Naruto forms')
+  const panel = h('div', 'forms-panel')
+  const buttons = [card, ...card.transformations].map((form, i) => {
+    const button = h('button', 'btn dark sm', form.ver.split(' · ')[0])
+    button.onclick = () => show(i)
+    tabs.append(button)
+    return button
+  })
+  function show(i) {
+    const form = formCard(card, i)
+    buttons.forEach((button, index) => button.setAttribute('aria-pressed', String(index === i)))
+    const art = cardImg(form, 480)
+    // Form previews represent the same owned card, but should never open a second card detail.
+    delete art.dataset.key
+    const kit = h('div', 'forms-kit')
+    kit.setAttribute('aria-live', 'polite')
+    kit.append(h('h3', '', form.ver), h('div', 'movebox', `<b>${form.mv}</b><p>${form.tx.join(' ')}</p>`),
+      h('div', 'movebox', `<b>${form.pas.n}</b><p>${form.pas.d}</p>`),
+      h('p', 'muted', i ? card.transformations[i - 1].requirement : 'Starting form. Transform during battle.'))
+    panel.replaceChildren(art, kit)
+  }
+  dialog.append(header, tabs, panel)
+  dialog.addEventListener('close', () => dialog.remove(), { once: true })
+  document.body.append(dialog)
+  dialog.showModal()
+  show(0)
+}
+function formsButton(card) {
+  const button = h('button', 'btn gold sm inspect-forms', 'VIEW FORMS & KITS')
+  button.onclick = e => { e.stopPropagation(); showForms(eff(card)) }
+  return button
+}
 async function cardDetail(key) {
   const base = BYKEY[key]; if (!base) return
   const c = eff(base), e = club()[key], inTeam = P.team.includes(key), spare = e ? e.n - (inTeam ? 1 : 0) : 0, lvl = e ? e.lvl || 0 : 0
@@ -422,6 +464,7 @@ async function cardDetail(key) {
     big.onpointerleave = () => im.style.transform = ''
     d.append(h('span', 'marks', `<span style="color:${tierCol(c.r)}">${RARITY_MARK[c.r]} ${TIER[c.r].name}</span>`))
     d.append(h('h2', '', c.name), h('span', 'ver', c.ver + (c.tag ? ' · TAG UNIT' : '')))
+    if (c.transformations?.length) d.append(formsButton(base))
     if (e && e.ser) d.append(h('span', 'serial' + (e.ser <= 100 ? ' low' : ''), `SERIAL #${String(e.ser).padStart(4, '0')}${e.ser <= 10 ? ' · ULTRA LOW' : e.ser <= 100 ? ' · LOW SERIAL' : ''}`))
     d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}`))
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
@@ -1010,8 +1053,11 @@ async function openPack(type) {
     label.innerHTML = `<small>${RARITY_MARK[c.r]} ${TIER[c.r].name}</small><b>${c.name}</b><span>${c.ver}</span>`
     label.classList.remove('show'); void label.offsetWidth; label.classList.add('show')
     await wait(rk >= 4 ? 700 : 260)
+    const preview = c.transformations?.length ? formsButton(c) : null
+    if (preview) { preview.classList.add('pull-forms'); ov.append(preview) }
     hint.innerHTML = i < els.length - 1 ? '<b>TAP</b> FOR NEXT' : '<b>TAP</b> TO FINISH'
     await new Promise(res => { const go2 = ev => { if (ev.target.closest('.o2-skip')) return; ov.removeEventListener('click', go2); res() }; setTimeout(() => ov.addEventListener('click', go2), 120) })
+    preview?.remove()
     label.classList.remove('show'); ov.classList.remove('cine', 'rainbow')
     // fly into the tray
     sfx('swipe'); e.classList.add('gone')
@@ -1309,6 +1355,7 @@ async function multiOpen(type, n) {
     const e = els[i], rk = TIER[all[i].r].rank
     if (!skip && rk >= 4) { e.scrollIntoView({ block: 'center' }); try { await walkout(ov, FXC, all[i], rk) } catch { skip = true } if (closed) return }
     e.classList.add('up')
+    if (all[i].transformations?.length) e.append(formsButton(all[i]))
     if (!skip && rk >= 3) { const r = e.getBoundingClientRect(); FXC.hit(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), rk >= 5 ? 2 : rk >= 4 ? 1.5 : 1); if (rk >= 4) FXC.rays(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), 12, 500, 1); sfx('reveal', rk); await wait(rk >= 5 ? 900 : rk >= 4 ? 600 : 260) }
     else if (!skip) await wait(45)
   }

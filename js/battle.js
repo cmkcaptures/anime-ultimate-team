@@ -1,8 +1,9 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=signature-cards'
-import { sfx, sfxOn, music } from './sfx.js?v=signature-cards'
-import { createFX } from './fx2d.js?v=signature-cards'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=naruto-forms'
+import { sfx, sfxOn, music } from './sfx.js?v=naruto-forms'
+import { createFX } from './fx2d.js?v=naruto-forms'
+import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=naruto-forms'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -260,6 +261,14 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) pasNote(def, 'SHIELD') }
   def.hp = Math.max(0, def.hp - dmg); if (def.hp < 1) def.hp = 0; att.dealt += dmg; def.hitsTaken++
   // on-hit passives
+  if (dmg > 0 && kind === 'strike' && ea.lifeErosion && A && D && att.erosionTurn !== (A.formTurn || 0)) {
+    att.erosionTurn = A.formTurn || 0
+    const removed = Math.min(def.max - 1, Math.round((def.startingMax || def.max) * .08))
+    def.max -= removed
+    def.hp = Math.min(def.hp, def.max)
+    D.ki = Math.max(0, D.ki - 1)
+    pasNote(att, `LIFE FORCE EROSION · −${removed} MAX HP`)
+  }
   if (ed.bodyMagic && !def.bodyRestored && def.hp > 0 && def.hp < def.max * .5) {
     def.bodyRestored = true
     healHP(def, def.max * .4)
@@ -418,6 +427,19 @@ function playArt(B, who, idx) {
     if (PE(a).shambles && !a.shamUsed && a.hp / a.max < d.hp / d.max) { a.shamUsed = 1; const pa = a.hp / a.max, pd = d.hp / d.max; a.hp = Math.round(a.max * pd); d.hp = Math.max(1, Math.round(d.max * pa)); pasNote(a, 'SHAMBLES') }
   }
   const dealt = ev.hits.reduce((n, x) => n + x.dmg, 0)
+  if (dealt > 0 && kit.hokageResolve && (art === 'strike' || art === 'blast')) {
+    const clock = me.formTurn || 0
+    if (a.resolveGaugeTurn !== clock) { a.resolveGaugeTurn = clock; a.resolveGaugeArts = 0 }
+    if (a.resolveGaugeArts !== 3) {
+      a.resolveGaugeArts |= artBit[art]
+      if (a.resolveGaugeArts === 3) { me.gauge = Math.min(GAUGE_MAX, me.gauge + 15); pasNote(a, 'HOKAGE’S RESOLVE · +15% ULT') }
+    }
+  }
+  if (dealt > 0 && art === 'special' && kit.kuramaSpecial && a.kuramaEnergyTurn !== (me.formTurn || 0)) {
+    a.kuramaEnergyTurn = me.formTurn || 0
+    me.ki = Math.min(KI_MAX, me.ki + 1)
+    pasNote(a, 'KURAMA CHAKRA · +1 ENERGY')
+  }
   if (dealt > 0 && artBit[art]) {
     if (kit.sunCycle && !finishingForm && a.sunArts !== 7) {
       a.sunArts = (a.sunArts || 0) | artBit[art]
@@ -1095,6 +1117,7 @@ export function startBattle(stage) {
   if (stage.rules?.ultStart) B.ai.gauge = Math.max(B.ai.gauge, stage.rules.ultStart)
   { const all = [...B.you.team, ...B.ai.team], idle = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 1500 }) : setTimeout(f, 60)); let i = 0; const next = () => { const f = all[i++]; if (!f) return; thumbURL(f.card, 560).catch(() => {}).finally(() => idle(next)) }; setTimeout(() => idle(next), 200) }
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
+  for (const side of [B.you, B.ai]) for (const f of side.team) f.startingMax = f.max
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
   sealNow()
   refill(B.you); refill(B.ai)
@@ -1107,12 +1130,17 @@ export function startBattle(stage) {
   const AR = stage.arena && ARENAS[stage.arena] ? stage.arena : ARENA_KEYS[stage.live ? stage.live.seed % ARENA_KEYS.length : Math.floor(Math.random() * ARENA_KEYS.length)]
   const ov = h('div', 'bc th-' + AR); ov.id = 'arena'
   ov.innerHTML = `<div class="bcs"><div class="bcs-wall"></div><div class="bcs-rig r1">${'<i></i>'.repeat(14)}</div><div class="bcs-rig r2">${'<i></i>'.repeat(10)}</div><i class="bcs-spot s1"></i><i class="bcs-spot s2"></i><i class="bcs-spot s3"></i><div class="bcs-crowd"></div><div class="bcs-board"><span>ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · </span></div><div class="bcs-floor"><i class="ln"></i><i class="cc"></i><i class="ccd"></i></div><div class="bcs-haze"></div></div><div class="env"><i class="e-sky"></i><i class="e-far"></i><i class="e-near"></i><i class="e-amb"></i><i class="e-vig"></i></div><div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
-    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto"${stage.live ? " hidden" : ""}>AUTO</button>${stage.live ? "<span class=\"pvp-clock\">⏳</span>" : ""}<span class="ar-stage">${stage.label ? stage.label.toUpperCase() : stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-turn"></span></header>
+    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto"${stage.live ? " hidden" : ""}>AUTO</button>${stage.live ? "<span class=\"pvp-clock\">⏳</span>" : ""}<span class="ar-stage">${stage.label ? stage.label.toUpperCase() : stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-form-timer" hidden></span><span class="ar-turn"></span></header>
     <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t"></small></div><div class="bct-s ai"></div></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
-    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
+    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small><small class="form-requirement" hidden></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
   document.body.append(ov); document.body.classList.add('in-battle'); music('battle')
+  for (const side of [B.you, B.ai]) for (const f of side.team) for (const form of f.card.transformations || []) {
+    const image = new Image()
+    image.src = form.url
+    image.decode?.().catch(() => {})
+  }
   const $a = s => ov.querySelector(s)
   let ST3 = null
   const FXC = createFX(ov)
@@ -1122,12 +1150,12 @@ export function startBattle(stage) {
   let AUTO = false
   const wait = ms => new Promise(r => setTimeout(r, ms / SPEED))
   const IMG = new Map()
-  const img = (f, w) => { const im = new Image(); im.alt = f.card.name; im.draggable = false; const k = f.key + w; if (!IMG.has(k)) IMG.set(k, thumbURL(f.card, w)); IMG.get(k).then(u => im.src = u); return im }
+  const img = (f, w) => { const im = new Image(); im.alt = f.card.name; im.draggable = false; const k = f.card.id + ':' + f.key + ':' + w; if (!IMG.has(k)) IMG.set(k, thumbURL(f.card, w)); IMG.get(k).then(u => im.src = u); return im }
 
   function bcHud(side, s) {
     const f = act(s), el = $a('.bct-s.' + side), pct = f.hp / f.max * 100
-    if (el.dataset.k !== f.key) {
-      el.dataset.k = f.key
+    if (el.dataset.k !== f.card.id) {
+      el.dataset.k = f.card.id
       el.innerHTML = `<div class="bp" style="background-image:url('${f.card.url}');background-position:${Math.round((f.card.fx ?? .5) * 100)}% ${Math.round((f.card.fy ?? .22) * 100)}%"></div><div class="bi"><div class="bn"><b>${f.card.name}</b>${side === 'you' && mastL(f.key) > 0 ? `<em class="ml">M${mastL(f.key)}</em>` : ''}<small>${f.card.ver}</small></div><div class="bh"><i class="gh"></i><i class="fg"></i><span class="bnum"></span></div><div class="bm"><span class="be"></span><span class="bk"></span></div></div>`
       el.classList.remove('in'); void el.offsetWidth; el.classList.add('in')
       el.querySelector('.gh').style.width = el.querySelector('.fg').style.width = pct + '%'
@@ -1150,7 +1178,7 @@ export function startBattle(stage) {
   }
   function field(side, s) {
     const a = $a(`.ar-side.${side} .ar-active`), f = act(s)
-    if (a.dataset.k !== f.key) { a.innerHTML = ''; const im = img(f, 360); a.append(im); a.dataset.k = f.key; a.classList.remove('enter'); void a.offsetWidth; a.classList.add('enter') }
+    if (a.dataset.k !== f.card.id) { a.innerHTML = ''; const im = img(f, 360); a.append(im); a.dataset.k = f.card.id; a.classList.remove('enter'); void a.offsetWidth; a.classList.add('enter') }
     a.style.setProperty('--rc', X.tierCol(f.card.r)); a.classList.toggle('aura', !!f.aura); a.classList.toggle('formed', !!f.transformed && !f.aura)
     let hb = a.querySelector('.hpb'); if (!hb) { hb = document.createElement('div'); hb.className = 'hpb'; a.append(hb) }
     hb.innerHTML = `<b>${f.hp.toLocaleString()}</b><i><s style="width:${f.hp / f.max * 100}%"></s></i>`
@@ -1161,7 +1189,7 @@ export function startBattle(stage) {
     { const bn0 = $a(`.ar-side.${side} .ar-bench`); bn0.classList.toggle('can-swap', side === 'you' && !B.you.switched && !B.busy && !B.over); bn0.classList.toggle('tag-ready', side === 'you' && !B.you.switched && !B.over && (B.you.seq.includes('special') || B.you.ultTurn === B.turn)) }
     ov.querySelector('.ar-plate.' + side + ' .pk').innerHTML = s.team.map(g => `<i class="${g.ko ? 'ko' : ''}"></i>`).join('')
     { const p = passives(s), chips = []; if (p.heal) chips.push(`<b class="pc heal">+${p.heal}% HEAL</b>`); if (p.dr) chips.push(`<b class="pc dr">-${p.dr}% DMG TAKEN</b>`); if (p.dmg) chips.push(`<b class="pc dmg">+${p.dmg}% DMG</b>`); if (p.crit) chips.push(`<b class="pc crit">+${p.crit}% CRIT</b>`); if (p.gauge) chips.push(`<b class="pc gg">+${p.gauge}% ULT/TURN</b>`); ov.querySelector('.ar-plate.' + side + ' .pp').innerHTML = chips.join('') }
-    const bn = $a(`.ar-side.${side} .ar-bench`), bkey = s.active + '|' + s.team.map(g => g.key + (g.ko ? 'x' : '')).join(',')
+    const bn = $a(`.ar-side.${side} .ar-bench`), bkey = s.active + '|' + s.team.map(g => g.card.id + (g.ko ? 'x' : '')).join(',')
     if (bn.dataset.k === bkey) { let j = 0; s.team.forEach((g, i) => { if (i === s.active) return; const el = bn.children[j++], bar = el && el.querySelector('i'); if (bar) bar.style.width = (g.hp / g.max * 100) + '%' }); return }
     bn.dataset.k = bkey; bn.innerHTML = ''
     s.team.forEach((g, i) => {
@@ -1175,7 +1203,7 @@ export function startBattle(stage) {
   function controls() {
     const s = B.you, my = !B.busy && !B.over
     $a('.ar-ki').innerHTML = `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`
-    const hand = $a('.ar-hand'), f = act(s), hkey = f.key + '|' + s.hand.join(',')
+    const hand = $a('.ar-hand'), f = act(s), hkey = f.card.id + '|' + s.hand.join(',')
     if (hand.dataset.k === hkey && hand.children.length === s.hand.length) { s.hand.forEach((a, i) => { const el = hand.children[i]; el.querySelector('.gem b').textContent = a === 'burst' ? 'ALL' : artCost(f, a); el.disabled = !my || s.ki < artCost(f, a) || (a === 'burst' && s.ki < 2) }) }
     else { hand.dataset.k = hkey; hand.innerHTML = ''
     const rc = X.tierCol(f.card.r), fx = Math.round((f.card.fx ?? .5) * 100), fy = Math.round((f.card.fy ?? .22) * 100)
@@ -1193,11 +1221,21 @@ export function startBattle(stage) {
       hand.append(b)
     }) }
     {
-      const tb = $a('.ar-trans'), partner = !!f.pe.partner, ok = partner ? canTagPartner(f, B.turn) : canTransform(f)
-      tb.hidden = !partner && !ok
+      const tb = $a('.ar-trans'), partner = !!f.pe.partner, next = !stage.storyTeam && nextTransformation(f, s, B.turn)
+      const ok = partner ? canTagPartner(f, B.turn) : canTransform(f, s)
+      tb.title = next ? next.requirement : ''
+      const timer = $a('.ar-form-timer')
+      timer.hidden = f.formExpires == null
+      if (!timer.hidden) timer.textContent = 'BARYON · ' + (f.formExpires - (s.formTurn || 0)) + ' TURNS LEFT'
+      tb.hidden = !partner && !next && !ok
       tb.disabled = !my || !ok
       tb.querySelector('b').textContent = partner ? 'TAG' : 'TRANSFORM'
-      tb.querySelector('small').textContent = partner ? '→ ' + partnerNames(f)[Number(!f.partnerSide)] : f.card.form?.name || 'POWER UP'
+      const requirement = tb.querySelector('.form-requirement')
+      requirement.hidden = !next || ok
+      if (!requirement.hidden) requirement.textContent = s.gauge < next.gaugeCost ? 'Need ' + next.gaugeCost + '% Ultimate gauge' :
+        B.turn < (next.minTurn || 1) ? 'Available on turn ' + next.minTurn :
+          (s.formTurn || 0) - f.formEntered <= (next.fullTurns || 0) ? 'Complete a full Kurama turn' : 'Need 50% HP or less'
+      tb.querySelector('small').textContent = partner ? '→ ' + partnerNames(f)[Number(!f.partnerSide)] : next ? next.ver + ' · ' + next.gaugeCost + '% ULT' : f.card.form?.name || 'POWER UP'
     }
     const u = $a('.ar-ult'); u.disabled = !my || s.gauge < GAUGE_MAX; u.classList.toggle('ready', s.gauge >= GAUGE_MAX)
     const ult = signatureUltimate(f) || ultOf(f.card)
@@ -1329,9 +1367,38 @@ export function startBattle(stage) {
     draw()
   }
   // ================= TRANSFORMATIONS (S / Z / Ω, once per fighter, under 50% HP) =================
-  function canTransform(f) { return !stage.storyTeam && !!f && !f.pe.partner && !f.ko && !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5 }
+  function canTransform(f, side) {
+    if (stage.storyTeam || !f || f.ko || f.pe.partner) return false
+    if (f.card.transformations) return !!nextTransformation(f, side, B.turn)?.ready
+    return !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5
+  }
+  async function transformationScene(form, card) {
+    const scene = h('div', 'form-awakening' + (form.duration ? ' baryon' : ''))
+    scene.style.setProperty('--form-color', form.color)
+    scene.innerHTML = `<div class="form-streaks"></div><div class="form-orbit"></div><div class="form-orbit second"></div>
+      <div class="form-portrait"></div><div class="form-impact"></div><div class="form-letterbox"></div>
+      <div class="form-title"><small>${form.cinematic}</small><strong>${card.ver.split(' · ')[0]}</strong><span>${card.name}</span></div>`
+    scene.querySelector('.form-portrait').style.backgroundImage = `url("${card.url}")`
+    ov.append(scene)
+    sfx('bcharge')
+    try {
+      await wait(440)
+      if (B.closed) return
+      scene.classList.add('burst')
+      sfx(form.duration ? 'bimpact' : 'reveal', 5)
+      await wait(1650)
+    } finally { scene.remove() }
+  }
   async function transform(side, who) {
-    const f = act(side); if (!canTransform(f)) return
+    const f = act(side); if (!canTransform(f, side)) return
+    if (f.card.transformations) {
+      const next = enterTransformation(f, side, B.turn)
+      if (!next) return
+      log(`${f.card.name} transforms: ${f.card.ver}`)
+      await transformationScene(next, f.card)
+      if (!B.closed) draw()
+      return
+    }
     const full = !!f.card.form, k = full ? 1.25 : 1.15
     f.transformed = 1; healHP(f, Math.round(f.max * (full ? .3 : .15)))
     f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.burnT = 0; f.frozen = 0
@@ -1447,7 +1514,7 @@ export function startBattle(stage) {
   }
   async function aiPhase() {
     if (B.over || sweepKO()) return
-    if ((stage.level || 1) >= 5 && canTransform(act(B.ai))) await transform(B.ai, 'ai')
+    if ((stage.level || 1) >= 5 && canTransform(act(B.ai), B.ai)) await transform(B.ai, 'ai')
     if (stage.boss && B.turn >= 12 && !B.over) { log('Time up! The boss retreats.'); return end(false) }
     if (stage.bossAb && B.turn % 3 === 0 && !B.over) {
       const ab = stage.bossAb, you = B.you, boss = act(B.ai)
@@ -1477,8 +1544,8 @@ export function startBattle(stage) {
   async function endTurn() { if (B.busy || B.over) return; if (LV) { lvSend({ t: 'end' }); return remotePhase() } await aiPhase() }
   // ================= LIVE PVP =================
   const LQ = []; let lvWake = null, lvN = 0, lvLast = Date.now(), lvFirstRemote = !!LV && !youFirst, lvMyTurnAt = 0, lvUnsub = null, lvTimer = null
-  const SIDE_KEYS = ['lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
-  const serF = f => { const o = {}; for (const k in f) { if (k === 'card' && !f.transformed) continue; const v = f[k]; if (typeof v !== 'function') o[k] = v } return o }
+  const SIDE_KEYS = ['formTurn', 'lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
+  const serF = f => { const o = {}; for (const k in f) { if (k === 'card' && !f.transformed && !f.baseForm) continue; const v = f[k]; if (typeof v !== 'function') o[k] = v } return o }
   const serS = sd => { const o = { team: sd.team.map(serF) }; for (const k of SIDE_KEYS) o[k] = sd[k]; return o }
   const lvSnap = () => { const H = LV.role === 'h' ? B.you : B.ai, G = H === B.you ? B.ai : B.you; return JSON.parse(JSON.stringify({ h: serS(H), g: serS(G), turn: B.turn })) }
   function lvApply(sn) { if (!sn) return; const H = LV.role === 'h' ? B.you : B.ai, G = H === B.you ? B.ai : B.you
@@ -1515,7 +1582,15 @@ export function startBattle(stage) {
       else if (a.t === 'ult') { const ev = ultimate(B, 'ai'); lvApply(a.sn); if (ev) await show(ev) }
       else if (a.t === 'sw') await remoteSwitch(a.i, a.sn)
       else if (a.t === 'partner') { tagPartner(act(B.ai), B.turn); lvApply(a.sn); draw(); flushPas() }
-      else if (a.t === 'tr') { await transform(B.ai, 'ai'); lvApply(a.sn) }
+      else if (a.t === 'tr') {
+        const fighter = act(B.ai)
+        if (fighter.card.transformations && a.sn) {
+          lvApply(a.sn)
+          const form = fighter.card.transformations[fighter.formIndex - 1]
+          if (form) await transformationScene(form, fighter.card)
+          if (!B.closed) draw()
+        } else { await transform(B.ai, 'ai'); lvApply(a.sn) }
+      }
       if (B.over) return }
     B.turn++
     if (B.over || sweepKO()) return
@@ -1524,6 +1599,7 @@ export function startBattle(stage) {
     B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); myTurnStart()
   }
   function startTurn(s) {
+    advanceFormTurn(s)
     const a0 = act(s), foe = s === B.you ? B.ai : B.you
     const previous = foe.team.find(f => f.key === foe.lastActive)
     if (previous?.erasedUntil && previous.turns >= previous.erasedUntil) previous.erasedUntil = 0
@@ -1556,7 +1632,7 @@ export function startBattle(stage) {
   async function autoTurn() {
     if (!AUTO || B.busy || B.over) return
     B.busy = true; controls(); await wait(350)
-    if (canTransform(act(B.you))) await transform(B.you, 'you')
+    if (canTransform(act(B.you), B.you)) await transform(B.you, 'you')
     const f = act(B.you)
     const side = f.partnerSide
     autoTagPartner(f, B.turn)
@@ -1592,7 +1668,7 @@ export function startBattle(stage) {
     if (list.length) {
       const pick = stage.live ? list[stage.live.seed % list.length] : stage.pvp || !stage.n ? list[Math.floor(Math.random() * list.length)] : list[(stage.n - 1) % list.length]
       ov.classList.add('has-img'); ov.style.setProperty('--bgimg', `url("${pick.url}")`); name = pick.name; sub = stage.pvp ? 'Ranked Arena' : 'Stage ' + stage.n
-      { const tag = !stage.live && ARENA_BONUS[pick.id]; if (tag && !B.arenaB) { B.arenaB = tag; for (const sd of [B.you, B.ai]) for (const f of sd.team) if (tagsOf(f.card).includes(tag)) { f.max = Math.round(f.max * 1.05); f.hp = Math.round(f.hp * 1.05); for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.05) } sub = '+5% to ' + (tag.startsWith('S:') ? X.ANAME(tag.slice(2)) : tag) + ' fighters'; try { draw() } catch { } } }
+      { const tag = !stage.live && ARENA_BONUS[pick.id]; if (tag && !B.arenaB) { B.arenaB = tag; for (const sd of [B.you, B.ai]) for (const f of sd.team) if (tagsOf(f.card).includes(tag)) { f.max = Math.round(f.max * 1.05); f.startingMax = Math.round(f.startingMax * 1.05); f.hp = Math.round(f.hp * 1.05); for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.05) } sub = '+5% to ' + (tag.startsWith('S:') ? X.ANAME(tag.slice(2)) : tag) + ' fighters'; try { draw() } catch { } } }
       // measure how bright the art is and pick a light or dark UI theme to match
       const im = new Image(); im.onload = () => { try { const c = document.createElement('canvas'); c.width = 32; c.height = 18; const x = c.getContext('2d'); x.drawImage(im, 0, 0, 32, 18); const d = x.getImageData(0, 0, 32, 18).data; let L = 0; for (let i = 0; i < d.length; i += 4) L += (.2126 * d[i] + .7152 * d[i + 1] + .0722 * d[i + 2]) / 255; L /= d.length / 4; ov.classList.toggle('lite', L > .42); ov.style.setProperty('--lum', L.toFixed(2)) } catch { } }; im.src = pick.url
     }
