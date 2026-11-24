@@ -2,7 +2,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=retire-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=transfer-campaign-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -534,6 +534,7 @@ function compareCards(base) {
   }, true)
 }
 function unlockRoutes(card) {
+  if (card.campaignUnlock) return ['Campaign · First clear of ' + card.campaignUnlock]
   if (card.campReward) return ['Campaign · Chapter ' + card.campReward + ' first clear']
   if (card.arcReward) {
     const arc = ST.arcs.find(a => a.id === card.arcReward)
@@ -609,18 +610,19 @@ async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
       add('dark', e.locked ? '🔒 UNLOCK COPIES' : 'LOCK ALL COPIES', false, () => flag('locked'))
       add('violet', inTeam ? 'IN TEAM' : 'ADD TO TEAM', inTeam, () => { const T = P.team.slice(), i = T.indexOf(null); closeModal(); if (i < 0) { toast('Your team is full. Swap a card on the Team page.'); go('team'); return } T[i] = key; act('team', { team: T }).then(() => go('team')) })
       if (false) add('green', lvl >= 5 ? 'MAX ★' : `LEVEL UP ★${lvl + 1}`, !(e.n > 1 && lvl < 5), async () => { await act('awaken', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
-      if (!c.arcReward && !c.campReward) add('gold', 'SELL ON MARKET', spare < 1, () => listSheet(key))
-      add('dark', `QUICK SELL ${fmt(ST.quick[key])}`, spare < 1 || ((c.arcReward || c.campReward) && e.n <= 1), async () => { await act('quickSell', { key }); if (club()[key]) cardDetail(key); else closeModal(); if (CUR === 'cards') rerender() })
+      if (!c.arcReward && !c.campReward && !c.campaignUnlock) add('gold', 'SELL ON MARKET', spare < 1, () => listSheet(key))
+      add('dark', `QUICK SELL ${fmt(ST.quick[key])}`, spare < 1 || ((c.arcReward || c.campReward || c.campaignUnlock) && e.n <= 1), async () => { await act('quickSell', { key }); if (club()[key]) cardDetail(key); else closeModal(); if (CUR === 'cards') rerender() })
       if (e.n > 1) add('dark', `SHRED ${e.n - 1} → ◆${fmt((e.n - 1) * ST.shardGet[c.r])}`, spare < 1, async () => { await act('shred', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       d.append(a)
       d.append(h('span', 'muted', `<small style="font-weight:700">Duplicates add a Diamond (max 7◆). Spare copies after that can be sold or shredded.</small>`))
-    } else if (!c.arcReward && !c.campReward) {
+    } else if (!c.arcReward && !c.campReward && !c.campaignUnlock) {
       const b = h('button', 'btn block', 'FIND ON MARKET'); b.onclick = () => { MS.q = c.name.toLowerCase(); MS.view = 'results'; go('market') }; d.append(b)
     }
     if (c.arcReward) {
       const arc = (ST.arcs || []).find(a => a.id === c.arcReward)
       d.append(h('span', 'season-tag', 'STORY ARC REWARD · ' + (arc?.name || 'Clear its Story Arc')))
-    } else if (c.season) d.append(h('span', 'season-tag', c.season === 99 ? 'STORY EXCLUSIVE · Campaign boss reward' : `SEASON ${c.season} EXCLUSIVE · Season Pass only`))
+    } else if (c.campaignUnlock) d.append(h('span', 'season-tag', 'STORY EXCLUSIVE · First clear of ' + c.campaignUnlock))
+    else if (c.season) d.append(h('span', 'season-tag', c.season === 99 ? 'STORY EXCLUSIVE · Campaign boss reward' : `SEASON ${c.season} EXCLUSIVE · Season Pass only`))
     else { const cost = ST.shardCost[c.r], cb = h('button', 'btn block dark', `CRAFT FOR ◆${fmt(cost)} SHARDS <small>(you have ${fmt(P.shards || 0)})</small>`); cb.disabled = (P.shards || 0) < cost; cb.onclick = async () => { const r = await act('craft', { key }); if (!r.error) cardDetail(key) }; d.append(cb) }
     sh.append(d)
   })
@@ -999,8 +1001,11 @@ const bootP = (p, t) => { const b = document.getElementById('btBar'), x = docume
 const bootDone = () => { const o = document.getElementById('boot'); if (o) { o.classList.add('out'); setTimeout(() => o.remove(), 500) } }
 ;(async () => {
   bootP(.1, 'Loading cards…')
-  const raw = await api('/api/cards'); POOL = raw.map((c, i) => ({ ...c, uid: i, total: raw.length, t: ANIME[c.anime] ? ANIME[c.anime].type : 'ki' }))
-  BYKEY = Object.fromEntries(POOL.map(c => [c.key, c]))
+  const raw = await api('/api/cards')
+  const total = raw.filter(c => !c.campaignEnemy).length
+  const entries = raw.map((c, i) => ({ ...c, uid: i, total, t: ANIME[c.anime] ? ANIME[c.anime].type : 'ki' }))
+  POOL = entries.filter(c => !c.campaignEnemy)
+  BYKEY = Object.fromEntries(entries.map(c => [c.key, c]))
   bootP(.3, 'Loading your club…')
   const s = await api('/api/state'); SKEW = s.now - Date.now(); applyState(s)
   // bring over the very first browser save, once
@@ -1686,7 +1691,7 @@ function tradeSheet(p) {
     const g2 = h('div', 'cardgrid tpick'); sh.append(g2)
     const cw = h('label', 'tp-f', '<span>COINS</span>'), ci = h('input', 'field'); ci.inputMode = 'numeric'; ci.placeholder = '0'; ci.oninput = () => { pick.coins = Math.max(0, Math.min(P.coins, +ci.value || 0)); draw() }; cw.append(ci); sh.append(cw)
     const send = h('button', 'btn gold block big', 'SEND REQUEST'); send.style.marginTop = '14px'; sh.append(send)
-    const spareList = owned().filter(c => { const e = club()[c.key]; return !c.arcReward && !c.campReward && spendableCopies(e, P.team.includes(c.key)) >= 1 && e.n > 1 })
+    const spareList = owned().filter(c => { const e = club()[c.key]; return !c.arcReward && !c.campReward && !c.campaignUnlock && spendableCopies(e, P.team.includes(c.key)) >= 1 && e.n > 1 })
     function draw() {
       sum.innerHTML = `<b>Want:</b> ${pick.want ? BYKEY[pick.want].name + ' · ' + BYKEY[pick.want].ver : 'pick a card'} &nbsp; <b>Offer:</b> ${pick.offer.map(k => BYKEY[k].name).join(', ') || 'no cards'}${pick.coins ? ' + ' + fmt(pick.coins) + ' coins' : ''}`
       send.disabled = !pick.want || (!pick.offer.length && !pick.coins)

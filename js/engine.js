@@ -1,3 +1,4 @@
+import { campaignMission } from './transfer-campaign.js?v=1'
 import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=3'
 import { RIVALRY_TITLE } from './rivalry.js?v=last-door-1'
 import { spendableCopies } from './qol.js?v=qol-1'
@@ -154,7 +155,7 @@ const THEMES = {
 }
 const seasonShown = () => Math.max(1, seasonNo() - SEASON_OFFSET)
 const theme = () => THEMES[seasonShown()] || { name: 'SEASON ' + seasonShown(), jp: 'シーズン', c1: '#ffcc00', c2: '#7b2ff2', tag: '' }
-const seasonCards = () => CARDS.filter(c => c.season === seasonShown() && !c.campReward).sort((a, b) => 'CURELMX'.indexOf(a.r) - 'CURELMX'.indexOf(b.r) || a.ovr - b.ovr)
+const seasonCards = () => CARDS.filter(c => c.season === seasonShown() && !c.campReward && !c.campaignUnlock && !c.campaignEnemy).sort((a, b) => 'CURELMX'.indexOf(a.r) - 'CURELMX'.indexOf(b.r) || a.ovr - b.ovr)
 // cosmetics unlocked on the premium track, per theme
 const COSMETICS = {
   [RIVALRY_TITLE]: { type: 'title', name: 'Beyond Destruction', d: 'Complete Vegeta vs. Toppo Mastery' },
@@ -1174,7 +1175,7 @@ function eventNow() { const wk = Math.floor((Date.now() / 864e5 + 3) / 7), a = E
 const NAMES = { YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', BOR: 'Boruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'My Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', HXH: 'Hunter x Hunter', FT: 'Fairy Tail', CSM: 'Chainsaw Man', JJBA: 'JoJo', TG: 'Tokyo Ghoul', BLE: 'Bleach', K8: 'Kaiju No. 8', MOB: 'Mob Psycho 100', FF: 'Fire Force', OPM: 'One Punch Man', KGB: 'Kagurabachi', YGO: 'Yu-Gi-Oh!', DAN: 'Dandadan', SL: 'Solo Leveling' }
 function rewards() {
   rollDay()
-  const P = S.profile, all = cards(), own = all.filter(c => P.club.cards[c.key]), d = P.day.date
+  const P = S.profile, all = cards().filter(c => !c.campaignEnemy), own = all.filter(c => P.club.cards[c.key]), d = P.day.date
   const out = [
     { id: 'daily-login-' + d, group: 'DAILY', name: 'Daily login bonus', prog: 1, need: 1, coins: 1000 },
     { id: 'daily-open-' + d, group: 'DAILY', name: 'Open 3 packs', prog: Math.min(3, P.day.opened), need: 3, coins: 2000 },
@@ -1238,10 +1239,11 @@ function placeBid(l, who, amount) {
   l.bid = amount; l.bidder = who
   if (l.exp - Date.now() < 30000) l.exp = Date.now() + 30000
 }
+const campaignLocked = card => !!(card?.campaignUnlock || card?.campaignEnemy)
 function tick(noSave) {
   const M = S.market, now = Date.now(), all = cards().filter(c => !c.season)
   M.listings = M.listings.filter(l => {
-    if (!byKey(l.key)?.arcReward) return true
+    if (!byKey(l.key)?.arcReward && !campaignLocked(byKey(l.key))) return true
     if (l.bidder === 'YOU') S.profile.coins += l.bid
     if (l.you) giveCard(l.key, l.lvl)
     return false
@@ -1265,7 +1267,7 @@ function tick(noSave) {
     const nb = nextBid(l)
     if (nb < v * .92 && (!l.bin || nb < l.bin) && Math.random() < (l.you ? .35 : .12)) placeBid(l, pick(TRADERS.filter(t => t !== l.seller)), nb)
   }
-  S.wonder = S.wonder.filter(w => w.exp > now && !w.keys.some(k => byKey(k)?.arcReward))
+  S.wonder = S.wonder.filter(w => w.exp > now && !w.keys.some(k => byKey(k)?.arcReward || campaignLocked(byKey(k))))
   while (S.wonder.length < 6) S.wonder.push({ id: M.seq++, who: pick(TRADERS), keys: aiPack(), exp: now + (60 + Math.random() * 240) * 60000 })
   if (!noSave) save()
 }
@@ -1297,7 +1299,7 @@ function act(a) {
       P.coins -= cost; P.pending[a.pack] = (P.pending[a.pack] || 0) + n; return {}
     }
     case 'openPack': {
-      if ((a.keys || []).some(k => byKey(k)?.arcReward)) return { error: 'Story Arc rewards are earned by clearing the arc.' }
+      if ((a.keys || []).some(k => byKey(k)?.arcReward || campaignLocked(byKey(k)))) return { error: 'Story rewards are earned by clearing the story.' }
       if (!(P.pending[a.pack] > 0)) return { error: 'No unopened pack of that type.' }
       P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = []; let itemMsg = ''
       if (Math.random() < (a.pack === 'bronze' || a.pack === 'silver' ? .04 : .08)) { const ks = Object.keys(ITEMS), ik = ks[Math.floor(Math.random() * ks.length)], it = itemsP(); it[ik] = (it[ik] || 0) + 1; itemMsg = 'Bonus item: ' + ITEMS[ik].name + '!' }
@@ -1309,14 +1311,14 @@ function act(a) {
     }
     case 'ppBuy': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
-      if (c.campReward) return { error: 'Earn this card by clearing its campaign chapter.' }
+      if (c.campReward || campaignLocked(c)) return { error: 'Earn this card by clearing its campaign mission.' }
       if (c.arcReward && !arcCleared(P, ARCS.find(arc => arc.id === c.arcReward))) return { error: 'Clear its Story Arc to unlock this card.' }
       const cost = PP_COST[c.r]; if ((P.pp || 0) < cost) return { error: `You need ${cost} pack points.` }
       P.pp -= cost; giveCard(a.key); P.last = [a.key]; addXP(10)
       return { msg: `Got ${cardName(a.key)} for ${cost} pack points.` }
     }
     case 'wonder': {
-      const w = S.wonder.find(w => w.id === a.id); if (!w) return { error: 'That Wonder Pick has gone.' }
+      const w = S.wonder.find(w => w.id === a.id); if (!w || w.keys.some(k => campaignLocked(byKey(k)))) return { error: 'That Wonder Pick has gone.' }
       if (P.wonder.charges < 1) return { error: 'No Wonder Pick energy left. It refills every 6 hours.' }
       if (P.wonder.charges >= WONDER_MAX) P.wonder.at = now
       P.wonder.charges--; S.wonder.splice(S.wonder.indexOf(w), 1)
@@ -1348,7 +1350,7 @@ function act(a) {
       return { msg: 'War lineup saved.' }
     }
     case 'quickSell': {
-      if ((byKey(a.key)?.arcReward || byKey(a.key)?.campReward) && (own(a.key)?.n || 0) <= 1) return { error: 'Your last Story Arc reward copy cannot be sold.' }
+      if ((byKey(a.key)?.arcReward || byKey(a.key)?.campReward || campaignLocked(byKey(a.key))) && (own(a.key)?.n || 0) <= 1) return { error: 'Your last Story Arc reward copy cannot be sold.' }
       const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }
       if (spare(a.key) < 1) return { error: 'That card is in your team. Remove it first.' }
       const got = quickSell(c, e.lvl || 0); P.coins += got; e.n--; if (e.n <= 0) delete P.club.cards[a.key]
@@ -1362,7 +1364,7 @@ function act(a) {
     }
     case 'craft': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
-      if (c.campReward) return { error: 'Earn this card by clearing its campaign chapter.' }
+      if (c.campReward || campaignLocked(c)) return { error: 'Earn this card by clearing its campaign mission.' }
       if (c.arcReward) return { error: 'Clear its Story Arc, then visit the Pack Point Exchange.' }
       const cost = SHARD_COST[c.r]; if ((P.shards || 0) < cost) return { error: `You need ${cost.toLocaleString()} shards.` }
       P.shards -= cost; giveCard(a.key); P.last = [a.key]; addXP(10); return { msg: `Crafted ${cardName(a.key)}.` }
@@ -1373,7 +1375,7 @@ function act(a) {
       if ((D.done[q.id] || 0) >= q.per) return { error: 'Done for today. It resets at midnight UTC.' }
       const keys = a.keys || []; if (keys.length !== q.n) return { error: `Needs exactly ${q.n} cards.` }
       const use = {}; for (const k of keys) use[k] = (use[k] || 0) + 1
-      for (const k in use) { const c = byKey(k); if (!c || (c.campReward && (own(k)?.n || 0) <= use[k]) || spare(k) < use[k]) return { error: 'You can only use cards you own that are not in your team.' } }
+      for (const k in use) { const c = byKey(k); if (!c || ((c.campReward || campaignLocked(c)) && (own(k)?.n || 0) <= use[k]) || spare(k) < use[k]) return { error: 'You can only use cards you own that are not in your team.' } }
       const cs = keys.map(byKey)
       if (q.minR && cs.some(c => RK(c.r) < RK(q.minR))) return { error: 'Some cards are below the required rarity.' }
       if (q.same && new Set(cs.map(c => c.anime)).size !== 1) return { error: 'All cards must be from the same anime.' }
@@ -1393,7 +1395,7 @@ function act(a) {
     }
     case 'list': {
       const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }
-      if (c.arcReward || c.campReward) return { error: 'Story rewards cannot be listed.' }
+      if (c.arcReward || c.campReward || campaignLocked(c)) return { error: 'Story rewards cannot be listed.' }
       if (spare(a.key) < 1) return { error: 'That card is in your team. Remove it first, or get a duplicate.' }
       const start = Math.round(+a.start / 50) * 50, bin = Math.round(+a.bin / 50) * 50, hours = [1, 3, 6, 12].includes(+a.hours) ? +a.hours : 1
       if (!(start >= 50 && start <= 9999950)) return { error: 'Set a start price between 50 and 9,999,950.' }
@@ -1423,6 +1425,7 @@ function act(a) {
     case 'buy': {
       const l = M.listings.find(l => l.id === a.id); if (!l || l.exp <= now) return { error: 'Someone else got that one first.' }
       if (l.you) return { error: 'That is your own listing.' }
+      if (campaignLocked(byKey(l.key))) return { error: 'Campaign cards cannot be purchased.' }
       if (P.coins < l.bin) return { error: `You need ${l.bin.toLocaleString()} coins.` }
       P.coins -= l.bin; if (l.bidder === 'YOU') P.coins += l.bid
       settle(l, 'bin', 'YOU')
@@ -1511,6 +1514,25 @@ function act(a) {
       return { msg: `You beat ${a.name || 'that player'}'s team! +${pay.toLocaleString()} coins${pay < 2500 ? ' (full rewards for your first 3 PvP wins each day)' : ''}.` }
     }
     case 'battle': {
+      if (a.mode === 'transfer-campaign') {
+        const progress = P.transferCampaign || (P.transferCampaign = {})
+        const mission = campaignMission(a.id, progress)
+        if (!mission?.open) return { error: 'Clear the preceding chapter mission first.' }
+        if (a.won !== true) return {}
+        if (progress[a.id]) return { msg: 'Mission replay complete.' }
+        const reward = mission.data.reward && CARDS.find(c => c.id === mission.data.reward && c.campaignUnlock === a.id)
+        if (mission.data.reward && !reward) return { error: 'The campaign reward is unavailable.' }
+        progress[a.id] = true
+        const coins = 600 + mission.chapter * 400 + mission.mission * 100
+        P.coins += coins
+        addXP(40 + mission.chapter * 15)
+        if (reward && !(P.club.cards[reward.key]?.n > 0)) {
+          giveCard(reward.key)
+          P.last = [reward.key]
+          return { msg: reward.name + ' · ' + reward.ver + ' unlocked · +' + coins.toLocaleString() + ' coins.', reward: reward.key }
+        }
+        return { msg: 'First clear · +' + coins.toLocaleString() + ' coins.' }
+      }
       // mastery for every fighter in your team
       { const ups = []; for (const k of P.team.filter(Boolean)) { const o = P.club.cards[k]; if (!o) continue; const u = addCardXP(o, a.won ? 60 : 20); if (u) ups.push(cardName(k) + ' Lv ' + o.lv) } if (ups.length) notice('Level up: ' + ups.join(', '), 'ok') }
       if (a.mode === 'raid') {
@@ -1611,7 +1633,7 @@ function act(a) {
     case 'tradeEscrow': { if (P.allBak) return { error: 'Trading is off while the temporary all-cards unlock is on.' } }
     // falls through
     case 'tradeEscrow_': {
-      if (byKey(a.want)?.arcReward || (a.offer || []).some(k => byKey(k)?.arcReward)) return { error: 'Story Arc rewards cannot be traded.' }
+      if (byKey(a.want)?.arcReward || campaignLocked(byKey(a.want)) || (a.offer || []).some(k => byKey(k)?.arcReward || campaignLocked(byKey(k)))) return { error: 'Story Arc rewards cannot be traded.' }
       const offer = a.offer || [], coins = Math.max(0, Math.round(+a.coins || 0)); if (P.coins < coins) return { error: 'Not enough coins.' }
       const use = {}; for (const k of offer) use[k] = (use[k] || 0) + 1
       for (const k in use) if (spare(k) < use[k]) return { error: 'You can only offer cards you own that are not in your team.' }
@@ -1624,7 +1646,7 @@ function act(a) {
       for (const k of a.offer || []) if (byKey(k)) giveCard(k); P.coins += Math.max(0, Math.round(+a.coins || 0)); addXP(20)
       return { msg: 'Trade complete!' }
     }
-    case 'tradeReceive': { if (byKey(a.key)) giveCard(a.key); P.last = [a.key]; addXP(20); return { msg: `Trade complete! You got ${cardName(a.key)}.` } }
+    case 'tradeReceive': { if (campaignLocked(byKey(a.key))) return { error: 'Campaign cards cannot be traded.' }; if (byKey(a.key)) giveCard(a.key); P.last = [a.key]; addXP(20); return { msg: `Trade complete! You got ${cardName(a.key)}.` } }
     case 'passBuy': { const S2 = passP(); if (S2.prem) return { error: 'Already unlocked.' }; if (P.coins < PASS_COST) return { error: `You need ${PASS_COST.toLocaleString()} coins.` }; P.coins -= PASS_COST; S2.prem = true; return { msg: 'Premium Pass unlocked!' } }
     case 'passClaim': {
       const S2 = passP(), t = +a.tier, tr = a.track === 'p' ? 'p' : 'f'; if (!(t >= 1 && t <= PASS_TIERS)) return { error: 'Unknown tier.' }
@@ -1633,7 +1655,7 @@ function act(a) {
       const R = passReward(tr, t)
       if (R.card) { giveCard(R.card); P.last = [R.card] }
       if (R.cos) { const cs = P.cos || (P.cos = []); if (!cs.includes(R.cos)) cs.push(R.cos); const ty = COSMETICS[R.cos].type, eq = P.eq || (P.eq = {}); if (!eq[ty]) eq[ty] = R.cos }
-      if (R.pick) { const c = byKey(a.key); if (!c || c.r !== R.pick) return { error: 'Pick a ' + (R.pick === 'M' ? 'Mythic' : 'Legendary') + ' card.' }; giveCard(a.key); P.last = [a.key] }
+      if (R.pick) { const c = byKey(a.key); if (!c || c.r !== R.pick || campaignLocked(c)) return { error: 'Pick a ' + (R.pick === 'M' ? 'Mythic' : 'Legendary') + ' card.' }; giveCard(a.key); P.last = [a.key] }
       S2[tr].push(t); if (R.coins) P.coins += R.coins; if (R.shards) P.shards = (P.shards || 0) + R.shards; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1
       return { msg: 'Claimed: ' + (R.pick ? cardName(a.key) : R.label), rw: R }
     }
