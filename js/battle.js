@@ -1,3 +1,4 @@
+import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=clarity-1'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
@@ -1296,7 +1297,7 @@ export function startBattle(stage) {
   ov.innerHTML = `<div class="bcs"><div class="bcs-wall"></div><div class="bcs-rig r1">${'<i></i>'.repeat(14)}</div><div class="bcs-rig r2">${'<i></i>'.repeat(10)}</div><i class="bcs-spot s1"></i><i class="bcs-spot s2"></i><i class="bcs-spot s3"></i><div class="bcs-crowd"></div><div class="bcs-board"><span>ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · </span></div><div class="bcs-floor"><i class="ln"></i><i class="cc"></i><i class="ccd"></i></div><div class="bcs-haze"></div></div><div class="env"><i class="e-sky"></i><i class="e-far"></i><i class="e-near"></i><i class="e-amb"></i><i class="e-vig"></i></div><div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
     <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto"${stage.live ? " hidden" : ""}>AUTO</button>${stage.live ? "<span class=\"pvp-clock\">⏳</span>" : ""}<span class="ar-stage">${stage.label ? stage.label.toUpperCase() : stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-form-timer" hidden></span><span class="ar-turn"></span></header>
     <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t"></small></div><div class="bct-s ai"></div></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
-    <div class="ar-mid"><div class="ar-log"></div></div>
+    <div class="ar-mid"><div class="ar-log"></div><div class="battle-info-tools"><button type="button" class="battle-art-preview" aria-pressed="false">ART PREVIEW</button><button type="button" class="battle-history">LOG</button></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
     <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
   document.body.append(ov); document.body.classList.add('in-battle'); music('battle')
@@ -1309,7 +1310,25 @@ export function startBattle(stage) {
   let ST3 = null
   const FXC = createFX(ov)
   // 3D engine removed for performance; the stage is a static CSS scene
-  const log = t => { const l = $a('.ar-log'); l.textContent = t; l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop') }
+  const history = []
+  let previewMode = false
+  const previewToggle = $a('.battle-art-preview')
+  previewToggle.onclick = () => {
+    previewMode = !previewMode
+    previewToggle.setAttribute('aria-pressed', String(previewMode))
+    previewToggle.textContent = previewMode ? 'PICK AN ART' : 'ART PREVIEW'
+    controls()
+  }
+  $a('.battle-history').onclick = () => battleInfo(ov, 'Battle log', history.length ? history.map(event => 'Turn ' + event.turn + ' · ' + event.text) : ['No events yet.'])
+  const remember = t => {
+    if (history.at(-1)?.text !== t || history.at(-1)?.turn !== B.turn) {
+      history.push({ turn: B.turn, text: t })
+      if (history.length > 48) history.shift()
+    }
+  }
+  const log = (t, record = true) => {
+    if (record) remember(t)
+    const l = $a('.ar-log'); l.textContent = t; l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop') }
   let SPEED = 1; try { SPEED = +localStorage.getItem('aut-bspeed') || 1 } catch { }
   let AUTO = false
   const wait = ms => new Promise(r => setTimeout(r, ms / SPEED))
@@ -1330,6 +1349,19 @@ export function startBattle(stage) {
       el.innerHTML = `<div class="bp" style="background-image:url('${f.card.url}');background-position:${Math.round((f.card.fx ?? .5) * 100)}% ${Math.round((f.card.fy ?? .22) * 100)}%"></div><div class="bi"><div class="bn"><b>${f.card.name}</b>${side === 'you' && mastL(f.key) > 0 ? `<em class="ml">M${mastL(f.key)}</em>` : ''}<small>${f.card.ver}</small></div><div class="bh"><i class="gh"></i><i class="fg"></i><span class="bnum"></span></div><div class="bm"><span class="be"></span><span class="bk"></span></div></div>`
       el.classList.remove('in'); void el.offsetWidth; el.classList.add('in')
       el.querySelector('.gh').style.width = el.querySelector('.fg').style.width = pct + '%'
+    }
+    let status = el.querySelector('.battle-status')
+    if (!status) { status = h('div', 'battle-status'); el.querySelector('.bi').append(status) }
+    const statuses = fighterStatuses(f, PE(f), !stage.storyTeam && nextTransformation(f, s, B.turn), s, B.turn)
+    const statusKey = JSON.stringify(statuses)
+    if (status.dataset.key !== statusKey) {
+      status.dataset.key = statusKey
+      status.replaceChildren(...statuses.map(entry => {
+        const chip = h('button', 'battle-status-chip')
+        chip.type = 'button'; chip.textContent = entry.label; chip.title = entry.detail
+        chip.onclick = () => battleInfo(ov, f.card.name, [entry.detail])
+        return chip
+      }))
     }
     const fg = el.querySelector('.fg'), gh = el.querySelector('.gh'), was = parseFloat(fg.style.width)
     if (fg.style.width !== pct + '%') {
@@ -1374,6 +1406,24 @@ export function startBattle(stage) {
       bn.append(b)
     })
   }
+  function previewArt(kind, unavailable) {
+    const me = B.you, foe = B.ai, f = act(me), target = act(foe), kit = PE(f)
+    const attack = ATTACK_ARTS.includes(kind), special = kind === 'special'
+    const flames = special && ((kit.igneelFlame && f.flame === 3) || (kit.spendFlame && f.flame > 0))
+    const all = special && (isAoe(f.card) || flames || kit.splash)
+    const enemy = attack || ['deathnote', 'scroll', 'clock'].includes(kind)
+    const targets = kind === 'wing' ? me.team.filter(c => c.ko).slice(0, 1) : all ? alive(foe) : [enemy ? target : f]
+    if (kind === 'strike' && kit.benchChip) targets.push(...alive(foe).filter(c => c !== target).slice(0, 1))
+    const pierce = (kind !== 'burst' && /Ignores Guard/.test(kitTxt(f.card)) && special) || kit.pierce || (kit.wheel && f.hitsTaken >= 4) ||
+      (kind === 'strike' && (kit.pierceStrike || (kit.ironShadow && f.iron > 0) || (kit.shadowDrive && f.shadowStrike))) ||
+      (special && (kit.pierceSpec || (kit.igneelFlame && f.flame === 3) || (kit.sunCycle && f.sunArts === 7) || (kit.sunCounter && f.sunCounter)))
+    return artPreview({ kind, name: special ? f.card.mv : ARTS[kind].name,
+      desc: special ? (f.card.tx || []).join(' ') : ARTS[kind].desc, active: f.card.name,
+      targets: targets.map(t => t.card.name + (t === target ? ' (enemy active)' : t === f ? ' (your active)' : enemy ? ' (enemy bench)' : ' (your bench)')),
+      ranged: rangedHit(f, kind), pierce, guard: attack && target.guard, sealed: special && me.confiscated,
+      absorb: !kit.antiKit && PE(target).absorbRanged, unavailable })
+  }
+
   function controls() {
     const s = B.you, my = !B.busy && !B.over
     updateMarkup($a('.ar-ki'), `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`)
@@ -1394,6 +1444,20 @@ export function startBattle(stage) {
       b.onclick = () => doArt(i)
       hand.append(b)
     }) }
+    for (const [i, button] of [...hand.children].entries()) {
+      const kind = s.hand[i]
+      const unavailable = !my || s.ki < artCost(f, kind) || (kind === 'burst' && s.ki < 2) || (kind === 'special' && s.confiscated)
+      button.disabled = !previewMode && unavailable
+      button.onpointerenter = () => {
+        const info = previewArt(kind, unavailable)
+        button.title = info.lines.join(' · ')
+      }
+      button.onclick = () => {
+        if (!previewMode) return doArt(i)
+        const info = previewArt(kind, unavailable)
+        battleInfo(ov, info.title, info.lines)
+      }
+    }
     {
       const tb = $a('.ar-trans'), partner = !!f.pe.partner, next = !stage.storyTeam && nextTransformation(f, s, B.turn)
       const ok = partner ? canTagPartner(f, B.turn) : canTransform(f, s)
@@ -1497,6 +1561,7 @@ export function startBattle(stage) {
         continue
       }
       const extra = note.extra || ''
+      remember('✦ ' + note.f.card.name + ': ' + note.name + (extra ? ' · ' + extra : ''))
       if (extra.startsWith('LIFE FORCE EROSION') || /^(REVIVED|JACKPOT! FULLY HEALED|LAST EMBERS)/.test(extra)) {
         highlight(side, note.f.card.name + ' · ' + extra, extra.startsWith('LIFE FORCE') ? 70 : 88)
       }
@@ -1507,7 +1572,7 @@ export function startBattle(stage) {
       delay += 450
     }
   }
-  function pasPop(n) { const el = $a(`.ar-side.${n.f === act(B.you) || B.you.team.includes(n.f) ? 'you' : 'ai'} .ar-active`); if (!el) return; const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'pas-pop'; t.innerHTML = `<small>✦ ${n.f.card.name} · PASSIVE</small><b>${n.name}</b><em>${n.extra || 'ACTIVATED'}</em>`; try { log('✦ ' + n.f.card.name + ': ' + n.name + (n.extra ? ' · ' + n.extra : '')) } catch { } t.style.left = x + 'px'; t.style.top = (y - 120) + 'px'; FX().append(t); setTimeout(() => t.remove(), 2600) }
+  function pasPop(n) { const el = $a(`.ar-side.${n.f === act(B.you) || B.you.team.includes(n.f) ? 'you' : 'ai'} .ar-active`); if (!el) return; const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'pas-pop'; t.innerHTML = `<small>✦ ${n.f.card.name} · PASSIVE</small><b>${n.name}</b><em>${n.extra || 'ACTIVATED'}</em>`; try { log('✦ ' + n.f.card.name + ': ' + n.name + (n.extra ? ' · ' + n.extra : ''), false) } catch { } t.style.left = x + 'px'; t.style.top = (y - 120) + 'px'; FX().append(t); setTimeout(() => t.remove(), 2600) }
   // ================= CLASH REACTIONS =================
   const CLASH = {
     JJK: ['DOMAIN CLASH', 'Domain Expansion vs Domain Expansion', 'Enemy passive sealed'],

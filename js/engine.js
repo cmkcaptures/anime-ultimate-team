@@ -1319,6 +1319,14 @@ function act(a) {
     }
     case 'showcase': { P.showcase = (a.keys || []).filter(k => own(k)).slice(0, 5); return {} }
     case 'team': { if (Array.isArray(a.team) && a.team.length === 6) P.team = a.team.map(k => (k && own(k) ? k : null)); return {} }
+    case 'watchCard': {
+      if (!byKey(a.key) || typeof a.value !== 'boolean') return { error: 'Unknown card.' }
+      const watched = new Set(P.watchlist || [])
+      if (a.value) watched.add(a.key)
+      else watched.delete(a.key)
+      P.watchlist = [...watched]
+      return {}
+    }
     case 'cardFlag': {
       const entry = own(a.key)
       if (!entry || !['favorite', 'locked'].includes(a.flag) || typeof a.value !== 'boolean') return { error: 'Invalid card setting.' }
