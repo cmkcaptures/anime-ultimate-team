@@ -2,12 +2,12 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=secret-reworks-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=shinobi-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=form-control'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=shinobi-1'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -118,6 +118,7 @@ const PACKLOOK = {
   standard: { t: ['GOLD', 'PACK'], c: ['#ff2d9a', '#7a3dff', '#12092e', '#2db4ff', '#3dffb0'], set: 'S1' },
   premium: { t: ['PREMIUM', 'DROP'], c: ['#fff6c9', '#ffd23a', '#b07a1c', '#2a1600', '#ffe9a0'], set: 'S1+' },
   DBZ: { t: ['DRAGON', 'BALL'], c: ['#ffd400', '#ff7a00', '#b80018', '#3a0a00', '#ffd400'], set: 'DB' },
+  BOR: { t: ['NEXT', 'GENERATIONS'], c: ['#a8f3ff', '#bb54ff', '#3931a3', '#140a3d', '#e1b8ff'], set: 'BOR' },
   NAR: { t: ['HIDDEN', 'LEAF'], c: ['#7df9ff', '#00a8ff', '#0030c8', '#061440', '#7df9ff'], set: 'NR' },
   JJK: { t: ['CURSED', 'WORLD'], c: ['#ff5ad1', '#b03dff', '#3d14b8', '#12052e', '#ff5ad1'], set: 'JK' },
   OP: { t: ['GRAND', 'LINE'], c: ['#ffd23a', '#ff3b30', '#7a0010', '#2a0006', '#ffd23a'], set: 'OP' },
@@ -1066,6 +1067,7 @@ function rollPackKeys(type) {
 // series packs get their own opening moment between the tear and the reveal
 const PACK_FX = {
   JJK: ['BLACK FLASH', 'crack', '#ff1a3a', '#000'], DBZ: ['KAMEHAMEHA', 'beam', '#4ad8ff', '#fff'], OP: ["CONQUEROR'S HAKI", 'crack', '#ff2a2a', '#1a0010'],
+  BOR: ['UZUHIKO', 'spiral', '#a86cff', '#a8f3ff'],
   NAR: ['RASENGAN', 'spiral', '#5ac8ff', '#fff'], BLE: ['GETSUGA TENSHO', 'slash', '#ff2a40', '#000'], DS: ['WATER BREATHING', 'spiral', '#3aa8ff', '#e0f6ff'],
   MHA: ['UNITED STATES OF SMASH', 'impact', '#ffd23a', '#2a7aff'], BC: ['BLACK DIVIDER', 'slash', '#1a1a1a', '#e0ffe0'], PKM: ['I CHOOSE YOU!', 'impact', '#ff3a3a', '#fff'],
   OPM: ['SERIOUS PUNCH', 'impact', '#ffe04a', '#fff'], AOT: ['TITAN SHIFT', 'bolt', '#ffd23a', '#ff8a2a'], SL: ['ARISE', 'spiral', '#7a4aff', '#000'],
