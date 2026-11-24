@@ -1266,7 +1266,7 @@ function enemyTeam(stage) {
   return out.sort((a, b) => b.ovr - a.ovr)
 }
 
-let MODE = 'camp'
+let MODE = 'redzone'
 const mastL = k => { const x = (X.P.mast || {})[k] || 0, T = X.ST().mastT || [0, 60, 180, 400, 750]; return T.filter(t => x >= t).length - 1 }
 function eventTeam(pool, difficulty) {
   const distinct = [...new Map(pool.slice().reverse().map(card => [card.name, card])).values()].reverse()
@@ -1276,7 +1276,7 @@ function eventTeam(pool, difficulty) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['camp', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['rivalry', 'RIVALRY BATTLES'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
+  for (const [k, n] of [['war', 'MULTI-TEAM WAR'], ['rivalry', 'RIVALRY BATTLES'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -1855,7 +1855,7 @@ function warPage(el) {
 
 export function battlePage(el) {
   const { h, P } = X
-  try { const m = sessionStorage.getItem('bmode'); if (m) { sessionStorage.removeItem('bmode'); MODE = m } } catch { }
+  try { const m = sessionStorage.getItem('bmode'); if (m) { sessionStorage.removeItem('bmode'); MODE = ['camp', 'villain'].includes(m) ? 'redzone' : m } } catch { }
   const prog = (P.battle && P.battle.cleared) || 0
   const team = P.team.filter(Boolean)
   modeTabs(el)
@@ -1877,7 +1877,7 @@ export function battlePage(el) {
   })
   if (MODE !== 'story') {
     if (team.length < 6 && MODE !== 'arcs') { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
-    return (MODE === 'live' ? livePage : MODE === 'redzone' ? redzonePage : MODE === 'villain' ? villainPage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
+    return (MODE === 'live' ? livePage : MODE === 'redzone' ? redzonePage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
   }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)
