@@ -17,6 +17,7 @@ export const ANIME = {
   DBZ: { name: 'DRAGON BALL', tag: 'DBZ', type: 'ki' },
   BC: { name: 'BLACK CLOVER', tag: 'BC', type: 'mana' },
   JJK: { name: 'JUJUTSU KAISEN', tag: 'JJK', type: 'curse' },
+  BOR: { name: 'BORUTO', tag: 'BOR', type: 'chak' },
   NAR: { name: 'NARUTO', tag: 'NAR', type: 'chak' },
   OP: { name: 'ONE PIECE', tag: 'OP', type: 'haki' },
   MHA: { name: 'MY HERO ACADEMIA', tag: 'MHA', type: 'quirk' },

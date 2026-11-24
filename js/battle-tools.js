@@ -11,6 +11,12 @@ export function fighterStatuses(f, passive, next, side, turn, enemyBasic) {
   if (f.burnT > 0) add('♨ ' + f.burnT, 'Burn triggers at the start of this fighter’s active turn. ' + f.burnT + ' ticks left at ' + f.burn + '% max HP each.')
   if (f.doom > 0) add('☠ ' + f.doom, 'Death Note knocks this fighter out when the active-turn countdown reaches zero.')
   if (f.frozen) add('❄ Frozen', 'This fighter loses their next turn if still frozen.')
+  if (f.uzuhikoTurns > 0) add('Uzuhiko · ' + f.uzuhikoTurns, 'Takes 8% max HP damage at the start of each team turn.')
+  if (f.uzuhikoWeaken) add('Weakened', 'The next damaging attack deals 25% less damage.')
+  if ((f.shinobiSeal || 0) > (side.formTurn || 0)) add('Six Paths Seal', 'Active buffs are removed and new buffs are suppressed.')
+  if ((f.reversalUntil || 0) > (side.formTurn || 0)) add('Reversal', 'Outgoing damage is reduced by 15%.')
+  if (passive.shinobi === 14) add(side.shinobiRestored ? 'Restoration spent' : 'Restoration ready', 'Omnipotence can revive a chosen KO’d ally once per battle or cast Shinjutsu Reversal.')
+  if (passive.shinobi === 21 && f.susanooStored) add('Susanoo · ' + f.susanooStored, 'Stored damage is added to Indra’s next Ultimate.')
   if (f.sealed || f.erasedUntil > 0) add('⊘ Sealed', 'This fighter’s passive is disabled.')
   if (f.pe.absorbRanged) add('Absorb ' + (f.absorbed || 0) + '/4', passive.absorbRanged ?
     'Ranged attacks are absorbed. Four Blasts from the same fighter build Power, Energy, and Defense toward that fighter’s stats.' : 'Absorption is currently disabled.')

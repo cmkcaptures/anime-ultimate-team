@@ -46,6 +46,7 @@ const PACKS = {
   lightning: { name: 'Lightning Pack', cost: 6000, stock: 3 },
   premium: { name: 'Premium Drop', cost: 7500 },
   DBZ: { name: 'Dragon Ball Pack', cost: 2500, anime: 'DBZ' },
+  BOR: { name: 'Boruto Pack', cost: 2500, anime: 'BOR' },
   NAR: { name: 'Naruto Pack', cost: 2500, anime: 'NAR' },
   JJK: { name: 'Jujutsu Kaisen Pack', cost: 2500, anime: 'JJK' },
   OP: { name: 'One Piece Pack', cost: 2500, anime: 'OP' },
@@ -252,7 +253,7 @@ const LOGIN_RW = [{ coins: 3000 }, { coins: 5000 }, { pack: 'silver' }, { shards
 const STREAK_MS = { 7: { coins: 20000, msg: '1-week streak' }, 14: { coins: 40000, shards: 2000, msg: '2-week streak' }, 30: { coins: 100000, shards: 5000, premium: 3, msg: '30-day streak' }, 60: { coins: 200000, shards: 10000, premium: 5, msg: '60-day streak' } }
 function loginP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.login) P.login = { last: 0, streak: 0 }; const L = P.login; if (L.last && d - L.last > 1) L.streak = 0; return { L, d, can: L.last !== d, next: L.last !== d ? (L.streak % 7) : ((L.streak - 1) % 7) } }
 // ---------- ACHIEVEMENTS ----------
-const ANIME_NAMES = { YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', JJBA: 'JoJo', HXH: 'Hunter x Hunter', BLE: 'Bleach', CSM: 'Chainsaw Man', FT: 'Fairy Tail', FF: 'Fire Force', YGO: 'Yu-Gi-Oh!', TG: 'Tokyo Ghoul' }
+const ANIME_NAMES = { YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', BOR: 'Boruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', JJBA: 'JoJo', HXH: 'Hunter x Hunter', BLE: 'Bleach', CSM: 'Chainsaw Man', FT: 'Fairy Tail', FF: 'Fire Force', YGO: 'Yu-Gi-Oh!', TG: 'Tokyo Ghoul' }
 function achList() {
   const P = S.profile, own = k => !!P.club.cards[k], C = CARDS.filter(c => !c.season), B = P.battle || {}, n = Object.keys(P.club.cards).filter(k => byKey(k)).length
   const has = r => C.some(c => c.r === r && own(c.key)), cnt = r => C.filter(c => c.r === r && own(c.key)).length
@@ -1167,7 +1168,7 @@ const EVENT_ANIME = ['JJK', 'DS', 'DBZ', 'OP', 'NAR', 'MHA', 'JJBA', 'HXH', 'BLE
 function eventNow() { const wk = Math.floor((Date.now() / 864e5 + 3) / 7), a = EVENT_ANIME[wk % EVENT_ANIME.length]; return { id: 'e' + wk, anime: a, pack: PACKS[a] ? a : 'standard', ends: (wk + 1) * 7 * 864e5 - 3 * 864e5, tiers: [{ name: 'Normal', level: 2, boost: 1, coins: 1500 }, { name: 'Hard', level: 4, boost: 1.2, coins: 3000 }, { name: 'Nightmare', level: 5, boost: 1.45, coins: 5000, pack: true }] } }
 
 // ---------------- rewards / missions ----------------
-const NAMES = { YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'My Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', HXH: 'Hunter x Hunter', FT: 'Fairy Tail', CSM: 'Chainsaw Man', JJBA: 'JoJo', TG: 'Tokyo Ghoul', BLE: 'Bleach', K8: 'Kaiju No. 8', MOB: 'Mob Psycho 100', FF: 'Fire Force', OPM: 'One Punch Man', KGB: 'Kagurabachi', YGO: 'Yu-Gi-Oh!', DAN: 'Dandadan', SL: 'Solo Leveling' }
+const NAMES = { YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', BOR: 'Boruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'My Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', HXH: 'Hunter x Hunter', FT: 'Fairy Tail', CSM: 'Chainsaw Man', JJBA: 'JoJo', TG: 'Tokyo Ghoul', BLE: 'Bleach', K8: 'Kaiju No. 8', MOB: 'Mob Psycho 100', FF: 'Fire Force', OPM: 'One Punch Man', KGB: 'Kagurabachi', YGO: 'Yu-Gi-Oh!', DAN: 'Dandadan', SL: 'Solo Leveling' }
 function rewards() {
   rollDay()
   const P = S.profile, all = cards(), own = all.filter(c => P.club.cards[c.key]), d = P.day.date
