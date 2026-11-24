@@ -18,3 +18,19 @@
   .war-opponents { max-width: 260px; }
   select.war-pick { font-size: 16px; }
 }
+
+.war-squad-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.war-card-button {
+  min-width: 0; border: 0; padding: 0; background: transparent; color: inherit;
+  font: inherit; text-align: center; cursor: pointer; align-self: start;
+}
+.war-card-button:focus-visible { outline: 2px solid #ffd556; outline-offset: 2px; border-radius: 7px; }
+.war-squad-slot {
+  border: 1px solid #654e91; border-radius: 8px; background: #221737; min-height: 76px;
+  overflow-wrap: anywhere;
+}
+.war-squad-slot img { display: block; width: 100%; height: auto; border-radius: 7px; }
+.war-squad-slot small, .war-picker-name { display: block; padding: 4px; overflow-wrap: anywhere; }
+.war-squad-slot.war-invalid { border-color: #ff8a9e; }
+.war-picker-grid { margin-top: 12px; }
+.war-picker-grid .cg.sel { outline: 2px solid #ffd556; }

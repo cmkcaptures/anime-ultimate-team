@@ -1132,36 +1132,68 @@ function warPage(el) {
       for (const key of lane.team) {
         const c = BYKEY[key]
         if (!c) continue
-        const entry = h('div', 'war-enemy')
+        const entry = h('button', 'war-enemy war-card-button')
+        entry.type = 'button'
+        entry.setAttribute('aria-label', 'View kit for ' + c.name + ' · ' + c.ver)
+        entry.onclick = () => X.cardDetail(c.key, { kitOnly: true, auraDiamonds: lane.level >= 5 ? 5 : 4 })
         entry.append(X.cardImg(c, 160), label('small', '', c.name))
         opponents.append(entry)
       }
       panel.append(h('small', 'war-label', 'OPPONENTS'), opponents, h('small', 'war-label', 'YOUR SQUAD · FIRST SLOT LEADS'))
+      const ownCards = h('div', 'war-squad-cards')
       squads[i].forEach((key, j) => {
         const selected = BYKEY[key]
+        const invalid = !locked && warDraft.invalid.some(x => x.lane === i && x.slot === j)
+        const slot = h('button', 'war-card-button war-squad-slot' + (invalid ? ' war-invalid' : ''))
+        slot.type = 'button'
+        slot.dataset.warSlot = i + '-' + j
+        const slotName = j === 0 ? 'Leader' : 'Fighter ' + (j + 1)
+        slot.setAttribute('aria-label', lane.name + ' ' + slotName + (selected ? ' · ' + selected.name : ''))
+        if (selected) slot.append(X.cardImg(X.eff(selected), 200), label('small', '', selected.name))
+        else slot.append(label('span', '', locked ? 'Unavailable card' : invalid ? 'Replace' : '+'), label('small', '', slotName))
+        if (invalid) slot.setAttribute('aria-invalid', 'true')
         if (locked) {
-          panel.append(label('div', 'war-pick', selected ? selected.name + ' · ' + selected.ver : 'Unavailable card'))
-          return
+          slot.disabled = !selected
+          slot.onclick = () => X.cardDetail(key)
+        } else slot.onclick = () => {
+          const teammates = squads[i].filter((_, index) => index !== j).map(k => BYKEY[k]).filter(Boolean)
+          const eligible = owned.filter(c => c.key === key || (!used.has(c.key) && warCardAllowed(c, teammates, lane.kind)))
+          const choose = cardKey => {
+            squads[i][j] = cardKey
+            warDraft.invalid = warDraft.invalid.filter(x => x.lane !== i || x.slot !== j)
+            X.closeModal()
+            draw()
+            grid.querySelector('[data-war-slot="' + i + '-' + j + '"]')?.focus({ preventScroll: true })
+          }
+          X.openModal(sheet => {
+            const close = h('button', 'btn dark sm', 'CLOSE PICKER')
+            close.onclick = () => { X.closeModal(); slot.focus({ preventScroll: true }) }
+            sheet.append(close, label('h2', '', lane.name + ' · ' + slotName), label('p', 'muted', lane.rule))
+            const filter = h('input', 'field')
+            filter.type = 'search'; filter.placeholder = 'Search eligible cards'; filter.setAttribute('aria-label', 'Search eligible cards')
+            const choices = h('div', 'cardgrid war-picker-grid')
+            const renderChoices = () => {
+              choices.replaceChildren()
+              for (const card of eligible.filter(c => X.matchesCard(c, filter.value))) {
+                const pick = h('button', 'cg' + (card.key === key ? ' sel' : ''))
+                pick.type = 'button'
+                pick.setAttribute('aria-label', 'Select ' + card.name + ' · ' + card.ver)
+                pick.append(X.cardImg(X.eff(card), 240), label('small', 'war-picker-name', card.name + ' · ' + card.ver))
+                pick.onclick = () => choose(card.key)
+                choices.append(pick)
+              }
+              if (!choices.children.length) choices.append(label('p', 'muted', 'No eligible cards match.'))
+            }
+            filter.oninput = renderChoices
+            sheet.append(filter)
+            if (selected) { const remove = h('button', 'btn dark sm', 'CLEAR SLOT'); remove.onclick = () => choose(null); sheet.append(remove) }
+            sheet.append(choices)
+            renderChoices()
+          }, true)
         }
-        const select = h('select', 'war-pick')
-        const invalid = warDraft.invalid.some(x => x.lane === i && x.slot === j)
-        select.setAttribute('aria-label', lane.name + ' fighter ' + (j + 1))
-        if (invalid) { select.classList.add('war-invalid'); select.setAttribute('aria-invalid', 'true') }
-        select.add(new Option((invalid ? 'Replace fighter ' : 'Select fighter ') + (j + 1), ''))
-        const teammates = squads[i].filter((_, slot) => slot !== j).map(k => BYKEY[k]).filter(Boolean)
-        for (const card of owned) {
-          if (card.key !== key && (used.has(card.key) || !warCardAllowed(card, teammates, lane.kind))) continue
-          select.add(new Option(card.name + ' · ' + card.ver + ' · ' + card.ovr, card.key))
-        }
-        select.value = key || ''
-        select.onchange = () => {
-          squads[i][j] = select.value || null
-          warDraft.invalid = warDraft.invalid.filter(x => x.lane !== i || x.slot !== j)
-          draw()
-          grid.querySelectorAll('select')[i * 3 + j].focus()
-        }
-        panel.append(select)
+        ownCards.append(slot)
       })
+      panel.append(ownCards)
       grid.append(panel)
     })
     const missing = locked && squads[run.results.length].some(key => !BYKEY[key] || !(P.club.cards[key]?.n > 0))
