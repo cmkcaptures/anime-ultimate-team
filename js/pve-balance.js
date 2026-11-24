@@ -15,12 +15,12 @@ export function pveSquadPower(team) {
 export function pveBalance(mode, team, { floor = 1, enemies = 1, episodes = 3, baseBoost = 1, finale = false, progression = 0 } = {}) {
   const power = pveSquadPower(team)
   if (mode === 'redzone') {
-    const upper = Math.max(0, power - .94)
-    const solo = enemies === 1 ? 1.18 : enemies === 2 ? 1.08 : 1
+    const elite = clamp(0, power - 1.02, .85)
+    const size = 1 + clamp(0, 6 - enemies, 5) * .12
     return {
-      hp: solo * (1.12 + floor * .095 + upper * 1.55),
-      damage: 1.04 + floor * .041 + upper * .48,
-      phase: finale && enemies === 1,
+      hp: size * (1.32 + floor * .16 + elite * 1.65),
+      damage: 1.25 + floor * .065 + elite * .44,
+      phase: finale,
     }
   }
   if (mode === 'boss') {
@@ -65,4 +65,20 @@ const OTHER_MODES = {
   story: [1, 1, .65],
   camp: [1, 1, .8],
   villain: [1.06, 1.02, .85],
+}
+
+
+const DEAD_ZONE_ARTS = ['strike', 'blast', 'special']
+
+export function deadZoneIntent(floor, turn, lead, enemy, roll) {
+  const interval = floor >= 4 ? 2 : 3
+  if ((turn - 1) % interval !== 0) return null
+  return roll < .5
+    ? { lead, enemy, art: null }
+    : { lead, enemy, art: DEAD_ZONE_ARTS[Math.floor((roll - .5) * 6)] }
+}
+
+export function deadZonePunishment(intent, lead, enemy) {
+  if (!intent || intent.enemy !== enemy || enemy.ko) return false
+  return intent.art ? !!intent.triggered : lead === intent.lead && !lead.guard && !lead.shieldHp
 }
