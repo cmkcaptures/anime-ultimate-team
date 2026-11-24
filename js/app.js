@@ -1,7 +1,7 @@
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=clarity-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=war-kits-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -530,9 +530,9 @@ function unlockRoutes(card) {
   if (card.season) return ['Season ' + card.season + ' Pass reward']
   return ['Pack Point Exchange · ' + fmt(ST.ppCost[card.r]) + ' points', 'Craft · ' + fmt(ST.shardCost[card.r]) + ' shards']
 }
-async function cardDetail(key) {
+async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
   const base = BYKEY[key]; if (!base) return
-  const c = eff(base), e = club()[key], inTeam = P.team.includes(key), spare = spendableCopies(e, inTeam), lvl = e ? e.lvl || 0 : 0
+  const c = kitOnly ? base : eff(base), e = kitOnly ? null : club()[key], inTeam = P.team.includes(key), spare = spendableCopies(e, inTeam), lvl = e ? e.lvl || 0 : 0
   openModal(sh => {
     const d = h('div', 'detail')
     const big = h('div', 'big'), im = cardImg(c, 600); big.append(im); d.append(big)
@@ -541,37 +541,46 @@ async function cardDetail(key) {
     d.append(h('span', 'marks', `<span style="color:${tierCol(c.r)}">${RARITY_MARK[c.r]} ${TIER[c.r].name}</span>`))
     d.append(h('h2', '', c.name), h('span', 'ver', c.ver + (c.tag ? ' · TAG UNIT' : '')))
     if (c.transformations?.length) d.append(formsButton(base))
-    const compare = h('button', 'btn dark sm', 'COMPARE CARDS')
-    compare.onclick = () => compareCards(base)
-    d.append(compare)
-    const watched = P.watchlist?.includes(key)
-    if (!e || watched) {
-      const watch = h('button', 'btn dark sm', watched ? 'REMOVE FROM WATCHLIST' : 'ADD TO WATCHLIST')
-      watch.onclick = async () => {
-        watch.disabled = true
-        const r = await act('watchCard', { key, value: !watched })
-        if (r.error) { watch.disabled = false; return }
-        if (CUR === 'cards') rerender()
-        cardDetail(key)
-      }
-      d.append(watch)
-      if (!e) {
-        const route = h('p', 'muted')
-        route.textContent = unlockRoutes(base).join(' · ')
-        d.append(route)
+    if (!kitOnly) {
+      const compare = h('button', 'btn dark sm', 'COMPARE CARDS')
+      compare.onclick = () => compareCards(base)
+      d.append(compare)
+      const watched = P.watchlist?.includes(key)
+      if (!e || watched) {
+        const watch = h('button', 'btn dark sm', watched ? 'REMOVE FROM WATCHLIST' : 'ADD TO WATCHLIST')
+        watch.onclick = async () => {
+          watch.disabled = true
+          const r = await act('watchCard', { key, value: !watched })
+          if (r.error) { watch.disabled = false; return }
+          if (CUR === 'cards') rerender()
+          cardDetail(key)
+        }
+        d.append(watch)
+        if (!e) {
+          const route = h('p', 'muted')
+          route.textContent = unlockRoutes(base).join(' · ')
+          d.append(route)
+        }
       }
     }
     if (e && e.ser) d.append(h('span', 'serial' + (e.ser <= 100 ? ' low' : ''), `SERIAL #${String(e.ser).padStart(4, '0')}${e.ser <= 10 ? ' · ULTRA LOW' : e.ser <= 100 ? ' · LOW SERIAL' : ''}`))
-    d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}`))
+    d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${kitOnly ? ' · OPPONENT' : e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}`))
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
     d.append(h('div', 'movebox', `<b style="color:${TYPE[c.t].c[2]}">${TYPE[c.t].en} · ${c.mv}</b><p>${c.tx.join(' ')}</p>`))
     if (e) d.append(progBox(key, c))
     if (false) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
     if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
     if (c.lead) d.append(h('div', 'movebox leadbox', `<b>👑 LEADER SKILL</b><p>${leadText(c.lead)}</p>`))
-    { const dd = Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox awkbox' + (dd >= 7 ? ' on' : ''), dd >= 7 ? `<b>✦ AWAKENED ULTIMATE · UNLOCKED</b><p>Ultimate deals <b>+35%</b>, gives <b>+2 Energy</b>, heals <b>15%</b> and plays a full cinematic.</p>` : `<b>✦ AWAKENED ULTIMATE · 🔒 7◆</b><p>Reach 7◆ (${dd}/7) to awaken: Ultimate +35% damage, +2 Energy, heals 15%, full cinematic.</p>`)) }
-    if (c.aura) { const dd = Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox aurabox', `<b>✦ TEAM AURA</b><p>From any slot: <b>+${AURA_PCT[dd]}%</b> to teammates tagged <span class="atag">${auraTag(c.aura[0])}</span> or <span class="atag">${auraTag(c.aura[1])}</span>.</p><small>Grows with diamonds: 3◆ +3% · 5◆ +5% · 7◆ +10%. Auras stack up to +40% per fighter.</small>`)) }
+    if (!kitOnly) { const dd = Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox awkbox' + (dd >= 7 ? ' on' : ''), dd >= 7 ? `<b>✦ AWAKENED ULTIMATE · UNLOCKED</b><p>Ultimate deals <b>+35%</b>, gives <b>+2 Energy</b>, heals <b>15%</b> and plays a full cinematic.</p>` : `<b>✦ AWAKENED ULTIMATE · 🔒 7◆</b><p>Reach 7◆ (${dd}/7) to awaken: Ultimate +35% damage, +2 Energy, heals 15%, full cinematic.</p>`)) }
+    if (c.aura) { const dd = kitOnly ? auraDiamonds : Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox aurabox', `<b>✦ TEAM AURA</b><p>From any slot: <b>+${AURA_PCT[dd]}%</b> to teammates tagged <span class="atag">${auraTag(c.aura[0])}</span> or <span class="atag">${auraTag(c.aura[1])}</span>.</p><small>Grows with diamonds: 3◆ +3% · 5◆ +5% · 7◆ +10%. Auras stack up to +40% per fighter.</small>`)) }
     d.append(h('div', 'catrow', [ANAME(c.anime), ...(c.cat || [])].map(x => `<span>${x}</span>`).join('')))
+    if (kitOnly) {
+      const close = h('button', 'btn dark sm', 'CLOSE KIT')
+      close.onclick = closeModal
+      d.prepend(close)
+      sh.append(d)
+      return
+    }
     d.append(h('span', 'eyebrow', `MARKET VALUE ~ ${fmt(ST.values[key])} COINS`))
     if (e) {
       const a = h('div', 'acts')
@@ -1336,7 +1345,7 @@ document.addEventListener('click', e => { const b = e.target.closest('button'); 
 // ================= BATTLE =================
 PAGES.battle = el => battlePage(el)
 TITLES.battle = 'BATTLE'
-initBattle({ ACC, raidPost: (rid, t) => ACC.raidPost(rid, t), raidStatus: rid => ACC.raidStatus(rid), h, $, cardImg, eff, ST: () => ST, lb: f => ACC.leaderboard(f), get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
+initBattle({ ACC, openModal, closeModal, cardDetail, matchesCard, raidPost: (rid, t) => ACC.raidPost(rid, t), raidStatus: rid => ACC.raidStatus(rid), h, $, cardImg, eff, ST: () => ST, lb: f => ACC.leaderboard(f), get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
 
 // ================= PLAYERS (accounts, leaderboard, friends, PvP) =================
 const PS = { tab: 0, sort: 'level' }
