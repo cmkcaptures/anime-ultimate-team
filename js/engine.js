@@ -1,4 +1,5 @@
-import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war.js?v=war-1'
+import { spendableCopies } from './qol.js?v=qol-1'
+import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war.js?v=qol-1'
 // Anime Ultimate Team — in-browser game engine.
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
@@ -1269,7 +1270,12 @@ function act(a) {
   const P = S.profile, M = S.market, now = Date.now()
   const own = k => P.club.cards[k]
   const inTeam = k => P.team.includes(k)
-  const spare = k => (own(k) ? own(k).n : 0) - (inTeam(k) ? 1 : 0)
+  const spare = k => spendableCopies(own(k), inTeam(k))
+  const protectedCard = { error: 'Unlock this card before spending its copies.' }
+  if (['quickSell', 'shred', 'awaken', 'list', 'tradeGive', 'evolve'].includes(a.type) && !(a.type === 'shred' && a.all) && own(a.key)?.locked) return protectedCard
+  if (a.type === 'fuse' && (own(a.ka)?.locked || own(a.kb)?.locked)) return protectedCard
+  if (a.type === 'awk' && own(a.key)?.locked && AWK.find(n => n.id === a.node)?.dup > 0) return protectedCard
+  if ((a.type === 'sbc' || a.type === 'tradeEscrow' || a.type === 'tradeEscrow_') && ((a.type === 'sbc' ? a.keys : a.offer) || []).some(k => own(k)?.locked)) return protectedCard
   switch (a.type) {
     case 'import': return { error: 'Not available online.' }
     case 'freePack': {
@@ -1313,6 +1319,19 @@ function act(a) {
     }
     case 'showcase': { P.showcase = (a.keys || []).filter(k => own(k)).slice(0, 5); return {} }
     case 'team': { if (Array.isArray(a.team) && a.team.length === 6) P.team = a.team.map(k => (k && own(k) ? k : null)); return {} }
+    case 'cardFlag': {
+      const entry = own(a.key)
+      if (!entry || !['favorite', 'locked'].includes(a.flag) || typeof a.value !== 'boolean') return { error: 'Invalid card setting.' }
+      entry[a.flag] = a.value
+      return {}
+    }
+    case 'warPreset': {
+      const lanes = currentWarLanes(weekId())
+      const error = warLineupError(a.squads, lanes, byKey, key => own(key)?.n > 0)
+      if (error) return { error }
+      P.warPreset = a.squads.map(team => team.slice())
+      return { msg: 'War lineup saved.' }
+    }
     case 'quickSell': {
       if (byKey(a.key)?.arcReward && (own(a.key)?.n || 0) <= 1) return { error: 'Your last Story Arc reward copy cannot be sold.' }
       const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }

@@ -1,6 +1,7 @@
+import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=turning-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=qol-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -224,6 +225,7 @@ function go(name, arg, opts = {}) {
   if (!opts.silent && name !== CUR) sfx('nav')
   document.body.dataset.page = name;
   if (!PAGES[name]) name = 'home'
+  if (CUR === 'cards' && curEl) CF.scroll = curEl.scrollTop
   const from = CUR, fi = TABS.indexOf(from), ti = TABS.indexOf(name)
   const dir = opts.dir || (fi >= 0 && ti >= 0 ? (ti >= fi ? 1 : -1) : 1)
   CUR = name; CURARG = arg
@@ -233,13 +235,14 @@ function go(name, arg, opts = {}) {
   if (curEl) { const old = curEl; old.classList.add('out'); old.style.setProperty('--dir', dir * 26 + 'px'); setTimeout(() => old.remove(), 240) }
   $('#pages').append(el); curEl = el
   PAGES[name](el, arg)
+  if (name === 'cards') el.scrollTop = CF.scroll || 0
   el.classList.add('in'); setTimeout(() => el.classList.remove('in'), 900)
   $('#ptitle').textContent = TITLES[name] || ''
   const tab = TABS.includes(name) ? name : name === 'pass' ? 'battle' : name === 'pack' || name === 'results' || name === 'wonder' || name === 'missions' ? (name === 'missions' ? null : 'home') : null
   document.querySelectorAll('#nav button').forEach((b, i) => { const on = b.dataset.go === tab; b.classList.toggle('on', on); if (on) { $('#navPill').style.setProperty('--i', i); $('#navPill').style.setProperty('--py', navTop(b) + 'px') } })
   $('#fab').hidden = name !== 'home'
 }
-const rerender = () => { if (curEl && PAGES[CUR]) { curEl.innerHTML = ''; PAGES[CUR](curEl, CURARG) } }
+const rerender = () => { if (curEl && PAGES[CUR]) { const scroll = curEl.scrollTop; curEl.innerHTML = ''; PAGES[CUR](curEl, CURARG); curEl.scrollTop = scroll } }
 document.querySelectorAll('#nav button').forEach(b => b.onclick = () => go(b.dataset.go))
 $('#fab').onclick = () => go('missions')
 $('#lvlBtn').onclick = () => go('missions')
@@ -386,7 +389,7 @@ PAGES.cards = (el) => {
   { const mu = h('button', 'btn violet', 'ギャラリー · CARD MUSEUM'); mu.style.marginTop = '4px'; mu.onclick = () => go('museum'); el.append(mu) }
   const tools = h('div', ''); tools.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:14px'
   const MODES = ['OWNED', 'UNOWNED', 'ALL', 'BINDER']; const seg = segmented(['OWNED', 'UNOWNED', 'ALL', 'BINDER'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
-  const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search characters or forms'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
+  const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search cards or abilities, e.g. shield break'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
   const an = h('div', 'chips'), ra = h('div', 'chips')
   tools.append(seg, q, an, ra); el.append(tools)
   const grid = h('div', 'cardgrid'); el.append(grid)
@@ -400,13 +403,13 @@ PAGES.cards = (el) => {
     if (CF.mode === 'BINDER') return drawBinder(grid)
     if (CF.mode === 'EVOLVE') return drawEvolve(grid)
     if (CF.mode === 'FUSE') return drawFuse(grid)
-    const list = POOL.filter(c => (CF.mode === 'ALL' || (CF.mode === 'UNOWNED' ? !club()[c.key] : club()[c.key])) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && (!CF.q || (c.name + ' ' + c.ver).toLowerCase().includes(CF.q)))
-      .sort((a, b) => (CF.sort === 'NEW' ? (b.added || 0) - (a.added || 0) : 0) || TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
+    const list = POOL.filter(c => (CF.mode === 'ALL' || (CF.mode === 'UNOWNED' ? !club()[c.key] : club()[c.key])) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && matchesCard(c, CF.q))
+      .sort((a, b) => Number(!!club()[b.key]?.favorite) - Number(!!club()[a.key]?.favorite) || (CF.sort === 'NEW' ? (b.added || 0) - (a.added || 0) : 0) || TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
     grid.innerHTML = ''
     if (!list.length) { grid.append(h('div', 'empty', `<b>${own.length ? 'Nothing here' : 'No cards yet'}</b>${own.length ? 'Try a different filter.' : 'Open your free pack on the home screen.'}`)); grid.firstChild.style.gridColumn = '1/-1'; return }
     for (const c of list) {
       const e = club()[c.key], b = h('button', 'cg' + (e ? '' : ' miss')); b.append(cardImg(eff(c), 240))
-      if (e) { b.append(h('span', 'n', e.n)); if (e.ser && e.ser <= 100) b.append(h('span', 'sr', '#' + e.ser)); if (e.lvl) b.append(h('span', 'lv', '★' + e.lvl)); if ((P.last || []).includes(c.key) && e.n === 1) b.append(h('span', 'nw', 'NEW')) }
+      if (e) { b.append(h('span', 'n', e.n)); if (e.favorite || e.locked) b.append(h('span', 'card-flags', (e.favorite ? '★' : '') + (e.locked ? ' 🔒' : ''))); if (e.ser && e.ser <= 100) b.append(h('span', 'sr', '#' + e.ser)); if (e.lvl) b.append(h('span', 'lv', '★' + e.lvl)); if ((P.last || []).includes(c.key) && e.n === 1) b.append(h('span', 'nw', 'NEW')) }
       b.onclick = () => cardDetail(c.key); grid.append(b)
     }
   }
@@ -469,9 +472,48 @@ function formsButton(card) {
   button.onclick = e => { e.stopPropagation(); showForms(eff(card)) }
   return button
 }
+function compareCards(base) {
+  openModal(sh => {
+    sh.append(h('h2', '', 'Compare cards'))
+    const back = h('button', 'btn dark sm', 'BACK TO CARD')
+    back.onclick = () => cardDetail(base.key)
+    const pick = h('select', 'field')
+    pick.setAttribute('aria-label', 'Second card')
+    pick.add(new Option('Choose a card', ''))
+    for (const c of POOL.filter(c => c.key !== base.key).sort((a, b) => a.name.localeCompare(b.name))) {
+      pick.add(new Option(c.name + ' · ' + c.ver, c.key))
+    }
+    const slot = h('select', 'field')
+    slot.setAttribute('aria-label', 'Team slot to preview')
+    for (let i = 0; i < P.team.length; i++) slot.add(new Option('Slot ' + (i + 1) + ' · ' + (BYKEY[P.team[i]]?.name || 'Empty'), i))
+    slot.value = String(Math.max(0, P.team.indexOf(base.key)))
+    const grid = h('div', 'compare-grid')
+    const plain = (tag, value) => { const e = h(tag, ''); e.textContent = value; return e }
+    const draw = () => {
+      grid.replaceChildren()
+      for (const raw of [base, BYKEY[pick.value]].filter(Boolean)) {
+        const c = eff(raw), panel = h('section', 'panel pad')
+        const lineup = P.team.map(k => BYKEY[k] && eff(BYKEY[k]))
+        for (const [i, fighter] of lineup.entries()) if (fighter?.key === c.key) lineup[i] = null
+        lineup[Number(slot.value)] = c
+        const aura = teamAuras(lineup)
+        panel.append(plain('h3', c.name), plain('p', c.ver + ' · ' + c.ovr + ' OVR'),
+          plain('p', c.st.map((n, i) => ['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i] + ' ' + n).join(' · ')),
+          plain('strong', c.mv), plain('p', (c.tx || []).join(' ')),
+          plain('strong', c.pas?.n || 'Passive'), plain('p', c.pas?.d || '—'),
+          plain('strong', 'Team Aura after swap'),
+          plain('p', lineup.map((fighter, i) => fighter && aura[i] > 0 ? fighter.name + ' +' + aura[i] + '%' : '').filter(Boolean).join(' · ') || 'No active aura bonuses'))
+        grid.append(panel)
+      }
+    }
+    pick.onchange = slot.onchange = draw
+    sh.append(back, pick, slot, grid)
+    draw()
+  }, true)
+}
 async function cardDetail(key) {
   const base = BYKEY[key]; if (!base) return
-  const c = eff(base), e = club()[key], inTeam = P.team.includes(key), spare = e ? e.n - (inTeam ? 1 : 0) : 0, lvl = e ? e.lvl || 0 : 0
+  const c = eff(base), e = club()[key], inTeam = P.team.includes(key), spare = spendableCopies(e, inTeam), lvl = e ? e.lvl || 0 : 0
   openModal(sh => {
     const d = h('div', 'detail')
     const big = h('div', 'big'), im = cardImg(c, 600); big.append(im); d.append(big)
@@ -480,6 +522,9 @@ async function cardDetail(key) {
     d.append(h('span', 'marks', `<span style="color:${tierCol(c.r)}">${RARITY_MARK[c.r]} ${TIER[c.r].name}</span>`))
     d.append(h('h2', '', c.name), h('span', 'ver', c.ver + (c.tag ? ' · TAG UNIT' : '')))
     if (c.transformations?.length) d.append(formsButton(base))
+    const compare = h('button', 'btn dark sm', 'COMPARE CARDS')
+    compare.onclick = () => compareCards(base)
+    d.append(compare)
     if (e && e.ser) d.append(h('span', 'serial' + (e.ser <= 100 ? ' low' : ''), `SERIAL #${String(e.ser).padStart(4, '0')}${e.ser <= 10 ? ' · ULTRA LOW' : e.ser <= 100 ? ' · LOW SERIAL' : ''}`))
     d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}`))
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
@@ -495,6 +540,14 @@ async function cardDetail(key) {
     if (e) {
       const a = h('div', 'acts')
       const add = (cls, label, dis, fn) => { const b = h('button', 'btn sm ' + cls, label); b.disabled = !!dis; b.onclick = fn; a.append(b) }
+      const flag = async name => {
+        const r = await act('cardFlag', { key, flag: name, value: !e[name] })
+        if (r.error) return
+        if (CUR === 'cards') rerender()
+        cardDetail(key)
+      }
+      add('dark', e.favorite ? '★ REMOVE FAVOURITE' : '☆ FAVOURITE', false, () => flag('favorite'))
+      add('dark', e.locked ? '🔒 UNLOCK COPIES' : 'LOCK ALL COPIES', false, () => flag('locked'))
       add('violet', inTeam ? 'IN TEAM' : 'ADD TO TEAM', inTeam, () => { const T = P.team.slice(), i = T.indexOf(null); closeModal(); if (i < 0) { toast('Your team is full. Swap a card on the Team page.'); go('team'); return } T[i] = key; act('team', { team: T }).then(() => go('team')) })
       if (false) add('green', lvl >= 5 ? 'MAX ★' : `LEVEL UP ★${lvl + 1}`, !(e.n > 1 && lvl < 5), async () => { await act('awaken', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       if (!c.arcReward) add('gold', 'SELL ON MARKET', spare < 1, () => listSheet(key))
@@ -785,7 +838,14 @@ function transferTargets(el) {
 }
 
 // ================= SHOP + PACK POINTS =================
+const quickReveal = () => { try { return localStorage.getItem('aut-quick-reveal') === '1' } catch { return false } }
 PAGES.shop = (el) => {
+  const setting = h('label', 'quick-reveal-setting')
+  const toggle = h('input', '')
+  toggle.type = 'checkbox'; toggle.checked = quickReveal()
+  toggle.onchange = () => { try { localStorage.setItem('aut-quick-reveal', toggle.checked ? '1' : '0') } catch { } }
+  setting.append(toggle, ' Quick reveals · pause for Mythics, Secrets and new cards')
+  el.append(setting)
   bannerBlock(el)
   shopHero(el)
   gachaBlock(el)
@@ -971,6 +1031,13 @@ async function packIntro(ov, FXC, anime, shake) {
 async function openPack(type) {
   if (document.getElementById('opener')) return
   const cards = rollPackKeys(type), sigP = type === 'premium' || type === 'lightning' || type === 'banner' ? .04 : .02, sigs = cards.filter(() => Math.random() < sigP).map(c => c.key)
+  const quick = quickReveal()
+  const hadBefore = new Set(Object.keys(club()))
+  if (quick) {
+    const r = await act('openPack', { pack: type, keys: cards.map(c => c.key), sig: sigs })
+    if (!r.error) await revealPacks(cards, 1, hadBefore, true, 'results')
+    return
+  }
   const pre = cards.map(c => thumbURL(c, 440, true)) // start drawing the cards right away
   for (const c of cards) if (TIER[c.r].rank >= 4) { const im = new Image(); im.src = c.url; if (im.decode) im.decode().catch(() => {}) } // walkout art decodes off the critical path
   const r = await act('openPack', { pack: type, keys: cards.map(c => c.key), sig: sigs })
@@ -1344,9 +1411,18 @@ function bannerBlock(el) {
 async function multiOpen(type, n) {
   if (document.getElementById('opener')) return
   const packs = type === 'banner' ? rollBannerKeys(n) : Array.from({ length: n }, () => rollPackKeys(type))
-  const hadBefore = new Set(Object.keys(club()).filter(k => (club()[k].n || 0) > 0)), newShown = new Set()
-  for (const pk of packs) { const sg = pk.filter(() => Math.random() < .04).map(c => c.key); const r = await act('openPack', { pack: type, keys: pk.map(c => c.key), sig: sg }); if (r.error) break }
-  const all = packs.flat().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
+  const hadBefore = new Set(Object.keys(club()).filter(k => (club()[k].n || 0) > 0)), all = []
+  for (const pk of packs) {
+    const sg = pk.filter(() => Math.random() < .04).map(c => c.key)
+    const r = await act('openPack', { pack: type, keys: pk.map(c => c.key), sig: sg })
+    if (r.error) break
+    all.push(...pk)
+  }
+  if (all.length) await revealPacks(all, n, hadBefore, quickReveal(), 'shop')
+}
+async function revealPacks(cards, n, hadBefore, quick, destination) {
+  const newShown = new Set()
+  const all = cards.slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
   const urls = await Promise.all(all.map(c => thumbURL(c, 260, true)))
   const ov = h('div', 'mo'); ov.id = 'opener'
   ov.innerHTML = `<div class="mo-bg"></div><div class="mo-head"><b>${n}× PULL</b><span>${all.length} cards</span><button class="o2-skip">REVEAL ALL</button></div><div class="mo-grid"></div><button class="btn gold mo-done">CONTINUE</button>`
@@ -1354,17 +1430,18 @@ async function multiOpen(type, n) {
   const grid = ov.querySelector('.mo-grid'), FXC = createFX(ov)
   const els = all.map((c, i) => { const e = h('div', 'mo-c', `<div class="in"><div class="f"></div><div class="b"></div></div>`); e.dataset.tier = c.r; e.style.setProperty('--rc', tierCol(c.r)); if (!hadBefore.has(c.key) && !newShown.has(c.key)) { newShown.add(c.key); e.classList.add('is-new'); setTimeout(() => e.querySelector('.f').append(h('span', 'o2-new', 'NEW')), 0) } const im = new Image(); im.src = urls[i]; e.querySelector('.f').append(im); grid.append(e); return e })
   let skip = false, closed = false; ov.querySelector('.o2-skip').onclick = () => { skip = true }
-  const fin = e => { if (e) { e.preventDefault(); e.stopPropagation() } if (closed) return; closed = true; skip = true; ov.style.display = 'none'; doneB.style.display = 'none'; setTimeout(() => { try { FXC.dispose() } catch { } document.body.classList.remove('in-opener'); ov.remove(); doneB.remove(); document.querySelectorAll('#opener, body > .mo-done').forEach(o => o.remove()); go('shop') }, 20) }
+  const fin = e => { if (e) { e.preventDefault(); e.stopPropagation() } if (closed) return; closed = true; skip = true; ov.style.display = 'none'; doneB.style.display = 'none'; setTimeout(() => { try { FXC.dispose() } catch { } document.body.classList.remove('in-opener'); ov.remove(); doneB.remove(); document.querySelectorAll('#opener, body > .mo-done').forEach(o => o.remove()); go(destination) }, 20) }
   const doneB = ov.querySelector('.mo-done'); document.body.append(doneB); doneB.onclick = fin; doneB.onpointerup = fin
   sfx('deal'); await wait(400)
   // reveal worst first, best last; Epic+ pause with an impact
   for (let i = els.length - 1; i >= 0; i--) {
     const e = els[i], rk = TIER[all[i].r].rank
-    if (!skip && rk >= 4) { e.scrollIntoView({ block: 'center' }); try { await walkout(ov, FXC, all[i], rk) } catch { skip = true } if (closed) return }
+    const spotlight = keepReveal(e.classList.contains('is-new'), rk, quick)
+    if (!skip && spotlight && rk >= 4) { e.scrollIntoView({ block: 'center' }); try { await walkout(ov, FXC, all[i], rk) } catch { skip = true } if (closed) return }
     e.classList.add('up')
     if (all[i].transformations?.length) e.append(formsButton(all[i]))
-    if (!skip && rk >= 3) { const r = e.getBoundingClientRect(); FXC.hit(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), rk >= 5 ? 2 : rk >= 4 ? 1.5 : 1); if (rk >= 4) FXC.rays(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), 12, 500, 1); sfx('reveal', rk); await wait(rk >= 5 ? 900 : rk >= 4 ? 600 : 260) }
-    else if (!skip) await wait(45)
+    if (!skip && spotlight && rk >= 3) { const r = e.getBoundingClientRect(); FXC.hit(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), rk >= 5 ? 2 : rk >= 4 ? 1.5 : 1); if (rk >= 4) FXC.rays(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), 12, 500, 1); sfx('reveal', rk); await wait(rk >= 5 ? 900 : rk >= 4 ? 600 : 260) }
+    else if (!skip && spotlight) await wait(quick ? 400 : 45)
   }
 
 }
@@ -1372,7 +1449,7 @@ async function multiOpen(type, n) {
 // ================= SHARDS + CHALLENGES =================
 const RKA = r => 'CURELMX'.indexOf(r)
 function rwText(rw) { return [rw.pack && (ST.packs[rw.pack] || {}).name, rw.coins && fmt(rw.coins) + ' coins', rw.shards && '◆' + fmt(rw.shards) + ' shards'].filter(Boolean).join(' + ') }
-function dupCount() { let n = 0, s = 0; for (const k in club()) { const c = BYKEY[k], e = club()[k]; if (!c) continue; const x = Math.min(e.n - 1, e.n - (P.team.includes(k) ? 1 : 0)); if (x > 0) { n += x; s += x * ST.shardGet[c.r] } } return { n, s } }
+function dupCount() { let n = 0, s = 0; for (const k in club()) { const c = BYKEY[k], e = club()[k]; if (!c) continue; const x = Math.min(e.n - 1, spendableCopies(e, P.team.includes(k))); if (x > 0) { n += x; s += x * ST.shardGet[c.r] } } return { n, s } }
 function sbcBlock(el) {
   const dc = dupCount()
   el.append(h('div', 'sec', `<h3>CHALLENGES</h3><span class="cur shard-c">◆ ${fmt(P.shards || 0)}</span>`))
@@ -1388,7 +1465,7 @@ function sbcBlock(el) {
 }
 function sbcFill(q, lastCopies) {
   const units = []
-  for (const k in club()) { const c = BYKEY[k], e = club()[k]; if (!c || (q.minR && RKA(c.r) < RKA(q.minR))) continue; const sp = e.n - (P.team.includes(k) ? 1 : 0), x = lastCopies ? sp : Math.min(sp, e.n - 1); for (let i = 0; i < x; i++) units.push(c) }
+  for (const k in club()) { const c = BYKEY[k], e = club()[k]; if (!c || (q.minR && RKA(c.r) < RKA(q.minR))) continue; const sp = spendableCopies(e, P.team.includes(k)), x = lastCopies ? sp : Math.min(sp, e.n - 1); for (let i = 0; i < x; i++) units.push(c) }
   units.sort((a, b) => (ST.values[a.key] || 0) - (ST.values[b.key] || 0))
   if (q.same) { const by = {}; for (const c of units) (by[c.anime] = by[c.anime] || []).push(c); let best = null; for (const a in by) { const L = by[a].slice(0, q.n); if (L.length === q.n) { const v = L.reduce((s, c) => s + (ST.values[c.key] || 0), 0); if (!best || v < best.v) best = { L, v } } } return best ? best.L : [] }
   if (q.distinct) { const seen = new Set(), L = []; for (const c of units) if (!seen.has(c.anime)) { seen.add(c.anime); L.push(c) } return L.length >= q.n ? L.slice(0, q.n) : [] }
@@ -1549,7 +1626,7 @@ function tradeSheet(p) {
     const g2 = h('div', 'cardgrid tpick'); sh.append(g2)
     const cw = h('label', 'tp-f', '<span>COINS</span>'), ci = h('input', 'field'); ci.inputMode = 'numeric'; ci.placeholder = '0'; ci.oninput = () => { pick.coins = Math.max(0, Math.min(P.coins, +ci.value || 0)); draw() }; cw.append(ci); sh.append(cw)
     const send = h('button', 'btn gold block big', 'SEND REQUEST'); send.style.marginTop = '14px'; sh.append(send)
-    const spareList = owned().filter(c => { const e = club()[c.key]; return !c.arcReward && e.n - (P.team.includes(c.key) ? 1 : 0) >= 1 && e.n > 1 })
+    const spareList = owned().filter(c => { const e = club()[c.key]; return !c.arcReward && spendableCopies(e, P.team.includes(c.key)) >= 1 && e.n > 1 })
     function draw() {
       sum.innerHTML = `<b>Want:</b> ${pick.want ? BYKEY[pick.want].name + ' · ' + BYKEY[pick.want].ver : 'pick a card'} &nbsp; <b>Offer:</b> ${pick.offer.map(k => BYKEY[k].name).join(', ') || 'no cards'}${pick.coins ? ' + ' + fmt(pick.coins) + ' coins' : ''}`
       send.disabled = !pick.want || (!pick.offer.length && !pick.coins)
@@ -1631,7 +1708,7 @@ function lockerBlock() {
 // ================= EVOLUTIONS =================
 function evoBlock(key) {
   const c = BYKEY[key], e = club()[key], tos = ST.evo[key].map(k => BYKEY[k]).filter(Boolean)
-  const need = ST.evoCopies[c.r] || 1, spare = e ? e.n - (P.team.includes(key) ? 1 : 0) : 0, mx = ((P.mast || {})[key] || 0), m1 = mx >= ST.mastT[1]
+  const need = ST.evoCopies[c.r] || 1, spare = spendableCopies(e, P.team.includes(key)), mx = ((P.mast || {})[key] || 0), m1 = mx >= ST.mastT[1]
   const box = h('div', 'evobox', `<b>⬆ EVOLVES INTO</b><div class="evo-to"></div><ul>
     <li class="${spare >= need ? 'ok' : ''}">${need} spare cop${need > 1 ? 'ies' : 'y'} of this card (you have ${Math.max(0, spare)})</li>
     <li class="${m1 ? 'ok' : ''}">Mastery 1 with this card (${mx}/${ST.mastT[1]} XP)</li>
@@ -1704,7 +1781,7 @@ function drawFuse(grid) {
   grid.append(h('p', 'muted', '<small style="font-weight:700">Fuse one spare copy of each character into their combined card. Inputs must be at most 2 rarities below the result.</small>'))
   const R = ST.fusion.map(r => ({ ...r, o: BYKEY[r.out] })).filter(r => r.o).sort((x, y) => TIER[y.o.r].rank - TIER[x.o.r].rank)
   for (const r of R) {
-    const pick = n => owned().filter(c => c.name === n && TIER[c.r].rank >= r.min && club()[c.key].n - (P.team.includes(c.key) ? 1 : 0) >= 1).sort((x, y) => x.ovr - y.ovr)[0]
+    const pick = n => owned().filter(c => c.name === n && TIER[c.r].rank >= r.min && spendableCopies(club()[c.key], P.team.includes(c.key)) >= 1).sort((x, y) => x.ovr - y.ovr)[0]
     const a = pick(r.a), b = pick(r.b), ok = a && b && (P.shards || 0) >= r.cost
     const row = h('div', 'fuse-row' + (ok ? ' ok' : ''))
     const slot = (c, n) => { const d = h('div', 'fz-in' + (c ? '' : ' miss')); if (c) d.append(cardImg(eff(c), 160)); else d.innerHTML = `<span>${n}<br><small>${ORDER[r.min] ? TIER[ORDER[r.min]].name : ''}+ spare</small></span>`; return d }
