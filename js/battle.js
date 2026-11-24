@@ -1591,6 +1591,13 @@ function redzonePage(el, ok) {
   const Z = ZS.find(z => z.id === DZSEL) || ZS[ZS.length - 1], done = (ST.rzAll || {})[Z.id] || []
   { const t = h('div', 'mtabs dz-tabs'); for (const z of ZS) { const n = ((ST.rzAll || {})[z.id] || []).length, b = h('button', 'mtab' + (z === Z ? ' on' : ''), z.name.toUpperCase() + ' · ' + n + '/' + z.stages.length); b.onclick = () => { DZSEL = z.id; X.go('battle') }; t.append(b) } el.append(t) }
   el.append(h('section', 'bhero rz-hero', `<div><span class="sh-tag">💀 DEAD ZONE · ${Z.sub.toUpperCase()}</span><h2>${Z.name.toUpperCase()}</h2><p>The hardest fights in the game. Guard, shield or switch against Heavy Rush. Change Arts against Enemy Read. Weakness tags help you finish before enemy damage ramps up from round five. Enemies resist being stopped twice in a row.</p></div><div class="bstat"><b>${done.length}</b><span>/ ${Z.stages.length} CLEARED</span></div>`))
+  const clearReward = X.BYKEY[Z.rewardKey]
+  if (clearReward) {
+    const name = clearReward.name + ' · ' + clearReward.ver
+    const prize = h('button', 'btn gold sm', 'FULL CLEAR REWARD · ' + name)
+    prize.onclick = () => X.cardDetail(clearReward.key, { kitOnly: true })
+    el.querySelector('.rz-hero > div').append(prize)
+  }
   for (const st of Z.stages) {
     const open = st.n === 1 || done.includes(st.n - 1), clr = done.includes(st.n), boss = X.POOL.filter(c => (c.name === st.boss || c.id === st.boss)).sort((a, b) => b.ovr - a.ovr)[0], team = campTeam(st.enemy)
     const w = st.reward, rw = [w.coins.toLocaleString() + ' coins', w.premium && w.premium + '× Premium', w.shards && '◆' + w.shards.toLocaleString(), w.tickets && w.tickets + ' Tickets'].filter(Boolean).join(' · ')
@@ -3218,7 +3225,7 @@ export function startBattle(stage) {
     box.querySelector('.rs-card').append(img(mvp, 360))
     if (r.reward && BYKEY[r.reward]) {
       const reward = h('div', 'transfer-reward')
-      reward.append(h('b', '', 'STORY CARD UNLOCKED'), cardImg(BYKEY[r.reward], 180))
+      reward.append(h('b', '', deadZone ? 'DEAD ZONE CARD UNLOCKED' : 'STORY CARD UNLOCKED'), cardImg(BYKEY[r.reward], 180))
       box.querySelector('.rs-body').after(reward)
     }
     addBattleRecap(box, B.you.team)
