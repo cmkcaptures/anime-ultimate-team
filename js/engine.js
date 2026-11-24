@@ -2,7 +2,7 @@
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=distinct-form-art'
+import { initAccount, loadSave, storeSave, publish, me } from './account.js?v=retire-kurama-link'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -1662,6 +1662,33 @@ function bootError(e) {
   document.body.append(o)
 }
 const ready = (async () => { try { await boot() } catch (e) { console.error(e); bootError(e); throw e } })()
+function retireKuramaLink(save) {
+  const key = 'Epic/a0f8820420f4d8becca1fcb65ab6e7b0.jpg'
+  const P = save.profile, M = save.market
+  const owned = P.club.cards[key]
+  let copies = owned ? (owned.n || 1) + Math.max(0, (owned.dia || 3) - 3) : 0
+  delete P.club.cards[key]
+  const clearSlot = k => k === key ? null : k
+  P.team = P.team.map(clearSlot)
+  for (const preset of P.presets || []) {
+    if (Array.isArray(preset)) preset.forEach((k, i) => { preset[i] = clearSlot(k) })
+    else if (Array.isArray(preset?.team)) preset.team = preset.team.map(clearSlot)
+  }
+  if (P.avatar === key) P.avatar = null
+  P.showcase = (P.showcase || []).filter(k => k !== key)
+  P.last = (P.last || []).filter(k => k !== key)
+  M.listings = M.listings.filter(listing => {
+    if (listing.key !== key) return true
+    if (listing.bidder === 'YOU') P.coins += listing.bid || 0
+    if (listing.you) copies++
+    return false
+  })
+  M.won = (M.won || []).filter(listing => listing.key !== key)
+  save.wonder = save.wonder.filter(pick => !pick.keys.includes(key))
+  const shards = copies * SHARD_GET.E
+  if (shards) P.shards = (P.shards || 0) + shards
+  return shards
+}
 async function boot() {
   CARDS = await (await fetch('cards-list.json', { cache: 'no-cache' })).json()
   const who = await initAccount(CFG); LS_SAVE = 'aut-save-v3-' + who.uid
@@ -1699,6 +1726,8 @@ async function boot() {
     for (const l of S.market.listings) l.key = fix(l.key)
     for (const w of S.wonder) w.keys = w.keys.map(fix)
     S.market.won = (S.market.won || []).map(w => ({ ...w, key: fix(w.key) })) }
+  const retiredShards = retireKuramaLink(S)
+  if (retiredShards) notice('Kurama Link Mode Naruto was retired. You received ◆' + retiredShards.toLocaleString() + ' shards.', 'ok')
   for (const arc of ARCS) {
     if (!arcCleared(S.profile, arc)) continue
     const reward = grantArcCard(arc)
