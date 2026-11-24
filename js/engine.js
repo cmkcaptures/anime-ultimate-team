@@ -1,3 +1,4 @@
+import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war.js?v=war-1'
 // Anime Ultimate Team — in-browser game engine.
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
@@ -113,6 +114,16 @@ function save() {
 }
 function rollDay() { const P = S.profile; if (P.day.date !== today()) P.day = { date: today(), opened: 0, sold: 0, bought: 0, awakened: 0, wonder: 0 } }
 const weekId = () => 'w' + Math.floor((Date.now() / 864e5 + 3) / 7)
+let warSchedule
+function currentWarLanes(week) {
+  if (warSchedule?.week !== week) warSchedule = { week, lanes: warLanes(CARDS, week) }
+  return warSchedule.lanes
+}
+function warState(P) {
+  const week = weekId()
+  if (P.war?.week !== week) P.war = { week, run: null, paid: false }
+  return P.war
+}
 function rollWeek() { const P = S.profile; if (!P.week || P.week.id !== weekId()) P.week = { id: weekId(), opened: 0, sold: 0, bought: 0, awakened: 0, wonder: 0, epic: 0, legend: 0 } }
 function bump(k, n = 1) { rollDay(); rollWeek(); const P = S.profile; P.day[k] = (P.day[k] || 0) + n; P.week[k] = (P.week[k] || 0) + n }
 function rollCharge(F, every, max) { while (F.charges < max && Date.now() - F.at >= every) { F.charges++; F.at += every } if (F.charges >= max) F.at = Date.now() }
@@ -142,6 +153,7 @@ const theme = () => THEMES[seasonShown()] || { name: 'SEASON ' + seasonShown(), 
 const seasonCards = () => CARDS.filter(c => c.season === seasonShown()).sort((a, b) => 'CURELMX'.indexOf(a.r) - 'CURELMX'.indexOf(b.r) || a.ovr - b.ovr)
 // cosmetics unlocked on the premium track, per theme
 const COSMETICS = {
+  [WAR_TITLE]: { type: 'title', name: 'War Sweeper', d: 'Win a Multi-Team War 2–0' },
   frame_rivals: { type: 'frame', name: 'Rivals Frame', d: 'Red and blue split border on every card' },
   title_rival: { type: 'title', name: 'Rival', d: 'Profile title' },
   border_rivals: { type: 'border', name: 'Rivals Ring', d: 'Avatar border' },
@@ -1381,6 +1393,43 @@ function act(a) {
       settle(l, 'bin', 'YOU')
       return { msg: `Bought ${cardName(l.key)} for ${l.bin.toLocaleString()} coins.` }
     }
+    case 'warStart': {
+      const war = warState(P)
+      if (war.run && !warScore(war.run.results).done) return { error: 'Finish or abandon your current war first.' }
+      if (a.week !== war.week) return { error: 'The lanes have rotated. Review the new rules.' }
+      const lanes = currentWarLanes(war.week)
+      if (lanes.some(lane => lane.team.length !== 3)) return { error: 'An enemy squad is unavailable.' }
+      const error = warLineupError(a.squads, lanes, byKey, key => own(key)?.n > 0)
+      if (error) return { error }
+      war.run = { id: crypto.randomUUID(), squads: a.squads, results: [] }
+      return {}
+    }
+    case 'warAbandon': {
+      const war = warState(P)
+      if (war.run?.id === a.id) war.run = null
+      return {}
+    }
+    case 'warResult': {
+      const war = warState(P), run = war.run
+      if (!run || run.id !== a.id || a.round !== run.results.length || warScore(run.results).done || typeof a.won !== 'boolean') {
+        return { error: 'This war round is no longer active.' }
+      }
+      run.results.push(a.won)
+      const score = warScore(run.results)
+      if (!score.done || score.wins !== 2) return {}
+      const prizes = []
+      if (!war.paid) {
+        war.paid = true
+        P.coins += WAR_REWARD.coins
+        P.shards = (P.shards || 0) + WAR_REWARD.shards
+        prizes.push(WAR_REWARD.coins.toLocaleString() + ' coins', WAR_REWARD.shards.toLocaleString() + ' shards')
+      }
+      if (!score.losses && !(P.cos || []).includes(WAR_TITLE)) {
+        ;(P.cos ||= []).push(WAR_TITLE)
+        prizes.push('War Sweeper title')
+      }
+      return { msg: prizes.length ? 'War won! ' + prizes.join(' · ') : 'War won!' }
+    }
     case 'pvp': {
       P.battle = P.battle || { cleared: 0, wins: 0, losses: 0 }
       if (a.uid) { const R = (P.rivals = P.rivals || {}), r = R[a.uid] || (R[a.uid] = { name: a.name, w: 0, l: 0 }); r.name = a.name || r.name; a.won ? r.w++ : r.l++ }
@@ -1626,6 +1675,7 @@ function state() {
   rollFree()
   const P = S.profile
   const out = {
+    warLanes: currentWarLanes(warState(P).week),
     profile: P, notices: S.notices, packs: PACKS, banner: banner(), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },

@@ -1,0 +1,20 @@
+.war-hero { display: block; }
+.war-hero p { margin: 8px 0; }
+.war-score { display: inline-block; margin-top: 8px; color: #ffe09a; }
+.war-lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.war-lane { min-width: 0; padding: 16px; }
+.war-lane h3 { margin: 0; }
+.war-lane p { margin: 4px 0 12px; }
+.war-label, .war-result { display: block; margin: 10px 0 6px; color: #e1d3fa; font-weight: 800; }
+.war-opponents { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.war-enemy { min-width: 0; text-align: center; }
+.war-enemy img { display: block; width: 100%; height: auto; border-radius: 7px; background: #21143b; }
+.war-enemy small { display: block; overflow-wrap: anywhere; margin-top: 4px; }
+.war-pick { width: 100%; min-height: 42px; margin-bottom: 6px; padding: 8px; border: 1px solid #654e91; border-radius: 8px; background: #221737; color: #fff; font: inherit; }
+.war-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; }
+.war-actions p { flex-basis: 100%; margin: 0; }
+@media (max-width: 760px) {
+  .war-lanes { grid-template-columns: 1fr; }
+  .war-opponents { max-width: 260px; }
+  select.war-pick { font-size: 16px; }
+}
