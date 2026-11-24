@@ -1,3 +1,4 @@
+import { warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=war-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
 import { TIER, TYPE, thumbURL } from './cardkit.js?v=form-control'
@@ -679,7 +680,7 @@ function teamFrom(main, rating) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['camp', 'CAMPAIGN'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
+  for (const [k, n] of [['camp', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -1052,12 +1053,110 @@ function eventPage(el, ok) {
   })
   el.append(list)
 }
+let warDraft = null
+function warPage(el) {
+  const { h, P, BYKEY, POOL } = X
+  const war = P.war, lanes = X.ST().warLanes
+  const label = (tag, cls, text) => { const item = h(tag, cls); item.textContent = text; return item }
+  const run = war.run, score = warScore(run?.results || [])
+  const locked = !!run && !score.done
+  if (!warDraft || warDraft.week !== war.week) warDraft = { week: war.week, squads: lanes.map(() => [null, null, null]) }
+  const squads = locked ? run.squads : warDraft.squads
+  const owned = POOL.filter(c => P.club.cards[c.key]?.n > 0).sort((a, b) => b.ovr - a.ovr)
+  const hero = h('section', 'bhero war-hero')
+  hero.append(h('h2', '', 'MULTI-TEAM WAR'), h('p', '', 'Build three squads of three. Each card can fight in one lane. Win two lanes to take the war.'))
+  const reward = WAR_REWARD.coins.toLocaleString() + ' coins · ' + WAR_REWARD.shards.toLocaleString() + ' shards'
+  hero.append(h('p', '', war.paid ? 'Weekly win reward collected' : 'First win this week · ' + reward))
+  hero.append(h('p', '', (P.cos || []).includes(WAR_TITLE) ? 'War Sweeper title unlocked' : 'Win 2–0 to unlock the War Sweeper title'))
+  if (run) hero.append(h('strong', 'war-score', score.wins + '–' + score.losses + (score.done ? score.wins === 2 ? ' · WAR WON' : ' · WAR LOST' : ' · IN PROGRESS')))
+  el.append(hero)
+
+  const grid = h('div', 'war-lanes')
+  const footer = h('div', 'war-actions')
+  const message = h('p', 'muted')
+  const primary = h('button', 'btn gold', locked ? 'FIGHT ' + lanes[run.results.length].name.toUpperCase() : 'LOCK SQUADS')
+  const draw = () => {
+    grid.replaceChildren()
+    const used = new Set(squads.flat().filter(Boolean))
+    lanes.forEach((lane, i) => {
+      const panel = h('section', 'panel war-lane')
+      const outcome = run?.results[i]
+      panel.append(h('h3', '', lane.name + (locked && i === run.results.length ? ' · NEXT' : '')), h('p', 'muted', lane.rule))
+      if (typeof outcome === 'boolean') panel.append(h('strong', 'war-result', outcome ? 'LANE WON' : 'LANE LOST'))
+      const opponents = h('div', 'war-opponents')
+      for (const key of lane.team) {
+        const c = BYKEY[key]
+        if (!c) continue
+        const entry = h('div', 'war-enemy')
+        entry.append(X.cardImg(c, 160), label('small', '', c.name))
+        opponents.append(entry)
+      }
+      panel.append(h('small', 'war-label', 'OPPONENTS'), opponents, h('small', 'war-label', 'YOUR SQUAD · FIRST SLOT LEADS'))
+      squads[i].forEach((key, j) => {
+        const selected = BYKEY[key]
+        if (locked) {
+          panel.append(label('div', 'war-pick', selected ? selected.name + ' · ' + selected.ver : 'Unavailable card'))
+          return
+        }
+        const select = h('select', 'war-pick')
+        select.setAttribute('aria-label', lane.name + ' fighter ' + (j + 1))
+        select.add(new Option('Select fighter ' + (j + 1), ''))
+        const teammates = squads[i].filter((_, slot) => slot !== j).map(k => BYKEY[k]).filter(Boolean)
+        for (const card of owned) {
+          if (card.key !== key && (used.has(card.key) || !warCardAllowed(card, teammates, lane.kind))) continue
+          select.add(new Option(card.name + ' · ' + card.ver + ' · ' + card.ovr, card.key))
+        }
+        select.value = key || ''
+        select.onchange = () => {
+          squads[i][j] = select.value || null
+          draw()
+          grid.querySelectorAll('select')[i * 3 + j].focus()
+        }
+        panel.append(select)
+      })
+      grid.append(panel)
+    })
+    const missing = locked && squads[run.results.length].some(key => !BYKEY[key] || !(P.club.cards[key]?.n > 0))
+    const draftError = !locked && used.size === 9 && warLineupError(squads, lanes, key => BYKEY[key], key => P.club.cards[key]?.n > 0)
+    primary.disabled = missing || !!draftError || (!locked && (used.size !== 9 || lanes.some(lane => lane.team.length !== 3)))
+    message.textContent = missing ? 'A locked fighter is no longer in your club. Abandon this war to choose new squads.' :
+      locked ? 'Squads are locked. Each round starts with fresh HP, Energy and Ultimate gauge.' :
+      owned.length < 9 ? 'You need at least nine owned cards to enter.' : draftError || used.size + '/9 fighters selected'
+  }
+  primary.onclick = async () => {
+    primary.disabled = true
+    if (locked) {
+      const round = run.results.length, lane = lanes[round]
+      startBattle({ n: round + 1, name: lane.name, label: 'WAR · ' + lane.name, level: lane.level, team: lane.team, playerTeam: run.squads[round], war: { id: run.id, round } })
+      return
+    }
+    const r = await X.act('warStart', { week: war.week, squads })
+    if (!r.error || r.state) X.go('battle')
+    else draw()
+  }
+  footer.append(message, primary)
+  if (locked) {
+    const abandon = h('button', 'btn dark', 'ABANDON WAR')
+    abandon.onclick = async () => {
+      if (!confirm('Abandon this war and discard its results?')) return
+      abandon.disabled = primary.disabled = true
+      const r = await X.act('warAbandon', { id: run.id })
+      if (!r.error || r.state) X.go('battle')
+      else { abandon.disabled = false; draw() }
+    }
+    footer.append(abandon)
+  }
+  el.append(grid, footer)
+  draw()
+}
+
 export function battlePage(el) {
   const { h, P } = X
   try { const m = sessionStorage.getItem('bmode'); if (m) { sessionStorage.removeItem('bmode'); MODE = m } } catch { }
   const prog = (P.battle && P.battle.cleared) || 0
   const team = P.team.filter(Boolean)
   modeTabs(el)
+  if (MODE === 'war') return warPage(el)
   if (MODE !== 'story') {
     if (team.length < 6 && MODE !== 'arcs') { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
     return (MODE === 'live' ? livePage : MODE === 'redzone' ? redzonePage : MODE === 'villain' ? villainPage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
@@ -1086,7 +1185,7 @@ export function battlePage(el) {
 export function startBattle(stage) {
   const { h, cardImg, eff, BYKEY, P } = X
   const LV = stage.live || null
-  const yours = LV ? LV.myTeam : stage.storyTeam ? stage.storyTeam.map(k => BYKEY[k]) : P.team.filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
+  const yours = LV ? LV.myTeam : stage.storyTeam ? stage.storyTeam.map(k => BYKEY[k]) : (stage.playerTeam || P.team).filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
   { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (!stage.storyTeam && D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
@@ -1517,7 +1616,7 @@ export function startBattle(stage) {
   const mb = $a('.ar-mute'), mdraw = () => { mb.textContent = sfxOn() ? '🔊 SOUND' : '🔇 MUTED'; mb.classList.toggle('off', !sfxOn()) }
   mb.onclick = () => { sfxOn(!sfxOn()); mdraw() }; mdraw()
   $a('.ar-end').onclick = () => endTurn()
-  $a('.ar-quit').onclick = () => { if (B.over) return close(); if (ov.querySelector('.qconf')) return; const q = document.createElement('div'); q.className = 'qconf'; q.innerHTML = '<div class="qc-box"><b>QUIT BATTLE?</b><p>You will leave this fight with no rewards.' + (stage.boss ? ' Your boss attempt is not used.' : '') + '</p><div class="qc-b"><button class="btn dark">KEEP FIGHTING</button><button class="btn red">QUIT</button></div></div>'; const [k, x] = q.querySelectorAll('button'); k.onclick = () => q.remove(); x.onclick = () => { q.remove(); close() }; ov.append(q) }
+  $a('.ar-quit').onclick = () => { if (B.over) { if (!stage.war) close(); return } if (ov.querySelector('.qconf')) return; const q = document.createElement('div'); q.className = 'qconf'; q.innerHTML = '<div class="qc-box"><b>QUIT BATTLE?</b><p>You will leave this fight with no rewards.' + (stage.war ? ' This lane will count as a loss.' : stage.boss ? ' Your boss attempt is not used.' : '') + '</p><div class="qc-b"><button class="btn dark">KEEP FIGHTING</button><button class="btn red">QUIT</button></div></div>'; const [k, x] = q.querySelectorAll('button'); k.onclick = () => q.remove(); x.onclick = async () => { q.remove(); if (stage.war) { if (!B.over) await end(false) } else close() }; ov.append(q) }
   function close() {
     if (LV && !B.over) { lvSend({ t: "quit" }); B.over = true; try { lvUnsub && lvUnsub(); clearInterval(lvTimer) } catch { } X.ACC.pvpFinish(LV.code, LV.oppUid) }
     if (stage.pvp) { FXC.dispose(); document.body.classList.remove('in-battle'); music('menu'); B.closed = true; ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('players'); return } FXC.dispose(); document.body.classList.remove('in-battle'); music('menu'); B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
@@ -1660,20 +1759,30 @@ export function startBattle(stage) {
     const ab = $a('.ar-auto'); ab.onclick = () => { AUTO = !AUTO; ab.classList.toggle('on', AUTO); ab.textContent = AUTO ? 'AUTO ON' : 'AUTO'; if (AUTO && !B.busy && !B.over) autoTurn() } }
 
   async function end(won) {
+    if (B.over) return
     B.over = true; controls()
     await wait(500)
     if (LV) { try { lvUnsub && lvUnsub(); clearInterval(lvTimer) } catch { } X.ACC.pvpFinish(LV.code, won ? LV.me : LV.oppUid) }
-    const r = stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0), ko: B.you.team.filter(f => f.ko).length, turns: B.turn } : { stage: stage.n, won })
+    const recordWar = () => X.act('warResult', { ...stage.war, won })
+    const r = stage.war ? await recordWar() : stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0), ko: B.you.team.filter(f => f.ko).length, turns: B.turn } : { stage: stage.n, won })
     if (stage.mode === 'raid' && r && r.raidTotal != null && X.raidPost) { try { await X.raidPost(stage.raidId, r.raidTotal); RAIDCACHE.at = 0 } catch (e) { console.warn('raid post failed', e) } }
     sfx(stage.boss ? 'claim' : won ? 'win' : 'lose')
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
     if (won) { const cf = document.createElement('div'); cf.className = 'confetti'; cf.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="--x:${Math.random() * 100}%;--d:${(Math.random() * .8).toFixed(2)}s;--h:${Math.round(Math.random() * 360)};--r:${Math.round(Math.random() * 720 - 360)}deg"></i>`).join(''); ov.append(cf); setTimeout(() => cf.remove(), 4000) }
-    box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : won ? (r.msg || 'Stage cleared.') : (stage.storyTeam ? 'Your story lineup was knocked out. Try again.' : 'Your team was knocked out. Tweak your lineup and try again.')}</p>
+    box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : stage.war ? (r.msg || (won ? 'Your squad won this lane.' : 'Your squad lost this lane.')) : won ? (r.msg || 'Stage cleared.') : (stage.storyTeam ? 'Your story lineup was knocked out. Try again.' : 'Your team was knocked out. Tweak your lineup and try again.')}</p>
       <div class="rs-body"><div class="rs-mvp"><span>MVP</span><div class="rs-card"></div><b>${mvp.card.name}</b><small>${mvp.dealt.toLocaleString()} DMG · ${mvp.kos} KO</small></div>
       <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/${B.you.team.length}</b><span>SURVIVED</span></div></div></div>`
     box.querySelector('.rs-card').append(img(mvp, 360))
-    const b = document.createElement('button'); b.className = 'btn gold'; b.textContent = 'CONTINUE'; b.onclick = () => { close(); if (won && !r.error && stage.afterWin) stage.afterWin() }; box.append(b)
+    const b = document.createElement('button'); b.className = 'btn gold'; b.textContent = 'CONTINUE'; b.onclick = async () => {
+      if (stage.war && r.error && !r.state) {
+        b.disabled = true
+        const result = await recordWar()
+        if (result.error && !result.state) { b.disabled = false; return }
+      }
+      close()
+      if (won && !r.error && stage.afterWin) stage.afterWin()
+    }; box.append(b)
     ov.append(box)
   }
 
@@ -1690,6 +1799,7 @@ export function startBattle(stage) {
   })
   draw()
   const kick = () => {
+    if (B.closed || B.over) return
     const first = youFirst ? B.you : B.ai, second = youFirst ? B.ai : B.you
     first.flameTarget = act(second).key
     first.lastActive = act(first).key
