@@ -1,7 +1,7 @@
-import { RESCUE_NAMES } from './last-door.js?v=1'
+import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
-import { rivalryPage, rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=last-door-2'
-import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=last-door-1'
+import { rivalryPage, rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
+import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=encounter-1'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
@@ -238,6 +238,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   const raidOpening = offensive && A?.raidOpening
   if (raidOpening) base *= 1.35
   if (offensive && A?.courtRepeat) base *= .65
+  if (offensive && att.ifritIgnited) base *= 1.35
   const clock = A?.formTurn || 0
   const attackKit = ea.shinobi, defenseKit = ed.shinobi
   if (kind !== 'redirect' && !mod.sever) {
@@ -412,7 +413,12 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (barrier.remaining != null) pasNote(def, barrier.remaining ? 'DESTRUCTION BARRIER · ' + barrier.remaining + '/3' : 'DESTRUCTION BARRIER BROKEN')
   const pierceAll = pierce || flickerPierce || ea.pierce || (ea.wheel && att.hitsTaken >= 4) || (kind === 'strike' && ea.pierceStrike) || (kind === 'special' && ea.pierceSpec)
   if (sealActive(def, D)) clearShinobiBuffs(def)
+  const piercedGuard = !!def.guard && !!pierceAll
   const blocked = def.guard && !pierceAll
+  if (offensive && ed.queen && def.guard && pierceAll) {
+    def.queenCharge = 0
+    pasNote(def, 'BRACHIO LAUNCHERS · DISARMED')
+  }
   if (def.guard) { if (!pierceAll) dmg *= ed.guardStrong ? 1 - ed.guardStrong / 100 : .5; def.guard = 0 }
   dmg = mod.fixedDamage ?? (Math.max(1, Math.round(dmg)) + (mod.stored || 0))
   if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) { def.recapShielded = (def.recapShielded || 0) + s2; pasNote(def, 'SHIELD') } }
@@ -498,6 +504,13 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (ed.bigHitHeal && dmg > def.max * .2 && def.hp > 0) healHP(def, Math.round(def.max * ed.bigHitHeal / 100))
   if (kind !== 'redirect' && ea.recoil) att.hp = Math.max(1, att.hp - Math.round(att.max * ea.recoil / 100))
   // knockouts, with survive / revive passives
+  if (def.hp === 0 && !def.ko && def.encounterPhase && D) {
+    def.encounterPhase = false
+    def.hp = Math.max(1, Math.round(def.max * .35))
+    def.rage = (def.rage || 0) + 25
+    D.gauge = GAUGE_MAX
+    pasNote(def, 'FINAL STAND · ULTIMATE READY')
+  }
   if (def.hp === 0 && !def.ko) {
     const noSurvive = ea.noSurvive || mod.noSurvive
     if (noSurvive && (def.endure > 0 || def.revive > 0 || (ed.ablaze && !def.ablazeUsed))) { def.endure = 0; def.revive = 0; def.ablazeUsed = 1; pasNote(att, 'NO SECOND CHANCES') }
@@ -583,6 +596,14 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       pasNote(opening, 'CREW FOLLOW-UP · HEAL')
     }
   }
+  if (blocked && offensive && ed.queen && !def.ko && !att.ko && D && A) {
+    def.queenCharge = (def.queenCharge || 0) + 1
+    if (def.queenCharge >= 2) {
+      def.queenCharge = 0
+      hit(def, att, 200, def.ki, true, D, A, 'counter', true)
+      pasNote(def, 'BRACHIO LAUNCHERS · COUNTER')
+    } else pasNote(def, 'BRACHIO LAUNCHERS · 1/2')
+  }
   if (blocked && offensive && ed.crew === 'prayer' && !def.ko && D && A &&
       def.prayerTurn !== (D.formTurn || 0)) {
     def.prayerTurn = D.formTurn || 0
@@ -593,7 +614,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (flicker && !def.ko) def.flickerPierce = true
   if (ea.jackpot && !att.ko && rnd(A || D) < .12) { healHP(att, Math.round(att.max * .25)); pasNote(att, 'JACKPOT ROLL · +25% HP') }
   att.attacks++
-  return { dmg, crit, mu, hpDamage, ...(opening && hpDamage > 0 ? { usedOpening: true } : {}) }
+  return { dmg, crit, mu, hpDamage, ...(piercedGuard ? { piercedGuard } : {}), ...(opening && hpDamage > 0 ? { usedOpening: true } : {}) }
 }
 // returns a list of events for the UI to animate
 const COMBOS = [
@@ -1224,19 +1245,20 @@ const arenaImgs = () => ARENA_IMGS || (ARENA_IMGS = fetch('arenas-list.json', { 
 
 // ---------------- story ----------------
 const STAGES = [
-  { n: 1, name: 'Training Grounds', rating: 70, level: 1, coins: 1500, arena: 'dojo' },
-  { n: 2, name: 'Street Brawl', rating: 74, level: 1, coins: 2000, arena: 'city' },
-  { n: 3, name: 'Rival Academy', rating: 78, level: 2, coins: 2500, arena: 'forest' },
-  { n: 4, name: 'Tournament Prelims', rating: 81, level: 2, coins: 3000, arena: 'city' },
-  { n: 5, name: 'Villain Hideout', rating: 84, level: 3, coins: 4000, arena: 'domain', pack: 'standard' },
-  { n: 6, name: 'Shinobi War', rating: 86, level: 3, coins: 5000, arena: 'forest' },
-  { n: 7, name: 'Cursed Domain', rating: 88, level: 3, coins: 6000, arena: 'domain' },
-  { n: 8, name: 'Grand Line Showdown', rating: 90, level: 4, coins: 7500, arena: 'deck', pack: 'premium' },
-  { n: 9, name: 'Tournament of Power', rating: 93, level: 4, coins: 10000, arena: 'cosmos' },
-  { n: 10, name: 'Gods of Destruction', rating: 96, level: 5, coins: 15000, arena: 'cosmos', pack: 'premium' },
+  { n: 1, enemy: ['goku_base'], name: 'Training Grounds', rating: 70, level: 1, coins: 1500, arena: 'dojo' },
+  { n: 2, enemy: ['DENJI','POWER','AKI'], name: 'Street Brawl', rating: 74, level: 1, coins: 2000, arena: 'city' },
+  { n: 3, enemy: ['DEKU','BAKUGO','TODOROKI'], encounter: 'spar', name: 'Rival Academy', rating: 78, level: 2, coins: 2500, arena: 'forest' },
+  { n: 4, enemy: ['YUSUKE','HIEI','KURAMA','KUWABARA'], name: 'Tournament Prelims', rating: 81, level: 2, coins: 3000, arena: 'city' },
+  { n: 5, enemy: ['shigaraki_decay','dabi_blueflame'], name: 'Villain Hideout', rating: 84, level: 3, coins: 4000, arena: 'domain', pack: 'standard' },
+  { n: 6, enemy: ['MADARA','OBITO'], encounter: 'pressure', name: 'Shinobi War', rating: 86, level: 3, coins: 5000, arena: 'forest' },
+  { n: 7, enemy: ['uraume_frost','sukuna_vessel'], name: 'Cursed Domain', rating: 88, level: 3, coins: 6000, arena: 'domain' },
+  { n: 8, enemy: ['doflamingo_wave','katakuri_sweet_commander'], name: 'Grand Line Showdown', rating: 90, level: 4, coins: 7500, arena: 'deck', pack: 'premium' },
+  { n: 9, enemy: ['toppo_god_of_destruction','jiren_full_power'], name: 'Tournament of Power', rating: 93, level: 4, coins: 10000, arena: 'cosmos' },
+  { n: 10, enemy: ['BEERUS'], encounter: 'second-phase', name: 'Gods of Destruction', rating: 96, level: 5, coins: 15000, arena: 'cosmos', pack: 'premium' },
 ]
 function enemyTeam(stage) {
   if (stage.live) return stage.live.oppTeam
+  if (stage.enemy?.length) return campTeam(stage.enemy).map(key => X.BYKEY[key]).filter(Boolean)
   if (stage.team && stage.team.length) { const t = stage.team.map(k => X.BYKEY[k]).filter(Boolean); if (t.length) return t.slice(0, 6) }
   const pool = X.POOL.slice().sort((a, b) => Math.abs(a.ovr - stage.rating) - Math.abs(b.ovr - stage.rating))
   const near = pool.slice(0, Math.max(14, Math.round(pool.length * .25)))
@@ -1246,11 +1268,11 @@ function enemyTeam(stage) {
 
 let MODE = 'camp'
 const mastL = k => { const x = (X.P.mast || {})[k] || 0, T = X.ST().mastT || [0, 60, 180, 400, 750]; return T.filter(t => x >= t).length - 1 }
-function teamFrom(main, rating) {
-  const used = new Set(main.map(c => c.key)), out = main.slice(0, 6)
-  const rest = X.POOL.filter(c => !used.has(c.key)).sort((a, b) => Math.abs(a.ovr - rating) - Math.abs(b.ovr - rating))
-  while (out.length < 6 && rest.length) out.push(rest.splice(Math.floor(Math.random() * Math.min(10, rest.length)), 1)[0])
-  return out.map(c => c.key)
+function eventTeam(pool, difficulty) {
+  const distinct = [...new Map(pool.slice().reverse().map(card => [card.name, card])).values()].reverse()
+  const sizes = [3, 4, 6]
+  const start = Math.min(Math.max(0, distinct.length - sizes[difficulty]), [4, 2, 0][difficulty])
+  return distinct.slice(start, start + sizes[difficulty]).map(card => card.key)
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
@@ -1431,6 +1453,18 @@ function campTeam(specs) {
   for (const sp of specs) { const [n, o] = sp.split('#'), list = X.POOL.filter(c => (c.name === n || c.id === n) && !used.has(c.key)).sort((a, b) => b.ovr - a.ovr), c = (o && list.find(x => x.ovr === +o)) || list[0]; if (c) { used.add(c.key); out.push(c.key) } }
   return out
 }
+const ENCOUNTER_HINTS = {
+  spar: 'Lower the opponent to 50% HP to win the spar.',
+  'ring-out': 'Lower the opponent to 25% HP to force a ring-out.',
+  'hold-out': 'Survive three enemy turns or win by KO.',
+  'second-phase': 'The lead returns at 35% HP with a full Ultimate gauge.',
+  'break-guard': 'The enemy renews Guard each turn.',
+  'guard-school': 'Open with Guard to weather the first exchange.',
+  pressure: 'The enemy gains 40% Ultimate gauge on even rounds.',
+  relay: 'Switching gives the incoming fighter a 20% HP shield.',
+  duet: 'The enemy lead gets a shield while its partner stands.',
+  ifrit: 'Sanji gains 35% damage after surviving below half HP.',
+}
 const CHARD = {}
 let DZSEL = null
 // ================= LIVE PVP LOBBY =================
@@ -1477,7 +1511,7 @@ function redzonePage(el, ok) {
       <div class="rz-weak"><b>WEAK TO</b>${st.weak.map(t => `<span>${rzTag(t)} +${st.weakB}%</span>`).join('')}<i>Everyone else −${st.resist}% damage</i></div>
       <p class="rz-tip">💡 ${st.tip}</p><p class="rz-rw">🎁 First clear: ${rw}</p></div>`)
     const acts = h('div', 'rz-acts'), go = h('button', 'btn gold', open ? (clr ? 'REPLAY' : '💀 ENTER') : '🔒 LOCKED'); go.disabled = !ok || !open
-    go.onclick = () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
+    go.onclick = () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, encounter: st.encounter, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
     acts.append(go, cxBtn(() => team.map(k => X.BYKEY[k]), 'DZ-' + st.n + ' · ' + st.name)); box.querySelector('.rz-body').append(acts); el.append(box)
   }
 }
@@ -1489,7 +1523,7 @@ function villainPage(el, ok) {
   const list = h('div', 'camp-list')
   for (const st of V.stages) {
     const s = C.stars[st.n] || 0, open = st.n === 1 || (C.stars[st.n - 1] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
-    const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>V-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${st.enemy.map(name => cardById(name)?.name || name).join(', ')}</em>${st.hint ? '<small>' + st.hint + '</small>' : ''}</span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
+    const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>V-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${st.enemy.map(name => cardById(name)?.name || name).join(', ')}</em>${(st.hint || ENCOUNTER_HINTS[st.encounter]) ? '<small>' + (st.hint || ENCOUNTER_HINTS[st.encounter]) + '</small>' : ''}</span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
     row.disabled = !ok || !open
     row.onclick = () => scene(st.scene, 'V-' + st.n + ' · ' + st.name, foe && foe.url, () => {
       try { sessionStorage.setItem('vOutro', JSON.stringify({ s: st.n, had: s > 0 })) } catch { }
@@ -1502,7 +1536,7 @@ function villainPage(el, ok) {
 const fmtT = ms => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? h + 'h ' + m + 'm' : m + 'm ' + (s % 60) + 's' }
 function riftTeam(R) {
   const inv = campTeam([R.invader]), used = new Set(inv)
-  const locals = X.POOL.filter(c => c.anime === R.world && !used.has(c.key)).sort((a, b) => ((b.cat || []).includes('Villains') - (a.cat || []).includes('Villains')) || b.ovr - a.ovr)
+  const locals = X.POOL.filter(c => c.anime === R.world && c.cat?.includes('Villains') && !used.has(c.key)).sort((a, b) => ((b.cat || []).includes('Villains') - (a.cat || []).includes('Villains')) || b.ovr - a.ovr)
   const out = inv.slice(); for (const c of locals) { if (out.length >= 6) break; if (!out.some(k => X.BYKEY[k].name === c.name)) out.push(c.key) }
   return out
 }
@@ -1536,7 +1570,7 @@ function campPage(el, ok) {
     const list = h('div', 'camp-list')
     ch.stages.forEach(st => {
       const key = (hard ? 'H' : '') + ch.id + ':' + st.n, s = C.stars[key] || 0, open = hard ? (st.n === 1 || (C.stars['H' + ch.id + ':' + (st.n - 1)] || 0) > 0) : st.n === 1 ? unlocked : (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
-      const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${[...new Set(st.enemy.map(x => cardById(x)?.name || x.split('#')[0]))].join(', ')}</em>${st.hint ? '<small>' + st.hint + '</small>' : ''}</span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
+      const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${[...new Set(st.enemy.map(x => cardById(x)?.name || x.split('#')[0]))].join(', ')}</em>${(st.hint || ENCOUNTER_HINTS[st.encounter]) ? '<small>' + (st.hint || ENCOUNTER_HINTS[st.encounter]) + '</small>' : ''}</span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
       row.disabled = !ok || !open
       row.dataset.campStage = key
       { const cb = cxBtn(() => campTeam(st.enemy).map(k => X.BYKEY[k]), ch.id + '-' + st.n + ' · ' + st.name); cb.classList.add('cx-on-row'); const wrap = h('div', 'cx-wrap'); wrap.append(row, cb); list.append(wrap) }
@@ -1553,7 +1587,7 @@ function campPage(el, ok) {
       })
       row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
         try { sessionStorage.setItem('campOutro', JSON.stringify({ c: ch.id, s: st.n, had: s > 0 })) } catch { }
-        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: hard || st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: (st.boss ? 1.25 : 1 + st.n * .03) + (ch.id - 1) * .06 + (hard ? .35 : 0), team: campTeam(st.enemy), chapterRule: st.rule, playerTeam: st.rule ? campaignLineup(st) : undefined, nextFight })
+        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: hard || st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: (st.boss ? 1.25 : 1 + st.n * .03) + (ch.id - 1) * .06 + (hard ? .35 : 0), team: campTeam(st.enemy), encounter: st.encounter, chapterRule: st.rule, playerTeam: (st.rule || st.guest) ? campaignLineup(st) : undefined, nextFight })
       })
     })
     el.append(list)
@@ -1588,6 +1622,7 @@ function storyArcPage(el, arc, cast, done) {
   const list = h('div', 'camp-list')
   arc.chapters.forEach((chapter, i) => {
     const players = [chapter.player].flat().map(id => cast.get(id)), enemy = cast.get(chapter.enemy)
+    if (chapter.lockedKit) players[0] = rivalryLead(players[0], { kit: chapter.lockedKit, form: chapter.lockedForm }, X.POOL)
     const label = `Chapter ${i + 1} · ${chapter.name}`
     const start = withStory => {
       const nextChapter = () => {
@@ -1602,7 +1637,7 @@ function storyArcPage(el, arc, cast, done) {
       else fight()
     }
     const row = h('div', 'camp-st' + (i < done ? ' done' : '') + (i > done ? ' locked' : ''),
-      `<span class="cs-art" style="background-image:url('${enemy.url}')"></span><span class="cs-tx"><small>${label}</small><b>${players.map(c => c.name).join(' & ')} vs. ${enemy.name}</b><small>${chapter.matchup}</small></span>`)
+      `<span class="cs-art" style="background-image:url('${enemy.url}')"></span><span class="cs-tx"><small>${label}</small><b>${players.map(c => c.name).join(' & ')} vs. ${enemy.name}</b><small>${chapter.matchup} ${ENCOUNTER_HINTS[chapter.encounter] || ''}</small></span>`)
     const play = h('button', 'btn gold sm', i < done ? 'REPLAY STORY' : i === done ? 'CONTINUE STORY' : 'LOCKED')
     play.disabled = i > done
     play.dataset.arcChapter = i
@@ -1649,8 +1684,8 @@ function eventPage(el, ok) {
   const list = h('div', 'stages')
   E.tiers.forEach((T, i) => {
     const done = E.done[i], r = h('button', 'stage' + (done ? ' done' : ''))
-    r.innerHTML = `<span class="sn">${['I', 'II', 'III'][i]}</span><div class="si"><b>${T.name}</b><small>AI level ${T.level}${T.boost > 1 ? ' · +' + Math.round((T.boost - 1) * 100) + '% enemy HP' : ''}</small></div><div class="sr">${done ? '<em>DONE TODAY</em>' : ''}<span><i class="coin-i"></i>${(done ? 200 : T.coins).toLocaleString()}</span>${T.pack && !done ? `<span class="pk">+ ${X.ST().packs[E.pack].name.toUpperCase()}</span>` : ''}</div>`
-    r.disabled = !ok; r.onclick = () => go2({ mode: 'event', id: i, label: X.ANAME(E.anime) + ' Week · ' + T.name, name: T.name, level: T.level, boost: T.boost, team: teamFrom(pool.slice(), 82 + i * 6) })
+    r.innerHTML = `<span class="sn">${['I', 'II', 'III'][i]}</span><div class="si"><b>${T.name}</b><small>${[3, 4, 6][i]}-fighter format · AI level ${T.level}${T.boost > 1 ? ' · +' + Math.round((T.boost - 1) * 100) + '% enemy HP' : ''}</small></div><div class="sr">${done ? '<em>DONE TODAY</em>' : ''}<span><i class="coin-i"></i>${(done ? 200 : T.coins).toLocaleString()}</span>${T.pack && !done ? `<span class="pk">+ ${X.ST().packs[E.pack].name.toUpperCase()}</span>` : ''}</div>`
+    r.disabled = !ok; r.onclick = () => go2({ mode: 'event', id: i, label: X.ANAME(E.anime) + ' Week · ' + T.name, name: T.name, level: T.level, boost: T.boost, team: eventTeam(pool, i) })
     list.append(r)
   })
   el.append(list)
@@ -1869,7 +1904,8 @@ export function startBattle(stage) {
   const { h, cardImg, eff, BYKEY, P } = X
   const LV = stage.live || null
   const yours = LV ? LV.myTeam : stage.storyTeam ? stage.storyTeam.map(k => BYKEY[k]) : (stage.playerTeam || P.team).filter(Boolean).map((k, i) => (stage.rivalry || stage.rival || !P.club.cards[k]) && i === 0 ? BYKEY[k] : eff(BYKEY[k])).filter(Boolean)
-  if (stage.rivalrySetup?.kit && yours[0]) yours[0] = rivalryLead(yours[0], stage.rivalrySetup, X.POOL)
+  const lockedKit = stage.rivalrySetup || (stage.lockedKit && { kit: stage.lockedKit, form: stage.lockedForm })
+  if (lockedKit?.kit && yours[0]) yours[0] = rivalryLead(yours[0], lockedKit, X.POOL)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
   const turningPoints = createTurningPoints()
@@ -1930,7 +1966,13 @@ export function startBattle(stage) {
   }
   if (stage.rival === 'baryon') B.you.gauge = GAUGE_MAX
   if (stage.rival === 'flame') act(B.ai).rivalFlame = true
-  if (stage.chapterRule === 'open-guard') act(B.ai).guard = 1
+  if (stage.chapterRule === 'open-guard' || stage.encounter === 'break-guard') act(B.ai).guard = 1
+  if (stage.chapterRule === 'king-flame') act(B.ai).rivalFlame = true
+  if (stage.encounter === 'second-phase') act(B.ai).encounterPhase = true
+  if (stage.encounter === 'guard-school') {
+    B.ai.gauge = 35
+    B.you.hand = ['guard', 'strike', 'blast', 'special']
+  }
   if (stage.chapterRule === 'open-survive') B.ai.gauge = GAUGE_MAX
   if (stage.rival === 'overload') B.you.gauge = 70
   for (const side of [B.you, B.ai]) for (const f of side.team) f.startingMax = f.max
@@ -2342,10 +2384,22 @@ export function startBattle(stage) {
     if (ev.swap) { log('Enemy switched fighters'); sfx('bswitch'); draw(); await wait(500); return }
     const side = ev.who, other = side === 'you' ? 'ai' : 'you'
     const atk = $a(`.ar-side.${side} .ar-active`)
+    if (stage.encounter === 'ifrit' && side === 'ai') {
+      const sanji = act(B.you)
+      if (!sanji.ko && !sanji.ifritIgnited && sanji.hp <= sanji.max / 2) {
+        sanji.ifritIgnited = true
+        log('IFRIT JAMBE · Sanji now deals 35% more damage.')
+        turnBanner('IFRIT IGNITES', true)
+      }
+    }
     if (stage.chapterRule === 'crew' && side === 'you' && ev.hits.some(hit => hit.usedOpening)) {
       const active = act(B.you)
       active.shieldHp = Math.max(active.shieldHp, Math.round(active.max * .15))
       log('STRAW HAT FOLLOW-UP · Another boat crosses.')
+    }
+    if (stage.chapterRule === 'open-guard' && side === 'you' && ev.hits.some(hit => hit.piercedGuard && hit.dmg > 0)) {
+      B.you.raidOpening = true
+      log('RAID OPENING · Guard broken.')
     }
     if (stage.chapterRule === 'open-survive' && side === 'ai' && ev.art === 'ultimate' &&
         ev.hits.some(hit => hit.hpDamage > 0 && !hit.t.ko)) {
@@ -2360,10 +2414,18 @@ export function startBattle(stage) {
         prayer: lead.card.id === stage.rivalrySetup?.lead && ev.prayerSpent === 3,
         flame: lead.card.id === 'zoro_asura' && ev.art === 'ultimate' && !act(B.ai).rivalFlame,
         overload: lead.card.id === 'all_might_united_states_smash' && ev.art === 'ultimate' && B.overloadSurvived,
-        baryon: lead.card.id === 'baryon_isshiki' && B.turn <= 2,
+        baryon: (lead.card.baseId || lead.card.id) === stage.rivalrySetup?.lead && B.turn <= 2,
       }[stage.rival]
     }
     if (ev.tactic) { log(`${act(B[side]).card.name} · ${ARTS[ev.art].name}`); floatTag(atk, ev.tactic, 'adv'); sfx(ev.art === 'heal' ? 'heal' : 'bguard'); await wait(450); draw(); return }
+    const target = act(B.ai)
+    const objectiveHP = stage.encounter === 'spar' ? .5 : stage.encounter === 'ring-out' ? .25 : 0
+    if (side === 'you' && objectiveHP && target === B.ai.team[0] &&
+        target.hp <= target.max * objectiveHP && !act(B.you).ko) {
+      log(stage.encounter === 'ring-out' ? 'RING OUT · The passage is clear.' : 'SPAR WON · The opponent stands down.')
+      await wait(450)
+      return end(true)
+    }
     if (!stage.rival && ev.hits.length && !ev.rivalHakai && !unwritten(act(B.ai)) && side === 'ai' && (ev.art === 'special' || ev.art === 'ultimate')) await maybeClash(ev)
     else if (!stage.rival && !unwritten(act(B.you)) && ev.hits.length && side === 'you' && ev.art === 'ultimate') await aiClash(ev)
     if (ev.guard) { log(`${act(B[side]).card.name} braces · GUARD`); sfx('bguard'); atk.classList.add('guarding'); await wait(450); atk.classList.remove('guarding'); draw(); return }
@@ -2443,7 +2505,7 @@ export function startBattle(stage) {
   async function doArt(i) {
     if (B.busy || B.over) return
     B.busy = true; controls()
-    const art = B.you.hand[i], enemy = act(B.ai), openGuard = stage.chapterRule === 'open-guard' && enemy.guard
+    const art = B.you.hand[i]
     const predicted = stage.chapterRule === 'forecast' && B.calledArt === art && !unwritten(act(B.you))
     B.you.courtRepeat = stage.chapterRule === 'repeat' && B.previousArt === art && !unwritten(act(B.you))
     const ev = playArt(B, 'you', i)
@@ -2454,10 +2516,6 @@ export function startBattle(stage) {
       B.ai.ki = Math.min(KI_MAX, B.ai.ki + 2)
       B.ai.gauge = Math.min(GAUGE_MAX, B.ai.gauge + 20)
       log('FORECAST FULFILLED · Enemy gains 2 Energy and 20% gauge.')
-    }
-    if (ev && openGuard && ev.hits.some(hit => hit.dmg > 0)) {
-      B.you.raidOpening = true
-      log('RAID OPENING · Guard broken.')
     }
     if (ev) { lvSend({ t: 'art', i }); await show(ev) }
     B.busy = false; if (!B.over) controls()
@@ -2473,7 +2531,7 @@ export function startBattle(stage) {
       B.you.raidOpening = true
       log('RAID OPENING · The new fighter has a clear shot.')
     }
-    if (stage.chapterRule === 'relay') {
+    if (stage.chapterRule === 'relay' || stage.encounter === 'relay') {
       const ally = act(B.you)
       ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * .2))
       log('CROSSING REINFORCED · Incoming ally shielded.')
@@ -2571,7 +2629,17 @@ export function startBattle(stage) {
     B.busy = true; controls()
     const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN + (s.kiBonus || 0)); refill(s); s.switched = false; s.seq = []; startTurn(s); if (B.over) return; act(B.you).fort = 0
     if (!unwritten(act(s)) && (s.skip || act(s).frozen)) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); if (B.over) return; B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
-    if (stage.chapterRule === 'open-guard') act(s).guard = 1
+    if (stage.chapterRule === 'open-guard' || stage.encounter === 'break-guard') act(s).guard = 1
+    if (stage.encounter === 'pressure' && B.turn % 2 === 0) {
+      s.gauge = Math.min(GAUGE_MAX, s.gauge + 40)
+      log('PRESSURE · The enemy gains 40% Ultimate gauge.')
+    }
+    if (stage.encounter === 'hold-out' && B.turn % 2 === 0) s.gauge = Math.min(GAUGE_MAX, s.gauge + 30)
+    if ((stage.chapterRule === 'emperor-cover' || stage.encounter === 'duet') && alive(s).length > 1) {
+      const active = act(s)
+      active.shieldHp = Math.max(active.shieldHp, Math.round(active.max * .12))
+      log('PARTNER COVER · The enemy lead is shielded.')
+    }
     if (stage.chapterRule === 'open-survive' && !B.you.raidOpening && B.turn % 3 === 0) s.gauge = GAUGE_MAX
     if (stage.chapterRule === 'transfer' && act(s).card.id === 'all_for_one_quirk_overload') {
       if (!act(s).frozen) { act(s).rage = Math.min(45, (act(s).rage || 0) + 15); log('QUIRK TRANSFER · All For One gains damage.') }
@@ -2606,6 +2674,10 @@ export function startBattle(stage) {
     autoTagPartner(act(B.ai), B.turn)
     flushPas()
     for (const ev of aiTurn(B, stage.mode === 'ranked' && (stage.rating || 0) >= 80 ? 5 : stage.level)) { if (B.over) return; await show(ev); if (B.over) return }
+    if (stage.encounter === 'hold-out' && B.turn >= 3 && !sweepKO()) {
+      log('HOLDOUT COMPLETE · You bought enough time.')
+      return end(true)
+    }
     if (!unwritten(act(B.you)) && (B.you.skip || act(B.you).frozen)) { B.you.skip = 0; act(B.you).frozen = 0; log('You lose your turn!'); turnBanner('TIME STOPPED', true); await wait(900); B.turn++; return aiPhase() }
     B.turn++
     if (B.over || sweepKO()) return
@@ -2684,7 +2756,7 @@ export function startBattle(stage) {
     }
     if (stage.chapterRule === 'reversal' && act(B.ai).card.id === 'shibai' && B.turn % 3 === 0)
       turnBanner('SHINJUTSU REVERSAL INCOMING', false)
-    if (stage.rival === 'flame') {
+    if (stage.rival === 'flame' || stage.chapterRule === 'king-flame') {
       const king = act(B.ai)
       king.rivalFlame = B.turn % 2 === 1
       log(king.rivalFlame ? 'KING · FLAME ON · Reduced damage taken.' : 'KING · FLAME OFF · Dead Man’s Game can finish Mastery.')

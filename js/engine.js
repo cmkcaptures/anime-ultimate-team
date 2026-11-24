@@ -1,4 +1,4 @@
-import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=1'
+import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=3'
 import { RIVALRY_TITLE } from './rivalry.js?v=last-door-1'
 import { spendableCopies } from './qol.js?v=qol-1'
 import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war.js?v=qol-1'
@@ -270,7 +270,7 @@ function achList() {
     { id: 'story', g: 'BATTLE', name: 'Story Complete', d: 'Clear all 10 story stages', p: B.cleared || 0, need: 10, rw: { coins: 5000 } },
     { id: 'tower25', g: 'BATTLE', name: 'Halfway Up', d: 'Clear Tower floor 25', p: (P.tower && P.tower.best) || 0, need: 25, rw: { coins: 6000, shards: 300 } },
     { id: 'tower50', g: 'BATTLE', name: 'Top of the Tower', d: 'Clear Tower floor 50', p: (P.tower && P.tower.best) || 0, need: 50, rw: { coins: 25000, title: 'Tower Master' } },
-    { id: 'arcs', g: 'BATTLE', name: 'Arc Hunter', d: 'Complete 3 Story Arcs', p: Object.entries(P.arcs || {}).filter(([id, count]) => count >= 3 && !ARCS.some(a => a.id === id && a.chapters.length > 3)).length >= 5 ? 3 : ARCS.filter(arc => arcCleared(P, arc)).length, need: 3, rw: { coins: 12000, title: 'Arc Hunter' } },
+    { id: 'arcs', g: 'BATTLE', name: 'Arc Hunter', d: 'Complete 3 Story Arcs', p: ARCS.filter(arc => arcCleared(P, arc)).length, need: 3, rw: { coins: 12000, title: 'Arc Hunter' } },
     { id: 'diamond', g: 'BATTLE', name: 'Diamond Hands', d: 'Reach Diamond in Ranked', p: P.rank ? P.rank.best : 0, need: 4, rw: { coins: 10000, title: 'Diamond' } },
     { id: 'legend', g: 'BATTLE', name: 'Living Legend', d: 'Reach Legend in Ranked', p: P.rank ? P.rank.best : 0, need: 6, rw: { coins: 30000, title: 'Legend' } },
     { id: 'boss100k', g: 'BATTLE', name: 'Boss Breaker', d: 'Deal 100,000 damage to a Daily Boss in one fight', p: Math.max(P.bossBestEver || 0, (P.boss && P.boss.best) || 0), need: 100000, rw: { coins: 8000, title: 'Boss Breaker' } },
@@ -378,7 +378,7 @@ const AWK_SH = { C: 60, U: 100, R: 160, E: 260, L: 420, M: 700, X: 1100 }
 const CAMPAIGN = [
   { id: 1, name: 'The Worlds Collide', sub: 'Chapter 1 · Attack on Titan × Naruto', boss: 'Mythic/eren founding titan.jpg', stages: [
     { n: 1, name: 'The Sky Breaks', rating: 72, coins: 1000,
-      enemy: ['REINER', 'BERTHOLDT', 'ANNIE', 'FALCO', 'ZEKE#81', 'LARA TYBUR'],
+      enemy: ['REINER', 'BERTHOLDT', 'ANNIE', 'ZEKE#81'],
       scene: [
         ['ARMIN', 'Captain. The sky over Shiganshina... it\'s cracking. Like a pane of glass.'],
         ['LEVI', 'Glass doesn\'t bleed smoke. Something\'s coming through.'],
@@ -391,7 +391,7 @@ const CAMPAIGN = [
         ['MIKASA', 'Eren. You haven\'t said a word.'],
         ['EREN', '...I\'ve seen this sky before. In someone else\'s memories.']] },
     { n: 2, name: 'Strangers in the Smoke', rating: 76, coins: 1500,
-      enemy: ['NARUTO#83', 'SASUKE#83', 'KAKASHI', 'JIRAIYA', 'MIGHT GUY', 'NARUTO#69'],
+      enemy: ['NARUTO#83', 'SASUKE#83', 'KAKASHI', 'JIRAIYA', 'MIGHT GUY'], encounter: 'spar',
       scene: [
         ['NARUTO', 'Ugh... Kakashi-sensei? Where\'s the village? Where\'s ANYTHING?'],
         ['KAKASHI', 'Stay sharp. That rift felt like Kamui. Someone pulled us here on purpose.'],
@@ -406,7 +406,7 @@ const CAMPAIGN = [
         ['NARUTO', 'So we\'re a team! Believe it!'],
         ['LEVI', 'Don\'t push it.']] },
     { n: 3, name: 'The Man Behind the Mask', rating: 80, coins: 2000,
-      enemy: ['OBITO#85', 'REINER', 'ANNIE', 'BERTHOLDT', 'FALCO', 'OBITO#77'],
+      enemy: ['OBITO#77', 'REINER'],
       scene: [
         ['KAKASHI', 'There. The air\'s twisting again. I\'d know that technique anywhere.'],
         ['OBITO', 'Kakashi. You followed me across worlds. Still chasing the past.'],
@@ -420,7 +420,7 @@ const CAMPAIGN = [
         ['EREN', '...The Founding Titan.'],
         ['MIKASA', 'Eren, how do you know that\'s what he means?']] },
     { n: 4, name: 'Red Clouds Over Paradis', rating: 84, coins: 2500,
-      enemy: ['PAIN', 'ITACHI#87', 'OBITO#77', 'MADARA#78', 'ITACHI#83', 'OBITO#85'],
+      enemy: ['PAIN', 'itachi_mangekyo', 'OBITO#85'],
       scene: [
         ['PAIN', 'Shinobi and soldiers standing side by side. Pain has a way of uniting people.'],
         ['JIRAIYA', 'Nagato. Still hiding behind those eyes.'],
@@ -434,7 +434,7 @@ const CAMPAIGN = [
         ['ITACHI', 'Not with their hands. With their memories. Watch the one who stays quiet.'],
         ['MIKASA', '...Eren?']] },
     { n: 5, name: 'The Beast\'s Bargain', rating: 88, coins: 3000,
-      enemy: ['ZEKE#88', 'MADARA#94', 'YMIR & ZEKE', 'OBITO#93', 'ZEKE#81', 'LARA TYBUR'],
+      enemy: ['ZEKE#88', 'madara_ten_tails'],
       scene: [
         ['ZEKE', 'Madara and I want the same thing. No more children born just to be fed to war.'],
         ['MADARA', 'The Infinite Tsukuyomi, poured through your Paths. Every living soul dreaming in peace. Forever.'],
@@ -448,7 +448,7 @@ const CAMPAIGN = [
         ['EREN', 'I\'m sorry, Armin. I saw all of this, every path. I needed them to tear the sky open.'],
         ['EREN', 'Madara\'s eyes. Zeke\'s blood. Obito\'s door. All of it leads to me.']] },
     { n: 6, name: 'BOSS · Freedom', boss: 1, rating: 92, coins: 5000,
-      enemy: ['EREN#94', 'ZEKE#88', 'MADARA#94', 'OBITO#93', 'EREN#87', 'ERWIN'],
+      enemy: ['EREN#94', 'ZEKE#88', 'madara_ten_tails'],
       scene: [
         ['EREN', 'Two worlds. Two endless wars. I can end both of them, and I\'m the only one who can.'],
         ['LEVI', 'Erwin... even you? He\'s dragging the dead along on puppet strings.'],
@@ -464,7 +464,7 @@ const CAMPAIGN = [
   ] },
   { id: 2, name: 'The Leaf Trembles', sub: 'Chapter 2 · Naruto × Attack on Titan', boss: 'Story/2c088316237c31915117f8d596539829.jpg', stages: [
     { n: 1, name: 'Footsteps in the Leaf', rating: 0, coins: 1500,
-      enemy: ['EREN#94', 'EREN#87', 'BERTHOLDT', 'EREN#68', 'EREN#67', 'REINER'],
+      enemy: ['EREN#94', 'REINER', 'BERTHOLDT'],
       scene: [
         ['MINATO', 'The ground hasn\'t stopped shaking since dawn. Something enormous is walking through the Forest of Death.'],
         ['MIGHT GUY', 'Walls. Walls with faces. And they are walking towards Konoha!'],
@@ -476,7 +476,7 @@ const CAMPAIGN = [
         ['MIKASA', 'He didn\'t even look at me.'],
         ['KAKASHI', 'He\'s not marching on Konoha. Look at the path. He\'s heading for the old valley. Where the God Tree once stood.']] },
     { n: 2, name: 'The Uchiha Gambit', rating: 0, coins: 1800,
-      enemy: ['SASUKE', 'ITACHI#87', 'ITACHI#83', 'SHISUI'],
+      enemy: ['SASUKE', 'itachi_mangekyo', 'SHISUI'], encounter: 'spar',
       scene: [
         ['SASUKE', 'We end this quietly. Shisui\'s eye, one genjutsu, and Eren stops walking.'],
         ['ITACHI', 'Kotoamatsukami would rewrite his will. It would also take away the only thing he has left that is his own.'],
@@ -488,7 +488,7 @@ const CAMPAIGN = [
         ['ITACHI', 'Forgive me. I keep trying to protect people by deciding for them.'],
         ['SASUKE', '...Fine. We do it your way, idiot. But if it fails, I won\'t hesitate.']] },
     { n: 3, name: 'The Tree Remembers', rating: 0, coins: 2200,
-      enemy: ['MADARA#94', 'OBITO#93', 'MADARA#78', 'OBITO#85', 'ZEKE#88'],
+      enemy: ['madara_ten_tails', 'obito_six_paths'],
       scene: [
         ['HAGOROMO', 'Children of two worlds, listen. Long ago, a single tree took root. Its seeds fell in more than one place.'],
         ['ARMIN', 'The source of all living things. Ymir touched it in the forest. That\'s where the Titans came from.'],
@@ -500,7 +500,7 @@ const CAMPAIGN = [
         ['MADARA', 'Impossible. Nothing should be left on the other side.'],
         ['HAGOROMO', '...Mother.']] },
     { n: 4, name: 'Mother of All Chakra', rating: 0, coins: 2600,
-      enemy: ['KAGUYA#94', 'MADARA#94', 'OBITO#93', 'ZEKE#88', 'HAGOROMO'],
+      enemy: ['KAGUYA#94'],
       scene: [
         ['KAGUYA', 'All this noise. Footsteps that shake the earth, a voice crying through the Paths. You woke me.'],
         ['NARUTO', 'Kaguya?! We sealed you!'],
@@ -512,7 +512,7 @@ const CAMPAIGN = [
         ['ARMIN', 'If she gets the Founding Titan, she gets every Titan and every Eldian alive.'],
         ['MIKASA', 'Then we reach Eren first.']] },
     { n: 5, name: 'Two Founders', rating: 0, coins: 3000,
-      enemy: ['YMIR', 'YMIR & ZEKE', 'REINER', 'ANNIE', 'LARA TYBUR', 'ZEKE#81'],
+      enemy: ['YMIR', 'ZEKE#81'],
       scene: [
         ['YMIR', 'She is pulling us. I can feel her hands on the Paths.'],
         ['REINER', 'My body won\'t listen. Get away from me, all of you!'],
@@ -525,7 +525,7 @@ const CAMPAIGN = [
         ['NARUTO', 'Then stop running and fight with us. That\'s the one path you never tried.'],
         ['EREN', '...Yeah. Let\'s end her.']] },
     { n: 6, name: 'BOSS · The Progenitor', boss: 1, rating: 0, coins: 5000,
-      enemy: ['KAGUYA', 'MADARA#94', 'OBITO#93', 'ZEKE#88', 'YMIR'],
+      enemy: ['KAGUYA', 'YMIR'],
       scene: [
         ['KAGUYA', 'Two Founders. Two worlds. One root. Everything returns to me.'],
         ['EREN', 'Not this time. I stopped the Rumbling. Every step of it ends with you.'],
@@ -539,7 +539,7 @@ const CAMPAIGN = [
   ] },
   { id: 3, name: 'Gods of Destruction', sub: 'Chapter 3 · Dragon Ball', boss: 'Story/e51d1520ff0dc755ba7f4d396c1f2542.jpg', stages: [
     { n: 1, name: 'A Bored God', rating: 0, coins: 2000,
-      enemy: ['BEERUS', 'GOKU BLACK#88', 'BROLY', 'JIREN'],
+      enemy: ['BEERUS'], encounter: 'spar',
       scene: [
         ['GOKU', 'Hey Vegeta, did you feel that? It\'s like the whole sky just hiccupped.'],
         ['VEGETA', 'Of course I felt it. That rift dumped a forest and three Titans into my wife\'s garden.'],
@@ -551,7 +551,7 @@ const CAMPAIGN = [
         ['GOKU', 'Deal! ...Uh, how do we find them?'],
         ['VEGETA', 'Follow the biggest, angriest power level. That\'s always how it works.']] },
     { n: 2, name: 'The Legendary Rift', rating: 0, coins: 2400,
-      enemy: ['BROLY', 'JIREN', 'GOKU BLACK#88', 'BROLY'],
+      enemy: ['BROLY', 'JIREN'],
       scene: [
         ['GOHAN', 'Dad! A rift opened right over the wasteland. Something came through screaming!'],
         ['BROLY', 'KAKAROT!'],
@@ -562,7 +562,7 @@ const CAMPAIGN = [
         ['GOKU', 'Someone\'s using the rifts like doors. On purpose.'],
         ['GOHAN', 'Then where does the door lead from?']] },
     { n: 3, name: 'Rose in the Ashes', rating: 0, coins: 2800,
-      enemy: ['GOKU BLACK#88', 'GOKU BLACK', 'BROLY', 'JIREN'],
+      enemy: ['GOKU BLACK#88'],
       scene: [
         ['GOKU BLACK', 'Son Goku. We meet again, in a world even more broken than the last one.'],
         ['GOKU', 'Black?! We beat you!'],
@@ -573,7 +573,7 @@ const CAMPAIGN = [
         ['GOKU BLACK', 'It said mortals had ruined enough worlds. I agreed.'],
         ['GOKU', 'Then we take that key off you.']] },
     { n: 4, name: 'Fusion Dance', rating: 0, coins: 3200,
-      enemy: ['GOKU BLACK', 'BROLY', 'JIREN', 'BEERUS'],
+      enemy: ['BEERUS'], encounter: 'spar', guest: 'gogeta_super_saiyan_blue',
       scene: [
         ['BEERUS', 'Enough. If you mortals can\'t stop him, I will erase this world with him in it.'],
         ['VEGETA', 'You\'d kill everyone just to stop one man?'],
@@ -584,7 +584,7 @@ const CAMPAIGN = [
         ['GOGETA', 'Hmph. Two minds, one body, zero patience.'],
         ['BEERUS', '...Alright. That was entertaining. I\'ll hold off. For now.']] },
     { n: 5, name: 'The Key Between Worlds', rating: 0, coins: 3600,
-      enemy: ['GOKU BLACK', 'GOKU BLACK#88', 'BROLY', 'JIREN', 'BEERUS'],
+      enemy: ['GOKU BLACK'], encounter: 'break-guard',
       scene: [
         ['GOKU BLACK', 'Do you understand yet? Each world you save is another world for mortals to ruin.'],
         ['GOHAN', 'And who decided that? You? Or the voice?'],
@@ -595,7 +595,7 @@ const CAMPAIGN = [
         ['GOKU', 'Then why are you running?'],
         ['GOKU BLACK', 'I\'m not running. I\'m going ahead.']] },
     { n: 6, name: 'BOSS · Rift Walker', boss: 1, rating: 0, coins: 6000,
-      enemy: ['GOKU BLACK', 'BROLY', 'JIREN', 'BEERUS', 'GOKU BLACK#88'],
+      enemy: ['GOKU BLACK#88'], encounter: 'second-phase',
       scene: [
         ['GOKU BLACK', 'Behold. The power of every world I have walked through. Rosé, sharpened by a thousand rifts.'],
         ['GOKU', 'You talk too much.'],
@@ -620,7 +620,7 @@ const CAMPAIGN = [
         ['YUTA', 'Or someone. Strong cursed energy pulls them like moths.'],
         ['ITADORI', '...Sukuna.']] },
     { n: 2, name: 'Flame Hashira', rating: 0, coins: 2600,
-      enemy: ['RENGOKU', 'GIYU', 'SHINOBU', 'MITSURI', 'OBANAI', 'TENGEN'],
+      enemy: ['RENGOKU'], encounter: 'spar',
       scene: [
         ['RENGOKU', 'Jujutsu sorcerers! You hide a demon inside your own body?'],
         ['ITADORI', 'It\'s complicated. Sukuna\'s not a demon, he\'s a curse! There\'s a difference!'],
@@ -631,7 +631,7 @@ const CAMPAIGN = [
         ['SHINOBU', 'Then we have the same enemy. Good. That makes this much simpler.'],
         ['GOJO', '(walking in) Hey, hey. Did I miss the part where everyone teams up? I love that part.']] },
     { n: 3, name: 'Two Kings', rating: 0, coins: 3000,
-      enemy: ['SUKUNA', 'MUZAN', 'KOKUSHIBO', 'URAUME', 'GETO'],
+      enemy: ['SUKUNA', 'MUZAN'],
       scene: [
         ['SUKUNA', 'So. The coward who hides from the sun has come to my world.'],
         ['MUZAN', 'And the king of curses lives inside a child. How far you have fallen.'],
@@ -643,7 +643,7 @@ const CAMPAIGN = [
         ['YUTA', 'GOJO-SENSEI!'],
         ['TANJIRO', 'He\'s gone. They sealed him.']] },
     { n: 4, name: 'Without the Strongest', rating: 0, coins: 3400,
-      enemy: ['KOKUSHIBO', 'AKAZA', 'DOMA', 'MAHITO & NANAMI', 'GETO', 'URAUME'],
+      enemy: ['KOKUSHIBO', 'AKAZA', 'DOMA'],
       scene: [
         ['YUTA', 'Gojo-sensei isn\'t coming back this time. It\'s on us now.'],
         ['RENGOKU', 'Then we set our hearts ablaze! Every one of us!'],
@@ -654,7 +654,7 @@ const CAMPAIGN = [
         ['ITADORI', 'What are you talking about?'],
         ['URAUME', 'He\'s going to eat him. He\'s going to eat Sukuna.']] },
     { n: 5, name: 'The Betrayal', rating: 0, coins: 3800,
-      enemy: ['MUZAN', 'SUKUNA', 'KOKUSHIBO', 'AKAZA', 'DOMA'],
+      enemy: ['MUZAN', 'SUKUNA'],
       scene: [
         ['SUKUNA', 'Muzan. What do you think you are doing with that blood?'],
         ['MUZAN', 'The sun burns me. Curses don\'t burn. With your cursed energy, I become something the sun can\'t touch.'],
@@ -665,7 +665,7 @@ const CAMPAIGN = [
         ['TANJIRO', 'Letters? Who sent you letters, Muzan?!'],
         ['MUZAN', 'Every one was sealed with a sun. Ironic, don\'t you think?']] },
     { n: 6, name: 'BOSS · Demon King', boss: 1, rating: 0, coins: 6500,
-      enemy: ['MUZAN', 'KOKUSHIBO', 'AKAZA', 'DOMA', 'SUKUNA'],
+      enemy: ['MUZAN', 'KOKUSHIBO'], encounter: 'second-phase',
       scene: [
         ['MUZAN', 'Behold the Demon King. Cursed energy in my blood. The night will never end again.'],
         ['YUTA', 'Rika. Full strength. No holding back.'],
@@ -679,7 +679,7 @@ const CAMPAIGN = [
   ] },
   { id: 5, name: 'The Empty Throne', sub: 'Chapter 5 · One Piece · Every World Unites', boss: 'Story/Imu.jpg', stages: [
     { n: 1, name: 'Into the New World', rating: 0, coins: 2800,
-      enemy: ['AKAINU', 'KING', 'BLACKBEARD', 'ROCKS D. XEBEC'],
+      enemy: ['AKAINU', 'KIZARU', 'GARP'],
       scene: [
         ['LUFFY', 'Woah! There\'s a guy with a chainsaw dog and a dude made of blue fire on my ship!'],
         ['GOJO', 'Hi. We\'re here to punch a god. You seem like the type who\'d want in.'],
@@ -689,7 +689,7 @@ const CAMPAIGN = [
         ['LAW', 'The Marines didn\'t care about us. They were stalling. Guarding the road to Mary Geoise.'],
         ['NARUTO', 'Then that\'s where we go.']] },
     { n: 2, name: 'The Emperor\'s Bargain', rating: 0, coins: 3200,
-      enemy: ['BLACKBEARD', 'BIG MOM', 'KAIDO', 'KING'],
+      enemy: ['BLACKBEARD'],
       scene: [
         ['BLACKBEARD', 'Zehahaha! Heroes from every world, all lined up for me! Do you know what one of your powers is worth?'],
         ['SHANKS', 'Teach. You\'re selling to both sides again.'],
@@ -699,7 +699,7 @@ const CAMPAIGN = [
         ['BLACKBEARD', 'Working for them? No. I want the throne for myself. I\'ll let you weaken them first.'],
         ['SHANKS', 'Always the opportunist. Luffy, don\'t trust a word from him.']] },
     { n: 3, name: 'The Red Line', rating: 0, coins: 3600,
-      enemy: ['AKAINU', 'KING', 'BIG MOM', 'KAIDO', 'ROCKS D. XEBEC'],
+      enemy: ['ROCKS D. XEBEC'], encounter: 'pressure',
       scene: [
         ['EREN', 'I can feel it through the Paths. Something above the clouds, pulling every rift towards itself.'],
         ['GOKU', 'Yeah. And its power level is... weird. It\'s like it\'s borrowing from everywhere.'],
@@ -709,7 +709,7 @@ const CAMPAIGN = [
         ['ROCKS D. XEBEC', 'Go on, then. Show the throne what I couldn\'t. Topple it.'],
         ['LUFFY', 'That\'s the plan!']] },
     { n: 4, name: 'Mary Geoise', rating: 0, coins: 4000,
-      enemy: ['IMU', 'AKAINU', 'BLACKBEARD', 'KING', 'BIG MOM'],
+      enemy: ['AKAINU', 'KIZARU'], encounter: 'relay',
       scene: [
         ['TANJIRO', 'This city smells... wrong. Like the sun, but cold.'],
         ['ITACHI', 'The sun seal. It\'s carved into every wall here.'],
@@ -721,7 +721,7 @@ const CAMPAIGN = [
         ['GOJO', 'So that\'s the trick. Everyone fights for the throne, and the one already on it wins.'],
         ['IMU', 'Now come. Kneel before the empty throne.']] },
     { n: 5, name: 'Every World Unites', rating: 0, coins: 4500,
-      enemy: ['IMU', 'BLACKBEARD', 'AKAINU', 'ROCKS D. XEBEC', 'KAIDO', 'BIG MOM'],
+      enemy: ['IMU', 'BLACKBEARD'], encounter: 'duet',
       scene: [
         ['IMU', 'Kaguya\'s chakra. The Founder\'s Coordinate. Black\'s divinity. Muzan\'s night. I have taken them all.'],
         ['EREN', 'Then we give you something you don\'t have.'],
@@ -732,7 +732,7 @@ const CAMPAIGN = [
         ['BLACKBEARD', 'Zehahaha... I think I\'ll be leaving now.'],
         ['IMU', 'You think this is my full strength? I haven\'t even stood up from the throne.']] },
     { n: 6, name: 'FINAL BOSS · The Empty Throne', boss: 1, rating: 0, coins: 8000,
-      enemy: ['IMU', 'BLACKBEARD', 'AKAINU', 'ROCKS D. XEBEC', 'KAIDO', 'BIG MOM'],
+      enemy: ['IMU'], encounter: 'second-phase',
       scene: [
         ['IMU', 'Every history erased. Every world rewritten. I will sit above all of them, alone.'],
         ['LUFFY', 'Sounds lonely. And boring. I\'d rather have friends.'],
@@ -750,70 +750,70 @@ const CAMPAIGN = [
 ]
 CAMPAIGN.push(...LAST_DOOR_CHAPTERS)
 // ---------- DEAD ZONE: brutal stages with rules + weaknesses; counters matter more than raw power ----------
-const REDZONE = { id: 'rz1', name: 'Infinity Castle', sub: 'Dead Zone · Demon Slayer', stages: [
-  { n: 1, name: 'Upper Moon Three', boss: 'AKAZA', enemy: ['AKAZA', 'GYUTARO', 'HANTENGU', 'KAIGAKU'], boost: 3.2,
+const REDZONE = { id: 'rz1', name: 'Twelve Kizuki Gauntlet', sub: 'Dead Zone · Demon Slayer', stages: [
+  { n: 1, name: 'Upper Moon Three', boss: 'AKAZA', enemy: ['AKAZA'], boost: 3.2,
     rules: [['Destructive Death', 'Every enemy reflects 30% of the damage it takes', { reflect: 30 }], ['Martial Arts', 'Enemies deal +20% damage', { dmg: 20 }]],
     weak: ['Swordsmen'], weakB: 60, resist: 50, tip: 'Akaza punishes every hit you land. Swordsmen cut through him, and high single hits beat lots of small ones.',
     reward: { coins: 15000, premium: 1 } },
-  { n: 2, name: 'Upper Moon Two', boss: 'DOMA', enemy: ['DOMA', 'HANTENGU', 'GYUTARO', 'KAIGAKU', 'AKAZA'], boost: 2.0,
+  { n: 2, name: 'Upper Moon Two', boss: 'DOMA', enemy: ['DOMA'], boost: 2.0,
     rules: [['Cryo Lotus', 'Enemy attacks can freeze your fighter', { freeze: 20 }], ['Lotus Bloom', 'The enemy team heals 3% every turn', { teamHeal: 3 }]],
     weak: ['S:FF', 'Dragons'], weakB: 70, resist: 50, tip: 'Doma freezes and out-heals you. Fire burns through ice: Fire Force cards and Dragons hit him hard. Bring Cleanse cards for the freezes.',
     reward: { coins: 20000, premium: 1 } },
-  { n: 3, name: 'Upper Moon One', boss: 'KOKUSHIBO', enemy: ['KOKUSHIBO', 'DOMA', 'AKAZA', 'HANTENGU', 'GYUTARO', 'KAIGAKU'], boost: 2.1,
+  { n: 3, name: 'Upper Moon One', boss: 'KOKUSHIBO', enemy: ['KOKUSHIBO'], boost: 2.1,
     rules: [['Moon Breathing', 'Enemies dodge 30% of attacks', { dodge: 30 }], ['Crescent Moon Blades', 'Enemy Strikes often hit twice', { doubleStrike: 1 }]],
     weak: ['Demon Slayer Corps', 'Gods & Kings'], weakB: 60, resist: 50, tip: 'Kokushibo is hard to hit. Demon Slayers and Gods & Kings break through. Cards that ignore dodge or hit the whole team shine here.',
     reward: { coins: 25000, premium: 1, shards: 2000 } },
-  { n: 4, name: 'The Demon King', boss: 'MUZAN', enemy: ['MUZAN', 'KOKUSHIBO', 'DOMA', 'AKAZA'], boost: 2.4,
+  { n: 4, name: 'The Demon King', boss: 'MUZAN', enemy: ['MUZAN'], boost: 2.4,
     rules: [['Endless Regeneration', 'Enemies heal 12% every turn', { regen: 12 }], ['Five Brains, Seven Hearts', 'Every enemy survives its first KO', { endure: 1 }]],
     weak: ['S:DS', 'Swordsmen'], weakB: 60, resist: 50, tip: 'Muzan out-heals almost anything. Seal his passive (Sealing Scroll, Makima, Yhwach, Gogeta) and his regeneration stops dead.',
     reward: { coins: 30000, premium: 2, shards: 3000 } },
-  { n: 5, name: 'Infinite Fortress', boss: 'MUZAN', enemy: ['MUZAN', 'KOKUSHIBO', 'DOMA', 'AKAZA', 'HANTENGU', 'GYUTARO'], boost: 2.2, final: 1,
+  { n: 5, name: 'The Remaining Moons', boss: 'GYUTARO', enemy: ['GYUTARO', 'HANTENGU', 'KAIGAKU'], boost: 2.2, final: 1,
     rules: [['The Castle Shifts', 'Enemies dodge 15% and heal 6% every turn', { dodge: 15, regen: 6 }], ['Twelve Kizuki', 'Enemies reflect 15% damage and deal +25% damage', { reflect: 15, dmg: 25 }]],
-    weak: ['S:DS', 'Swordsmen', 'Demon Slayer Corps'], weakB: 50, resist: 55, tip: 'Everything at once. Full Demon Slayer teams, a sealer for Muzan and a Cleanse or two. Raw power alone will not get through.',
+    weak: ['S:DS', 'Swordsmen', 'Demon Slayer Corps'], weakB: 50, resist: 55, tip: 'The remaining Moons punish repeated hits with reflection. Bring Demon Slayers or Swordsmen and use your highest-impact Arts.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
-const DARKT = { id: 'dt1', name: 'Dark Tournament', sub: 'Dead Zone · Yu Yu Hakusho', stages: [
-  { n: 1, name: 'Opening Rounds', boss: 'ITSUKI', enemy: ['ITSUKI', 'DIO', 'CHOSO', 'IGRIS', 'ANNIE'], boost: 2.6,
+const DARKT = { id: 'dt1', name: 'Demon World Gauntlet', sub: 'Dead Zone · Yu Yu Hakusho', stages: [
+  { n: 1, name: 'Urameshi Warm-Up', boss: 'TEAM URAMESHI', enemy: ['TEAM URAMESHI'], boost: 2.6,
     rules: [['Shadow Beast', 'Every enemy swallows the first hit it takes', { firstNull: 1 }], ['Bloodthirsty Crowd', 'Enemies deal +20% damage', { dmg: 20 }]],
     weak: ['S:YYH', 'Rivals'], weakB: 60, resist: 50, tip: 'Every enemy eats your first hit, so open with cheap Strikes, not your big moves. Yu Yu Hakusho fighters and Rivals hit hardest here.',
     reward: { coins: 15000, premium: 1 } },
-  { n: 2, name: 'The Black Chapter', boss: 'SENSUI', enemy: ['SENSUI', 'ITSUKI', 'MAKIMA', 'KARS', 'NEFERPITOU'], boost: 2.3,
+  { n: 2, name: 'The Black Chapter', boss: 'SENSUI', enemy: ['SENSUI', 'ITSUKI'], boost: 2.3,
     rules: [['Sacred Energy', 'Enemy Specials ignore Guard and deal +30%', { pierceSpec: 1, spec: 30 }], ['Territory', 'Enemies dodge 15%', { dodge: 15 }]],
     weak: ['Urameshi Team', 'Mentors'], weakB: 60, resist: 50, tip: 'Guarding will not save you from Sensui. Out-damage him: the Urameshi Team and Mentors like Genkai are the answer.',
     reward: { coins: 20000, premium: 1 } },
-  { n: 3, name: 'Team Toguro', boss: 'TOGURO', enemy: ['TOGURO#88', 'MAJIN BUU', 'CELL', 'BERU', 'KARS'], boost: 2.3,
+  { n: 3, name: 'Team Toguro', boss: 'toguro_younger_brother_80', enemy: ['toguro_younger_brother_80'], boost: 2.3,
     rules: [['Muscle Control', 'Enemies take 6% less damage with every hit (up to 36%)', { adapt: 6, adaptMax: 36 }], ['Regeneration', 'Enemies heal 5% every turn', { regen: 5 }]],
     weak: ['Urameshi Team', 'Swordsmen'], weakB: 60, resist: 50, tip: 'They get tougher the longer the fight goes. Burst them down fast: big Ultimates and Swordsmen like Hiei and Kuwabara.',
     reward: { coins: 25000, premium: 1, shards: 2000 } },
-  { n: 4, name: "Raizen's Hunger", boss: 'RAIZEN', enemy: ['RAIZEN', 'MERUEM', 'BOROS', 'GAROU', 'MAHORAGA'], boost: 2.2,
+  { n: 4, name: "Raizen's Hunger", boss: 'RAIZEN', enemy: ['RAIZEN'], boost: 2.2,
     rules: [['Starving King', 'Enemies get +6% damage every turn (up to +48%)', { ramp: 6, rampMax: 48 }], ['Demon World', 'Enemies survive their first KO', { endure: 1 }]],
     weak: ['S:YYH', 'Transformations'], weakB: 60, resist: 50, tip: 'Every turn they get stronger. Transformations and Yu Yu Hakusho fighters end it before Raizen snowballs.',
     reward: { coins: 30000, premium: 2, shards: 3000 } },
-  { n: 5, name: '100% Full Power', boss: 'TOGURO', enemy: ['TOGURO', 'RAIZEN', 'SENSUI', 'KANEKI', 'SUKUNA', 'BOROS'], boost: 2.0, final: 1,
+  { n: 5, name: '100% Full Power', boss: 'toguro_100_full_power', enemy: ['toguro_100_full_power'], boost: 2.0, final: 1,
     rules: [['More Than Human', 'Enemies take 5% less damage per hit (up to 30%) and deal +25%', { adapt: 5, adaptMax: 30, dmg: 25 }], ['The Final', 'Enemies heal 4% every turn', { regen: 4 }]],
     weak: ['Urameshi Team', 'Rivals', 'S:YYH'], weakB: 55, resist: 55, tip: 'The Dark Tournament final. Full Urameshi Team, a Rival or two, and save your Awakened Ultimates for Toguro.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
-const DBZONE = { id: 'db1', name: 'Universe Survival', sub: 'Dead Zone · Dragon Ball', stages: [
-  { n: 1, name: 'Return of Frieza', boss: 'FRIEZA', enemy: ['FRIEZA', 'FRIEZA#83', 'CELL', 'MAJIN BUU'], boost: 2.4,
+const DBZONE = { id: 'db1', name: 'Dragon Ball Villain Gauntlet', sub: 'Dead Zone · Dragon Ball', stages: [
+  { n: 1, name: 'Return of Frieza', boss: 'frieza_golden_frieza', enemy: ['frieza_golden_frieza'], boost: 2.4,
     rules: [['Death Beam', 'Enemy Strikes pierce Guard', { pierceStrike: 1 }], ['Golden Form', 'Enemies deal +20% damage', { dmg: 20 }]],
     weak: ['Saiyans', 'S:DBZ'], weakB: 60, resist: 50, tip: 'Frieza hates monkeys for a reason. Saiyans and Dragon Ball fighters hit him hardest. Guarding will not stop his Strikes, so heal instead.',
     reward: { coins: 15000, premium: 1 } },
-  { n: 2, name: 'The Cell Games', boss: 'CELL', enemy: ['CELL', 'MAJIN BUU', 'FRIEZA#83', 'BROLY#78', 'GOKU BLACK#69'], boost: 2.2,
+  { n: 2, name: 'The Cell Games', boss: 'CELL', enemy: ['CELL'], boost: 2.2,
     rules: [['Perfect Regeneration', 'Enemies heal 8% every turn', { regen: 8 }], ['Self-Destruct', 'Enemies survive their first KO', { endure: 1 }]],
     weak: ['Saiyans', 'Mentors'], weakB: 60, resist: 50, tip: 'Cell out-heals slow teams and comes back once. Saiyans plus Mentors (Gohan and Piccolo) burst him down twice.',
     reward: { coins: 20000, premium: 1 } },
-  { n: 3, name: "Kid Buu's Rampage", boss: 'MAJIN BUU', enemy: ['MAJIN BUU', 'CELL', 'BROLY#78', 'FRIEZA'], boost: 2.4,
+  { n: 3, name: "Kid Buu's Rampage", boss: 'MAJIN BUU', enemy: ['MAJIN BUU'], boost: 2.4,
     rules: [['Pure Chaos', 'Enemies heal 10% every turn', { regen: 10 }], ['Planet Burst', 'Enemy Specials deal +30%', { spec: 30 }]],
     weak: ['Tag Teams', 'Transformations'], weakB: 65, resist: 50, tip: 'Buu regenerates from anything but a huge burst. Fusions, tag units and transformations are the Spirit Bomb here.',
     reward: { coins: 25000, premium: 1, shards: 2000 } },
-  { n: 4, name: 'Legendary Super Saiyan', boss: 'BROLY', enemy: ['BROLY', 'BROLY#78', 'CELL', 'FRIEZA'], boost: 2.3,
+  { n: 4, name: 'Legendary Super Saiyan', boss: 'BROLY', enemy: ['BROLY'], boost: 2.3,
     rules: [['Endless Rage', 'Enemies get +7% damage every turn (up to +56%)', { ramp: 7, rampMax: 56 }], ['Unstoppable', 'Enemies take 8% less damage', { dr: 8 }]],
     weak: ['Transformations', 'Gods & Kings'], weakB: 60, resist: 50, tip: 'Broly gets scarier every turn. End it fast with transformations and Gods & Kings before his rage peaks.',
     reward: { coins: 30000, premium: 2, shards: 3000 } },
-  { n: 5, name: 'Zero Mortal Plan', boss: 'GOKU BLACK', enemy: ['GOKU BLACK', 'GOKU BLACK#88', 'BROLY', 'CELL', 'FRIEZA', 'MAJIN BUU'], boost: 1.9, final: 1,
-    rules: [['Rosé', 'Enemies dodge 15% and reflect 15% damage', { dodge: 15, reflect: 15 }], ['Immortal Zamasu', 'Enemies deal +25% and heal 4% a turn', { dmg: 25, regen: 4 }]],
-    weak: ['Saiyans', 'Transformations', 'Tag Teams'], weakB: 55, resist: 55, tip: 'Every villain at once, led by Goku Black. Full Saiyan transformations and a fusion or two. Save Awakened Ultimates for Black.',
+  { n: 5, name: 'Zero Mortal Plan', boss: 'GOKU BLACK#88', enemy: ['GOKU BLACK#88'], boost: 1.9, final: 1,
+    rules: [['Rosé', 'Enemies dodge 15% and reflect 15% damage', { dodge: 15, reflect: 15 }], ['Rift Divinity', 'Goku Black deals +25% and heals 4% a turn', { dmg: 25, regen: 4 }]],
+    weak: ['Saiyans', 'Transformations', 'Tag Teams'], weakB: 55, resist: 55, tip: 'Face Goku Black in Rosé. Bring a Saiyan transformation or tag unit and plan for his reflect.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
 const PKZONE = { id: 'pk1', name: 'League Gauntlet', sub: 'Dead Zone · Pokémon · HARDEST', stages: [
@@ -914,7 +914,7 @@ const ARCS = [
   { id: 'hxh', anime: 'HXH', name: 'Chimera Ant Arc', rewardCard: 'meruem_rose_aftermath',
     synopsis: 'A Royal Guard cuts off the Hunters’ retreat. As the King comes into his own, Kite, Netero and Gon each face the cost of standing their ground.',
     chapters: [
-      { name: 'Buy Them Time', player: 'kite_crazy_slots', enemy: 'neferpitou_royal_guard', level: 4, boost: 1.02, playerBoost: 1.55,
+      { name: 'Buy Them Time', encounter: 'hold-out', player: 'kite_crazy_slots', enemy: 'neferpitou_royal_guard', level: 4, boost: 1.02, playerBoost: 1.55,
         matchup: 'Pitou strikes first. Kite has to fight from behind.',
         scene: [
           ['kite_crazy_slots', 'Keep moving, both of you. Whatever happens behind you, keep moving.'],
@@ -927,7 +927,7 @@ const ARCS = [
           ['Narrator', 'Gon and Killua escape. Kite stays behind with the Royal Guard. By the time the Hunters mount their assault, Gon has only one thing on his mind.'],
         ],
       },
-      { name: 'The King’s Name', player: 'netero_100_type_guanyin', enemy: 'meruem_the_king', level: 5, boost: 1.85,
+      { name: 'The King’s Name', encounter: 'guard-school', player: 'netero_100_type_guanyin', enemy: 'meruem_the_king', level: 5, boost: 1.85,
         matchup: 'Meruem has the edge in raw power. Netero’s Ultimate can swing the fight.',
         scene: [
           ['meruem_the_king', 'There is a name I was given. You know it, don’t you?'],
@@ -973,7 +973,7 @@ const ARCS = [
           ['armin_scout_cadet', 'That bought us time inside the Wall. The horses are still trapped on the other side.'],
         ],
       },
-      { name: 'The Beast Hunt', player: 'levi_humanity_s_strongest', enemy: 'zeke_beast_titan_epic', level: 4, boost: 1.55,
+      { name: 'The Beast Hunt', encounter: 'pressure', player: 'levi_humanity_s_strongest', enemy: 'zeke_beast_titan_epic', level: 4, boost: 1.55,
         matchup: 'Zeke hits hard. Levi has the speed to take the fight to him.',
         scene: [
           ['erwin_dedicate_your_hearts', 'If he’s looking at our charge, he won’t be looking for you.'],
@@ -986,7 +986,7 @@ const ARCS = [
           ['Narrator', 'The Cart Titan pulls Zeke out before Levi can finish him. Inside the district, the Colossal Titan is still standing.'],
         ],
       },
-      { name: 'The Last Breath', player: ['armin_scout_cadet', 'eren_attack_titan'], enemy: 'bertholdt_colossal_titan', level: 5, boost: 1.65, playerBoost: 1.3,
+      { name: 'The Last Breath', encounter: 'ring-out', player: ['armin_scout_cadet', 'eren_attack_titan'], enemy: 'bertholdt_colossal_titan', level: 5, boost: 1.65, playerBoost: 1.3,
         matchup: 'Armin draws Bertholdt’s attention. Switch to Eren when you can press the attack.',
         scene: [
           ['armin_scout_cadet', 'His steam costs him muscle. As long as he’s looking at me, he won’t see you move.'],
@@ -1005,7 +1005,7 @@ const ARCS = [
   { id: 'shinobi-war', anime: 'NAR', name: 'Fourth Shinobi World War', rewardCard: 'madara_ten_tails',
     synopsis: 'Madara becomes the Ten-Tails’ jinchūriki. Three battles follow the fight from Guy’s last gate to Naruto and Sasuke’s attempt to seal Kaguya.',
     chapters: [
-      { name: 'The Eighth Gate', player: 'guy_eightgates', enemy: 'madara_ten_tails', level: 4, boost: 1, playerBoost: 2.15,
+      { name: 'The Eighth Gate', encounter: 'pressure', player: 'guy_eightgates', enemy: 'madara_ten_tails', level: 4, boost: 1, playerBoost: 2.15,
         matchup: 'Guy’s Ultimate costs him his life. Use it when it can finish Madara.',
         scene: [
           ['madara_ten_tails', 'That colour. How much of your life did you spend to reach me?'],
@@ -1018,7 +1018,7 @@ const ARCS = [
           ['naruto_vs_madara', 'Guy-sensei, you’ve done enough. Let me take it from here.'],
         ],
       },
-      { name: 'A Second Wind', player: 'naruto_vs_madara', enemy: 'madara_ten_tails', level: 4, boost: 1.04, playerBoost: 2.1,
+      { name: 'A Second Wind', encounter: 'break-guard', player: 'naruto_vs_madara', enemy: 'madara_ten_tails', level: 4, boost: 1.04, playerBoost: 2.1,
         matchup: 'Six Paths power closes the gap. Madara can land a second hit with his Strikes.',
         scene: [
           ['naruto_vs_madara', 'You were about to kill him because you thought the fight was over. I’m here now.'],
@@ -1030,7 +1030,7 @@ const ARCS = [
           ['Narrator', 'Before the fight can resume, Black Zetsu turns on Madara. Kaguya emerges from his body.'],
         ],
       },
-      { name: 'Two Seals', player: 'naruto_sasuke_team7', enemy: 'kaguya_rabbit_goddess', level: 5, boost: 1.47,
+      { name: 'Two Seals', encounter: 'relay', player: 'naruto_sasuke_team7', enemy: 'kaguya_rabbit_goddess', level: 5, boost: 1.47,
         matchup: 'Naruto and Sasuke have to land the finishing blow together against the strongest opponent in the arc.',
         scene: [
           ['kaguya_rabbit_goddess', 'That chakra was mine long before either of you had a name.'],
@@ -1048,7 +1048,7 @@ const ARCS = [
   { id: 'tournament-final-stand', anime: 'DBZ', name: 'Tournament of Power: Final Stand', rewardCard: 'jiren_full_power',
     synopsis: 'Universe 7 is running out of time. Jiren stands between its last fighters and survival.',
     chapters: [
-      { name: 'Instinct Returns', player: 'goku_ui', enemy: 'jiren_full_power', level: 4, boost: 1.38,
+      { name: 'Instinct Returns', encounter: 'hold-out', player: 'goku_ui', enemy: 'jiren_full_power', level: 4, boost: 1.38,
         matchup: 'Ultra Instinct lets Goku slip past attacks. Jiren grows stronger as he takes hits.',
         scene: [
           ['Narrator', 'Vegeta is out. Goku is cornered against the broken edge of the arena, and his body begins to move on its own again.'],
@@ -1060,7 +1060,7 @@ const ARCS = [
           ['jiren_full_power', 'The way you’re moving has changed again.'],
         ],
       },
-      { name: 'Beyond the Limit', player: 'goku_mui', enemy: 'jiren_full_power', level: 5, boost: 1.55,
+      { name: 'Beyond the Limit', encounter: 'pressure', player: 'goku_mui', enemy: 'jiren_full_power', level: 5, boost: 1.55,
         matchup: 'Mastered Ultra Instinct gives Goku the first move. Jiren can still outlast him.',
         scene: [
           ['goku_mui', 'I can finally see what you’re doing. Every time I step forward, you’re already there.'],
@@ -1072,7 +1072,7 @@ const ARCS = [
           ['Narrator', 'Before Goku can finish the fight, Ultra Instinct gives out. He falls near the edge of the arena.'],
         ],
       },
-      { name: 'The Opening', player: 'frieza_golden_frieza', enemy: 'jiren_full_power', level: 4, boost: 1.05, playerBoost: 1.28,
+      { name: 'The Opening', encounter: 'break-guard', player: 'frieza_golden_frieza', enemy: 'jiren_full_power', level: 4, boost: 1.05, playerBoost: 1.28,
         matchup: 'Frieza presses an exhausted Jiren while Goku recovers.',
         scene: [
           ['frieza_golden_frieza', 'I thought I’d be watching you throw him over the edge. Now I find myself standing in the way.'],
@@ -1084,7 +1084,7 @@ const ARCS = [
           ['Narrator', 'Goku pulls himself up. They have one last chance to take Jiren out of bounds.'],
         ],
       },
-      { name: 'Over the Edge', player: ['frieza_emperor_of_the_universe', 'goku_base'], enemy: 'jiren_full_power', level: 5, boost: 1.4, playerBoost: 1.7,
+      { name: 'Over the Edge', encounter: 'ring-out', player: ['frieza_emperor_of_the_universe', 'goku_base'], enemy: 'jiren_full_power', level: 5, boost: 1.4, playerBoost: 1.7,
         matchup: 'Switch fighters to share the damage while Jiren tries to hold the centre.',
         scene: [
           ['frieza_emperor_of_the_universe', 'If I take him over, you’d better be there to make sure he stays over.'],
@@ -1102,7 +1102,7 @@ const ARCS = [
   { id: 'dark-matter-invasion', anime: 'OPM', name: 'The Dark Matter Invasion', rewardCard: 'boros_meteoric_burst',
     synopsis: 'Saitama boards the ship above City A and finds Boros waiting for a fight.',
     chapters: [
-      { name: 'Break the Armour', player: 'saitama_hero', enemy: 'boros_dominator_of_the_univers', level: 3, boost: 1.25,
+      { name: 'Break the Armour', encounter: 'break-guard', player: 'saitama_hero', enemy: 'boros_dominator_of_the_univers', level: 3, boost: 1.25,
         matchup: 'Boros recovers HP between turns. Keep pressing after a big hit.',
         scene: [
           ['boros_dominator_of_the_univers', 'I crossed the stars to find someone who could make me fight. Are you that person?'],
@@ -1114,7 +1114,7 @@ const ARCS = [
           ['saitama_hero', 'You’re a lot louder without the armour on.'],
         ],
       },
-      { name: 'Meteoric Burst', player: 'saitama_hero', enemy: 'boros_meteoric_burst', level: 4, boost: 1, playerBoost: 1.35,
+      { name: 'Meteoric Burst', encounter: 'pressure', player: 'saitama_hero', enemy: 'boros_meteoric_burst', level: 4, boost: 1, playerBoost: 1.35,
         matchup: 'Boros trades his own HP for harder hits. Make him pay for every exchange.',
         scene: [
           ['boros_meteoric_burst', 'This speeds up everything inside me. Even I can’t keep it going for long.'],
@@ -1126,7 +1126,7 @@ const ARCS = [
           ['saitama_hero', 'Okay. Same ship. Good.'],
         ],
       },
-      { name: 'Back on Deck', player: 'saitama_hero', enemy: 'boros_meteoric_burst', level: 4, boost: 1.06, playerBoost: 1.37,
+      { name: 'Back on Deck', encounter: 'hold-out', player: 'saitama_hero', enemy: 'boros_meteoric_burst', level: 4, boost: 1.06, playerBoost: 1.37,
         matchup: 'Boros keeps attacking through the recoil. Force him to spend his remaining strength.',
         scene: [
           ['boros_meteoric_burst', 'You came back on your own. All the way from there?'],
@@ -1138,7 +1138,7 @@ const ARCS = [
           ['saitama_hero', 'All right. I’ll take this one seriously.'],
         ],
       },
-      { name: 'Serious Punch', player: 'saitama_serious', enemy: 'boros_meteoric_burst', level: 5, boost: 1.52, playerBoost: 1.16,
+      { name: 'Serious Punch', encounter: 'second-phase', player: 'saitama_serious', enemy: 'boros_meteoric_burst', level: 5, boost: 1.52, playerBoost: 1.16,
         rules: { ultStart: 50 },
         matchup: 'Boros starts with 50% Ultimate gauge. Close the fight before he can fire at full power.',
         scene: [
