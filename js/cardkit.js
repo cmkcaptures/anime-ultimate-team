@@ -104,7 +104,9 @@ function cutWorker() { // small pool of workers so several cards process at once
 }
 export function getArt(c) {
   return ARTP[c.id] || (ARTP[c.id] = (async () => {
-    const ck = `v2|${c.key}|${c.mt}${c.nocut ? '|n' : ''}`
+    // Alternate battle forms share an inventory key but have different source art.
+    const identity = c.transformations ? c.key + '|' + c.url : c.key
+    const ck = `v2|${identity}|${c.mt}${c.nocut ? '|n' : ''}`
     const blob = await idbGet(ck)
     if (blob) return ART[c.id] = await loadImg(URL.createObjectURL(blob))
     // heavy part (decode + background removal) runs in a worker so the game never stutters
@@ -282,7 +284,7 @@ const sig = c => ['g1', c.key, c.dia || 0, c.lv || 0, c.maxed || 0, c.ovr, c.nam
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340, prio) {
-  const bw = bucket(w), k = 't13|' + sig(c) + '|' + bw
+  const bw = bucket(w), art = c.transformations ? '|' + c.url : '', k = 't13|' + sig(c) + art + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
