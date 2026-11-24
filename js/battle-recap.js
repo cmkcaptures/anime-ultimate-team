@@ -66,3 +66,44 @@ export function recordWarMvp({ id, round }, fighter) {
     localStorage.setItem(WAR_RECAP_KEY, JSON.stringify({ id, lanes }))
   } catch { }
 }
+
+export function createTurningPoints() {
+  const events = []
+  let order = 0
+  return {
+    add(turn, side, text, priority) {
+      const event = { turn, side, text, priority, order: order++ }
+      events.push(event)
+      events.sort((a, b) => b.priority - a.priority || a.order - b.order)
+      if (events.length > 6) events.pop()
+    },
+    list() {
+      return events.slice().sort((a, b) => a.turn - b.turn || a.order - b.order)
+    },
+  }
+}
+
+export function addTurningPoints(result, points) {
+  if (!points.length) return
+  const panel = document.createElement('details')
+  panel.className = 'battle-recap turning-points'
+  const heading = document.createElement('summary')
+  heading.textContent = 'Turning Points'
+  const list = document.createElement('ol')
+  const standout = points.reduce((best, point) => point.priority > best.priority ? point : best)
+  for (const point of points) {
+    const item = document.createElement('li')
+    const label = document.createElement('strong')
+    label.textContent = 'Turn ' + point.turn + ' · ' + (point.side === 'you' ? 'Your team' : 'Opponent')
+    if (point === standout) {
+      item.className = 'turning-point-standout'
+      label.textContent += ' · Standout'
+    }
+    const detail = document.createElement('span')
+    detail.textContent = point.text
+    item.append(label, detail)
+    list.append(item)
+  }
+  panel.append(heading, list)
+  result.append(panel)
+}
