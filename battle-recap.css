@@ -1,5 +1,6 @@
-#arena .ar-result:has(.battle-recap[open]) {
+#arena .ar-result {
   overflow-y: auto;
+  overscroll-behavior: contain;
   align-content: safe center;
   grid-template-columns: minmax(0, 560px);
   padding: 12px;

@@ -2173,7 +2173,7 @@ export function startBattle(stage) {
   const AR = stage.arena && ARENAS[stage.arena] ? stage.arena : ARENA_KEYS[stage.live ? stage.live.seed % ARENA_KEYS.length : Math.floor(Math.random() * ARENA_KEYS.length)]
   const ov = h('div', 'bc th-' + AR); ov.id = 'arena'
   ov.innerHTML = `<div class="bcs"><div class="bcs-wall"></div><div class="bcs-rig r1">${'<i></i>'.repeat(14)}</div><div class="bcs-rig r2">${'<i></i>'.repeat(10)}</div><i class="bcs-spot s1"></i><i class="bcs-spot s2"></i><i class="bcs-spot s3"></i><div class="bcs-crowd"></div><div class="bcs-board"><span>ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · </span></div><div class="bcs-floor"><i class="ln"></i><i class="cc"></i><i class="ccd"></i></div><div class="bcs-haze"></div></div><div class="env"><i class="e-sky"></i><i class="e-far"></i><i class="e-near"></i><i class="e-amb"></i><i class="e-vig"></i></div><div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
-    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto"${stage.live || operation?.kind === 'work' ? " hidden" : ""}>AUTO</button>${stage.live ? "<span class=\"pvp-clock\">⏳</span>" : ""}<span class="ar-stage">${stage.label ? stage.label.toUpperCase() : stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-form-timer" hidden></span><span class="ar-turn"></span></header>
+    <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto"${stage.live ? " hidden" : ""}>AUTO</button>${stage.live ? "<span class=\"pvp-clock\">⏳</span>" : ""}<span class="ar-stage">${stage.label ? stage.label.toUpperCase() : stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-form-timer" hidden></span><span class="ar-turn"></span></header>
     <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t"></small></div><div class="bct-s ai"></div></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div><div class="battle-info-tools"><button type="button" class="battle-art-preview" aria-pressed="false">ART PREVIEW</button><button type="button" class="battle-history">LOG</button></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
@@ -2184,6 +2184,7 @@ export function startBattle(stage) {
     image.src = form.url
     image.decode?.().catch(() => {})
   }
+  let advanceObjective
   if (mission) {
     const ribbon = h('div', 'transfer-ribbon')
     const counter = h('span', 'transfer-status')
@@ -2198,9 +2199,10 @@ export function startBattle(stage) {
     }
     const action = h('button', 'btn gold sm transfer-action')
     action.hidden = operation?.kind !== 'work'
-    action.onclick = async () => {
-      if (B.busy || B.over || workedAt === B.turn || B.you.ki < workCost() || act(B.you).ko) return
+    advanceObjective = async (automatic = false) => {
+      if (operation?.kind !== 'work' || (B.busy && !automatic) || B.over || workedAt === B.turn || B.you.ki < workCost() || act(B.you).ko) return
       if (currentWork()?.approach === 'signal') {
+        if (automatic) route.value = '1'
         if (!Number(route.value)) { log('Choose the mark with a steady signal.'); return }
         if (route.value !== '1') {
           B.you.ki = Math.max(0, B.you.ki - 1)
@@ -2228,15 +2230,16 @@ export function startBattle(stage) {
       if (mission.data.midpoint && steps === 1) {
         B.busy = true
         draw()
-        scene(mission.data.midpoint, 'BANKAI', CAMPAIGN_ART[mission.data.place], () => {
-          B.busy = false
-          draw()
-        }, new Map(Object.values(BYKEY).map(card => [card.id, card])))
+        await new Promise(resolve => scene(mission.data.midpoint, 'BANKAI', CAMPAIGN_ART[mission.data.place], resolve,
+          new Map(Object.values(BYKEY).map(card => [card.id, card]))))
+        B.busy = automatic
+        if (!B.closed) draw()
         return
       }
       draw()
       if (steps >= operation.count) await end(true)
     }
+    action.onclick = () => advanceObjective()
     ribbon.append(counter, route, action)
     ov.querySelector('.ar-top').after(ribbon)
   }
@@ -3093,6 +3096,10 @@ export function startBattle(stage) {
   async function autoTurn() {
     if (!AUTO || B.busy || B.over) return
     B.busy = true; controls(); await wait(350)
+    if (B.closed || B.over) return
+    await advanceObjective?.(true)
+    if (B.closed || B.over) return
+    if (!AUTO) { B.busy = false; controls(); return }
     if (canTransform(act(B.you), B.you)) await transform(B.you, 'you')
     const f = act(B.you)
     const side = f.partnerSide
