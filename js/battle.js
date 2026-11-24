@@ -1,9 +1,9 @@
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=retire-kurama-link'
-import { sfx, sfxOn, music } from './sfx.js?v=retire-kurama-link'
-import { createFX } from './fx2d.js?v=retire-kurama-link'
-import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=retire-kurama-link'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=form-control'
+import { sfx, sfxOn, music } from './sfx.js?v=form-control'
+import { createFX } from './fx2d.js?v=form-control'
+import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=form-control'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -1134,7 +1134,7 @@ export function startBattle(stage) {
     <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t"></small></div><div class="bct-s ai"></div></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
-    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small><small class="form-requirement" hidden></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
+    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
   document.body.append(ov); document.body.classList.add('in-battle'); music('battle')
   for (const side of [B.you, B.ai]) for (const f of side.team) for (const form of f.card.transformations || []) {
     const image = new Image()
@@ -1223,19 +1223,24 @@ export function startBattle(stage) {
     {
       const tb = $a('.ar-trans'), partner = !!f.pe.partner, next = !stage.storyTeam && nextTransformation(f, s, B.turn)
       const ok = partner ? canTagPartner(f, B.turn) : canTransform(f, s)
-      tb.title = next ? next.requirement : ''
       const timer = $a('.ar-form-timer')
       timer.hidden = f.formExpires == null
       if (!timer.hidden) timer.textContent = 'BARYON · ' + (f.formExpires - (s.formTurn || 0)) + ' TURNS LEFT'
       tb.hidden = !partner && !next && !ok
       tb.disabled = !my || !ok
-      tb.querySelector('b').textContent = partner ? 'TAG' : 'TRANSFORM'
-      const requirement = tb.querySelector('.form-requirement')
-      requirement.hidden = !next || ok
-      if (!requirement.hidden) requirement.textContent = s.gauge < next.gaugeCost ? 'Need ' + next.gaugeCost + '% Ultimate gauge' :
-        B.turn < (next.minTurn || 1) ? 'Available on turn ' + next.minTurn :
-          (s.formTurn || 0) - f.formEntered <= (next.fullTurns || 0) ? 'Complete a full Kurama turn' : 'Need 50% HP or less'
-      tb.querySelector('small').textContent = partner ? '→ ' + partnerNames(f)[Number(!f.partnerSide)] : next ? next.ver + ' · ' + next.gaugeCost + '% ULT' : f.card.form?.name || 'POWER UP'
+      tb.classList.toggle('form-step', !!next)
+      tb.classList.toggle('form-ready', !!next && ok && my)
+      tb.title = next?.requirement || ''
+      const label = next?.ver.startsWith('BARYON') ? 'BARYON' : 'KURAMA'
+      const status = !next ? '' : ok ? next.gaugeCost + '% ULT' :
+        B.turn < (next.minTurn || 1) ? 'TURN ' + next.minTurn :
+          next.fullTurns && (s.formTurn || 0) - f.formEntered <= next.fullTurns ? 'WAIT 1 TURN' :
+            next.maxHpPercent && f.hp * 100 > f.max * next.maxHpPercent ? '≤' + next.maxHpPercent + '% HP' :
+              'NEED ' + next.gaugeCost + '% ULT'
+      tb.querySelector('b').textContent = partner ? 'TAG' : next ? label : 'TRANSFORM'
+      tb.querySelector('small').textContent = partner ? '→ ' + partnerNames(f)[Number(!f.partnerSide)] : next ? status : f.card.form?.name || 'POWER UP'
+      if (next) tb.setAttribute('aria-label', 'Transform to ' + next.ver + '. ' + status + '. ' + next.requirement)
+      else tb.removeAttribute('aria-label')
     }
     const u = $a('.ar-ult'); u.disabled = !my || s.gauge < GAUGE_MAX; u.classList.toggle('ready', s.gauge >= GAUGE_MAX)
     const ult = signatureUltimate(f) || ultOf(f.card)
