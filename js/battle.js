@@ -1,5 +1,5 @@
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
-import { warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=war-1'
+import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
 import { TIER, TYPE, thumbURL } from './cardkit.js?v=form-control'
@@ -966,10 +966,22 @@ function campPage(el, ok) {
       const key = (hard ? 'H' : '') + ch.id + ':' + st.n, s = C.stars[key] || 0, open = hard ? (st.n === 1 || (C.stars['H' + ch.id + ':' + (st.n - 1)] || 0) > 0) : st.n === 1 ? unlocked : (C.stars[ch.id + ':' + (st.n - 1)] || 0) > 0, foe = X.POOL.find(c => c.key === campTeam([st.enemy[0]])[0])
       const row = h('button', 'camp-st' + (s ? ' done' : '') + (open ? '' : ' locked') + (st.boss ? ' boss' : ''), `<span class="cs-art" style="background-image:url('${foe ? foe.url : ''}')"></span><span class="cs-tx"><small>${ch.id}-${st.n}${st.boss ? ' · BOSS' : ''}</small><b>${st.name}</b><em>vs ${[...new Set(st.enemy.map(x => x.split('#')[0]))].join(', ')}</em></span><span class="cs-stars">${open ? '★'.repeat(s) + '<i>' + '★'.repeat(3 - s) + '</i>' : '🔒'}</span>`)
       row.disabled = !ok || !open
+      row.dataset.campStage = key
       { const cb = cxBtn(() => campTeam(st.enemy).map(k => X.BYKEY[k]), ch.id + '-' + st.n + ' · ' + st.name); cb.classList.add('cx-on-row'); const wrap = h('div', 'cx-wrap'); wrap.append(row, cb); list.append(wrap) }
+      const following = ch.stages[ch.stages.indexOf(st) + 1]
+      const nextKey = following ? (hard ? 'H' : '') + ch.id + ':' + following.n :
+        !hard && ST.camp.some(c => c.id === ch.id + 1) ? (ch.id + 1) + ':1' : null
+      const nextFight = nextKey && (() => {
+        const advance = () => {
+          const next = document.querySelector('.page:last-child [data-camp-stage="' + nextKey + '"]')
+          if (next && !next.disabled) next.click()
+        }
+        if (!s && st.outro?.length) scene(st.outro, 'AFTER · ' + st.name, foe?.url, advance)
+        else advance()
+      })
       row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
         try { sessionStorage.setItem('campOutro', JSON.stringify({ c: ch.id, s: st.n, had: s > 0 })) } catch { }
-        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: hard || st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: (st.boss ? 1.25 : 1 + st.n * .03) + (ch.id - 1) * .06 + (hard ? .35 : 0), team: campTeam(st.enemy) })
+        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: hard || st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: (st.boss ? 1.25 : 1 + st.n * .03) + (ch.id - 1) * .06 + (hard ? .35 : 0), team: campTeam(st.enemy), nextFight })
       })
     })
     el.append(list)
@@ -1006,8 +1018,14 @@ function storyArcPage(el, arc, cast, done) {
     const players = [chapter.player].flat().map(id => cast.get(id)), enemy = cast.get(chapter.enemy)
     const label = `Chapter ${i + 1} · ${chapter.name}`
     const start = withStory => {
+      const nextChapter = () => {
+        const next = document.querySelector('.page:last-child [data-arc-chapter="' + (i + 1) + '"]')
+        if (next && !next.disabled) next.click()
+      }
+      const outro = done => scene(chapter.outro, chapter.name, enemy.url, done, cast, players[0])
       const fight = () => go2({ ...chapter, mode: 'arc', id: arc.id + ':' + i, label, team: [enemy.key], storyTeam: players.map(c => c.key),
-        afterWin: withStory ? () => scene(chapter.outro, chapter.name, enemy.url, () => {}, cast, players[0]) : null })
+        afterWin: withStory ? () => outro(() => {}) : null,
+        nextFight: i + 1 < arc.chapters.length ? () => withStory ? outro(nextChapter) : nextChapter() : null })
       if (withStory) scene(chapter.scene, label, enemy.url, fight, cast, players[0])
       else fight()
     }
@@ -1015,6 +1033,7 @@ function storyArcPage(el, arc, cast, done) {
       `<span class="cs-art" style="background-image:url('${enemy.url}')"></span><span class="cs-tx"><small>${label}</small><b>${players.map(c => c.name).join(' & ')} vs. ${enemy.name}</b><small>${chapter.matchup}</small></span>`)
     const play = h('button', 'btn gold sm', i < done ? 'REPLAY STORY' : i === done ? 'CONTINUE STORY' : 'LOCKED')
     play.disabled = i > done
+    play.dataset.arcChapter = i
     play.onclick = () => start(true)
     row.append(play)
     if (i < done) {
@@ -1065,6 +1084,14 @@ function eventPage(el, ok) {
   el.append(list)
 }
 let warDraft = null
+function warStage(run, lanes) {
+  const round = run.results.length, lane = lanes[round]
+  if (!lane || warScore(run.results).done) return null
+  const playerTeam = run.squads[round]
+  if (playerTeam.some(key => !X.BYKEY[key] || !(X.P.club.cards[key]?.n > 0))) return null
+  return { n: round + 1, name: lane.name, label: 'WAR · ' + lane.name, level: lane.level, team: lane.team, playerTeam, war: { id: run.id, round } }
+}
+
 function warPage(el) {
   const { h, P, BYKEY, POOL } = X
   const war = P.war, lanes = X.ST().warLanes
@@ -1072,7 +1099,10 @@ function warPage(el) {
   const run = war.run, score = warScore(run?.results || [])
   const laneMvps = run ? warRecap(run.id) : []
   const locked = !!run && !score.done
-  if (!warDraft || warDraft.week !== war.week) warDraft = { week: war.week, squads: lanes.map(() => [null, null, null]) }
+  const applyPreset = () => {
+    warDraft = { week: war.week, ...fitWarPreset(P.warPreset || [], lanes, key => BYKEY[key], key => P.club.cards[key]?.n > 0) }
+  }
+  if (!warDraft || warDraft.week !== war.week) applyPreset()
   const squads = locked ? run.squads : warDraft.squads
   const owned = POOL.filter(c => P.club.cards[c.key]?.n > 0).sort((a, b) => b.ovr - a.ovr)
   const hero = h('section', 'bhero war-hero')
@@ -1113,8 +1143,10 @@ function warPage(el) {
           return
         }
         const select = h('select', 'war-pick')
+        const invalid = warDraft.invalid.some(x => x.lane === i && x.slot === j)
         select.setAttribute('aria-label', lane.name + ' fighter ' + (j + 1))
-        select.add(new Option('Select fighter ' + (j + 1), ''))
+        if (invalid) { select.classList.add('war-invalid'); select.setAttribute('aria-invalid', 'true') }
+        select.add(new Option((invalid ? 'Replace fighter ' : 'Select fighter ') + (j + 1), ''))
         const teammates = squads[i].filter((_, slot) => slot !== j).map(k => BYKEY[k]).filter(Boolean)
         for (const card of owned) {
           if (card.key !== key && (used.has(card.key) || !warCardAllowed(card, teammates, lane.kind))) continue
@@ -1123,6 +1155,7 @@ function warPage(el) {
         select.value = key || ''
         select.onchange = () => {
           squads[i][j] = select.value || null
+          warDraft.invalid = warDraft.invalid.filter(x => x.lane !== i || x.slot !== j)
           draw()
           grid.querySelectorAll('select')[i * 3 + j].focus()
         }
@@ -1132,6 +1165,7 @@ function warPage(el) {
     })
     const missing = locked && squads[run.results.length].some(key => !BYKEY[key] || !(P.club.cards[key]?.n > 0))
     const draftError = !locked && used.size === 9 && warLineupError(squads, lanes, key => BYKEY[key], key => P.club.cards[key]?.n > 0)
+    if (savePreset) savePreset.disabled = used.size !== 9 || !!draftError
     primary.disabled = missing || !!draftError || (!locked && (used.size !== 9 || lanes.some(lane => lane.team.length !== 3)))
     message.textContent = missing ? 'A locked fighter is no longer in your club. Abandon this war to choose new squads.' :
       locked ? 'Squads are locked. Each round starts with fresh HP, Energy and Ultimate gauge.' :
@@ -1140,8 +1174,9 @@ function warPage(el) {
   primary.onclick = async () => {
     primary.disabled = true
     if (locked) {
-      const round = run.results.length, lane = lanes[round]
-      startBattle({ n: round + 1, name: lane.name, label: 'WAR · ' + lane.name, level: lane.level, team: lane.team, playerTeam: run.squads[round], war: { id: run.id, round } })
+      const next = warStage(run, lanes)
+      if (next) startBattle(next)
+      else draw()
       return
     }
     const r = await X.act('warStart', { week: war.week, squads })
@@ -1149,6 +1184,21 @@ function warPage(el) {
     else draw()
   }
   footer.append(message, primary)
+  const savePreset = locked ? null : h('button', 'btn dark', 'SAVE WAR PRESET')
+  if (savePreset) {
+    savePreset.onclick = async () => {
+      savePreset.disabled = true
+      const result = await X.act('warPreset', { squads })
+      if (!result.error) X.go('battle')
+      else draw()
+    }
+    footer.append(savePreset)
+    if (P.warPreset) {
+      const load = h('button', 'btn dark', 'LOAD WAR PRESET')
+      load.onclick = () => { applyPreset(); X.go('battle') }
+      footer.append(load)
+    }
+  }
   if (locked) {
     const abandon = h('button', 'btn dark', 'ABANDON WAR')
     abandon.onclick = async () => {
@@ -1664,9 +1714,18 @@ export function startBattle(stage) {
   mb.onclick = () => { sfxOn(!sfxOn()); mdraw() }; mdraw()
   $a('.ar-end').onclick = () => endTurn()
   $a('.ar-quit').onclick = () => { if (B.over) { if (!stage.war) close(); return } if (ov.querySelector('.qconf')) return; const q = document.createElement('div'); q.className = 'qconf'; q.innerHTML = '<div class="qc-box"><b>QUIT BATTLE?</b><p>You will leave this fight with no rewards.' + (stage.war ? ' This lane will count as a loss.' : stage.boss ? ' Your boss attempt is not used.' : '') + '</p><div class="qc-b"><button class="btn dark">KEEP FIGHTING</button><button class="btn red">QUIT</button></div></div>'; const [k, x] = q.querySelectorAll('button'); k.onclick = () => q.remove(); x.onclick = async () => { q.remove(); if (stage.war) { if (!B.over) await end(false) } else close() }; ov.append(q) }
-  function close() {
+  function close({ immediate = false, route = true } = {}) {
+    if (B.closed) return
     if (LV && !B.over) { lvSend({ t: "quit" }); B.over = true; try { lvUnsub && lvUnsub(); clearInterval(lvTimer) } catch { } X.ACC.pvpFinish(LV.code, LV.oppUid) }
-    if (stage.pvp) { FXC.dispose(); document.body.classList.remove('in-battle'); music('menu'); B.closed = true; ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('players'); return } FXC.dispose(); document.body.classList.remove('in-battle'); music('menu'); B.closed = true; ST3 && ST3.dispose(); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); X.go('battle') }
+    FXC.dispose()
+    document.body.classList.remove('in-battle')
+    music('menu')
+    B.closed = true
+    ST3?.dispose()
+    if (immediate) ov.remove()
+    else { ov.classList.add('out'); setTimeout(() => ov.remove(), 300) }
+    if (route) X.go(stage.pvp ? 'players' : 'battle')
+  }
 
   // safety net: nobody can sit on 0 HP without being knocked out, and a KO'd active fighter is always replaced
   function sweepKO() { for (const [side, sd] of [['you', B.you], ['ai', B.ai]]) { for (const f of sd.team) if (!f.ko && f.hp <= 0.5) { f.hp = 0; f.ko = true } if (act(sd).ko && !nextAlive(sd)) { end(side === 'ai'); return true } }
@@ -1836,7 +1895,26 @@ export function startBattle(stage) {
       }
       close()
       if (won && !r.error && stage.afterWin) stage.afterWin()
-    }; box.append(b)
+    }
+    const actions = h('div', 'battle-result-actions')
+    actions.append(b)
+    const shortcut = (label, run) => {
+      const button = h('button', 'btn dark', label)
+      button.onclick = () => { if (!B.closed) run() }
+      actions.append(button)
+    }
+    const run = X.P.war?.run
+    const nextWar = stage.war && !r.error && run?.id === stage.war.id && warStage(run, X.ST().warLanes)
+    if (nextWar) shortcut('NEXT WAR LANE', () => { close({ immediate: true, route: false }); startBattle(nextWar) })
+    if (won && !r.error && stage.nextFight) shortcut('NEXT FIGHT', () => {
+      if (stage.mode === 'camp') { try { sessionStorage.removeItem('campOutro') } catch { } }
+      close({ immediate: true })
+      stage.nextFight()
+    })
+    if (!stage.war && !stage.pvp && !stage.live && !r.error && ['camp', 'arc', 'tower', 'redzone', 'villain', undefined].includes(stage.mode)) {
+      shortcut('RETRY', () => { close({ immediate: true, route: false }); startBattle(stage) })
+    }
+    box.append(actions)
     ov.append(box)
   }
 

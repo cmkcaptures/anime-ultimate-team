@@ -1,0 +1,7 @@
+.compare-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.compare-grid .panel { min-width: 0; overflow-wrap: anywhere; }
+.compare-grid p { margin: 6px 0 12px; }
+.card-flags { position: absolute; z-index: 1; top: 4px; left: 4px; padding: 2px 5px; border-radius: 5px; background: #231639; color: #ffe278; }
+.quick-reveal-setting { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+#arena .battle-result-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.war-pick.war-invalid { border-color: #ff8a9e; }

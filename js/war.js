@@ -60,3 +60,24 @@ export function warScore(results) {
   const losses = results.length - wins
   return { wins, losses, done: wins === 2 || losses === 2 }
 }
+
+export function fitWarPreset(squads, lanes, lookup, owns) {
+  const used = new Set()
+  const invalid = []
+  const fitted = lanes.map((lane, index) => {
+    const team = []
+    return Array.from({ length: 3 }, (_, slot) => {
+      const key = squads[index]?.[slot]
+      const card = key && lookup(key)
+      if (!key) return null
+      if (!card || !owns(key) || used.has(key) || !warCardAllowed(card, team, lane.kind)) {
+        invalid.push({ lane: index, slot })
+        return null
+      }
+      used.add(key)
+      team.push(card)
+      return key
+    })
+  })
+  return { squads: fitted, invalid }
+}
