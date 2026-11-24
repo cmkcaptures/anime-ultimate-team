@@ -1,6 +1,6 @@
 import { formCard } from './transformations.js?v=form-control'
-import { createFX } from './fx2d.js?v=form-control'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=baryon-permanent'
+import { createFX } from './fx2d.js?v=mobile-render'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=mobile-render'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -70,12 +70,27 @@ function toast(text, kind = 'ok') {
 
 // ================= card images =================
 // cards are drawn only when they scroll near the screen (big win on My Cards / binders / shop)
-const LAZY = 'IntersectionObserver' in window ? new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) { LAZY.unobserve(e.target); e.target._draw() } }, { rootMargin: '300px' }) : null
+const pendingCardImages = new Set()
+const LAZY = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+  for (const { target, isIntersecting } of entries) {
+    if (!isIntersecting || !pendingCardImages.delete(target)) continue
+    LAZY.unobserve(target)
+    if (target.isConnected) target._draw()
+  }
+}, { rootMargin: '300px' }) : null
+if (LAZY) new MutationObserver(records => {
+  if (!records.some(record => record.removedNodes.length)) return
+  for (const image of pendingCardImages) if (!image.isConnected) {
+    LAZY.unobserve(image)
+    pendingCardImages.delete(image)
+  }
+}).observe(document.body, { childList: true, subtree: true })
 function cardImg(c, w = 340) {
   const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, grade ${gradeOf(c.ovr)}`; im.decoding = 'async'; im.draggable = false
   im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r; if (c.key) im.dataset.key = c.key; if (c.sig) im.dataset.sig = 1; if (c.maxed) im.dataset.max = 1
-  im._draw = () => thumbURL(c, w).then(u => im.src = u)
-  if (LAZY) { LAZY.observe(im); setTimeout(() => { if (!im.src && im.isConnected && im.getBoundingClientRect().top < innerHeight + 300) { LAZY.unobserve(im); im._draw() } }, 50) } else im._draw()
+  im._draw = () => { delete im._draw; thumbURL(c, w).then(u => { im.src = u }, () => {}) }
+  if (LAZY) { pendingCardImages.add(im); LAZY.observe(im) }
+  else im._draw()
   return im
 }
 const BACK = (() => {
@@ -872,21 +887,13 @@ const bootDone = () => { const o = document.getElementById('boot'); if (o) { o.c
   // bring over the very first browser save, once
   try { const old = JSON.parse(localStorage.getItem('aut-club-v1')); if (old && old.cards && Object.keys(old.cards).length && !P.imported && !P.club.packs) { await act('import', { club: old, team: JSON.parse(localStorage.getItem('aut-team-v1')) }); toast('Moved your old box and team into this save.', 'gold') } } catch { }
   bootP(.45, 'Loading fonts…'); await fontsReady
-  { // preload your team and partner art so the first screens draw instantly
-    const keys = [...new Set(P.team.filter(Boolean))], L = keys.map(k => BYKEY[k]).filter(Boolean); let done = 0
-    bootP(.5, 'Preparing your team…')
-    await Promise.race([Promise.all(L.map(c => thumbURL(eff(c), 340, true).then(() => bootP(.5 + .45 * (++done / L.length))).catch(() => { }))), new Promise(r => setTimeout(r, 7000))])
-  }
   bootP(1, 'Ready!')
   const hsh = location.hash.slice(1), [name, ...rest] = hsh.split('-')
   go(PAGES[name] ? name : 'home', rest.join('-') || null, { silent: !hsh }); bootDone()
-  // warm the rest of your collection in the background (cached forever after)
-  { const low = innerWidth < 800 || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4, idle = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 2000 }) : setTimeout(f, 200))
-    setTimeout(async () => { for (const c of owned().sort((a, b) => b.ovr - a.ovr).slice(0, low ? 18 : 60)) { await new Promise(r => idle(r)); try { await thumbURL(eff(c), 300) } catch { } } }, low ? 9000 : 5000) }
   setInterval(async () => {
+    if (document.hidden || document.body.classList.contains('in-battle') || document.body.classList.contains('in-opener')) return
     await refresh()
     if (CUR === 'market' && MS.tab !== 0) { await loadMarket(); if ($('#modal').hidden) rerender() }
-    if (CUR === 'home' && $('#modal').hidden) { /* timers tick themselves */ }
   }, 10000)
 })()
 

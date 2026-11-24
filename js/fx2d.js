@@ -3,8 +3,14 @@
 export function createFX(host) {
   const cv = document.createElement('canvas'); cv.className = 'fx2d'; host.append(cv)
   const x = cv.getContext('2d')
-  let W = 0, H = 0, DPR = Math.min(innerWidth < 800 ? 1.25 : 1, devicePixelRatio || 1)
-  const size = () => { W = host.clientWidth; H = host.clientHeight; cv.width = W * DPR; cv.height = H * DPR; x.setTransform(DPR, 0, 0, DPR, 0, 0) }
+  let W = -1, H = -1
+  const size = () => {
+    const width = host.clientWidth, height = host.clientHeight
+    if (width === W && height === H) return
+    W = width; H = height
+    // Effects are soft glows and particles. A CSS-pixel buffer is enough on phones.
+    cv.width = W; cv.height = H
+  }
   size(); const ro = new ResizeObserver(size); ro.observe(host)
   const P = []
   let raf = 0, last = 0

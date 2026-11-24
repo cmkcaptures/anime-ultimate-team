@@ -123,3 +123,14 @@
   #arena .ar-btns .ar-trans.form-step { width: 88px; height: 48px !important; }
   #arena .ar-btns .ar-trans.form-step b { font-size: 17px; }
 }
+
+/* Keep the arena still between actions on small screens. */
+@media (max-width: 799px) {
+  #arena .bcs-spot,
+  #arena .bcs-crowd::after,
+  #arena .bcs-board span,
+  #arena .art2 .glints i,
+  #arena .art2 .sym::before {
+    animation: none;
+  }
+}

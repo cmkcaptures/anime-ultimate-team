@@ -2,7 +2,7 @@
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
 import { TIER, TYPE, thumbURL } from './cardkit.js?v=form-control'
 import { sfx, sfxOn, music } from './sfx.js?v=form-control'
-import { createFX } from './fx2d.js?v=form-control'
+import { createFX } from './fx2d.js?v=mobile-render'
 import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=form-control'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
@@ -1115,7 +1115,6 @@ export function startBattle(stage) {
   }
   if (stage.rules) for (const f of B.ai.team) { const r = { ...stage.rules }; f.pe = { ...(f.pe || {}), ...r, dmg: ((f.pe || {}).dmg || 0) + (r.dmg || 0), dodge: Math.min(60, ((f.pe || {}).dodge || 0) + (r.dodge || 0)), regen: ((f.pe || {}).regen || 0) + (r.regen || 0) }; if (r.endure) f.endure = (f.endure || 0) + r.endure }
   if (stage.rules?.ultStart) B.ai.gauge = Math.max(B.ai.gauge, stage.rules.ultStart)
-  { const all = [...B.you.team, ...B.ai.team], idle = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 1500 }) : setTimeout(f, 60)); let i = 0; const next = () => { const f = all[i++]; if (!f) return; thumbURL(f.card, 560).catch(() => {}).finally(() => idle(next)) }; setTimeout(() => idle(next), 200) }
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
   for (const side of [B.you, B.ai]) for (const f of side.team) f.startingMax = f.max
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
@@ -1150,7 +1149,14 @@ export function startBattle(stage) {
   let AUTO = false
   const wait = ms => new Promise(r => setTimeout(r, ms / SPEED))
   const IMG = new Map()
-  const img = (f, w) => { const im = new Image(); im.alt = f.card.name; im.draggable = false; const k = f.card.id + ':' + f.key + ':' + w; if (!IMG.has(k)) IMG.set(k, thumbURL(f.card, w)); IMG.get(k).then(u => im.src = u); return im }
+  const img = (f, w) => { const im = new Image(); im.alt = f.card.name; im.draggable = false; const k = f.card.id + ':' + f.key + ':' + w; if (!IMG.has(k)) IMG.set(k, thumbURL(f.card, w, w === 360)); IMG.get(k).then(u => im.src = u, () => {}); return im }
+
+  const markupCache = new WeakMap()
+  function updateMarkup(element, markup) {
+    if (markupCache.get(element) === markup) return
+    element.innerHTML = markup
+    markupCache.set(element, markup)
+  }
 
   function bcHud(side, s) {
     const f = act(s), el = $a('.bct-s.' + side), pct = f.hp / f.max * 100
@@ -1160,8 +1166,11 @@ export function startBattle(stage) {
       el.classList.remove('in'); void el.offsetWidth; el.classList.add('in')
       el.querySelector('.gh').style.width = el.querySelector('.fg').style.width = pct + '%'
     }
-    const fg = el.querySelector('.fg'), gh = el.querySelector('.gh'), was = parseFloat(fg.style.width) || 100
-    fg.style.width = pct + '%'; setTimeout(() => { gh.style.width = pct + '%' }, 450)
+    const fg = el.querySelector('.fg'), gh = el.querySelector('.gh'), was = parseFloat(fg.style.width)
+    if (fg.style.width !== pct + '%') {
+      fg.style.width = pct + '%'
+      setTimeout(() => { gh.style.width = pct + '%' }, 450)
+    }
     if (pct < was - .1) { el.classList.remove('dmgd'); void el.offsetWidth; el.classList.add('dmgd') }
     el.classList.toggle('low', pct < 30)
     el.querySelector('.bnum').textContent = f.hp.toLocaleString()
@@ -1172,16 +1181,16 @@ export function startBattle(stage) {
   }
   function hud(side, s) {
     const f = act(s), el = $a(`.ar-side.${side} .ar-hud`)
-    el.innerHTML = `<div class="hn"><b>${f.card.name}</b><small>${f.card.ver}</small></div>
+    updateMarkup(el, `<div class="hn"><b>${f.card.name}</b><small>${f.card.ver}</small></div>
       <div class="hp"><i style="width:${f.hp / f.max * 100}%"></i><span>${f.hp.toLocaleString()} / ${f.max.toLocaleString()}</span></div>
-      <div class="gg ${s.gauge >= GAUGE_MAX ? 'full' : ''}"><i style="width:${s.gauge}%"></i></div>`
+      <div class="gg ${s.gauge >= GAUGE_MAX ? 'full' : ''}"><i style="width:${s.gauge}%"></i></div>`)
   }
   function field(side, s) {
     const a = $a(`.ar-side.${side} .ar-active`), f = act(s)
     if (a.dataset.k !== f.card.id) { a.innerHTML = ''; const im = img(f, 360); a.append(im); a.dataset.k = f.card.id; a.classList.remove('enter'); void a.offsetWidth; a.classList.add('enter') }
     a.style.setProperty('--rc', X.tierCol(f.card.r)); a.classList.toggle('aura', !!f.aura); a.classList.toggle('formed', !!f.transformed && !f.aura)
     let hb = a.querySelector('.hpb'); if (!hb) { hb = document.createElement('div'); hb.className = 'hpb'; a.append(hb) }
-    hb.innerHTML = `<b>${f.hp.toLocaleString()}</b><i><s style="width:${f.hp / f.max * 100}%"></s></i>`
+    updateMarkup(hb, `<b>${f.hp.toLocaleString()}</b><i><s style="width:${f.hp / f.max * 100}%"></s></i>`)
     const foeF = act(side === 'you' ? B.ai : B.you), mu = foeF ? matchup(f, foeF) : 1
     let tg = a.querySelector('.mtag'); if (!tg) { tg = document.createElement('div'); a.append(tg) } tg.className = 'mtag ' + (mu > 1 ? 'adv' : mu < 1 ? 'weak' : 'none'); tg.textContent = mu > 1 ? 'ADVANTAGE' : mu < 1 ? 'WEAKNESS' : ''
     a.onclick = () => inspect(f, side)
@@ -1202,7 +1211,7 @@ export function startBattle(stage) {
   }
   function controls() {
     const s = B.you, my = !B.busy && !B.over
-    $a('.ar-ki').innerHTML = `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`
+    updateMarkup($a('.ar-ki'), `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`)
     const hand = $a('.ar-hand'), f = act(s), hkey = f.card.id + '|' + s.hand.join(',')
     if (hand.dataset.k === hkey && hand.children.length === s.hand.length) { s.hand.forEach((a, i) => { const el = hand.children[i]; el.querySelector('.gem b').textContent = a === 'burst' ? 'ALL' : artCost(f, a); el.disabled = !my || s.ki < artCost(f, a) || (a === 'burst' && s.ki < 2) }) }
     else { hand.dataset.k = hkey; hand.innerHTML = ''
