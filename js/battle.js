@@ -1,3 +1,4 @@
+import { pveBalance } from './pve-balance.js?v=1'
 import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missionId } from './transfer-campaign.js?v=1'
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
@@ -329,7 +330,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
         pasNote(def, 'ULTRA INSTINCT COUNTER · ' + counter.dmg + ' DMG')
       }
       pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
-    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; def.ko = true; att.kos++; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
+    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; def.ko = true; att.kos++; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
   }
   const opening = offensive && !mod.followup && crewOpening(att, def, A)
   if (opening && ea.crew === 'asura' && kind === 'ult') base *= 1.25
@@ -546,6 +547,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (ed.bigHitHeal && dmg > def.max * .2 && def.hp > 0) healHP(def, Math.round(def.max * ed.bigHitHeal / 100))
   if (kind !== 'redirect' && ea.recoil) att.hp = Math.max(1, att.hp - Math.round(att.max * ea.recoil / 100))
   // knockouts, with survive / revive passives
+  if (def.scoreBoss && def.hp <= 0) def.hp = Math.max(1, Math.round(def.max * .3))
   if (def.campaignTell && def.hp < def.max * .35) def.hp = Math.ceil(def.max * .35)
   if (def.hp === 0 && !def.ko && def.encounterPhase && D) {
     def.encounterPhase = false
@@ -712,7 +714,7 @@ function playArt(B, who, idx) {
     else if (art === 'rumble') { const h = healHP(a, a.max * .35); me.chargeNext = (me.chargeNext || 0) + 25; ev.tactic = 'RUMBLE BALL · +' + h.toLocaleString() + ' HP · NEXT +25%' }
     else if (art === 'finger') { a.hp = Math.max(1, a.hp - Math.round(a.max * .1)); me.chargeNext = (me.chargeNext || 0) + 60; ev.tactic = 'CURSED FINGER · NEXT ATTACK +60%' }
     else if (art === 'deathnote') {
-      if (d.rivalBarrier != null) ev.tactic = 'TOPPO RESISTS DEATH NOTE'
+      if (d.rivalBarrier != null || d.scoreBoss || d.encounterPhase) ev.tactic = d.card.name + ' RESISTS DEATH NOTE'
       else { d.doom = 3; ev.tactic = 'DEATH NOTE · ' + d.card.name + ' HAS 3 TURNS' }
     }
     else if (art === 'hogyoku') { a.endure = (a.endure || 0) + 1; for (const k of ['pwr', 'ki', 'def']) a[k] = Math.round(a[k] * 1.15); ev.tactic = 'HOGYOKU · EVOLVED' }
@@ -1375,9 +1377,9 @@ function bossPage(el, ok) {
   const hero = h('section', 'bosshero')
   hero.style.setProperty('--art', `url("${c.url}")`); hero.style.setProperty('--fx', Math.round((c.fx ?? .5) * 100) + '%'); hero.style.setProperty('--fy', Math.round((c.fy ?? .22) * 100) + '%')
   hero.innerHTML = `<i class="bh-art"></i><div class="bh-info"><small>デイリーボス · NEW BOSS IN <b class="timer" data-until="${BD.ends}"></b></small><h2>DAILY BOSS</h2>
-    <div class="bh-name"><b>${c.name}</b><span>${c.ver} · ${BD.hpMult}× HP</span></div>
+    <div class="bh-name"><b>${c.name}</b><span>${c.ver} · SQUAD-SCALED</span></div>
     <div class="bh-ab"><b>BOSS SKILL · ${BD.ab.name}</b><span>${BD.ab.d}</span></div>
-    <p>Everyone fights the same boss today. You can't win; deal as much damage as you can in 12 turns before it retreats. Your best attempt counts.</p>
+    <p>Deal as much damage as you can before the boss retreats. Watch for its special attack every third round and increased pressure from round six. Your best attempt counts.</p>
     <div class="cx-slot"></div><div class="rk-stats"><span><b>${me.best.toLocaleString()}</b>BEST DAMAGE</span><span><b>${left}/${BD.tries}</b>ATTEMPTS LEFT</span><span><b>${me.total.toLocaleString()}</b>TOTAL TODAY</span></div></div>`
   const go = h('button', 'btn gold big rk-go', left > 0 ? 'FIGHT THE BOSS' : 'COME BACK TOMORROW'); go.disabled = !ok || left < 1
   go.onclick = () => go2({ mode: 'boss', id: 0, boss: BD.hpMult, bossAb: BD.ab, label: 'Daily Boss · ' + c.name, name: c.name, level: 5, team: [BD.key], arena: ARENA_KEYS[BD.day % ARENA_KEYS.length] })
@@ -1592,11 +1594,11 @@ function redzonePage(el, ok) {
     const w = st.reward, rw = [w.coins.toLocaleString() + ' coins', w.premium && w.premium + '× Premium', w.shards && '◆' + w.shards.toLocaleString(), w.tickets && w.tickets + ' Tickets'].filter(Boolean).join(' · ')
     const box = h('section', 'rz-st' + (open ? '' : ' locked') + (clr ? ' done' : '') + (st.final ? ' final' : ''), `<div class="rz-art" style="background-image:url('${boss ? boss.url : ''}')"><span>DZ-${st.n}${st.final ? ' · FINAL' : ''}</span></div>
       <div class="rz-body"><h3>${st.name.toUpperCase()} ${clr ? '<em>✓ CLEARED</em>' : ''}</h3><p class="rz-vs">vs ${st.enemy.map(name => cardById(name)?.name || name).join(', ')} · enemy power ×${st.boost}</p>
-      <div class="rz-rules">${st.rules.map(r => `<span class="rz-rule"><b>⚠ ${r[0]}</b>${r[1]}</span>`).join('')}</div>
+      <div class="rz-rules">${st.rules.map(r => `<span class="rz-rule"><b>⚠ ${r[0]}</b>${r[1]}</span>`).join('')}${st.n >= 4 ? '<span class="rz-rule"><b>Pressure</b>Enemies gain 40% Ultimate gauge on even rounds.</span>' : ''}${st.final && team.length === 1 ? '<span class="rz-rule"><b>Final Stand</b>The lead returns once at 35% HP with a full Ultimate gauge.</span>' : ''}</div>
       <div class="rz-weak"><b>WEAK TO</b>${st.weak.map(t => `<span>${rzTag(t)} +${st.weakB}%</span>`).join('')}<i>Everyone else −${st.resist}% damage</i></div>
       <p class="rz-tip">💡 ${st.tip}</p><p class="rz-rw">🎁 First clear: ${rw}</p></div>`)
     const acts = h('div', 'rz-acts'), go = h('button', 'btn gold', open ? (clr ? 'REPLAY' : '💀 ENTER') : '🔒 LOCKED'); go.disabled = !ok || !open
-    go.onclick = () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, encounter: st.encounter, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
+    go.onclick = () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, pveFloor: st.n, pveFinal: st.final, encounter: st.encounter, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
     acts.append(go, cxBtn(() => team.map(k => X.BYKEY[k]), 'DZ-' + st.n + ' · ' + st.name)); box.querySelector('.rz-body').append(acts); el.append(box)
   }
 }
@@ -1715,7 +1717,7 @@ function storyArcPage(el, arc, cast, done) {
         if (next && !next.disabled) next.click()
       }
       const outro = done => scene(chapter.outro, chapter.name, enemy.url, done, cast, players[0])
-      const fight = () => go2({ ...chapter, mode: 'arc', id: arc.id + ':' + i, label, team: [enemy.key], storyTeam: players.map(c => c.key),
+      const fight = () => go2({ ...chapter, mode: 'arc', id: arc.id + ':' + i, label, pveFloor: i + 1, pveEpisodes: arc.chapters.length, team: [enemy.key], storyTeam: players.map(c => c.key),
         afterWin: withStory ? () => outro(() => {}) : null,
         nextFight: i + 1 < arc.chapters.length ? () => withStory ? outro(nextChapter) : nextChapter() : null })
       if (withStory) scene(chapter.scene, label, enemy.url, fight, cast, players[0])
@@ -2079,7 +2081,11 @@ export function startBattle(stage) {
   if (LV) { B.you.deck = LV.myDeck || null; B.ai.deck = LV.oppDeck || null; B.you.hand = []; B.ai.hand = []; B.you.pile = B.ai.pile = null; B.you.rngS = (LV.seed + (LV.role === 'h' ? 1 : 2)) | 0; B.ai.rngS = (LV.seed + (LV.role === 'h' ? 2 : 1)) | 0 }
   if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * .88); f.ki = Math.round(f.ki * .88); f.def = Math.round(f.def * 1.15) }
   if (stage.youCat) for (const f of B.you.team) if ((f.card.cat || []).includes(stage.youCat)) for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.15)
-  for (const [side, boost] of [[B.ai, stage.boost], [B.you, stage.playerBoost]]) {
+  const arcBalance = stage.mode === 'arc' ? pveBalance('arc', B.you.team, {
+    floor: stage.pveFloor, episodes: stage.pveEpisodes, baseBoost: stage.boost,
+  }) : null
+  const castBoost = arcBalance ? (stage.playerBoost || 1) * arcBalance.storyBoost : stage.playerBoost
+  for (const [side, boost] of [[B.ai, arcBalance ? 1 : stage.boost], [B.you, castBoost]]) {
     if (!boost || boost === 1) continue
     for (const f of side.team) {
       f.hp = f.max = Math.round(f.max * boost)
@@ -2114,6 +2120,18 @@ export function startBattle(stage) {
       act(B.ai).campaignTell = true
       act(B.ai).encounterPhase = true
     }
+  }
+  const balance = arcBalance || pveBalance(stage.mode, B.you.team, {
+    floor: stage.pveFloor, enemies: B.ai.team.length, finale: stage.pveFinal,
+  })
+  if (balance) {
+    B.ai.campaignDamage = balance.damage
+    for (const enemy of B.ai.team) {
+      const hp = Math.round(enemy.max * balance.hp)
+      enemy.max = enemy.hp = hp
+      if (balance.scoreBoss) enemy.scoreBoss = true
+    }
+    if (balance.phase) act(B.ai).encounterPhase = true
   }
   if (stage.rivalry) {
     const boss = act(B.ai), mastery = stage.id === 'mastery'
@@ -2886,6 +2904,12 @@ export function startBattle(stage) {
     }
     if ((stage.level || 1) >= 5 && canTransform(act(B.ai), B.ai)) await transform(B.ai, 'ai')
     if (stage.boss && B.turn >= 12 && !B.over) { log('Time up! The boss retreats.'); return end(false) }
+    if (stage.mode === 'boss' && B.turn === 6) {
+      B.ai.campaignDamage *= 1.2
+      B.ai.gauge = Math.min(GAUGE_MAX, B.ai.gauge + 30)
+      log('BOSS ENRAGED · +20% damage and +30% Ultimate gauge.')
+      turnBanner('BOSS ENRAGED', false)
+    }
     if (stage.bossAb && B.turn % 3 === 0 && !B.over) {
       const ab = stage.bossAb, you = B.you, boss = act(B.ai)
       B.busy = true; controls(); sfx('charge', 6); shake(3); wash('#ff3b6b', true)
@@ -2902,7 +2926,7 @@ export function startBattle(stage) {
     const s = B.ai; s.ki = Math.min(KI_MAX, s.ki + KI_PER_TURN + (s.kiBonus || 0)); refill(s); s.switched = false; s.seq = []; startTurn(s); if (B.over) return; act(B.you).fort = 0
     if (!unwritten(act(s)) && (s.skip || act(s).frozen)) { s.skip = 0; act(s).frozen = 0; log('Enemy loses its turn!'); turnBanner('TIME STOPPED', false); await wait(900); B.turn++; const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN); refill(y); y.switched = false; y.seq = []; startTurn(y); if (B.over) return; if (operation?.kind === 'hold' && enemyRounds >= operation.count) return end(true); B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); draw(); if (AUTO) autoTurn(); return }
     if (stage.chapterRule === 'open-guard' || stage.encounter === 'break-guard') act(s).guard = 1
-    if (stage.encounter === 'pressure' && B.turn % 2 === 0) {
+    if ((stage.encounter === 'pressure' || (stage.mode === 'redzone' && stage.pveFloor >= 4)) && B.turn % 2 === 0) {
       s.gauge = Math.min(GAUGE_MAX, s.gauge + 40)
       log('PRESSURE · The enemy gains 40% Ultimate gauge.')
     }
@@ -3018,6 +3042,10 @@ export function startBattle(stage) {
     B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); myTurnStart()
   }
   function announceChapterRule() {
+    if (stage.bossAb && stage.mode === 'boss' && B.turn < 12 && B.turn % 3 === 0) {
+      log('BOSS SKILL INCOMING · ' + stage.bossAb.name)
+      turnBanner('BOSS SKILL INCOMING', false)
+    }
     if (stage.chapterRule === 'forecast') {
       B.calledArt = ['strike', 'blast', 'special'][(B.turn - 1) % 3]
       log('FORECAST · ' + B.calledArt.toUpperCase() + '. Play another Art or switch.')
