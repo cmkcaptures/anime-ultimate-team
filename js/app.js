@@ -1,7 +1,7 @@
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=qol-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=clarity-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -388,7 +388,7 @@ PAGES.cards = (el) => {
   el.append(head)
   { const mu = h('button', 'btn violet', 'ギャラリー · CARD MUSEUM'); mu.style.marginTop = '4px'; mu.onclick = () => go('museum'); el.append(mu) }
   const tools = h('div', ''); tools.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:14px'
-  const MODES = ['OWNED', 'UNOWNED', 'ALL', 'BINDER']; const seg = segmented(['OWNED', 'UNOWNED', 'ALL', 'BINDER'], Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
+  const MODES = ['OWNED', 'UNOWNED', 'ALL', 'BINDER', 'WATCHLIST']; const seg = segmented(MODES, Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
   const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search cards or abilities, e.g. shield break'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
   const an = h('div', 'chips'), ra = h('div', 'chips')
   tools.append(seg, q, an, ra); el.append(tools)
@@ -403,13 +403,22 @@ PAGES.cards = (el) => {
     if (CF.mode === 'BINDER') return drawBinder(grid)
     if (CF.mode === 'EVOLVE') return drawEvolve(grid)
     if (CF.mode === 'FUSE') return drawFuse(grid)
-    const list = POOL.filter(c => (CF.mode === 'ALL' || (CF.mode === 'UNOWNED' ? !club()[c.key] : club()[c.key])) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && matchesCard(c, CF.q))
+    const list = POOL.filter(c => (CF.mode === 'ALL' || (CF.mode === 'WATCHLIST' ? P.watchlist?.includes(c.key) : CF.mode === 'UNOWNED' ? !club()[c.key] : club()[c.key])) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && matchesCard(c, CF.q))
       .sort((a, b) => Number(!!club()[b.key]?.favorite) - Number(!!club()[a.key]?.favorite) || (CF.sort === 'NEW' ? (b.added || 0) - (a.added || 0) : 0) || TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
     grid.innerHTML = ''
+    if (!list.length && CF.mode === 'WATCHLIST') {
+      const empty = h('div', 'empty', '<b>No matching watched cards</b>Add a card from its detail screen or change your filters.')
+      empty.style.gridColumn = '1/-1'; grid.append(empty); return
+    }
     if (!list.length) { grid.append(h('div', 'empty', `<b>${own.length ? 'Nothing here' : 'No cards yet'}</b>${own.length ? 'Try a different filter.' : 'Open your free pack on the home screen.'}`)); grid.firstChild.style.gridColumn = '1/-1'; return }
     for (const c of list) {
       const e = club()[c.key], b = h('button', 'cg' + (e ? '' : ' miss')); b.append(cardImg(eff(c), 240))
       if (e) { b.append(h('span', 'n', e.n)); if (e.favorite || e.locked) b.append(h('span', 'card-flags', (e.favorite ? '★' : '') + (e.locked ? ' 🔒' : ''))); if (e.ser && e.ser <= 100) b.append(h('span', 'sr', '#' + e.ser)); if (e.lvl) b.append(h('span', 'lv', '★' + e.lvl)); if ((P.last || []).includes(c.key) && e.n === 1) b.append(h('span', 'nw', 'NEW')) }
+      if (CF.mode === 'WATCHLIST') {
+        const route = h('small', 'watchlist-route')
+        route.textContent = e ? 'Owned' : unlockRoutes(c)[0]
+        b.append(route)
+      }
       b.onclick = () => cardDetail(c.key); grid.append(b)
     }
   }
@@ -511,6 +520,16 @@ function compareCards(base) {
     draw()
   }, true)
 }
+function unlockRoutes(card) {
+  if (card.arcReward) {
+    const arc = ST.arcs.find(a => a.id === card.arcReward)
+    const cleared = arc && (P.arcs?.[arc.id] || 0) >= arc.chapters.length
+    return [cleared ? 'Pack Point Exchange · ' + fmt(ST.ppCost[card.r]) + ' points' : 'Clear ' + (arc?.name || 'its Story Arc')]
+  }
+  if (card.season === 99) return ['Campaign boss reward']
+  if (card.season) return ['Season ' + card.season + ' Pass reward']
+  return ['Pack Point Exchange · ' + fmt(ST.ppCost[card.r]) + ' points', 'Craft · ' + fmt(ST.shardCost[card.r]) + ' shards']
+}
 async function cardDetail(key) {
   const base = BYKEY[key]; if (!base) return
   const c = eff(base), e = club()[key], inTeam = P.team.includes(key), spare = spendableCopies(e, inTeam), lvl = e ? e.lvl || 0 : 0
@@ -525,6 +544,23 @@ async function cardDetail(key) {
     const compare = h('button', 'btn dark sm', 'COMPARE CARDS')
     compare.onclick = () => compareCards(base)
     d.append(compare)
+    const watched = P.watchlist?.includes(key)
+    if (!e || watched) {
+      const watch = h('button', 'btn dark sm', watched ? 'REMOVE FROM WATCHLIST' : 'ADD TO WATCHLIST')
+      watch.onclick = async () => {
+        watch.disabled = true
+        const r = await act('watchCard', { key, value: !watched })
+        if (r.error) { watch.disabled = false; return }
+        if (CUR === 'cards') rerender()
+        cardDetail(key)
+      }
+      d.append(watch)
+      if (!e) {
+        const route = h('p', 'muted')
+        route.textContent = unlockRoutes(base).join(' · ')
+        d.append(route)
+      }
+    }
     if (e && e.ser) d.append(h('span', 'serial' + (e.ser <= 100 ? ' low' : ''), `SERIAL #${String(e.ser).padStart(4, '0')}${e.ser <= 10 ? ' · ULTRA LOW' : e.ser <= 100 ? ' · LOW SERIAL' : ''}`))
     d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}`))
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))

@@ -1,0 +1,20 @@
+#arena .ar-mid:has(.battle-info-tools) { flex-direction: column; align-items: center; gap: 4px; }
+.battle-info-tools { display: flex; justify-content: center; gap: 6px; pointer-events: auto; }
+.battle-info-tools button, .battle-status-chip {
+  border: 1px solid #9875cd; border-radius: 6px; background: #211436;
+  color: #f6ecff; font: 800 11px/1.2 system-ui; padding: 4px 6px; cursor: pointer;
+}
+.battle-info-tools button { min-height: 28px; padding-inline: 9px; }
+.battle-info-tools [aria-pressed="true"] { background: #ffd556; color: #211436; }
+#arena .bct-s:has(.battle-status:not(:empty)) { height: auto !important; min-height: 56px !important; }
+.battle-status { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; pointer-events: auto; }
+.battle-status:empty { display: none; }
+.battle-status-chip { flex: 0 0 auto; white-space: nowrap; }
+.battle-info {
+  position: fixed; inset: 0; margin: auto; width: min(92vw, 500px); max-height: min(75dvh, 600px);
+  padding: 16px; border-radius: 12px; border: 1px solid #9875cd; background: #211436; color: #f6ecff;
+}
+.battle-info::backdrop { background: #12091c99; }
+.battle-info ol { list-style: none; padding: 0; }
+.battle-info li { padding: 6px 0; border-bottom: 1px solid #9875cd55; }
+.watchlist-route { display: block; padding: 4px 2px; color: #f6ecff; }
