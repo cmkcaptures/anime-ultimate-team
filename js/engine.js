@@ -1,3 +1,4 @@
+import { RIVALRY_TITLE } from './rivalry.js?v=rivalry-1'
 import { spendableCopies } from './qol.js?v=qol-1'
 import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war.js?v=qol-1'
 // Anime Ultimate Team — in-browser game engine.
@@ -154,6 +155,7 @@ const theme = () => THEMES[seasonShown()] || { name: 'SEASON ' + seasonShown(), 
 const seasonCards = () => CARDS.filter(c => c.season === seasonShown()).sort((a, b) => 'CURELMX'.indexOf(a.r) - 'CURELMX'.indexOf(b.r) || a.ovr - b.ovr)
 // cosmetics unlocked on the premium track, per theme
 const COSMETICS = {
+  [RIVALRY_TITLE]: { type: 'title', name: 'Beyond Destruction', d: 'Complete Vegeta vs. Toppo Mastery' },
   [WAR_TITLE]: { type: 'title', name: 'War Sweeper', d: 'Win a Multi-Team War 2–0' },
   frame_rivals: { type: 'frame', name: 'Rivals Frame', d: 'Red and blue split border on every card' },
   title_rival: { type: 'title', name: 'Rival', d: 'Profile title' },
@@ -1435,6 +1437,27 @@ function act(a) {
       const war = warState(P)
       if (war.run?.id === a.id) war.run = null
       return {}
+    }
+    case 'rivalryResult': {
+      if (!['story', 'mastery'].includes(a.mode)) return { error: 'Unknown rivalry.' }
+      const progress = P.rivalry || (P.rivalry = {})
+      if (a.mode === 'mastery' && !progress.story) return { error: 'Clear Story first.' }
+      if (a.won !== true) return { msg: 'Toppo defeated your squad.' }
+      if (a.mode === 'story') {
+        if (progress.story) return { msg: 'Story cleared again.' }
+        progress.story = true
+        P.coins += 5000
+        P.shards = (P.shards || 0) + 300
+        return { msg: 'Story cleared · 5,000 coins and 300 shards.' }
+      }
+      const missing = []
+      if (a.survived !== true) missing.push('survive Hakai')
+      if (a.explosion !== true) missing.push('finish Toppo with Final Explosion')
+      if (missing.length) return { msg: 'Toppo defeated. Mastery still needs you to ' + missing.join(' and ') + '.' }
+      if (progress.mastery) return { msg: 'Mastery cleared again.' }
+      progress.mastery = true
+      ;(P.cos ||= []).push(RIVALRY_TITLE)
+      return { msg: 'Mastery cleared · Beyond Destruction title unlocked.' }
     }
     case 'warResult': {
       const war = warState(P), run = war.run
