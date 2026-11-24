@@ -1,6 +1,6 @@
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
 import { rivalryPage, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=rivalry-1'
-import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=shinobi-1'
+import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=crew-1'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
@@ -223,64 +223,75 @@ const basicArt = kind => kind === 'strike' || kind === 'blast'
 const shinobiAlly = (side, id, excluded) => side?.team.find(f => f !== excluded && !f.ko && PE(f).shinobi === id)
 const sealActive = (fighter, side) => (fighter.shinobiSeal || 0) > (side?.formTurn || 0)
 
+const crewMember = f => f.card.anime === 'OP' &&
+  ['Straw Hat Pirates', 'Straw Hats'].includes(f.card.faction)
+const crewOpening = (attacker, target, side) => {
+  if (!crewMember(attacker) || !target.crewOpening) return null
+  return side?.team.find(f => f.key === target.crewOpening && f.card.name !== attacker.card.name)
+}
+
 function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, kind), mod = {}) {
   const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = ea.antiKit ? {} : PE(def) // Toji: enemy defensive kit is cancelled
   const offensive = ['strike', 'blast', 'special', 'ult'].includes(kind)
   const clock = A?.formTurn || 0
   const attackKit = ea.shinobi, defenseKit = ed.shinobi
-  if (defenseKit === 22 && basicArt(kind) && (def.card.maxed || def.card.dia >= 7) && !def.sageDodged) {
-    def.sageDodged = true
-    att.sageTax = (A?.formTurn || 0) + 2
-    if (A) hit(def, att, 100, def.pwr, false, D, A, 'counter')
-    pasNote(def, 'SNAKE SAGE COUNTER')
-    return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
-  }
-  if (!mod.noDodge && offensive && ed.nikaDodge && def.nikaTurn !== clock) {
-    def.nikaTurn = clock
-    if (D?.waveArtRunning) D.waveDodgeTarget = def
-    pasNote(def, 'RUBBER WORLD · DODGED')
-    return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
-  }
-  if (offensive && ranged && ed.magicEater && def.magicTurn !== clock) {
-    def.magicTurn = clock
-    if (D) D.ki = Math.min(KI_MAX, D.ki + 2)
-    if (D?.waveArtRunning) D.waveDodgeTarget = def
-    pasNote(def, 'MAGIC EATER · +2 ENERGY')
-    return { dmg: 0, crit: false, mu: 1, miss: 'ABSORBED' }
-  }
-  if (!mod.noDodge && D?.waveArtRunning && D.waveDodgeTarget === def) return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
-  if (!mod.noDodge && ed.godspeed && !def.waveDodged) {
-    def.waveDodged = true
-    if (D?.waveArtRunning) D.waveDodgeTarget = def
-    pasNote(def, 'GODSPEED · DODGED')
-    return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
-  }
-  // defensive dodges / nullifies first
-  if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
-  if (ed.absorbRanged && ranged) {
-    if (kind === 'blast') {
-      const alreadyMatched = def.absorbSource === att.key && def.absorbed === 4
-      absorbBlast(att, def)
-      if (!alreadyMatched && def.absorbed === 4) PASLOG?.push({ f: def, highlight: 'reached or exceeded ' + att.card.name + '’s Power, Energy and Defense after absorbing four blasts.' })
+  if (kind !== 'redirect') {
+    if (defenseKit === 22 && basicArt(kind) && (def.card.maxed || def.card.dia >= 7) && !def.sageDodged) {
+      def.sageDodged = true
+      att.sageTax = (A?.formTurn || 0) + 2
+      if (A) hit(def, att, 100, def.pwr, false, D, A, 'counter')
+      pasNote(def, 'SNAKE SAGE COUNTER')
+      return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
     }
-    if (D) D.ki = Math.min(KI_MAX, D.ki + 1)
-    pasNote(def, kind === 'blast' ? `BLAST ABSORBED · ${def.absorbed}/4 · +1 ENERGY` : 'ENERGY ABSORBED · +1 ENERGY')
-    return { dmg: 0, crit: false, mu: 1, miss: 'ABSORBED' }
+    if (!mod.noDodge && offensive && ed.nikaDodge && def.nikaTurn !== clock) {
+      def.nikaTurn = clock
+      if (D?.waveArtRunning) D.waveDodgeTarget = def
+      pasNote(def, 'RUBBER WORLD · DODGED')
+      return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
+    }
+    if (offensive && ranged && ed.magicEater && def.magicTurn !== clock) {
+      def.magicTurn = clock
+      if (D) D.ki = Math.min(KI_MAX, D.ki + 2)
+      if (D?.waveArtRunning) D.waveDodgeTarget = def
+      pasNote(def, 'MAGIC EATER · +2 ENERGY')
+      return { dmg: 0, crit: false, mu: 1, miss: 'ABSORBED' }
+    }
+    if (!mod.noDodge && D?.waveArtRunning && D.waveDodgeTarget === def) return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
+    if (!mod.noDodge && ed.godspeed && !def.waveDodged) {
+      def.waveDodged = true
+      if (D?.waveArtRunning) D.waveDodgeTarget = def
+      pasNote(def, 'GODSPEED · DODGED')
+      return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
+    }
+    // defensive dodges / nullifies first
+    if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
+    if (ed.absorbRanged && ranged) {
+      if (kind === 'blast') {
+        const alreadyMatched = def.absorbSource === att.key && def.absorbed === 4
+        absorbBlast(att, def)
+        if (!alreadyMatched && def.absorbed === 4) PASLOG?.push({ f: def, highlight: 'reached or exceeded ' + att.card.name + '’s Power, Energy and Defense after absorbing four blasts.' })
+      }
+      if (D) D.ki = Math.min(KI_MAX, D.ki + 1)
+      pasNote(def, kind === 'blast' ? `BLAST ABSORBED · ${def.absorbed}/4 · +1 ENERGY` : 'ENERGY ABSORBED · +1 ENERGY')
+      return { dmg: 0, crit: false, mu: 1, miss: 'ABSORBED' }
+    }
+    if (def.firstNull > 0 && !ea.antiKit) { def.firstNull--; pasNote(def, 'NULLIFIED'); return { dmg: 0, crit: false, mu: 1, miss: 'NULLIFIED' } }
+    if (kind === 'ult' && !ea.antiKit && !mod.noDodge && def.ultDodge > 0) { def.ultDodge--; pasNote(def, 'ERASED'); return { dmg: 0, crit: false, mu: 1, miss: 'ERASED' } }
+    if (!mod.noDodge && ed.dodge && rnd(A || D) * 100 < ed.dodge) {
+      if (D && ed.uiEnergy && def.uiEnergyTurn !== clock) {
+        def.uiEnergyTurn = clock
+        D.ki = Math.min(KI_MAX, D.ki + 2)
+      }
+      if (ed.muiCounter && offensive && A && D && def.muiCounterTurn !== clock) {
+        def.muiCounterTurn = clock
+        const counter = hit(def, att, 220, def.pwr, false, D, A, 'counter')
+        pasNote(def, 'ULTRA INSTINCT COUNTER · ' + counter.dmg + ' DMG')
+      }
+      pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
+    if (ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; def.ko = true; att.kos++; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
   }
-  if (def.firstNull > 0 && !ea.antiKit) { def.firstNull--; pasNote(def, 'NULLIFIED'); return { dmg: 0, crit: false, mu: 1, miss: 'NULLIFIED' } }
-  if (kind === 'ult' && !ea.antiKit && !mod.noDodge && def.ultDodge > 0) { def.ultDodge--; pasNote(def, 'ERASED'); return { dmg: 0, crit: false, mu: 1, miss: 'ERASED' } }
-  if (!mod.noDodge && ed.dodge && rnd(A || D) * 100 < ed.dodge) {
-    if (D && ed.uiEnergy && def.uiEnergyTurn !== clock) {
-      def.uiEnergyTurn = clock
-      D.ki = Math.min(KI_MAX, D.ki + 2)
-    }
-    if (ed.muiCounter && offensive && A && D && def.muiCounterTurn !== clock) {
-      def.muiCounterTurn = clock
-      const counter = hit(def, att, 220, def.pwr, false, D, A, 'counter')
-      pasNote(def, 'ULTRA INSTINCT COUNTER · ' + counter.dmg + ' DMG')
-    }
-    pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
-  if (ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; def.ko = true; att.kos++; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
+  const opening = offensive && !mod.followup && crewOpening(att, def, A)
+  if (opening && ea.crew === 'asura' && kind === 'ult') base *= 1.25
   let ignoreDef = mod.ignoreDef || 0
   if (offensive && A && def.sharinganReveal && def.sharinganReveal !== att.key) {
     def.sharinganReveal = null
@@ -395,6 +406,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (barrier.remaining != null) pasNote(def, barrier.remaining ? 'DESTRUCTION BARRIER · ' + barrier.remaining + '/3' : 'DESTRUCTION BARRIER BROKEN')
   const pierceAll = pierce || flickerPierce || ea.pierce || (ea.wheel && att.hitsTaken >= 4) || (kind === 'strike' && ea.pierceStrike) || (kind === 'special' && ea.pierceSpec)
   if (sealActive(def, D)) clearShinobiBuffs(def)
+  const blocked = def.guard && !pierceAll
   if (def.guard) { if (!pierceAll) dmg *= ed.guardStrong ? 1 - ed.guardStrong / 100 : .5; def.guard = 0 }
   dmg = mod.fixedDamage ?? (Math.max(1, Math.round(dmg)) + (mod.stored || 0))
   if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) { def.recapShielded = (def.recapShielded || 0) + s2; pasNote(def, 'SHIELD') } }
@@ -408,6 +420,20 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     if (!shibai.hp) { shibai.ko = true; att.kos++ }
     att.dealt += redirected
     pasNote(shibai, 'DIVINE VESSEL')
+  }
+  const jinbe = offensive && !mod.area && kind !== 'burst' && !(kind === 'special' && isAoe(att.card)) &&
+    !ea.antiKit && dmg > 0 && def.hp < def.max / 2 &&
+    D?.team.find(ally => ally !== def && !ally.ko && !ally.helmUsed && PE(ally).crew === 'helm')
+  if (jinbe) {
+    jinbe.helmUsed = true
+    const share = Math.round(dmg * .35)
+    dmg -= share
+    const redirected = hit(att, jinbe, 0, stat, true, A, D, 'redirect', false, { fixedDamage: share })
+    if (!jinbe.ko && !att.ko) {
+      hit(jinbe, att, 110, jinbe.pwr, false, D, A, 'counter')
+      if (!att.ko) att.crewOpening = jinbe.key
+    }
+    pasNote(jinbe, 'FISH-MAN KARATE · ' + redirected.dmg + ' DAMAGE TAKEN')
   }
   const previousHP = def.hp
   const hpDamage = Math.min(def.hp, dmg)
@@ -447,12 +473,12 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       A.gauge = Math.min(GAUGE_MAX, A.gauge + 10)
     }
   }
-  if (ea.burn && !PE(def).natsuRework) { def.burn = Math.max(def.burn, ea.burn); def.burnT = 3 }
-  if (ea.energyBurn && D) D.ki = Math.max(0, D.ki - ea.energyBurn)
-  if (ea.freeze && rnd(A || D) * 100 < ea.freeze) { def.frozen = 1; pasNote(att, 'FROZEN') }
-  if (ea.gaugeDeny) def.gaugeDeny = ea.gaugeDeny
+  if (kind !== 'redirect' && ea.burn && !PE(def).natsuRework) { def.burn = Math.max(def.burn, ea.burn); def.burnT = 3 }
+  if (kind !== 'redirect' && ea.energyBurn && D) D.ki = Math.max(0, D.ki - ea.energyBurn)
+  if (kind !== 'redirect' && ea.freeze && rnd(A || D) * 100 < ea.freeze) { def.frozen = 1; pasNote(att, 'FROZEN') }
+  if (kind !== 'redirect' && ea.gaugeDeny) def.gaugeDeny = ea.gaugeDeny
   if (ed.bigHitHeal && dmg > def.max * .2 && def.hp > 0) healHP(def, Math.round(def.max * ed.bigHitHeal / 100))
-  if (ea.recoil) att.hp = Math.max(1, att.hp - Math.round(att.max * ea.recoil / 100))
+  if (kind !== 'redirect' && ea.recoil) att.hp = Math.max(1, att.hp - Math.round(att.max * ea.recoil / 100))
   // knockouts, with survive / revive passives
   if (def.hp === 0 && !def.ko) {
     const noSurvive = ea.noSurvive || mod.noSurvive
@@ -463,7 +489,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       protector.bondUsed = true
       def.hp = 1
       def.shieldHp = Math.max(def.shieldHp, Math.round(def.max * .2))
-      if (A && !att.ko && kind !== 'counter') hit(protector, att, 120, protector.pwr, false, D, A, 'counter')
+      if (A && !att.ko && !['counter', 'redirect'].includes(kind)) hit(protector, att, 120, protector.pwr, false, D, A, 'counter')
       pasNote(protector, 'PROTECTIVE BOND')
     } else if (!noSurvive && ed.yhwach && !def.futureUsed) {
       def.futureUsed = true
@@ -526,10 +552,30 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       D.ki = Math.min(KI_MAX, D.ki + 1)
     }
   }
+  if (opening && hpDamage > 0) {
+    def.crewOpening = null
+    const setup = PE(opening).crew
+    if (!opening.ko && setup === 'bounce') {
+      opening.shieldHp = Math.max(opening.shieldHp, Math.round(opening.max * .15))
+      pasNote(opening, 'CREW FOLLOW-UP · SHIELD')
+    }
+    if (!opening.ko && setup === 'cook') {
+      const weakest = alive(A).reduce((low, f) => !low || f.hp / f.max < low.hp / low.max ? f : low, null)
+      if (weakest) healHP(weakest, weakest.max * .15)
+      pasNote(opening, 'CREW FOLLOW-UP · HEAL')
+    }
+  }
+  if (blocked && offensive && ed.crew === 'prayer' && !def.ko && D && A &&
+      def.prayerTurn !== (D.formTurn || 0)) {
+    def.prayerTurn = D.formTurn || 0
+    def.prayer = Math.min(3, (def.prayer || 0) + 1)
+    if (!att.ko) hit(def, att, 110, def.pwr, false, D, A, 'counter')
+    pasNote(def, 'PRAYER · ' + def.prayer + '/3')
+  }
   if (flicker && !def.ko) def.flickerPierce = true
   if (ea.jackpot && !att.ko && rnd(A || D) < .12) { healHP(att, Math.round(att.max * .25)); pasNote(att, 'JACKPOT ROLL · +25% HP') }
   att.attacks++
-  return { dmg, crit, mu, hpDamage }
+  return { dmg, crit, mu, hpDamage, ...(opening && hpDamage > 0 ? { usedOpening: true } : {}) }
 }
 // returns a list of events for the UI to animate
 const COMBOS = [
@@ -762,7 +808,7 @@ function playArt(B, who, idx) {
 const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION', 'Pierces Guard · +60% vs targets under 40% HP'], SUPPORT: ['RALLY', 'Big hit · heals the whole team 20%'], TANK: ['FORTRESS', 'Big hit · takes 30% less damage until your next turn'], SHOOTER: ['OVERDRIVE', 'Hits every enemy hard'], STRIKER: ['OVERDRIVE', 'Hits every enemy hard'] }
 const ultOf = c => c.tag ? ['DUO FINISH', 'Both partners strike · double hit'] : (ULT[c.role] || ULT.FIGHTER)
 function signatureUltimate(f, target) {
-  if (PE(f).shinobi) return [f.card.mv, f.card.pas.d]
+  if (PE(f).shinobi || PE(f).crew || PE(f).villain) return [f.card.mv, f.card.pas.d]
   const e = PE(f)
   if (e.zoro) return ['THREE THOUSAND WORLDS', 'Pierces Guard and blocks survival and revival']
   if (e.choso) return ['PIERCING BLOOD', 'Pierces Guard and hits the weakest bench fighter too']
@@ -798,8 +844,11 @@ function ultimate(B, who, choice) {
   const awk = !!(a.card.maxed || (a.card.dia || 0) >= 7); if (awk) { ev.awakened = 1; me.ki = Math.min(KI_MAX, me.ki + 2); healHP(a, Math.round(a.max * .15)) }
   const base = pctOf(a.card) * 6 * (awk ? 1.35 : 1), stat = Math.max(a.pwr, a.ki), pierce = /Ignores Guard/.test(kitTxt(a.card))
   const kit = PE(a).shinobi
+  const crew = PE(a).crew
+  const villain = PE(a).villain
+  const quirkDefenders = new Set()
   const opposingKit = PE(d).shinobi
-  const single = !!kit || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
+  const single = !!(kit || crew || villain) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
     (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso)
   const damaging = kit !== 14 && kit !== 20 && !PE(a).antiKit
   const minato = single && damaging && shinobiAlly(foe, 18, d)
@@ -816,6 +865,14 @@ function ultimate(B, who, choice) {
     }
     if (t === d && isshiki) { reduction = .3; d.isshikiUsed = true }
     if (a.ko || t.ko) return
+    if (!PE(a).antiKit && PE(t).villain === 'overload') {
+      if (!t.quirkGuardUsed) {
+        t.quirkGuardUsed = t.quirkCharged = true
+        quirkDefenders.add(t)
+        pasNote(t, 'QUIRK OVERLOAD · ULTIMATE CHARGED')
+      }
+      if (quirkDefenders.has(t)) reduction *= .4
+    }
     if (dodged.has(t)) { ev.hits.push({ t, dmg: 0, miss: 'DODGED' }); return }
     const prior = t.waveDodged
     ev.hits.push({ t, ...hit(a, t, b * reduction, stat, p || PE(a).pierce, me, foe, 'ult', undefined, { area: !single, ...mod, stored: Math.round((mod?.stored || 0) * reduction), fixedDamage: mod?.fixedDamage == null ? undefined : Math.round(mod.fixedDamage * reduction) }) })
@@ -835,6 +892,42 @@ function ultimate(B, who, choice) {
     return ev
   }
   const ea = PE(a)
+  if (villain) {
+    ev.ult = a.card.mv
+    const target = interceptor || d
+    const stain = villain === 'stain'
+    const charged = !stain && a.quirkCharged
+    if (charged) a.quirkCharged = false
+    H(d, base * (charged ? 1.5 : 1), stain || pierce, { ignoreDef: stain ? .3 : 0 })
+    if (charged) foe.ki = Math.max(0, foe.ki - 2)
+    if (stain && ev.hits[0]?.hpDamage > 0) {
+      if (target.ko) me.gauge = Math.min(GAUGE_MAX, me.gauge + 50)
+      else { target.frozen = 1; pasNote(a, 'BLOODCURDLE') }
+    }
+    return finish()
+  }
+  if (crew) {
+    ev.ult = a.card.mv
+    const target = interceptor || d
+    const opening = crewOpening(a, target, me)
+    const prayer = a.prayer || 0
+    const breaksGuard = ['bounce', 'asura', 'prayer'].includes(crew)
+    const ignoreDef = crew === 'asura' ? .35 : crew === 'prayer' && prayer === 3 ? .3 : 0
+    if (crew === 'prayer') a.prayer = 0
+    H(d, base * (crew === 'prayer' ? 1 + prayer * .2 : 1), breaksGuard, { ignoreDef })
+    const first = ev.hits[0]
+    if (first?.hpDamage > 0 && !target.ko) {
+      if (crew === 'cook') {
+        target.burn = Math.max(target.burn, 5)
+        target.burnT = Math.max(target.burnT, 2)
+      }
+      if (['bounce', 'cook'].includes(crew) && !target.crewOpening && !first.usedOpening) target.crewOpening = a.key
+      if (crew === 'snake' && opening && first.usedOpening) {
+        H(d, 0, true, { noDodge: true, followup: true, fixedDamage: Math.round(first.hpDamage * .5 / (interceptor ? .5 : isshiki ? .3 : 1)) })
+      }
+    }
+    return finish()
+  }
   if (kit) {
     ev.ult = a.card.mv
     const markedTarget = interceptor || d

@@ -11,6 +11,8 @@ export function fighterStatuses(f, passive, next, side, turn, enemyBasic) {
   if (f.burnT > 0) add('♨ ' + f.burnT, 'Burn triggers at the start of this fighter’s active turn. ' + f.burnT + ' ticks left at ' + f.burn + '% max HP each.')
   if (f.doom > 0) add('☠ ' + f.doom, 'Death Note knocks this fighter out when the active-turn countdown reaches zero.')
   if (f.frozen) add('❄ Frozen', 'This fighter loses their next turn if still frozen.')
+  if (f.crewOpening) add('Opening', 'A different Straw Hat can use this Opening on their next damaging hit.')
+  if (passive.crew === 'prayer') add('Prayer · ' + (f.prayer || 0) + '/3', 'Zero Hand spends Prayer for bonus damage.')
   if (f.uzuhikoTurns > 0) add('Uzuhiko · ' + f.uzuhikoTurns, 'Takes 8% max HP damage at the start of each team turn.')
   if (f.uzuhikoWeaken) add('Weakened', 'The next damaging attack deals 25% less damage.')
   if ((f.shinobiSeal || 0) > (side.formTurn || 0)) add('Six Paths Seal', 'Active buffs are removed and new buffs are suppressed.')
