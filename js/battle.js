@@ -1,4 +1,4 @@
-import { addBattleRecap, recordWarMvp, warRecap } from './battle-recap.js?v=recap-1'
+import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=war-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
@@ -200,7 +200,11 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   // defensive dodges / nullifies first
   if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
   if (ed.absorbRanged && ranged) {
-    if (kind === 'blast') absorbBlast(att, def)
+    if (kind === 'blast') {
+      const alreadyMatched = def.absorbSource === att.key && def.absorbed === 4
+      absorbBlast(att, def)
+      if (!alreadyMatched && def.absorbed === 4) PASLOG?.push({ f: def, highlight: 'reached or exceeded ' + att.card.name + '’s Power, Energy and Defense after absorbing four blasts.' })
+    }
     if (D) D.ki = Math.min(KI_MAX, D.ki + 1)
     pasNote(def, kind === 'blast' ? `BLAST ABSORBED · ${def.absorbed}/4 · +1 ENERGY` : 'ENERGY ABSORBED · +1 ENERGY')
     return { dmg: 0, crit: false, mu: 1, miss: 'ABSORBED' }
@@ -484,6 +488,7 @@ function ultimate(B, who) {
   if (ea.galaxyImpact && !a.galaxyUsed) {
     a.galaxyUsed = true
     ev.ult = 'GALAXY IMPACT'
+    ev.shieldsBroken = foe.team.filter(enemy => enemy.shieldHp > 0).length
     for (const enemy of foe.team) enemy.shieldHp = 0
     for (const enemy of alive(foe)) H(enemy, base * (enemy === d ? 1 : .65), true)
   } else if (ea.lastEmbers && a.lastStand && !a.embersSpent) {
@@ -1197,6 +1202,8 @@ export function startBattle(stage) {
   const yours = LV ? LV.myTeam : stage.storyTeam ? stage.storyTeam.map(k => BYKEY[k]) : (stage.playerTeam || P.team).filter(Boolean).map(k => eff(BYKEY[k])).filter(Boolean)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
+  const turningPoints = createTurningPoints()
+  const highlight = (side, text, priority) => turningPoints.add(B.turn, side, text, priority)
   { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (!stage.storyTeam && D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
   if (LV) { B.you.deck = LV.myDeck || null; B.ai.deck = LV.oppDeck || null; B.you.hand = []; B.ai.hand = []; B.you.pile = B.ai.pile = null; B.you.rngS = (LV.seed + (LV.role === 'h' ? 1 : 2)) | 0; B.ai.rngS = (LV.seed + (LV.role === 'h' ? 2 : 1)) | 0 }
   if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * .88); f.ki = Math.round(f.ki * .88); f.def = Math.round(f.def * 1.15) }
@@ -1429,7 +1436,27 @@ export function startBattle(stage) {
   const TAGN = new Map()
   function floatTag(el, text, cls) { const [x, y] = ctr(el); const n = TAGN.get(el) || 0; TAGN.set(el, n + 1); const t = document.createElement('div'); t.className = 'ftag ' + cls; t.textContent = text; t.style.left = (x + el.getBoundingClientRect().width * .62) + 'px'; t.style.top = (y - 60 + n * 34) + 'px'; FX().append(t); setTimeout(() => { t.remove(); TAGN.set(el, Math.max(0, (TAGN.get(el) || 1) - 1)) }, 2400) }
 
-  function flushPas() { if (!PASLOG || !PASLOG.length) return; const seen = new Set(); let d = 0; for (const n of PASLOG.splice(0)) { const k = n.f.card.name + n.name; if (seen.has(k)) continue; seen.add(k); setTimeout(() => pasPop(n), d); d += 450 } }
+  function flushPas() {
+    if (!PASLOG?.length) return
+    const seen = new Set()
+    let delay = 0
+    for (const note of PASLOG.splice(0)) {
+      const side = B.you.team.includes(note.f) ? 'you' : 'ai'
+      if (note.highlight) {
+        highlight(side, note.f.card.name + ' ' + note.highlight, 95)
+        continue
+      }
+      const extra = note.extra || ''
+      if (extra.startsWith('LIFE FORCE EROSION') || /^(REVIVED|JACKPOT! FULLY HEALED|LAST EMBERS)/.test(extra)) {
+        highlight(side, note.f.card.name + ' · ' + extra, extra.startsWith('LIFE FORCE') ? 70 : 88)
+      }
+      const key = note.f.card.name + note.name
+      if (seen.has(key)) continue
+      seen.add(key)
+      setTimeout(() => pasPop(note), delay)
+      delay += 450
+    }
+  }
   function pasPop(n) { const el = $a(`.ar-side.${n.f === act(B.you) || B.you.team.includes(n.f) ? 'you' : 'ai'} .ar-active`); if (!el) return; const [x, y] = ctr(el); const t = document.createElement('div'); t.className = 'pas-pop'; t.innerHTML = `<small>✦ ${n.f.card.name} · PASSIVE</small><b>${n.name}</b><em>${n.extra || 'ACTIVATED'}</em>`; try { log('✦ ' + n.f.card.name + ': ' + n.name + (n.extra ? ' · ' + n.extra : '')) } catch { } t.style.left = x + 'px'; t.style.top = (y - 120) + 'px'; FX().append(t); setTimeout(() => t.remove(), 2600) }
   // ================= CLASH REACTIONS =================
   const CLASH = {
@@ -1494,7 +1521,8 @@ export function startBattle(stage) {
     if (f.card.transformations) return !!nextTransformation(f, side, B.turn)?.ready
     return !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5
   }
-  async function transformationScene(form, card) {
+  async function transformationScene(form, card, side) {
+    highlight(side, card.name + ' transformed into ' + card.ver.split(' · ')[0] + '.', form.cinematicStyle === 'baryon' ? 100 : 85)
     const scene = h('div', 'form-awakening' + (form.cinematicStyle === 'baryon' ? ' baryon' : ''))
     scene.style.setProperty('--form-color', form.color)
     scene.innerHTML = `<div class="form-streaks"></div><div class="form-orbit"></div><div class="form-orbit second"></div>
@@ -1517,7 +1545,7 @@ export function startBattle(stage) {
       const next = enterTransformation(f, side, B.turn)
       if (!next) return
       log(`${f.card.name} transforms: ${f.card.ver}`)
-      await transformationScene(next, f.card)
+      await transformationScene(next, f.card, who)
       if (!B.closed) draw()
       return
     }
@@ -1529,6 +1557,7 @@ export function startBattle(stage) {
       f.card = { ...f.card, url: f.card.form.url, ver: f.card.form.name, mv: f.card.form.mv, fy: f.card.form.fy ?? f.card.fy, id: f.card.id + '_form', key: f.card.key + '#form', pas: f.card.pas ? { ...f.card.pas, e } : f.card.pas }; f.key = f.card.key }
     else f.aura = 1
     const name = full ? f.card.form.name : 'POWER UP'
+    highlight(who, f.card.name + (full ? ' transformed into ' + name : ' powered up') + '.', 80)
     cutin(f.card, name, (who === 'you' ? '' : 'ENEMY · ') + 'TRANSFORMATION', '#ffcc00', true, name)
     const el = $a(`.ar-side.${who} .ar-active`); if (el) { el.dataset.k = ''; const [x, y] = ctr(el); FXC.gather(x, y, '#ffcc00', .6, 30); setTimeout(() => FXC.hit(x, y, '#ffcc00', 1.6), 600) }
     sfx('bcharge'); log(`${f.card.name} ${full ? 'transforms: ' + name : 'powers up'}!`); await wait(1500); draw()
@@ -1542,6 +1571,14 @@ export function startBattle(stage) {
     else if (side === 'you' && ev.art === 'ultimate') await aiClash(ev)
     if (ev.guard) { log(`${act(B[side]).card.name} braces · GUARD`); sfx('bguard'); atk.classList.add('guarding'); await wait(450); atk.classList.remove('guarding'); draw(); return }
     const big = ev.art === 'special' || ev.art === 'ultimate' || ev.art === 'burst', A = act(B[side]), col = tcol(A.card)
+    if (ev.shieldsBroken) highlight(side, A.card.name + ' used Galaxy Impact and broke ' + ev.shieldsBroken + (ev.shieldsBroken === 1 ? ' enemy shield.' : ' enemy shields.'), 95)
+    else {
+      const damage = ev.hits.reduce((sum, hit) => sum + (hit.dmg || 0), 0)
+      if (damage > 0 && (big || ev.hits.some(hit => hit.crit))) {
+        const move = ev.art === 'ultimate' ? ev.ult : ev.move || ARTS[ev.art].name
+        highlight(side, A.card.name + ' dealt ' + Math.round(damage).toLocaleString() + ' damage with ' + move + '.', 35 + Math.min(38, damage / 100))
+      }
+    }
     const tgtEl = $a(`.ar-side.${other} .ar-active`)
     log(big ? `${ev.art === 'ultimate' ? ev.ult + ' · ' : ''}${ev.move}` : `${A.card.name} · ${ARTS[ev.art].name}`)
     if (ev.chain > 1 || ev.combo) chainPop(side, ev.chain, ev.combo)
@@ -1583,6 +1620,7 @@ export function startBattle(stage) {
     // knockouts
     const foe = B[other]
     if (act(foe).ko) {
+      highlight(side, act(foe).card.name + ' was knocked out.', alive(foe).length ? 76 : 92)
       sfx('bko'); shake(3); { const [kx, ky] = ctr(tgtEl); FXC.ko(kx, ky) } ST3 && ST3.ko(other); log(`${act(foe).card.name} is knocked out!`)
       $a(`.ar-side.${other} .ar-active`).classList.add('kod'); { const k = document.createElement('div'); k.className = 'bc-ko ' + other; k.innerHTML = `<b>K.O.</b><small>${act(foe).card.name}</small>`; ov.append(k); ov.classList.add('slowmo'); setTimeout(() => { k.remove(); ov.classList.remove('slowmo') }, 1500) } await wait(1200); $a(`.ar-side.${other} .ar-active`).classList.remove('kod')
       if (!nextAlive(foe)) return end(other === 'ai')
@@ -1709,7 +1747,7 @@ export function startBattle(stage) {
         if (fighter.card.transformations && a.sn) {
           lvApply(a.sn)
           const form = fighter.card.transformations[fighter.formIndex - 1]
-          if (form) await transformationScene(form, fighter.card)
+          if (form) await transformationScene(form, fighter.card, 'ai')
           if (!B.closed) draw()
         } else { await transform(B.ai, 'ai'); lvApply(a.sn) }
       }
@@ -1789,6 +1827,7 @@ export function startBattle(stage) {
       <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/${B.you.team.length}</b><span>SURVIVED</span></div></div></div>`
     box.querySelector('.rs-card').append(img(mvp, 360))
     addBattleRecap(box, B.you.team)
+    addTurningPoints(box, turningPoints.list())
     const b = document.createElement('button'); b.className = 'btn gold'; b.textContent = 'CONTINUE'; b.onclick = async () => {
       if (stage.war && r.error && !r.state) {
         b.disabled = true

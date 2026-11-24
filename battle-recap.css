@@ -37,3 +37,11 @@
   margin: 8px 0 0;
   font-size: .75rem;
 }
+
+.turning-points ol { list-style: none; margin: 3px 0 0; padding: 0; }
+.turning-points li { padding: 7px 8px; border-top: 1px solid #ffffff24; }
+.turning-points li strong, .turning-points li span { display: block; }
+.turning-points li strong { color: #d8bafb; font-size: .72rem; }
+.turning-points li span { margin-top: 3px; font-size: .84rem; }
+.turning-points .turning-point-standout { border-left: 3px solid #ffd56d; }
+.turning-points .turning-point-standout strong { color: #ffd56d; }
