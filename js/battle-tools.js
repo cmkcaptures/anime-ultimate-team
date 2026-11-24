@@ -12,6 +12,7 @@ export function fighterStatuses(f, passive, next, side, turn, enemyBasic) {
   if (f.doom > 0) add('☠ ' + f.doom, 'Death Note knocks this fighter out when the active-turn countdown reaches zero.')
   if (f.frozen) add('❄ Frozen', 'This fighter loses their next turn if still frozen.')
   if (f.rivalFlame) add('Flame on', 'King takes 40% less damage. The flame goes out on even rounds.')
+  if (passive.queen) add("Launcher · " + (f.queenCharge || 0) + "/2", "Queen counters on the second blocked hit. Piercing his Guard clears the charge.")
   if (f.silverSealed) add('Still Silver', 'This fighter’s passive is sealed until its next full turn ends.')
   if (side.raidOpening) add('Raid Opening', 'The next damaging strike gains 35% damage.')
   if (passive.lastDoor === 'antithesis') add(side.antithesisUsed ? 'Antithesis spent' : 'Antithesis ready', 'Uryū reverses the first lethal enemy hit against another ally.')

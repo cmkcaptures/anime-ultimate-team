@@ -1,4 +1,4 @@
-import { LAST_DOOR_RIVALS } from './last-door.js?v=2'
+import { LAST_DOOR_RIVALS } from './last-door.js?v=3'
 
 export const VEGETA = 'vegeta_ssb_evolved'
 export const TOPPO = 'toppo_god_of_destruction'
@@ -8,7 +8,10 @@ const TOPPO_RIVAL = { id: 'toppo', name: 'Vegeta vs. Toppo', lead: VEGETA, foe: 
   goal: 'Survive Hakai and KO Toppo with Final Explosion.' }
 export function rivalryLead(card, rival, pool) {
   const kit = rival?.kit && pool.find(entry => entry.id === rival.kit)
-  return kit ? { ...card, mv: kit.mv, tx: kit.tx, pas: kit.pas } : card
+  if (!card || !kit) return card
+  const form = rival.form && card.transformations?.find(entry => entry.ver.startsWith(rival.form))
+  const artwork = form ? { id: card.id + '_rival_form', baseId: card.id, url: form.url, ver: form.ver, fy: form.fy, transformations: undefined } : {}
+  return { ...card, ...artwork, mv: kit.mv, tx: kit.tx, pas: kit.pas }
 }
 
 let selectedRival = 'toppo'
@@ -43,9 +46,10 @@ export function rivalryPage(el, X, launch) {
   el.append(hero)
   const squad = h('section', 'panel pad')
   const layout = h('div', 'rivalry-squad')
-  const choices = [...new Set(P.team)].filter(key => key !== vegeta.key && P.club.cards[key]?.n > 0).slice(0, 5)
+  const restricted = new Set([vegeta.key, POOL.find(c => c.id === rival.kit)?.key, ...(legacy ? [] : [toppo.key])])
+  const choices = [...new Set(P.team)].filter(key => !restricted.has(key) && P.club.cards[key]?.n > 0).slice(0, 5)
   const selected = Array.from({ length: 5 }, (_, i) => choices[i] || null)
-  const pool = POOL.filter(c => c.key !== vegeta.key && P.club.cards[c.key]?.n > 0).sort((a, b) => b.ovr - a.ovr)
+  const pool = POOL.filter(c => !restricted.has(c.key) && P.club.cards[c.key]?.n > 0).sort((a, b) => b.ovr - a.ovr)
   const story = text('button', 'btn gold', progress.story ? 'REPLAY STORY' : 'START STORY')
   const mastery = text('button', 'btn dark', progress.mastery ? 'REPLAY MASTERY' : 'START MASTERY')
   const controls = h('div', 'battle-result-actions')
