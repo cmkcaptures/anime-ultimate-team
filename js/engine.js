@@ -1,5 +1,5 @@
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=1'
-import { campaignMission } from './transfer-campaign.js?v=1'
+import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=2'
 import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=3'
 import { RIVALRY_TITLE } from './rivalry.js?v=last-door-1'
 import { spendableCopies } from './qol.js?v=qol-1'
@@ -73,7 +73,7 @@ const PACKS = {
 // weekly banner: 2 featured Legendary+ cards, rotates every Monday, same for everyone
 const BANNER_COST = 3000, PITY_MYTHIC = 80, PITY_FEATURED = 160
 function banner() {
-  const wk = Math.floor((Date.now() / 864e5 + 3) / 7), top = CARDS.filter(c => !c.season && !deadZoneReward(c) && 'LMX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
+  const wk = Math.floor((Date.now() / 864e5 + 3) / 7), top = CARDS.filter(c => !c.season && !c.campaignUnlock && !deadZoneReward(c) && 'LMX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
   if (!top.length) return null
   const rnd = n => { let x = Math.sin(wk * 9301 + n * 49297) * 233280; return x - Math.floor(x) }
   const f1 = top[Math.floor(rnd(1) * top.length)], rest = top.filter(c => c.anime !== f1.anime), f2 = (rest.length ? rest : top)[Math.floor(rnd(2) * (rest.length || top.length))]
@@ -298,7 +298,7 @@ function achList() {
 }
 // ---------- EVOLUTIONS ----------
 const EVO_COPIES = { C: 3, U: 3, R: 2, E: 2, L: 1, M: 1 }
-function evoNext(k) { const c = byKey(k); if (!c || c.season) return []; const rk = RK(c.r), same = CARDS.filter(x => x.name === c.name && !x.season && !deadZoneReward(x) && RK(x.r) > rk); if (!same.length) return []; const nr = Math.min(...same.map(x => RK(x.r))); return same.filter(x => RK(x.r) === nr).map(x => x.key) }
+function evoNext(k) { const c = byKey(k); if (!c || c.season) return []; const rk = RK(c.r), same = CARDS.filter(x => x.name === c.name && !x.season && !x.campaignUnlock && !deadZoneReward(x) && RK(x.r) > rk); if (!same.length) return []; const nr = Math.min(...same.map(x => RK(x.r))); return same.filter(x => RK(x.r) === nr).map(x => x.key) }
 const evoShards = to => Math.round(SHARD_COST[byKey(to).r] * .4)
 // ---------- GACHA MACHINE ----------
 const GACHA_COST = 1000
@@ -314,7 +314,7 @@ function fusionRecipes() {
   const C = CARDS.filter(c => !c.season), byName = n => C.filter(c => c.name === n)
   const out = []
   for (const c of C) {
-    if (deadZoneReward(c)) continue
+    if (c.campaignUnlock || deadZoneReward(c)) continue
     let parts = null
     if (c.name.includes(' & ')) parts = c.name.split(' & ').map(s => s.trim())
     else if (c.name === 'GOGETA' || c.name === 'VEGITO') parts = ['GOKU', 'VEGETA']
@@ -1221,13 +1221,13 @@ const WEIGHT = { C: 30, U: 25, R: 18, E: 12, L: 8, M: 4, X: 1.5 }
 const PACK_ODDS = { C: 48, U: 30, R: 14, E: 5.6, L: 1.9, M: .42, X: .08 }
 const pick = a => a[Math.floor(Math.random() * a.length)]
 function weightedCard(w = WEIGHT) {
-  const all = cards().filter(c => !c.season && !deadZoneReward(c)); if (!all.length) return null
+  const all = cards().filter(c => !c.season && !c.campaignUnlock && !deadZoneReward(c)); if (!all.length) return null
   let r = Math.random() * all.reduce((a, c) => a + w[c.r], 0)
   for (const c of all) if ((r -= w[c.r]) < 0) return c
   return all[0]
 }
 function aiPack() {
-  const all = cards().filter(c => !c.season && !deadZoneReward(c)), out = []
+  const all = cards().filter(c => !c.season && !c.campaignUnlock && !deadZoneReward(c)), out = []
   for (let i = 0; i < 5; i++) { let r = Math.random() * 100, t = 'C'; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) if ((r -= PACK_ODDS[k]) < 0) { t = k; break } const l = all.filter(c => c.r === t); out.push((l.length ? pick(l) : weightedCard()).key) }
   if (Math.random() < .2) out[Math.floor(Math.random() * 5)] = (weightedCard({ C: 0, U: 0, R: 10, E: 5, L: 1.2, M: .25, X: .05 }) || {}).key
   return out.filter(Boolean)
@@ -1703,7 +1703,7 @@ function act(a) {
       const R = { ...g }
       if (g.coins) P.coins += g.coins; if (g.shards) P.shards = (P.shards || 0) + g.shards; if (g.pack) P.pending[g.pack] = (P.pending[g.pack] || 0) + 1
       if (g.cos) { const cs = P.cos || (P.cos = []); if (cs.includes(g.cos)) { P.coins += 2000; R.label += ' (duplicate → 2,000 coins)' } else cs.push(g.cos) }
-      if (g.card) { const L = CARDS.filter(c => !c.season && !deadZoneReward(c) && c.r === g.card), c = L[Math.floor(Math.random() * L.length)]; giveCard(c.key); P.last = [c.key]; R.key = c.key; R.label = c.name + ' · ' + c.ver }
+      if (g.card) { const L = CARDS.filter(c => !c.season && !c.campaignUnlock && !deadZoneReward(c) && c.r === g.card), c = L[Math.floor(Math.random() * L.length)]; giveCard(c.key); P.last = [c.key]; R.key = c.key; R.label = c.name + ' · ' + c.ver }
       bump('gacha'); addXP(5); return { prize: R }
     }
     case 'fuse': {
@@ -1837,6 +1837,10 @@ function unlockRetiredCampaign() {
 }
 async function boot() {
   CARDS = await (await fetch('cards-list.json', { cache: 'no-cache' })).json()
+  for (const card of CARDS) {
+    const unlock = campaignRewardUnlocks.get(card.id)
+    if (unlock) card.campaignUnlock = unlock
+  }
   const who = await initAccount(CFG); LS_SAVE = 'aut-save-v3-' + who.uid
   let local = null; try { local = JSON.parse(localStorage.getItem(LS_SAVE)) } catch { }
   let cloud = null

@@ -13,6 +13,9 @@ const D = 'deidara_clay', G = 'grimmjow_sexta', S = 'shiori_transfer'
 const H = 'echo_hollow', C = 'deidara_construct', B = 'ichigo_tensa_zangetsu'
 const M = 'megumi_ten_shadows', A = 'nami_navigator', L = 'luffy_g2', J = 'jinbe_knight'
 const T = 'transfer_unstable'
+const F = 'trunks_future', P = 'deku_fullcowl', Q = 'shigaraki_handjack'
+const W = 'trunks_ssj_sword', Y = 'bakugo_finalwar', O = 'all_for_one_symbol_of_evil'
+const V = 'deku_ofa_unleashed', X = 'all_for_one_quirk_overload'
 
 const objective = (kind, count, action) => ({ kind, count, action })
 const work = (count, action, approach = 'advance') => ({ ...objective('work', count, action), approach })
@@ -98,9 +101,82 @@ export const TRANSFER_CAMPAIGN = [
       [[J,'It’s off the ship.'], [A,'The coast is back where it belongs. But look at the chart. Two other places moved. One of those marks is getting bigger.']],
       { reward: L, finale: true }),
   ] },
+  { name: 'Two Places Missing', sub: 'Dragon Ball × My Hero Academia', missions: [
+    mission('Footsteps in an Empty City', 'city', [F], [T], work(2, 'Search the street', 'signal'),
+      [[F,'Nobody has lived on this block in years. These footprints are fresh.']],
+      [[F,'They go straight into a wall. There’s a voice on the other side.']]),
+    mission('The Shelter Exit', 'corridor', [P], [C], work(3, 'Escort a group', 'cover'),
+      [[P,'Stay behind me. We’ll check the next exit together.']],
+      [[P,'That door opened onto a city I’ve never seen. Put something in the jamb.']]),
+    mission('Keep the Door Open', 'city', [F], [T], hold(3),
+      [[F,'Someone’s wedged the door with a chair. I’ll hold this end.']],
+      [[F,'They heard me. The people in there are alive.']], { reward: F }),
+    mission('Two New Marks', 'deck', [A,J], [H], work(2, 'Plot the moving route', 'signal'),
+      [[A,'The mark grew again. Same place, every time someone crossed.'], [J,'Show me where we can get close without moving the coast again.']],
+      [[A,'Here. The two marks are pointing at the same door.']]),
+    mission('The Evacuation Line', 'city', [P], [Q], half,
+      [[P,'There are families behind me, Shigaraki. You’re coming through me first.']],
+      [[P,'He’s pulled back. Get everyone inside while we’ve got the street.']], { reward: P }),
+    mission('A Light Across the Hall', 'corridor', [P,U], [H], work(2, 'Clear the landing', 'break'),
+      [[P,'The light went out again. Can you reach the mark from here?'], [U,'I can reach it. You keep the thing in the hall off me.']],
+      [[U,'The signal’s steady now. Whoever’s outside can see us.']]),
+    mission('Same Door, Different Street', 'city', [F,P], [T], work(4, 'Secure Trunks’s side', 'cover'),
+      [[F,'I can see the light. If you can hear me, step back from the door.'], [P,'Everyone, against the wall. We’re opening it together.']],
+      [[F,'You’re a long way from home.'], [P,'So are they. Can you help me get them out?']],
+      { secondFront: { place: 'corridor', cast: [P], goal: work(2, 'Clear the shelter side', 'break') } }),
+  ] },
+  { name: 'The Other Side of the Door', sub: 'Dragon Ball × My Hero Academia', missions: [
+    mission('The First Group Through', 'city', [F,P], [H], work(3, 'Move a group across', 'cover'),
+      [[P,'I’ll take the front. Tell me if that street shifts again.'], [F,'I used to live two blocks from here. I know where we can take them.']],
+      [[F,'They’re sheltered. Someone else just opened a route.']]),
+    mission('A Favor With a Price', 'corridor', [P,U], [O], hold(3),
+      [[O,'I’ve sent the wounded through first. Tell me what you’ve done for them.'], [P,'Where did you send them?']],
+      [[O,'Somewhere safe. If you wish to join them, ask me next time.']]),
+    mission('The Blockade', 'city', [W,P], [Q], null,
+      [[P,'He’s blocking the side street. The evacuation line can’t turn around here.'], [W,'Go with them. I’ll clear the street.']],
+      [[W,'Side street’s clear. Let’s use it before he comes back.']], { reward: W }),
+    mission('Keep the Marker Moving', 'corridor', [Y,P], [H], work(3, 'Cover the marker carrier', 'cover'),
+      [[Y,'I’ve got the marker. I can get it there if you keep the hall clear.'], [P,'I’ll take the first turn at the front.']],
+      [[Y,'Marker’s in place. Get the group moving.']],
+      { carrier: Y }),
+    mission('Reclaim Both Ends', 'corridor', [Y,W], [O], work(4, 'Clear the checkpoint', 'break'),
+      [[O,'My route is open. Yours is still throwing people into the wrong street.'], [Y,'Then we’ll fix ours. Move.']],
+      [[W,'Both ends are back under our control. He left the second gate open on purpose.']],
+      { secondFront: { place: 'city', cast: [W], goal: work(2, 'Secure Trunks’s street', 'cover') } }),
+    mission('His Gate', 'city', [Y,W,P], [O], half,
+      [[W,'He’s heading for the gate with the controls. Cut him off!'], [O,'I’m afraid you’ll need a bigger door.']],
+      [[A,'That mark is spreading beyond the block. He’s trying to keep it open.'], [Y,'Then we need to get everyone out now.']], { reward: Y }),
+  ] },
+  { name: 'Who Gets to Go Home', sub: 'Naruto × Bleach × One Piece × Dragon Ball × My Hero Academia', missions: [
+    mission('What the Chart Costs', 'deck', [A,J], [T], work(2, 'Find a safe crossing window', 'signal'),
+      [[A,'Every minute it stays open, another piece of the map moves. Look what happens when we close it for a breath.'], [J,'The coast settles. How long can we give them?']],
+      [[A,'Long enough for small groups. I’ll call the timing.']]),
+    mission('One Window at a Time', 'shrine', [K,U], [T], work(3, 'Guide a group through', 'cover'),
+      [[U,'Wait for my signal. When the mark dims, nobody moves.'], [K,'I’ll take the rear. Get the first group ready.']],
+      [[K,'They’re through. There’s still a line at the other end.']]),
+    mission('Hold the Connection', 'corridor', [B,U], [H], hold(3),
+      [[U,'All For One pulled the far end out of position. I need three windows to pull it back.'], [B,'You get it lined up. I’ll keep the hall clear.']],
+      [[U,'It’s lined up. Ichigo, keep your blade there until I give the word.']]),
+    mission('The Long Way Around', 'city', [W,Y], [Q], work(3, 'Open the side street', 'break'),
+      [[W,'The main road is gone. We’re taking the narrow one.'], [Y,'I’ve already checked it. Send them down.']],
+      [[Y,'Everyone’s past the corner. I can see the gate from here.']]),
+    mission('One For All Unleashed', 'city', [V,Y], [O], half,
+      [[V,'Trunks, take the line. If he follows you, we lose the route.'], [O,'You can keep their attention for only so long.']],
+      [[V,'I only need the last group through. Nami, tell me when.']], { reward: V }),
+    mission('The Last Signal', 'shrine', [U,B,A], [T], work(4, 'Anchor the shrine end', 'cover'),
+      [[A,'There’s one group left. I need both ends listening before I can send them.'], [U,'I’ll get the signal to Deku. Ichigo, hold the far end.']],
+      [[A,'Both ends are steady. Send them the instant he’s off the gate.']],
+      { secondFront: { place: 'corridor', cast: [B], goal: work(2, 'Secure the far end', 'break') } }),
+    mission('Close It Behind Them', 'city', [V,Y,W], [X], work(2, 'Send the last group through', 'cover'),
+      [[X,'You can leave it open. I’ve kept people alive with this door.'], [V,'You’ve got people waiting on both sides. Get out of their way.']],
+      [[V,'The last group is through. Close it, Nami.'], [A,'Closed. The streets are back. Give me the chart. I can keep one route if we open it ourselves.']],
+      { reward: X, finale: true, finishAfterWork: true }),
+  ] },
 ]
 
 export const missionId = (chapter, index) => (chapter + 1) + '-' + (index + 1)
+export const campaignRewardUnlocks = new Map(TRANSFER_CAMPAIGN.slice(3).flatMap((chapter, ci) =>
+  chapter.missions.flatMap((mission, mi) => mission.reward ? [[mission.reward, missionId(ci + 3, mi)]] : [])))
 export const missionOrder = TRANSFER_CAMPAIGN.flatMap((chapter, ci) => chapter.missions.map((_, mi) => missionId(ci, mi)))
 
 export function campaignMission(id, progress = {}) {
@@ -127,6 +203,6 @@ export function campaignScale(team, chapter, mission, enemyCount) {
   return {
     hp: Math.max(.55, Math.min(5.5, rating ** 2.15 * progression * size)),
     damage: Math.max(.52, Math.min(2.2, rating * (.74 + (chapter - 1) * .12 + (mission - 1) * .028))),
-    level: chapter === 1 ? (mission < 5 ? 1 : 2) : chapter === 2 ? 3 : (mission < 5 ? 4 : 5),
+    level: chapter === 1 ? (mission < 5 ? 1 : 2) : chapter === 2 ? 3 : (chapter < 5 && mission < 5 ? 4 : 5),
   }
 }

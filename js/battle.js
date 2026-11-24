@@ -1,5 +1,5 @@
 import { pveBalance, deadZoneIntent, deadZonePunishment } from './pve-balance.js?v=3'
-import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missionId } from './transfer-campaign.js?v=1'
+import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missionId } from './transfer-campaign.js?v=2'
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
 import { rivalryPage, rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
@@ -716,7 +716,7 @@ function playArt(B, who, idx) {
     else if (art === 'rumble') { const h = healHP(a, a.max * .35); me.chargeNext = (me.chargeNext || 0) + 25; ev.tactic = 'RUMBLE BALL · +' + h.toLocaleString() + ' HP · NEXT +25%' }
     else if (art === 'finger') { a.hp = Math.max(1, a.hp - Math.round(a.max * .1)); me.chargeNext = (me.chargeNext || 0) + 60; ev.tactic = 'CURSED FINGER · NEXT ATTACK +60%' }
     else if (art === 'deathnote') {
-      if (d.rivalBarrier != null || d.scoreBoss || d.encounterPhase || d.deadZoneEnemy) ev.tactic = d.card.name + ' RESISTS DEATH NOTE'
+      if (d.campaignTell || d.rivalBarrier != null || d.scoreBoss || d.encounterPhase || d.deadZoneEnemy) ev.tactic = d.card.name + ' RESISTS DEATH NOTE'
       else { d.doom = 3; ev.tactic = 'DEATH NOTE · ' + d.card.name + ' HAS 3 TURNS' }
     }
     else if (art === 'hogyoku') { a.endure = (a.endure || 0) + 1; for (const k of ['pwr', 'ki', 'def']) a[k] = Math.round(a[k] * 1.15); ev.tactic = 'HOGYOKU · EVOLVED' }
@@ -1967,7 +1967,10 @@ function transferCampaignPage(el) {
     const { data } = entry
     const lending = [...new Set([...data.cast, ...(data.secondFront?.cast || [])])]
     const fighters = lending.map(key => cast.get(key)?.key).filter(Boolean)
-    const playerTeam = loaners || !squad.length ? fighters : squad
+    const required = data.carrier ? [cast.get(data.carrier)?.key].filter(Boolean) : []
+    const playerTeam = chapter >= 3
+      ? [...new Set([...(loaners || !squad.length ? fighters : required), ...squad])].slice(0, 6)
+      : loaners || !squad.length ? fighters : squad
     const enemy = data.enemies.map(id => cast.get(id)?.key).filter(Boolean)
     if (!playerTeam.length || enemy.length !== data.enemies.length) {
       X.toast('A campaign fighter is unavailable.', 'red')
@@ -2004,7 +2007,7 @@ function transferCampaignPage(el) {
       picture.style.backgroundImage = 'url("' + CAMPAIGN_ART[mission.place] + '")'
       const detail = h('span', 'cs-tx')
       detail.append(h('small', '', id + (done ? ' · CLEARED' : '')), h('b', '', mission.name),
-        h('em', '', mission.goal?.action || 'Defeat ' + mission.enemies.map(id => cast.get(id)?.name || id).join(', ')))
+        h('em', '', (mission.finishAfterWork ? 'Evacuate the last group, then defeat All For One' : mission.goal?.action) || 'Defeat ' + mission.enemies.map(id => cast.get(id)?.name || id).join(', ')))
       if (reward) detail.append(h('small', '', 'FIRST CLEAR · ' + reward.name + ' · ' + reward.ver))
       const buttons = h('div', 'battle-result-actions')
       const play = h('button', 'btn gold sm', !entry.open ? 'LOCKED' : done ? 'REPLAY' : 'PLAY')
@@ -2081,6 +2084,10 @@ export function startBattle(stage) {
   PASLOG = []
   const mission = stage.transfer
   const operation = mission?.data.goal
+  let crossingOpen = false
+  const finishAfterWork = mission?.data.finishAfterWork
+  const carrierReady = () => !mission?.data.carrier || B.you.team.some(f => BYKEY[f.key]?.id === mission.data.carrier && !f.ko)
+  const canWork = () => carrierReady() && (!finishAfterWork || (crossingOpen && steps < operation.count))
   let steps = 0, workedAt = 0, enemyRounds = 0, secondFront = false, objectiveHitAt = 0
   const currentWork = () => secondFront ? mission.data.secondFront.goal : operation
   const workCost = () => currentWork()?.approach === 'break' && objectiveHitAt !== B.turn ? 2 : 1
@@ -2238,7 +2245,7 @@ export function startBattle(stage) {
     const action = h('button', 'btn gold sm transfer-action')
     action.hidden = operation?.kind !== 'work'
     advanceObjective = async (automatic = false) => {
-      if (operation?.kind !== 'work' || (B.busy && !automatic) || B.over || workedAt === B.turn || B.you.ki < workCost() || act(B.you).ko) return
+      if (operation?.kind !== 'work' || !canWork() || (B.busy && !automatic) || B.over || workedAt === B.turn || B.you.ki < workCost() || act(B.you).ko) return
       if (currentWork()?.approach === 'signal') {
         if (automatic) route.value = '1'
         if (!Number(route.value)) { log('Choose the mark with a steady signal.'); return }
@@ -2261,7 +2268,7 @@ export function startBattle(stage) {
       if (mission.data.secondFront && !secondFront && steps === operation.count - mission.data.secondFront.goal.count) {
         secondFront = true
         ov.style.setProperty('--bgimg', 'url("' + CAMPAIGN_ART[mission.data.secondFront.place] + '")')
-        log('The shrine is secure. Clear the other end of the crossing.')
+        log('First front secure. Clear the other end of the crossing.')
         turnBanner('SECOND FRONT', true)
       }
       log((secondFront ? mission.data.secondFront.goal.action : operation.action) + ' · ' + steps + '/' + operation.count)
@@ -2275,7 +2282,17 @@ export function startBattle(stage) {
         return
       }
       draw()
-      if (steps >= operation.count) await end(true)
+      if (steps >= operation.count) {
+        if (!finishAfterWork) await end(true)
+        else {
+          const boss = act(B.ai)
+          boss.campaignTell = false
+          boss.guard = 1
+          B.ai.gauge = GAUGE_MAX
+          log('EVACUATION COMPLETE · Defeat All For One to seal the crossing.')
+          draw()
+        }
+      }
     }
     action.onclick = () => advanceObjective()
     ribbon.append(counter, route, action)
@@ -2468,8 +2485,12 @@ export function startBattle(stage) {
         const cue = approach === 'break' && objectiveHitAt !== B.turn ? ' · Land a hit to reduce the cost' :
           approach === 'cover' ? ' · Shields your lead' : approach === 'signal' ? ' · Follow the steady mark' : ''
         counter.textContent += cue
+        if (finishAfterWork && !crossingOpen) counter.textContent = 'Drive All For One down to 35% HP'
+        if (finishAfterWork && steps >= operation.count) counter.textContent = 'Defeat All For One'
+        if (!carrierReady()) counter.textContent = 'The marker carrier has fallen'
+        action.hidden = !!(finishAfterWork && steps >= operation.count)
         action.textContent = label + ' · ' + workCost() + ' Energy'
-        action.disabled = !my || workedAt === B.turn || s.ki < workCost() || act(s).ko
+        action.disabled = !canWork() || !my || workedAt === B.turn || s.ki < workCost() || act(s).ko
       } else if (operation?.kind === 'hold') counter.textContent = enemyRounds + ' / ' + operation.count + ' enemy rounds survived'
       else if (operation?.kind === 'threshold') counter.textContent = 'Objective · ' + operation.action
       else if (mission.data.finale) counter.textContent = act(B.ai).campaignTell ? 'The Hollow is watching for an opening' : 'Defeat the Echo Hollow'
@@ -2720,6 +2741,10 @@ export function startBattle(stage) {
     }
     if (ev.tactic) { log(`${act(B[side]).card.name} · ${ARTS[ev.art].name}`); floatTag(atk, ev.tactic, 'adv'); sfx(ev.art === 'heal' ? 'heal' : 'bguard'); await wait(450); draw(); return }
     const target = act(B.ai)
+    if (finishAfterWork && !crossingOpen && target.hp <= Math.ceil(target.max * .35)) {
+      crossingOpen = true
+      log('CROSSING OPEN · Send the last two groups through.')
+    }
     const objectiveHP = operation?.kind === 'threshold' ? operation.count : stage.encounter === 'spar' ? .5 : stage.encounter === 'ring-out' ? .25 : 0
     if (side === 'you' && objectiveHP && target === B.ai.team[0] &&
         target.hp <= target.max * objectiveHP && !act(B.you).ko) {
@@ -2785,7 +2810,7 @@ export function startBattle(stage) {
       sfx('bko'); shake(3); { const [kx, ky] = ctr(tgtEl); FXC.ko(kx, ky) } ST3 && ST3.ko(other); log(`${act(foe).card.name} is knocked out!`)
       $a(`.ar-side.${other} .ar-active`).classList.add('kod'); { const k = document.createElement('div'); k.className = 'bc-ko ' + other; k.innerHTML = `<b>K.O.</b><small>${act(foe).card.name}</small>`; ov.append(k); ov.classList.add('slowmo'); setTimeout(() => { k.remove(); ov.classList.remove('slowmo') }, 1500) } await wait(1200); $a(`.ar-side.${other} .ar-active`).classList.remove('kod')
       if (!nextAlive(foe)) {
-        if (other !== 'ai' || !['hold', 'work'].includes(operation?.kind)) return end(other === 'ai')
+        if (other !== 'ai' || (finishAfterWork && steps >= operation.count) || !['hold', 'work'].includes(operation?.kind)) return end(other === 'ai')
         const threat = act(foe)
         threat.ko = false
         threat.hp = Math.max(1, Math.round(threat.max * .5))
@@ -2922,12 +2947,13 @@ export function startBattle(stage) {
   }
   async function aiPhase() {
     if (B.over || sweepKO()) return
+    if (!carrierReady()) { log('MISSION FAILED · The marker carrier fell.'); return end(false) }
     if (deadZone && B.dzIntentTurn !== B.turn) B.dzIntent = null
     if (operation?.kind === 'hold') {
       enemyRounds++
       if (enemyRounds > operation.count) return end(true)
     }
-    if (mission?.data.finale && act(B.ai).campaignTell) {
+    if (mission?.data.finale && !finishAfterWork && act(B.ai).campaignTell) {
       act(B.ai).campaignTell = false
       act(B.ai).guard = 1
       log('ECHO HOLLOW · It comes out of cover. Break its Guard.')
