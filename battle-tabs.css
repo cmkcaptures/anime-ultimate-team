@@ -1,0 +1,32 @@
+.battle-tab-rail {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.battle-tab-rail .mtabs {
+  flex: 1;
+  min-width: 0;
+}
+.battle-tab-rail .battle-tab-arrow {
+  display: none;
+}
+@media (any-pointer: fine) {
+  .battle-tab-rail .battle-tab-arrow {
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+    height: 46px;
+    margin-top: 4px;
+    padding: 0 !important;
+    font: 700 28px/1 system-ui;
+  }
+  .battle-tab-rail .battle-tab-arrow:disabled {
+    opacity: .35;
+    cursor: default;
+  }
+  .battle-tab-rail .mtabs {
+    scrollbar-width: thin;
+    scrollbar-color: #b58afb #251742;
+  }
+}
