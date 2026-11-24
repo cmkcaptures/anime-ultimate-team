@@ -1,3 +1,4 @@
+import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
@@ -225,7 +226,7 @@ function go(name, arg, opts = {}) {
   if (!opts.silent && name !== CUR) sfx('nav')
   document.body.dataset.page = name;
   if (!PAGES[name]) name = 'home'
-  if (CUR === 'cards' && curEl) CF.scroll = curEl.scrollTop
+  if (CUR === 'cards' && CURARG !== 'counter' && curEl) CF.scroll = curEl.scrollTop
   const from = CUR, fi = TABS.indexOf(from), ti = TABS.indexOf(name)
   const dir = opts.dir || (fi >= 0 && ti >= 0 ? (ti >= fi ? 1 : -1) : 1)
   CUR = name; CURARG = arg
@@ -235,7 +236,7 @@ function go(name, arg, opts = {}) {
   if (curEl) { const old = curEl; old.classList.add('out'); old.style.setProperty('--dir', dir * 26 + 'px'); setTimeout(() => old.remove(), 240) }
   $('#pages').append(el); curEl = el
   PAGES[name](el, arg)
-  if (name === 'cards') el.scrollTop = CF.scroll || 0
+  if (name === 'cards' && arg !== 'counter') el.scrollTop = CF.scroll || 0
   el.classList.add('in'); setTimeout(() => el.classList.remove('in'), 900)
   $('#ptitle').textContent = TITLES[name] || ''
   const tab = TABS.includes(name) ? name : name === 'pass' ? 'battle' : name === 'pack' || name === 'results' || name === 'wonder' || name === 'missions' ? (name === 'missions' ? null : 'home') : null
@@ -374,7 +375,14 @@ PAGES.results = (el) => {
 
 // ================= MY CARDS (Pocket-style binder) =================
 const CF = { q: '', anime: 'ALL', rar: 'ALL', mode: 'OWNED' }
-PAGES.cards = (el) => {
+PAGES.cards = (el, view) => {
+  if (view === 'counter') {
+    const back = h('button', 'btn dark sm', '‹ COLLECTION')
+    back.onclick = () => go('cards')
+    back.style.marginBottom = '12px'
+    el.append(back)
+    return cardCounterPage(el, { h, POOL, BYKEY, P, cardImg, cardDetail, matchesCard, eff }, beats)
+  }
   const own = owned(), pct = Math.round(own.length / Math.max(1, POOL.length) * 100)
   const top = own.slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)[0]
   const byR = ORDER.slice().reverse().map(r0 => [r0, own.filter(c => c.r === r0).length, POOL.filter(c => c.r === r0).length]).filter(x => x[2])
@@ -387,6 +395,10 @@ PAGES.cards = (el) => {
   if (top) head.querySelector('.ch-card').onclick = () => cardDetail(top.key)
   el.append(head)
   { const mu = h('button', 'btn violet', 'ギャラリー · CARD MUSEUM'); mu.style.marginTop = '4px'; mu.onclick = () => go('museum'); el.append(mu) }
+  const counter = h('button', 'btn gold', 'CARD COUNTER')
+  counter.style.margin = '4px 0 0 8px'
+  counter.onclick = () => go('cards', 'counter')
+  el.append(counter)
   const tools = h('div', ''); tools.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:14px'
   const MODES = ['OWNED', 'UNOWNED', 'ALL', 'BINDER', 'WATCHLIST']; const seg = segmented(MODES, Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
   const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search cards or abilities, e.g. shield break'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
