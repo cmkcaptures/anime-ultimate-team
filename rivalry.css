@@ -1,0 +1,8 @@
+.rivalry-hero { padding: 18px; border: 1px solid #9672de; border-radius: 14px; background: linear-gradient(120deg,#133961,#140e2b 53%,#522160); text-align: center; }
+.rivalry-hero h2 { margin: 0; color: #ffe180; font: 900 clamp(28px,5vw,52px)/1 var(--disp,system-ui); }
+.rivalry-versus { display: grid; grid-template-columns: minmax(0,155px) auto minmax(0,155px); align-items: center; justify-content: center; gap: 14px; }
+.rivalry-versus img { display: block; width: 100%; height: auto; border-radius: 8px; }
+.rivalry-versus strong { font-size: 1.8rem; color: #ffe180; }
+.rivalry-hero + .panel { margin-top: 14px; }
+.rivalry-squad { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 8px; margin: 12px 0; }
+@media (max-width: 650px) { .rivalry-squad { grid-template-columns: repeat(3,minmax(0,1fr)); } }
