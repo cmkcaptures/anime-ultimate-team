@@ -9,6 +9,8 @@ export function fighterStatuses(f, passive, next, side, turn) {
   if (f.sealed || f.erasedUntil > 0) add('⊘ Sealed', 'This fighter’s passive is disabled.')
   if (f.pe.absorbRanged) add('Absorb ' + (f.absorbed || 0) + '/4', passive.absorbRanged ?
     'Ranged attacks are absorbed. Four Blasts from the same fighter build Power, Energy, and Defense toward that fighter’s stats.' : 'Absorption is currently disabled.')
+  if (f.pe.ichigoResolve) add('Resolve ' + (f.ichigoCharge || 0) + '/3', passive.ichigoResolve ?
+    'Land a Strike (+1) or Getsuga Cross (+2), once per team turn. At 3, your next Ultimate becomes Final Getsuga.' : 'Resolve is currently sealed.')
   if (f.pe.galaxyImpact) add('Wipe ' + (f.galaxyUsed ? 'spent' : passive.galaxyImpact ? 'ready' : 'sealed'),
     f.galaxyUsed ? 'Galaxy Impact already removed the enemy shields this battle.' : 'The first Galaxy Impact removes every enemy shield before dealing damage. Requires a full Ultimate gauge and an active passive.')
   if (next) {
