@@ -1,4 +1,5 @@
-import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=clarity-1'
+import { cardCounterPage } from './card-counter.js?v=counter-1'
+import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=counter-1'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
@@ -452,6 +453,11 @@ function playArt(B, who, idx) {
     me.ki = Math.min(KI_MAX, me.ki + 1)
     pasNote(a, 'KURAMA CHAKRA · +1 ENERGY')
   }
+  if (dealt > 0 && kit.ichigoResolve && (art === 'strike' || art === 'special') && a.ichigoChargeTurn !== (me.formTurn || 0) && (a.ichigoCharge || 0) < 3) {
+    a.ichigoChargeTurn = me.formTurn || 0
+    a.ichigoCharge = Math.min(3, (a.ichigoCharge || 0) + (art === 'special' ? 2 : 1))
+    pasNote(a, a.ichigoCharge === 3 ? 'FINAL GETSUGA READY' : 'RESOLVE · ' + a.ichigoCharge + '/3')
+  }
   if (dealt > 0 && artBit[art]) {
     if (kit.sunCycle && !finishingForm && a.sunArts !== 7) {
       a.sunArts = (a.sunArts || 0) | artBit[art]
@@ -472,6 +478,7 @@ const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION
 const ultOf = c => c.tag ? ['DUO FINISH', 'Both partners strike · double hit'] : (ULT[c.role] || ULT.FIGHTER)
 function signatureUltimate(f) {
   const e = PE(f)
+  if (e.ichigoResolve && f.ichigoCharge === 3) return ['FINAL GETSUGA', 'Pierces Guard, blocks survival and revives, and restores 15% max HP if it deals damage']
   if (e.galaxyImpact && !f.galaxyUsed) return ['GALAXY IMPACT', 'Removes every enemy shield before hitting the enemy team']
   if (e.lastEmbers && f.lastStand && !f.embersSpent) return ['UNITED STATES OF SMASH', 'Pierces Guard and blocks Endure and Revive']
   if (e.resolve && f.violetReady) return ['VIOLET FLASH', 'Pierces Guard and hits harder against high HP']
@@ -486,7 +493,12 @@ function ultimate(B, who) {
   const base = pctOf(a.card) * 6 * (awk ? 1.35 : 1), stat = Math.max(a.pwr, a.ki), pierce = /Ignores Guard/.test(kitTxt(a.card))
   const H = (t, b, p, mod) => { if (!t.ko) ev.hits.push({ t, ...hit(a, t, b, stat, p || PE(a).pierce, me, foe, 'ult', undefined, mod) }) }
   const ea = PE(a)
-  if (ea.galaxyImpact && !a.galaxyUsed) {
+  if (ea.ichigoResolve && a.ichigoCharge === 3) {
+    a.ichigoCharge = 0
+    ev.ult = 'FINAL GETSUGA'
+    H(d, base * 1.5, true, { noSurvive: true, noRevive: true })
+    if (ev.hits.some(hit => hit.dmg > 0)) healHP(a, a.max * .15)
+  } else if (ea.galaxyImpact && !a.galaxyUsed) {
     a.galaxyUsed = true
     ev.ult = 'GALAXY IMPACT'
     ev.shieldsBroken = foe.team.filter(enemy => enemy.shieldHp > 0).length
@@ -692,7 +704,7 @@ function teamFrom(main, rating) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['camp', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
+  for (const [k, n] of [['camp', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['counter', 'CARD COUNTER'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['villain', '😈 VILLAINS'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -1254,6 +1266,7 @@ export function battlePage(el) {
   const team = P.team.filter(Boolean)
   modeTabs(el)
   if (MODE === 'war') return warPage(el)
+  if (MODE === 'counter') return cardCounterPage(el, X, beats)
   if (MODE !== 'story') {
     if (team.length < 6 && MODE !== 'arcs') { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
     return (MODE === 'live' ? livePage : MODE === 'redzone' ? redzonePage : MODE === 'villain' ? villainPage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'camp' ? campPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)

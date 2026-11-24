@@ -1,0 +1,30 @@
+.counter-hero {
+  border: 1px solid #7954ac; border-radius: 16px; padding: clamp(16px, 3vw, 30px);
+  background: linear-gradient(125deg, #28124a, #100a20 60%, #3f163a);
+  box-shadow: inset 0 3px #d29cff, 0 8px 24px #09061366;
+}
+.counter-hero h2 { margin: 0; font: 900 clamp(30px, 6vw, 58px)/1 var(--disp, system-ui); color: #fff0a7; }
+.counter-hero p { margin: 8px 0; }
+.counter-matchup { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+.counter-matchup:empty { display: none; }
+.counter-matchup .counter-target-card { width: 74px; flex: 0 0 auto; }
+.counter-vs { color: #ffd656; font: italic 900 28px/1 system-ui; }
+.counter-target-name { font-weight: 900; overflow-wrap: anywhere; }
+.counter-roster, .counter-picks { margin: 16px 0; }
+.counter-roster h3, .counter-filters h3 { margin: 0 0 8px; }
+.counter-targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 10px; }
+.counter-target-card, .counter-pick-art {
+  min-width: 0; border: 1px solid #664889; border-radius: 8px; padding: 4px; background: #211435;
+  color: #fff; cursor: pointer; align-self: start; font: inherit;
+}
+.counter-target-card[aria-pressed="true"], .counter-filters button[aria-pressed="true"] { outline: 2px solid #ffd656; }
+.counter-target-card img, .counter-pick-art img { display: block; width: 100%; height: auto; border-radius: 4px; }
+.counter-target-card small { display: block; font-size: .68rem; overflow-wrap: anywhere; margin-top: 3px; }
+.counter-more { grid-column: 1/-1; margin: 0; }
+.counter-filters { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.counter-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 10px; margin-top: 10px; }
+.counter-pick { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; padding: 10px; border-radius: 10px; background: #191126; border: 1px solid #64458c; }
+.counter-pick:first-child { border-color: #dab94e; }
+.counter-pick-copy > * { display: block; overflow-wrap: anywhere; }
+.counter-pick-copy small { color: #ffe377; font-weight: 800; }
+.counter-pick-copy ul { margin: 6px 0 0; padding-left: 16px; font-size: .78rem; line-height: 1.35; }
