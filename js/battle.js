@@ -1,3 +1,4 @@
+import { addBattleRecap, recordWarMvp, warRecap } from './battle-recap.js?v=recap-1'
 import { warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=war-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
@@ -162,7 +163,11 @@ function absorbBlast(att, def) {
   for (const k of ['pwr', 'ki', 'def']) def[k] += Math.ceil(Math.max(0, att[k] - def[k]) / steps)
 }
 let PASLOG = null // events the UI shows when a passive triggers
-const pasNote = (f, extra) => { if (PASLOG && f && f.card && f.card.pas) PASLOG.push({ f, name: f.card.pas.n, extra }) }
+const pasNote = (f, extra) => {
+  if (!PASLOG || !f?.card?.pas) return
+  f.recapPassives = (f.recapPassives || 0) + 1
+  PASLOG.push({ f, name: f.card.pas.n, extra })
+}
 // bench passives: everyone waiting on the bench helps the active fighter
 const PASSIVE = { SUPPORT: ['heal', 4, 'MEDIC'], TANK: ['dr', 6, 'BULWARK'], ASSASSIN: ['crit', 4, 'KILLER INSTINCT'], FIGHTER: ['dmg', 3, 'BATTLE CRY'], SHOOTER: ['gauge', 5, 'SPOTTER'], STRIKER: ['gauge', 5, 'SPOTTER'] }
 function passives(s) {
@@ -177,6 +182,7 @@ const artCost = (f, art) => ARTS[art].cost + Number(!!f.gravityArts && ATTACK_AR
 const healHP = (f, amount) => {
   const gain = Math.min(f.max - f.hp, Math.round(amount * (f.curseOwner ? .5 : 1)))
   f.hp += gain
+  if (gain > 0) f.recapHealing = (f.recapHealing || 0) + gain
   return gain
 }
 const addFlame = f => { f.flame = Math.min(3, (f.flame || 0) + 1) }
@@ -259,7 +265,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   const pierceAll = pierce || ea.pierce || (ea.wheel && att.hitsTaken >= 4) || (kind === 'strike' && ea.pierceStrike) || (kind === 'special' && ea.pierceSpec)
   if (def.guard) { if (!pierceAll) dmg *= ed.guardStrong ? 1 - ed.guardStrong / 100 : .5; def.guard = 0 }
   dmg = Math.max(1, Math.round(dmg))
-  if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) pasNote(def, 'SHIELD') }
+  if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) { def.recapShielded = (def.recapShielded || 0) + s2; pasNote(def, 'SHIELD') } }
   def.hp = Math.max(0, def.hp - dmg); if (def.hp < 1) def.hp = 0; att.dealt += dmg; def.hitsTaken++
   // on-hit passives
   if (dmg > 0 && kind === 'strike' && ea.lifeErosion && A && D && att.erosionTurn !== (A.formTurn || 0)) {
@@ -1059,6 +1065,7 @@ function warPage(el) {
   const war = P.war, lanes = X.ST().warLanes
   const label = (tag, cls, text) => { const item = h(tag, cls); item.textContent = text; return item }
   const run = war.run, score = warScore(run?.results || [])
+  const laneMvps = run ? warRecap(run.id) : []
   const locked = !!run && !score.done
   if (!warDraft || warDraft.week !== war.week) warDraft = { week: war.week, squads: lanes.map(() => [null, null, null]) }
   const squads = locked ? run.squads : warDraft.squads
@@ -1082,6 +1089,8 @@ function warPage(el) {
       const panel = h('section', 'panel war-lane')
       const outcome = run?.results[i]
       panel.append(h('h3', '', lane.name + (locked && i === run.results.length ? ' · NEXT' : '')), h('p', 'muted', lane.rule))
+      const mvp = laneMvps[i]
+      if (typeof outcome === 'boolean' && mvp) panel.append(label('p', 'muted', 'MVP · ' + mvp.name + ' · ' + Math.round(mvp.damage).toLocaleString() + ' DMG'))
       if (typeof outcome === 'boolean') panel.append(h('strong', 'war-result', outcome ? 'LANE WON' : 'LANE LOST'))
       const opponents = h('div', 'war-opponents')
       for (const key of lane.team) {
@@ -1763,17 +1772,23 @@ export function startBattle(stage) {
     B.over = true; controls()
     await wait(500)
     if (LV) { try { lvUnsub && lvUnsub(); clearInterval(lvTimer) } catch { } X.ACC.pvpFinish(LV.code, won ? LV.me : LV.oppUid) }
-    const recordWar = () => X.act('warResult', { ...stage.war, won })
+    const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0]
+    const recordWar = async () => {
+      const result = await X.act('warResult', { ...stage.war, won })
+      if (!result.error) recordWarMvp(stage.war, mvp)
+      return result
+    }
     const r = stage.war ? await recordWar() : stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0), ko: B.you.team.filter(f => f.ko).length, turns: B.turn } : { stage: stage.n, won })
     if (stage.mode === 'raid' && r && r.raidTotal != null && X.raidPost) { try { await X.raidPost(stage.raidId, r.raidTotal); RAIDCACHE.at = 0 } catch (e) { console.warn('raid post failed', e) } }
     sfx(stage.boss ? 'claim' : won ? 'win' : 'lose')
-    const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0], dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
+    const dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
     if (won) { const cf = document.createElement('div'); cf.className = 'confetti'; cf.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="--x:${Math.random() * 100}%;--d:${(Math.random() * .8).toFixed(2)}s;--h:${Math.round(Math.random() * 360)};--r:${Math.round(Math.random() * 720 - 360)}deg"></i>`).join(''); ov.append(cf); setTimeout(() => cf.remove(), 4000) }
     box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : stage.war ? (r.msg || (won ? 'Your squad won this lane.' : 'Your squad lost this lane.')) : won ? (r.msg || 'Stage cleared.') : (stage.storyTeam ? 'Your story lineup was knocked out. Try again.' : 'Your team was knocked out. Tweak your lineup and try again.')}</p>
       <div class="rs-body"><div class="rs-mvp"><span>MVP</span><div class="rs-card"></div><b>${mvp.card.name}</b><small>${mvp.dealt.toLocaleString()} DMG · ${mvp.kos} KO</small></div>
       <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/${B.you.team.length}</b><span>SURVIVED</span></div></div></div>`
     box.querySelector('.rs-card').append(img(mvp, 360))
+    addBattleRecap(box, B.you.team)
     const b = document.createElement('button'); b.className = 'btn gold'; b.textContent = 'CONTINUE'; b.onclick = async () => {
       if (stage.war && r.error && !r.state) {
         b.disabled = true

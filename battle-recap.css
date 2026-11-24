@@ -1,0 +1,39 @@
+#arena .ar-result:has(.battle-recap[open]) {
+  overflow-y: auto;
+  align-content: safe center;
+  grid-template-columns: minmax(0, 560px);
+  padding: 12px;
+}
+.battle-recap {
+  width: min(100%, 560px);
+  margin: 10px auto;
+  padding: 8px 12px;
+  text-align: left;
+  background: #211639;
+  border: 1px solid #654e91;
+  border-radius: 10px;
+  color: #faf3ff;
+}
+.battle-recap summary {
+  cursor: pointer;
+  font-weight: 800;
+  padding: 6px 0;
+}
+.battle-recap-scroll { overflow-x: auto; }
+.battle-recap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .8rem;
+}
+.battle-recap th, .battle-recap td {
+  padding: 6px;
+  text-align: right;
+  border-bottom: 1px solid #ffffff24;
+}
+.battle-recap th:first-child { text-align: left; }
+.battle-recap small { display: block; opacity: .75; }
+#arena .battle-recap p {
+  text-align: left;
+  margin: 8px 0 0;
+  font-size: .75rem;
+}
