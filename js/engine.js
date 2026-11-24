@@ -1,3 +1,4 @@
+import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=1'
 import { campaignMission } from './transfer-campaign.js?v=1'
 import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=3'
 import { RIVALRY_TITLE } from './rivalry.js?v=last-door-1'
@@ -72,7 +73,7 @@ const PACKS = {
 // weekly banner: 2 featured Legendary+ cards, rotates every Monday, same for everyone
 const BANNER_COST = 3000, PITY_MYTHIC = 80, PITY_FEATURED = 160
 function banner() {
-  const wk = Math.floor((Date.now() / 864e5 + 3) / 7), top = CARDS.filter(c => !c.season && 'LMX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
+  const wk = Math.floor((Date.now() / 864e5 + 3) / 7), top = CARDS.filter(c => !c.season && !deadZoneReward(c) && 'LMX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
   if (!top.length) return null
   const rnd = n => { let x = Math.sin(wk * 9301 + n * 49297) * 233280; return x - Math.floor(x) }
   const f1 = top[Math.floor(rnd(1) * top.length)], rest = top.filter(c => c.anime !== f1.anime), f2 = (rest.length ? rest : top)[Math.floor(rnd(2) * (rest.length || top.length))]
@@ -155,7 +156,7 @@ const THEMES = {
 }
 const seasonShown = () => Math.max(1, seasonNo() - SEASON_OFFSET)
 const theme = () => THEMES[seasonShown()] || { name: 'SEASON ' + seasonShown(), jp: 'シーズン', c1: '#ffcc00', c2: '#7b2ff2', tag: '' }
-const seasonCards = () => CARDS.filter(c => c.season === seasonShown() && !c.campReward && !c.campaignUnlock && !c.campaignEnemy).sort((a, b) => 'CURELMX'.indexOf(a.r) - 'CURELMX'.indexOf(b.r) || a.ovr - b.ovr)
+const seasonCards = () => CARDS.filter(c => c.season === seasonShown() && !c.campReward && !c.campaignUnlock && !c.campaignEnemy && !deadZoneReward(c)).sort((a, b) => 'CURELMX'.indexOf(a.r) - 'CURELMX'.indexOf(b.r) || a.ovr - b.ovr)
 // cosmetics unlocked on the premium track, per theme
 const COSMETICS = {
   [RIVALRY_TITLE]: { type: 'title', name: 'Beyond Destruction', d: 'Complete Vegeta vs. Toppo Mastery' },
@@ -297,7 +298,7 @@ function achList() {
 }
 // ---------- EVOLUTIONS ----------
 const EVO_COPIES = { C: 3, U: 3, R: 2, E: 2, L: 1, M: 1 }
-function evoNext(k) { const c = byKey(k); if (!c || c.season) return []; const rk = RK(c.r), same = CARDS.filter(x => x.name === c.name && !x.season && RK(x.r) > rk); if (!same.length) return []; const nr = Math.min(...same.map(x => RK(x.r))); return same.filter(x => RK(x.r) === nr).map(x => x.key) }
+function evoNext(k) { const c = byKey(k); if (!c || c.season) return []; const rk = RK(c.r), same = CARDS.filter(x => x.name === c.name && !x.season && !deadZoneReward(x) && RK(x.r) > rk); if (!same.length) return []; const nr = Math.min(...same.map(x => RK(x.r))); return same.filter(x => RK(x.r) === nr).map(x => x.key) }
 const evoShards = to => Math.round(SHARD_COST[byKey(to).r] * .4)
 // ---------- GACHA MACHINE ----------
 const GACHA_COST = 1000
@@ -313,6 +314,7 @@ function fusionRecipes() {
   const C = CARDS.filter(c => !c.season), byName = n => C.filter(c => c.name === n)
   const out = []
   for (const c of C) {
+    if (deadZoneReward(c)) continue
     let parts = null
     if (c.name.includes(' & ')) parts = c.name.split(' & ').map(s => s.trim())
     else if (c.name === 'GOGETA' || c.name === 'VEGITO') parts = ['GOKU', 'VEGETA']
@@ -1155,6 +1157,18 @@ const ARCS = [
     ],
   },
 ]
+function grantDeadZoneCard(zone) {
+  const P = S.profile
+  if (P.dzRewards?.[zone.id] || !deadZoneCleared(zone, P.rz?.[zone.id])) return null
+  const reward = CARDS.find(card => deadZoneReward(card) === zone.id)
+  if (!reward) return null
+  const claimed = P.dzRewards || (P.dzRewards = {})
+  claimed[zone.id] = true
+  if (P.club.cards[reward.key]?.n > 0) return null
+  giveCard(reward.key)
+  return reward
+}
+
 function grantArcCard(arc) {
   if (!arc.rewardCard) return null
   const card = CARDS.find(c => c.id === arc.rewardCard && (arc.existingReward || c.arcReward === arc.id))
@@ -1207,13 +1221,13 @@ const WEIGHT = { C: 30, U: 25, R: 18, E: 12, L: 8, M: 4, X: 1.5 }
 const PACK_ODDS = { C: 48, U: 30, R: 14, E: 5.6, L: 1.9, M: .42, X: .08 }
 const pick = a => a[Math.floor(Math.random() * a.length)]
 function weightedCard(w = WEIGHT) {
-  const all = cards().filter(c => !c.season); if (!all.length) return null
+  const all = cards().filter(c => !c.season && !deadZoneReward(c)); if (!all.length) return null
   let r = Math.random() * all.reduce((a, c) => a + w[c.r], 0)
   for (const c of all) if ((r -= w[c.r]) < 0) return c
   return all[0]
 }
 function aiPack() {
-  const all = cards().filter(c => !c.season), out = []
+  const all = cards().filter(c => !c.season && !deadZoneReward(c)), out = []
   for (let i = 0; i < 5; i++) { let r = Math.random() * 100, t = 'C'; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) if ((r -= PACK_ODDS[k]) < 0) { t = k; break } const l = all.filter(c => c.r === t); out.push((l.length ? pick(l) : weightedCard()).key) }
   if (Math.random() < .2) out[Math.floor(Math.random() * 5)] = (weightedCard({ C: 0, U: 0, R: 10, E: 5, L: 1.2, M: .25, X: .05 }) || {}).key
   return out.filter(Boolean)
@@ -1239,7 +1253,7 @@ function placeBid(l, who, amount) {
   l.bid = amount; l.bidder = who
   if (l.exp - Date.now() < 30000) l.exp = Date.now() + 30000
 }
-const campaignLocked = card => !!(card?.campaignUnlock || card?.campaignEnemy)
+const campaignLocked = card => !!(card?.campaignUnlock || card?.campaignEnemy || deadZoneReward(card))
 function tick(noSave) {
   const M = S.market, now = Date.now(), all = cards().filter(c => !c.season)
   M.listings = M.listings.filter(l => {
@@ -1299,6 +1313,7 @@ function act(a) {
       P.coins -= cost; P.pending[a.pack] = (P.pending[a.pack] || 0) + n; return {}
     }
     case 'openPack': {
+      if ((a.keys || []).some(k => deadZoneReward(byKey(k)))) return { error: 'Earn this card by clearing its Dead Zone.' }
       if ((a.keys || []).some(k => byKey(k)?.arcReward || campaignLocked(byKey(k)))) return { error: 'Story rewards are earned by clearing the story.' }
       if (!(P.pending[a.pack] > 0)) return { error: 'No unopened pack of that type.' }
       P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = []; let itemMsg = ''
@@ -1311,6 +1326,7 @@ function act(a) {
     }
     case 'ppBuy': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
+      if (deadZoneReward(c)) return { error: 'Earn this card by clearing its Dead Zone.' }
       if (c.campReward || campaignLocked(c)) return { error: 'Earn this card by clearing its campaign mission.' }
       if (c.arcReward && !arcCleared(P, ARCS.find(arc => arc.id === c.arcReward))) return { error: 'Clear its Story Arc to unlock this card.' }
       const cost = PP_COST[c.r]; if ((P.pp || 0) < cost) return { error: `You need ${cost} pack points.` }
@@ -1364,6 +1380,7 @@ function act(a) {
     }
     case 'craft': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
+      if (deadZoneReward(c)) return { error: 'Earn this card by clearing its Dead Zone.' }
       if (c.campReward || campaignLocked(c)) return { error: 'Earn this card by clearing its campaign mission.' }
       if (c.arcReward) return { error: 'Clear its Story Arc, then visit the Pack Point Exchange.' }
       const cost = SHARD_COST[c.r]; if ((P.shards || 0) < cost) return { error: `You need ${cost.toLocaleString()} shards.` }
@@ -1573,7 +1590,9 @@ function act(a) {
         if (w.premium) { P.pending.premium = (P.pending.premium || 0) + w.premium; got.push(w.premium + ' Premium Drop' + (w.premium > 1 ? 's' : '')) }
         if (w.shards) { P.shards = (P.shards || 0) + w.shards; got.push('◆' + w.shards.toLocaleString() + ' shards') }
         if (w.tickets) { P.tickets = (P.tickets || 0) + w.tickets; got.push(w.tickets + ' Training Tickets') }
-        return { msg: `💀 DEAD ZONE ${st.final ? 'CONQUERED' : 'CLEARED'}: ${st.name}! +${got.join(', ')}.` }
+        const clearReward = grantDeadZoneCard(Z)
+        if (clearReward) got.push(clearReward.name + ' · ' + clearReward.ver)
+        return { reward: clearReward?.key, msg: `💀 DEAD ZONE ${st.final ? 'CONQUERED' : 'CLEARED'}: ${st.name}! +${got.join(', ')}.` }
       }
       if (a.mode === 'villain') return { error: 'The previous Campaign has retired.' }
       if (a.mode === 'rift') {
@@ -1684,7 +1703,7 @@ function act(a) {
       const R = { ...g }
       if (g.coins) P.coins += g.coins; if (g.shards) P.shards = (P.shards || 0) + g.shards; if (g.pack) P.pending[g.pack] = (P.pending[g.pack] || 0) + 1
       if (g.cos) { const cs = P.cos || (P.cos = []); if (cs.includes(g.cos)) { P.coins += 2000; R.label += ' (duplicate → 2,000 coins)' } else cs.push(g.cos) }
-      if (g.card) { const L = CARDS.filter(c => !c.season && c.r === g.card), c = L[Math.floor(Math.random() * L.length)]; giveCard(c.key); P.last = [c.key]; R.key = c.key; R.label = c.name + ' · ' + c.ver }
+      if (g.card) { const L = CARDS.filter(c => !c.season && !deadZoneReward(c) && c.r === g.card), c = L[Math.floor(Math.random() * L.length)]; giveCard(c.key); P.last = [c.key]; R.key = c.key; R.label = c.name + ' · ' + c.ver }
       bump('gacha'); addXP(5); return { prize: R }
     }
     case 'fuse': {
@@ -1756,7 +1775,7 @@ function state() {
     raid: { ...raidNow(), me: raidP() },
     presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
-    rift: riftNow(), deadzones: DEADZONES, rzAll: S.profile.rz || {},
+    rift: riftNow(), deadzones: DEADZONES.map(zone => ({ ...zone, rewardKey: CARDS.find(card => deadZoneReward(card) === zone.id)?.key })), rzAll: S.profile.rz || {},
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
@@ -1809,7 +1828,7 @@ function unlockRetiredCampaign() {
   if (profile.retiredCampaignUnlocked) return []
   const granted = []
   for (const card of CARDS) {
-    if (!card.key.startsWith('Story/') || !RETIRED_CAMPAIGN_CARDS.has(card.id) || profile.club.cards[card.key]?.n > 0) continue
+    if (!card.key.startsWith('Story/') || deadZoneReward(card) || !RETIRED_CAMPAIGN_CARDS.has(card.id) || profile.club.cards[card.key]?.n > 0) continue
     giveCard(card.key)
     granted.push(card.name)
   }
@@ -1859,6 +1878,10 @@ async function boot() {
     if (!arcCleared(S.profile, arc)) continue
     const reward = grantArcCard(arc)
     if (reward) notice(arc.name + ' clear reward: ' + reward.name + ' · ' + reward.ver, 'ok')
+  }
+  for (const zone of DEADZONES) {
+    const reward = grantDeadZoneCard(zone)
+    if (reward) notice(zone.name + ' clear reward: ' + reward.name + ' · ' + reward.ver, 'ok')
   }
   const campaignCards = unlockRetiredCampaign()
   if (campaignCards.length) notice('Former Campaign rewards added to your club: ' + campaignCards.join(', ') + '.', 'ok')
