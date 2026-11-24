@@ -3,7 +3,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=deadzone-rewards-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=campaign-6'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -139,7 +139,7 @@ const PACKLOOK = {
   YYH: { t: ['YU YU', 'HAKUSHO'], c: ['#7affd0', '#1ab07a', '#0a3a5a', '#04121a', '#ffe04a'], set: 'YYH' },
   SDS: { t: ['SEVEN DEADLY', 'SINS'], c: ['#ffe27a', '#e0a020', '#6a1a0a', '#160806', '#ff5a3a'], set: 'SDS' },
 }
-const PACKABLE = () => POOL.filter(c => !c.season && !deadZoneReward(c))
+const PACKABLE = () => POOL.filter(c => !c.season && !c.campaignUnlock && !deadZoneReward(c))
 const packPool = type => { const a = ST.packs[type] && ST.packs[type].anime; return a ? PACKABLE().filter(c => c.anime === a) : PACKABLE() }
 const featured = type => packPool(type).slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)[type === 'premium' ? 1 : 0] || POOL[0]
 const PACKCANVAS = {}
@@ -920,7 +920,7 @@ PAGES.shop = (el) => {
   el.append(h('p', 'muted', '<small style="font-weight:700">Every pack you open gives 5 pack points. Spend them on the exact card you want.</small>'))
   const g = h('div', 'ppgrid')
   const clearedArcs = new Set(ST.arcs.filter(arc => (P.arcs?.[arc.id] || 0) >= arc.chapters.length).map(arc => arc.id))
-  const exchangeCards = POOL.filter(c => c.arcReward ? clearedArcs.has(c.arcReward) : !c.season && !deadZoneReward(c))
+  const exchangeCards = POOL.filter(c => c.arcReward ? clearedArcs.has(c.arcReward) : !c.season && !c.campaignUnlock && !deadZoneReward(c))
   for (const c of exchangeCards.sort((a, b) => TIER[a.r].rank - TIER[b.r].rank || a.ovr - b.ovr)) {
     const cost = ST.ppCost[c.r], b = h('button', 'cg' + ((P.pp || 0) < cost ? ' dimmed' : ''))
     b.append(cardImg(c, 240), h('span', 'cost', `<i></i>${cost}`)); if ((P.pp || 0) < cost) b.style.opacity = .55
@@ -1060,7 +1060,7 @@ function rollBannerKeys(n) {
 function rollPackKeys(type) {
   if (type === 'banner') return rollBannerKeys(1)[0]
   const info = (ST.packs && ST.packs[type]) || {}, def = PACKODDS[type] || (info.anime ? PACKODDS.series : PACKODDS.standard)
-  const pool = POOL.filter(c => !deadZoneReward(c) && (!info.anime || c.anime === info.anime))
+  const pool = POOL.filter(c => !c.campaignUnlock && !deadZoneReward(c) && (!info.anime || c.anime === info.anime))
   const rollT = () => { let r = Math.random() * 100; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) { if ((r -= def.odds[k]) < 0) return k } return 'C' }
   const pick = r => { const i = ORDER.indexOf(r); for (let d = 0; d < 7; d++) for (const j of [i - d, i + d]) { const l = pool.filter(c => c.r === ORDER[j]); if (l.length) return l[Math.floor(Math.random() * l.length)] } return POOL[0] }
   // weighted draw over the cards that actually exist in this pack, so small series packs don't repeat one card
@@ -1626,7 +1626,7 @@ function passPick(t, r) {
   openModal(sh => {
     sh.append(h('div', 'wi-head', `<span class="eyebrow">SEASON PASS · TIER ${t}</span><h2>Pick any ${r === 'M' ? 'Mythic' : 'Legendary'}</h2>`))
     const g = h('div', 'cardgrid wi-grid')
-    for (const c of POOL.filter(c => c.r === r && !deadZoneReward(c)).sort((a, b) => b.ovr - a.ovr)) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 200)); b.onclick = async () => { const x = await act('passClaim', { track: 'p', tier: t, key: c.key }); if (!x.error) { closeModal(); rerender() } }; g.append(b) }
+    for (const c of POOL.filter(c => c.r === r && !c.campaignUnlock && !deadZoneReward(c)).sort((a, b) => b.ovr - a.ovr)) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 200)); b.onclick = async () => { const x = await act('passClaim', { track: 'p', tier: t, key: c.key }); if (!x.error) { closeModal(); rerender() } }; g.append(b) }
     sh.append(g)
   }, true)
 }
@@ -1701,7 +1701,7 @@ function tradeSheet(p) {
       sum.innerHTML = `<b>Want:</b> ${pick.want ? BYKEY[pick.want].name + ' · ' + BYKEY[pick.want].ver : 'pick a card'} &nbsp; <b>Offer:</b> ${pick.offer.map(k => BYKEY[k].name).join(', ') || 'no cards'}${pick.coins ? ' + ' + fmt(pick.coins) + ' coins' : ''}`
       send.disabled = !pick.want || (!pick.offer.length && !pick.coins)
       const qq = q.value.trim().toLowerCase(); g1.innerHTML = ''
-      for (const c of POOL.filter(c => !c.arcReward && !deadZoneReward(c) && (!qq || (c.name + ' ' + c.ver).toLowerCase().includes(qq))).sort((a, b) => b.ovr - a.ovr).slice(0, 18)) { const bt = h('button', 'cg' + (pick.want === c.key ? ' sel' : '')); bt.append(cardImg(eff(c), 200)); bt.onclick = () => { pick.want = c.key; draw() }; g1.append(bt) }
+      for (const c of POOL.filter(c => !c.arcReward && !c.campaignUnlock && !deadZoneReward(c) && (!qq || (c.name + ' ' + c.ver).toLowerCase().includes(qq))).sort((a, b) => b.ovr - a.ovr).slice(0, 18)) { const bt = h('button', 'cg' + (pick.want === c.key ? ' sel' : '')); bt.append(cardImg(eff(c), 200)); bt.onclick = () => { pick.want = c.key; draw() }; g1.append(bt) }
       g2.innerHTML = ''
       if (!spareList.length) g2.append(h('div', 'empty', '<b>No spare duplicates</b>You can still offer coins.'))
       for (const c of spareList) { const on = pick.offer.includes(c.key), bt = h('button', 'cg' + (on ? ' sel' : '')); bt.append(cardImg(eff(c), 200)); bt.onclick = () => { if (on) pick.offer = pick.offer.filter(k => k !== c.key); else if (pick.offer.length < 3) pick.offer.push(c.key); draw() }; g2.append(bt) }
