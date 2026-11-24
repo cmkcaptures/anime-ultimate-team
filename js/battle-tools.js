@@ -1,10 +1,11 @@
-export function fighterStatuses(f, passive, next, side, turn) {
+export function fighterStatuses(f, passive, next, side, turn, enemyBasic) {
   const entries = []
   const add = (label, detail) => entries.push({ label, detail })
   if (f.rivalBarrier > 0) add('Barrier ' + f.rivalBarrier + '/3', 'Each landed Strike removes a charge. Ranged Arts deal reduced damage while the barrier holds.')
   if (f.hakaiAt != null) add('Hakai · T' + f.hakaiAt, 'Toppo fires Hakai on enemy turn ' + f.hakaiAt + '. Guard or switch to a tank.')
   if (f.shisuiDamp) add('Kotoamatsukami', 'The next damaging Art deals half damage.')
   if (f.pe.shisuiFlicker && !f.shisuiSpent && f.shisuiMark) add('Koto mark', 'Kotoamatsukami is available when the marked fighter is active and your Ultimate gauge is full.')
+  if (passive.skillHunter) add("Read · " + (enemyBasic || "—"), "Strike boosts damage, Blast refunds Energy, Guard strips shields and pierces Guard.")
   if (f.shieldHp > 0) add('⬡ ' + Math.round(f.shieldHp), 'Shield absorbs up to ' + Math.round(f.shieldHp) + ' damage. It stays until depleted or removed.')
   if (f.guard) add('◆ Guard', 'Reduces damage from the next hit unless the attack pierces Guard.')
   if (f.burnT > 0) add('♨ ' + f.burnT, 'Burn triggers at the start of this fighter’s active turn. ' + f.burnT + ' ticks left at ' + f.burn + '% max HP each.')
