@@ -1,4 +1,4 @@
-import { pveBalance } from './pve-balance.js?v=1'
+import { pveBalance } from './pve-balance.js?v=2'
 import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missionId } from './transfer-campaign.js?v=1'
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
@@ -1409,7 +1409,7 @@ function rankedPage(el, ok) {
   const go = h('button', 'btn gold big rk-go', 'FIND MATCH'); go.disabled = !ok
   go.onclick = () => {
     const rating = Math.min(95, Math.round(74 + i * 3.5) + Math.min(2, Math.floor(R.streak / 3))), level = Math.min(5, 1 + Math.ceil(i * .7)), name = RIVALS[Math.floor(Math.random() * RIVALS.length)]
-    go2({ mode: 'ranked', id: 0, label: 'Ranked · ' + cur.name + ' · vs ' + name, name, rating, level, boost: i >= 6 ? 1.05 : 1, arena: ARENA_KEYS[Math.floor(Math.random() * ARENA_KEYS.length)] })
+    go2({ mode: 'ranked', pveProgress: i / Math.max(1, R.ranks.length - 1), id: 0, label: 'Ranked · ' + cur.name + ' · vs ' + name, name, rating, level, boost: i >= 6 ? 1.05 : 1, arena: ARENA_KEYS[Math.floor(Math.random() * ARENA_KEYS.length)] })
   }
   hero.querySelector('.rk-info').append(go)
   el.append(hero)
@@ -1430,7 +1430,7 @@ function towerPage(el, ok) {
   for (let n = Math.min(50, best + 1); n >= 1; n--) {
     const f = T[n - 1], done = n <= best, r = h('button', 'stage' + (done ? ' done' : '') + (f.pack ? ' milestone' : ''))
     r.innerHTML = `<span class="sn">${String(n).padStart(2, '0')}</span><div class="si"><b>Floor ${n}</b><small>Enemy rating ~${f.rating} · AI level ${f.level}${f.boost > 1 ? ' · +' + Math.round((f.boost - 1) * 100) + '% enemy HP' : ''}</small></div><div class="sr">${done ? '<em>CLEARED</em>' : ''}<span><i class="coin-i"></i>${(done ? 200 : f.coins).toLocaleString()}</span>${f.pack && !done ? `<span class="pk">+ ${X.ST().packs[f.pack].name.toUpperCase()}</span>` : ''}</div>`
-    r.disabled = !ok; r.onclick = () => go2({ mode: 'tower', id: n, label: 'Tower · Floor ' + n, name: 'Floor ' + n, rating: f.rating, level: f.level, boost: f.boost, arena: ARENA_KEYS[n % ARENA_KEYS.length] })
+    r.disabled = !ok; r.onclick = () => go2({ mode: 'tower', pveProgress: (n - 1) / 49, id: n, label: 'Tower · Floor ' + n, name: 'Floor ' + n, rating: f.rating, level: f.level, boost: f.boost, arena: ARENA_KEYS[n % ARENA_KEYS.length] })
     list.append(r)
   }
   { const nx = [10, 20, 30, 40, 50].find(m => m > best); if (nx) el.append(h('p', 'muted', `<b>Next milestone: Floor ${nx}</b> · ${X.ST().packs[T[nx - 1].pack].name}`)) }
@@ -1506,7 +1506,7 @@ function raidPage(el, ok) {
     <div class="bh-name"><b>${c ? c.name : 'RAID BOSS'}</b><span>${c ? c.ver : ''} · SHARED BY EVERY PLAYER</span></div>
     <div class="rd-hp"><i><s style="width:100%"></s></i><span>Loading boss HP…</span></div>
     <div class="bh-ab"><b>RAID SKILL · ${R.ab.name}</b><span>${R.ab.d}</span></div>
-    <p>Every player fights the same boss from Friday to Sunday. All damage is added together. Bring it to 0 before Monday and everyone who hit it shares the victory reward: 2 Premium Drops, 20,000 coins and 5 Training Tickets.</p>
+    <p>Every player fights the same boss from Friday to Sunday. All damage is added together. The boss enrages in round six. Bring it to 0 before Monday and everyone who hit it shares the victory reward: 2 Premium Drops, 20,000 coins and 5 Training Tickets.</p>
     <div class="rk-stats"><span><b>${me.total.toLocaleString()}</b>YOUR DAMAGE</span><span><b>${me.best.toLocaleString()}</b>BEST HIT</span><span><b>${R.active ? left + '/' + R.tries : '—'}</b>ATTEMPTS TODAY</span></div></div>`
   const go = h('button', 'btn gold big rk-go', !R.active ? 'RAID OPENS FRIDAY' : left > 0 ? 'ATTACK THE RAID BOSS' : 'COME BACK TOMORROW'); go.disabled = !ok || !R.active || left < 1
   go.onclick = () => go2({ mode: 'raid', id: 0, boss: R.hpMult, bossAb: R.ab, label: 'Raid · ' + (c ? c.name : 'Boss'), name: c ? c.name : 'Raid Boss', level: 5, team: [R.key], raidId: R.id })
@@ -1614,7 +1614,7 @@ function villainPage(el, ok) {
     row.disabled = !ok || !open
     row.onclick = () => scene(st.scene, 'V-' + st.n + ' · ' + st.name, foe && foe.url, () => {
       try { sessionStorage.setItem('vOutro', JSON.stringify({ s: st.n, had: s > 0 })) } catch { }
-      go2({ mode: 'villain', id: st.n, label: 'Villains · ' + st.name, name: st.name, level: st.boss ? 5 : Math.min(5, 2 + Math.floor(st.n / 2)), boost: (st.boss ? 1.45 : 1.15 + st.n * .05), youCat: 'Villains', team: campTeam(st.enemy) })
+      go2({ mode: 'villain', pveProgress: (st.n - 1) / 8, id: st.n, label: 'Villains · ' + st.name, name: st.name, level: st.boss ? 5 : Math.min(5, 2 + Math.floor(st.n / 2)), boost: (st.boss ? 1.45 : 1.15 + st.n * .05), youCat: 'Villains', team: campTeam(st.enemy) })
     })
     list.append(row)
   }
@@ -1674,7 +1674,7 @@ function campPage(el, ok) {
       })
       row.onclick = () => scene(st.scene, ch.id + '-' + st.n + ' · ' + st.name, foe && foe.url, () => {
         try { sessionStorage.setItem('campOutro', JSON.stringify({ c: ch.id, s: st.n, had: s > 0 })) } catch { }
-        go2({ mode: 'camp', id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: hard || st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: (st.boss ? 1.25 : 1 + st.n * .03) + (ch.id - 1) * .06 + (hard ? .35 : 0), team: campTeam(st.enemy), encounter: st.encounter, chapterRule: st.rule, playerTeam: (st.rule || st.guest) ? campaignLineup(st) : undefined, nextFight })
+        go2({ mode: 'camp', pveProgress: (st.n - 1) / Math.max(1, ch.stages.length - 1), id: key, label: 'Chapter ' + ch.id + ' · ' + st.name, name: st.name, level: hard || st.boss ? 5 : Math.min(4, 1 + Math.floor(st.n / 2)), boost: (st.boss ? 1.25 : 1 + st.n * .03) + (ch.id - 1) * .06 + (hard ? .35 : 0), team: campTeam(st.enemy), encounter: st.encounter, chapterRule: st.rule, playerTeam: (st.rule || st.guest) ? campaignLineup(st) : undefined, nextFight })
       })
     })
     el.append(list)
@@ -1772,7 +1772,7 @@ function eventPage(el, ok) {
   E.tiers.forEach((T, i) => {
     const done = E.done[i], r = h('button', 'stage' + (done ? ' done' : ''))
     r.innerHTML = `<span class="sn">${['I', 'II', 'III'][i]}</span><div class="si"><b>${T.name}</b><small>${[3, 4, 6][i]}-fighter format · AI level ${T.level}${T.boost > 1 ? ' · +' + Math.round((T.boost - 1) * 100) + '% enemy HP' : ''}</small></div><div class="sr">${done ? '<em>DONE TODAY</em>' : ''}<span><i class="coin-i"></i>${(done ? 200 : T.coins).toLocaleString()}</span>${T.pack && !done ? `<span class="pk">+ ${X.ST().packs[E.pack].name.toUpperCase()}</span>` : ''}</div>`
-    r.disabled = !ok; r.onclick = () => go2({ mode: 'event', id: i, label: X.ANAME(E.anime) + ' Week · ' + T.name, name: T.name, level: T.level, boost: T.boost, team: eventTeam(pool, i) })
+    r.disabled = !ok; r.onclick = () => go2({ mode: 'event', pveProgress: i / Math.max(1, E.tiers.length - 1), id: i, label: X.ANAME(E.anime) + ' Week · ' + T.name, name: T.name, level: T.level, boost: T.boost, team: eventTeam(pool, i) })
     list.append(r)
   })
   el.append(list)
@@ -2121,8 +2121,10 @@ export function startBattle(stage) {
       act(B.ai).encounterPhase = true
     }
   }
-  const balance = arcBalance || pveBalance(stage.mode, B.you.team, {
+  const balanceMode = stage.mode ?? (stage.war ? 'war' : stage.enemy && !stage.pvp && !LV ? 'story' : null)
+  const balance = arcBalance || pveBalance(balanceMode, B.you.team, {
     floor: stage.pveFloor, enemies: B.ai.team.length, finale: stage.pveFinal,
+    progression: stage.pveProgress ?? (stage.mode === 'rivalry' ? Number(stage.id === 'mastery') : stage.war ? (stage.level - 1) / 4 : ((stage.n || 1) - 1) / 9),
   })
   if (balance) {
     B.ai.campaignDamage = balance.damage
@@ -2904,7 +2906,7 @@ export function startBattle(stage) {
     }
     if ((stage.level || 1) >= 5 && canTransform(act(B.ai), B.ai)) await transform(B.ai, 'ai')
     if (stage.boss && B.turn >= 12 && !B.over) { log('Time up! The boss retreats.'); return end(false) }
-    if (stage.mode === 'boss' && B.turn === 6) {
+    if (stage.bossAb && balance?.scoreBoss && B.turn === 6) {
       B.ai.campaignDamage *= 1.2
       B.ai.gauge = Math.min(GAUGE_MAX, B.ai.gauge + 30)
       log('BOSS ENRAGED · +20% damage and +30% Ultimate gauge.')
@@ -3042,7 +3044,7 @@ export function startBattle(stage) {
     B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); myTurnStart()
   }
   function announceChapterRule() {
-    if (stage.bossAb && stage.mode === 'boss' && B.turn < 12 && B.turn % 3 === 0) {
+    if (stage.bossAb && balance?.scoreBoss && B.turn < 12 && B.turn % 3 === 0) {
       log('BOSS SKILL INCOMING · ' + stage.bossAb.name)
       turnBanner('BOSS SKILL INCOMING', false)
     }
