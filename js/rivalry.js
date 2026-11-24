@@ -1,14 +1,30 @@
+import { LAST_DOOR_RIVALS } from './last-door.js?v=1'
+
 export const VEGETA = 'vegeta_ssb_evolved'
 export const TOPPO = 'toppo_god_of_destruction'
 export const RIVALRY_TITLE = 'title_beyond_destruction'
 
+const TOPPO_RIVAL = { id: 'toppo', name: 'Vegeta vs. Toppo', lead: VEGETA, foe: TOPPO,
+  goal: 'Survive Hakai and KO Toppo with Final Explosion.' }
+let selectedRival = 'toppo'
 export function rivalryPage(el, X, launch) {
   const { h, POOL, P } = X
-  const vegeta = POOL.find(c => c.id === VEGETA), toppo = POOL.find(c => c.id === TOPPO)
+  const options = [TOPPO_RIVAL, ...LAST_DOOR_RIVALS]
+  const rival = options.find(option => option.id === selectedRival)
+  const legacy = rival === TOPPO_RIVAL
+  const progress = (legacy ? P.rivalry : P.rivalry?.[rival.id]) || {}
+  const tabs = h('div', 'mtabs dz-tabs')
+  for (const option of options) {
+    const tab = h('button', 'mtab' + (rival === option ? ' on' : ''), option.name)
+    tab.onclick = () => { selectedRival = option.id; X.go('battle') }
+    tabs.append(tab)
+  }
+  el.append(tabs)
+  const vegeta = POOL.find(c => c.id === rival.lead), toppo = POOL.find(c => c.id === rival.foe)
   if (!vegeta || !toppo) return
   const text = (tag, cls, value) => { const node = h(tag, cls); node.textContent = value; return node }
   const hero = h('section', 'rivalry-hero')
-  hero.append(text('h2', '', 'RIVALRY BATTLES'), text('p', '', 'Blue Evolution Vegeta and your five fighters vs. God of Destruction Toppo'))
+  hero.append(text('h2', '', 'RIVALRY BATTLES'), text('p', '', rival.name + ' · ' + rival.goal))
   const art = h('div', 'rivalry-versus')
   for (const card of [vegeta, toppo]) {
     if (card === toppo) art.append(text('strong', '', 'VS'))
@@ -25,17 +41,17 @@ export function rivalryPage(el, X, launch) {
   const choices = [...new Set(P.team)].filter(key => key !== vegeta.key && P.club.cards[key]?.n > 0).slice(0, 5)
   const selected = Array.from({ length: 5 }, (_, i) => choices[i] || null)
   const pool = POOL.filter(c => c.key !== vegeta.key && P.club.cards[c.key]?.n > 0).sort((a, b) => b.ovr - a.ovr)
-  const story = text('button', 'btn gold', P.rivalry?.story ? 'REPLAY STORY' : 'START STORY')
-  const mastery = text('button', 'btn dark', P.rivalry?.mastery ? 'REPLAY MASTERY' : 'START MASTERY')
+  const story = text('button', 'btn gold', progress.story ? 'REPLAY STORY' : 'START STORY')
+  const mastery = text('button', 'btn dark', progress.mastery ? 'REPLAY MASTERY' : 'START MASTERY')
   const controls = h('div', 'battle-result-actions')
   controls.append(story, mastery)
-  squad.append(text('h3', '', 'Your squad'), text('p', 'muted', 'Vegeta is your locked leader and starts in battle. Choose five owned cards. Toppo resists instant KOs and HP swaps.'), layout, controls,
-    text('p', 'muted', P.rivalry?.story ? 'Story cleared. Mastery requires surviving Hakai and KO’ing Toppo with Final Explosion.' : 'First Story clear earns 5,000 coins and 300 shards.'))
+  squad.append(text('h3', '', 'Your squad'), text('p', 'muted', vegeta.name + ' starts as your locked leader. Choose five owned fighters.'), layout, controls,
+    text('p', 'muted', progress.story ? 'Mastery · ' + rival.goal : 'First Story clear earns 5,000 coins and 300 shards.'))
   el.append(squad)
   const draw = () => {
     layout.replaceChildren()
     const leader = h('button', 'war-card-button')
-    leader.append(X.cardImg(vegeta, 200), text('small', '', '🔒 Leader · Vegeta'))
+    leader.append(X.cardImg(vegeta, 200), text('small', '', '🔒 Leader · ' + vegeta.name))
     leader.onclick = () => X.cardDetail(vegeta.key, { kitOnly: true, auraDiamonds: 3 })
     layout.append(leader)
     selected.forEach((key, i) => {
@@ -66,10 +82,10 @@ export function rivalryPage(el, X, launch) {
     })
     const ready = selected.every(Boolean)
     story.disabled = !ready
-    mastery.disabled = !ready || !P.rivalry?.story
+    mastery.disabled = !ready || !progress.story
   }
-  story.onclick = () => launch(vegeta, toppo, selected.slice(), false)
-  mastery.onclick = () => launch(vegeta, toppo, selected.slice(), true)
+  story.onclick = () => launch(vegeta, toppo, selected.slice(), false, rival)
+  mastery.onclick = () => launch(vegeta, toppo, selected.slice(), true, rival)
   draw()
 }
 

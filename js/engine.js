@@ -1,4 +1,5 @@
-import { RIVALRY_TITLE } from './rivalry.js?v=rivalry-1'
+import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=1'
+import { RIVALRY_TITLE } from './rivalry.js?v=last-door-1'
 import { spendableCopies } from './qol.js?v=qol-1'
 import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war.js?v=qol-1'
 // Anime Ultimate Team — in-browser game engine.
@@ -153,7 +154,7 @@ const THEMES = {
 }
 const seasonShown = () => Math.max(1, seasonNo() - SEASON_OFFSET)
 const theme = () => THEMES[seasonShown()] || { name: 'SEASON ' + seasonShown(), jp: 'シーズン', c1: '#ffcc00', c2: '#7b2ff2', tag: '' }
-const seasonCards = () => CARDS.filter(c => c.season === seasonShown()).sort((a, b) => 'CURELMX'.indexOf(a.r) - 'CURELMX'.indexOf(b.r) || a.ovr - b.ovr)
+const seasonCards = () => CARDS.filter(c => c.season === seasonShown() && !c.campReward).sort((a, b) => 'CURELMX'.indexOf(a.r) - 'CURELMX'.indexOf(b.r) || a.ovr - b.ovr)
 // cosmetics unlocked on the premium track, per theme
 const COSMETICS = {
   [RIVALRY_TITLE]: { type: 'title', name: 'Beyond Destruction', d: 'Complete Vegeta vs. Toppo Mastery' },
@@ -747,6 +748,7 @@ const CAMPAIGN = [
         ['ICHIGO', '(from the other side) Hey! Is anyone over there?! Something just came out of the rift into Soul Society!']] },
   ] },
 ]
+CAMPAIGN.push(...LAST_DOOR_CHAPTERS)
 // ---------- DEAD ZONE: brutal stages with rules + weaknesses; counters matter more than raw power ----------
 const REDZONE = { id: 'rz1', name: 'Infinity Castle', sub: 'Dead Zone · Demon Slayer', stages: [
   { n: 1, name: 'Upper Moon Three', boss: 'AKAZA', enemy: ['AKAZA', 'GYUTARO', 'HANTENGU', 'KAIGAKU'], boost: 3.2,
@@ -836,7 +838,7 @@ const PKZONE = { id: 'pk1', name: 'League Gauntlet', sub: 'Dead Zone · Pokémon
     weak: ['S:PKM', 'Rivals', 'Dragons'], weakB: 55, resist: 65, tip: 'Every champion, led by Ash at his peak. Your best trainers, rivals like Paul and Gary, and dragons. Kizaru and Aokiji hit this weakness with Specials and Ultimates. Aokiji cancels World Monarch’s bonus against himself. Save Awakened Ultimates for Ash.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
-const DEADZONES = [REDZONE, DARKT, DBZONE, PKZONE]
+const DEADZONES = [REDZONE, DARKT, DBZONE, PKZONE, ...LAST_DOOR_ZONES]
 // ---------- VILLAIN CAMPAIGN ----------
 const VCAMP = { name: 'The Dark Alliance', sub: 'Villain Campaign · Every world\'s villains unite', boss: 'AIZEN', stages: [
   { n: 1, name: 'The Covenant Moves', coins: 2500, enemy: ['KAKASHI', 'ZORO', 'BAKUGO', 'MEGUMI', 'GOHAN', 'YAMAMOTO'],
@@ -1154,7 +1156,7 @@ const ARCS = [
 ]
 function grantArcCard(arc) {
   if (!arc.rewardCard) return null
-  const card = CARDS.find(c => c.id === arc.rewardCard && c.arcReward === arc.id)
+  const card = CARDS.find(c => c.id === arc.rewardCard && (arc.existingReward || c.arcReward === arc.id))
   if (!card) return null
   const P = S.profile, claimed = P.arcRewards || (P.arcRewards = {})
   if (claimed[arc.id]) return null
@@ -1163,6 +1165,7 @@ function grantArcCard(arc) {
   P.last = [card.key]
   return card
 }
+ARCS.push(...LAST_DOOR_ARCS)
 const arcCleared = (P, arc) => !!arc && (P.arcs?.[arc.id] || 0) >= arc.chapters.length
 const EVENT_ANIME = ['JJK', 'DS', 'DBZ', 'OP', 'NAR', 'MHA', 'JJBA', 'HXH', 'BLE', 'BC', 'FT', 'FF']
 function eventNow() { const wk = Math.floor((Date.now() / 864e5 + 3) / 7), a = EVENT_ANIME[wk % EVENT_ANIME.length]; return { id: 'e' + wk, anime: a, pack: PACKS[a] ? a : 'standard', ends: (wk + 1) * 7 * 864e5 - 3 * 864e5, tiers: [{ name: 'Normal', level: 2, boost: 1, coins: 1500 }, { name: 'Hard', level: 4, boost: 1.2, coins: 3000 }, { name: 'Nightmare', level: 5, boost: 1.45, coins: 5000, pack: true }] } }
@@ -1306,6 +1309,7 @@ function act(a) {
     }
     case 'ppBuy': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
+      if (c.campReward) return { error: 'Earn this card by clearing its campaign chapter.' }
       if (c.arcReward && !arcCleared(P, ARCS.find(arc => arc.id === c.arcReward))) return { error: 'Clear its Story Arc to unlock this card.' }
       const cost = PP_COST[c.r]; if ((P.pp || 0) < cost) return { error: `You need ${cost} pack points.` }
       P.pp -= cost; giveCard(a.key); P.last = [a.key]; addXP(10)
@@ -1344,7 +1348,7 @@ function act(a) {
       return { msg: 'War lineup saved.' }
     }
     case 'quickSell': {
-      if (byKey(a.key)?.arcReward && (own(a.key)?.n || 0) <= 1) return { error: 'Your last Story Arc reward copy cannot be sold.' }
+      if ((byKey(a.key)?.arcReward || byKey(a.key)?.campReward) && (own(a.key)?.n || 0) <= 1) return { error: 'Your last Story Arc reward copy cannot be sold.' }
       const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }
       if (spare(a.key) < 1) return { error: 'That card is in your team. Remove it first.' }
       const got = quickSell(c, e.lvl || 0); P.coins += got; e.n--; if (e.n <= 0) delete P.club.cards[a.key]
@@ -1358,6 +1362,7 @@ function act(a) {
     }
     case 'craft': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }
+      if (c.campReward) return { error: 'Earn this card by clearing its campaign chapter.' }
       if (c.arcReward) return { error: 'Clear its Story Arc, then visit the Pack Point Exchange.' }
       const cost = SHARD_COST[c.r]; if ((P.shards || 0) < cost) return { error: `You need ${cost.toLocaleString()} shards.` }
       P.shards -= cost; giveCard(a.key); P.last = [a.key]; addXP(10); return { msg: `Crafted ${cardName(a.key)}.` }
@@ -1368,7 +1373,7 @@ function act(a) {
       if ((D.done[q.id] || 0) >= q.per) return { error: 'Done for today. It resets at midnight UTC.' }
       const keys = a.keys || []; if (keys.length !== q.n) return { error: `Needs exactly ${q.n} cards.` }
       const use = {}; for (const k of keys) use[k] = (use[k] || 0) + 1
-      for (const k in use) { const c = byKey(k); if (!c || spare(k) < use[k]) return { error: 'You can only use cards you own that are not in your team.' } }
+      for (const k in use) { const c = byKey(k); if (!c || (c.campReward && (own(k)?.n || 0) <= use[k]) || spare(k) < use[k]) return { error: 'You can only use cards you own that are not in your team.' } }
       const cs = keys.map(byKey)
       if (q.minR && cs.some(c => RK(c.r) < RK(q.minR))) return { error: 'Some cards are below the required rarity.' }
       if (q.same && new Set(cs.map(c => c.anime)).size !== 1) return { error: 'All cards must be from the same anime.' }
@@ -1388,7 +1393,7 @@ function act(a) {
     }
     case 'list': {
       const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }
-      if (c.arcReward) return { error: 'Story Arc rewards cannot be listed.' }
+      if (c.arcReward || c.campReward) return { error: 'Story rewards cannot be listed.' }
       if (spare(a.key) < 1) return { error: 'That card is in your team. Remove it first, or get a duplicate.' }
       const start = Math.round(+a.start / 50) * 50, bin = Math.round(+a.bin / 50) * 50, hours = [1, 3, 6, 12].includes(+a.hours) ? +a.hours : 1
       if (!(start >= 50 && start <= 9999950)) return { error: 'Set a start price between 50 and 9,999,950.' }
@@ -1440,6 +1445,21 @@ function act(a) {
       return {}
     }
     case 'rivalryResult': {
+      const rival = LAST_DOOR_RIVALS.find(r => r.id === a.rival)
+      if (rival) {
+        if (!['story', 'mastery'].includes(a.mode)) return { error: 'Unknown difficulty.' }
+        const progress = ((P.rivalry ||= {})[rival.id] ||= {})
+        if (a.mode === 'mastery' && !progress.story) return { error: 'Clear Story first.' }
+        if (!a.won) return { msg: 'Your squad was defeated.' }
+        if (a.mode === 'mastery' && a.mastered !== true) return { msg: rival.goal }
+        if (progress[a.mode]) return { msg: 'Rivalry cleared again.' }
+        progress[a.mode] = true
+        const mastery = a.mode === 'mastery'
+        P.coins += mastery ? 10000 : 5000
+        P.shards = (P.shards || 0) + (mastery ? 750 : 300)
+        if (mastery) P.pending.premium = (P.pending.premium || 0) + 1
+        return { msg: mastery ? 'Mastery cleared · 10,000 coins, 750 shards and a Premium Drop.' : 'Story cleared · 5,000 coins and 300 shards.' }
+      }
       if (!['story', 'mastery'].includes(a.mode)) return { error: 'Unknown rivalry.' }
       const progress = P.rivalry || (P.rivalry = {})
       if (a.mode === 'mastery' && !progress.story) return { error: 'Clear Story first.' }
@@ -1567,6 +1587,7 @@ function act(a) {
         const key = ci + ':' + si, prev = si === 1 ? (ci === 1 || (C.stars[(ci - 1) + ':6'] || 0) > 0) : (C.stars[ci + ':' + (si - 1)] || 0) > 0; if (!prev) return { error: 'Stage locked.' }
         if (!a.won) { addXP(10); return {} }
         const got = 1 + ((a.ko || 0) <= 1 ? 1 : 0) + ((a.turns || 99) <= 12 ? 1 : 0), had = C.stars[key] || 0; C.stars[key] = Math.max(had, got); addXP(had ? 20 : 60)
+        if (st.rule === 'rescue') C.rescued = [...new Set([...(C.rescued || []), ...(Array.isArray(a.rescued) ? a.rescued.filter(name => RESCUE_NAMES.includes(name)) : [])])]
         if (had) { P.coins += 300; return { msg: '★'.repeat(got) + ' Stage replayed. +300 coins.' } }
         P.coins += st.coins; let extra = ''
         if (st.boss) { giveCard(ch.boss); P.last = [ch.boss]; P.pending.premium = (P.pending.premium || 0) + 1; extra = ', ' + cardName(ch.boss) + ' and a Premium Drop' }
