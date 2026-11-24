@@ -1378,7 +1378,7 @@ export function startBattle(stage) {
     return !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5
   }
   async function transformationScene(form, card) {
-    const scene = h('div', 'form-awakening' + (form.duration ? ' baryon' : ''))
+    const scene = h('div', 'form-awakening' + (form.cinematicStyle === 'baryon' ? ' baryon' : ''))
     scene.style.setProperty('--form-color', form.color)
     scene.innerHTML = `<div class="form-streaks"></div><div class="form-orbit"></div><div class="form-orbit second"></div>
       <div class="form-portrait"></div><div class="form-impact"></div><div class="form-letterbox"></div>
@@ -1390,7 +1390,7 @@ export function startBattle(stage) {
       await wait(440)
       if (B.closed) return
       scene.classList.add('burst')
-      sfx(form.duration ? 'bimpact' : 'reveal', 5)
+      sfx(form.cinematicStyle === 'baryon' ? 'bimpact' : 'reveal', 5)
       await wait(1650)
     } finally { scene.remove() }
   }
