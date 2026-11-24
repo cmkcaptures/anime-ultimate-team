@@ -1,11 +1,11 @@
-import { formCard } from './transformations.js?v=naruto-forms'
-import { createFX } from './fx2d.js?v=naruto-forms'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=naruto-forms'
+import { formCard } from './transformations.js?v=distinct-form-art'
+import { createFX } from './fx2d.js?v=distinct-form-art'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=distinct-form-art'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=naruto-forms'
-import { sfx, sfxOn, music, musicOn } from './sfx.js?v=naruto-forms'
+import * as ACC from './account.js?v=distinct-form-art'
+import { sfx, sfxOn, music, musicOn } from './sfx.js?v=distinct-form-art'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=naruto-forms'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=distinct-form-art'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
