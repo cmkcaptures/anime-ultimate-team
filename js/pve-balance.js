@@ -12,7 +12,7 @@ export function pveSquadPower(team) {
   return (.7 * peak + .3 * average) / 103
 }
 
-export function pveBalance(mode, team, { floor = 1, enemies = 1, episodes = 3, baseBoost = 1, finale = false } = {}) {
+export function pveBalance(mode, team, { floor = 1, enemies = 1, episodes = 3, baseBoost = 1, finale = false, progression = 0 } = {}) {
   const power = pveSquadPower(team)
   if (mode === 'redzone') {
     const upper = Math.max(0, power - .94)
@@ -38,5 +38,31 @@ export function pveBalance(mode, team, { floor = 1, enemies = 1, episodes = 3, b
       storyBoost: clamp(1.08, 1 + (baseBoost - 1) * .12, 1.17),
     }
   }
-  return null
+  if (mode === 'raid') {
+    // Every attack contributes raw damage to the same community HP pool.
+    return { hp: 1.4, damage: 1.18, scoreBoss: true }
+  }
+  const profile = OTHER_MODES[mode]
+  if (!profile) return null
+  const [baseHp, baseDamage, response] = profile
+  const late = clamp(0, progression, 1)
+  const stronger = clamp(0, (power - .89) / .55, 1)
+  const scale = stronger * response
+  const outnumbered = 1 + clamp(0, team.length - enemies, 5) * (mode === 'rivalry' ? .045 : .055)
+  return {
+    hp: (baseHp + late * .18 + scale * (.45 + late * .25)) * outnumbered,
+    damage: baseDamage + late * .12 + scale * .25,
+  }
+}
+
+const OTHER_MODES = {
+  ranked: [1, 1, .8],
+  tower: [1, 1, 1],
+  event: [1, 1, .85],
+  rift: [1.16, 1.06, 1],
+  rivalry: [1.1, 1.02, .75],
+  war: [1.07, 1.02, .9],
+  story: [1, 1, .65],
+  camp: [1, 1, .8],
+  villain: [1.06, 1.02, .85],
 }
