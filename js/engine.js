@@ -283,8 +283,8 @@ function achList() {
     { id: 'dzdb', g: 'MODES', name: 'Universe Survivor', d: 'Clear all 5 Universe Survival stages', p: ((P.rz || {}).db1 || []).length, need: 5, rw: { coins: 100000, title: 'Universe Survivor' } },
     { id: 'dzpk', g: 'MODES', name: 'Champion of Champions', d: 'Clear all 5 League Gauntlet stages', p: ((P.rz || {}).pk1 || []).length, need: 5, rw: { coins: 100000, title: 'Pokémon Master' } },
     { id: 'dzdt', g: 'MODES', name: 'Dark Tournament Champion', d: 'Clear all 5 Dark Tournament stages', p: ((P.rz || {}).dt1 || []).length, need: 5, rw: { coins: 100000, title: 'Dark Tournament Champion' } },
-    { id: 'vil1', g: 'MODES', name: 'Lord of Darkness', d: 'Beat the Villain Campaign', p: (((P.vcamp || {}).stars || {})[6] || 0) > 0 ? 1 : 0, need: 1, rw: { coins: 50000, title: 'Lord of Darkness' } },
-    { id: 'vil18', g: 'MODES', name: 'Perfect Villainy', d: 'Get all 18 stars in the Villain Campaign', p: Object.values((P.vcamp || {}).stars || {}).reduce((n, v) => n + v, 0), need: 18, rw: { coins: 75000 } },
+    ...((((P.vcamp || {}).stars || {})[6] || 0) > 0 ? [{ id: 'vil1', g: 'MODES', name: 'Lord of Darkness', d: 'Beat the Villain Campaign', p: (((P.vcamp || {}).stars || {})[6] || 0) > 0 ? 1 : 0, need: 1, rw: { coins: 50000, title: 'Lord of Darkness' } }] : []),
+    ...(Object.values(P.vcamp?.stars || {}).reduce((n, v) => n + v, 0) >= 18 ? [{ id: 'vil18', g: 'MODES', name: 'Perfect Villainy', d: 'Get all 18 stars in the Villain Campaign', p: Object.values((P.vcamp || {}).stars || {}).reduce((n, v) => n + v, 0), need: 18, rw: { coins: 75000 } }] : []),
     { id: 'awk1', g: 'COLLECTION', name: 'Awakened', d: 'Get a card to 7◆ to awaken its Ultimate', p: Object.values(P.club.cards).some(o => (o.dia || 3) >= 7) ? 1 : 0, need: 1, rw: { coins: 20000 } },
     { id: 'awk5', g: 'COLLECTION', name: 'Fully Awakened Squad', d: 'Get 5 different cards to 7◆', p: Object.values(P.club.cards).filter(o => (o.dia || 3) >= 7).length, need: 5, rw: { coins: 60000, title: 'Awakened' } },
     { id: 'streak30', g: 'SOCIAL', name: 'Devoted', d: 'Reach a 30-day login streak', p: P.login ? P.login.streak : 0, need: 30, rw: { coins: 50000, title: 'Devoted' } },
@@ -1553,16 +1553,7 @@ function act(a) {
         if (w.tickets) { P.tickets = (P.tickets || 0) + w.tickets; got.push(w.tickets + ' Training Tickets') }
         return { msg: `💀 DEAD ZONE ${st.final ? 'CONQUERED' : 'CLEARED'}: ${st.name}! +${got.join(', ')}.` }
       }
-      if (a.mode === 'villain') {
-        const n = +a.id, st = VCAMP.stages.find(s => s.n === n), C = vcampP(); if (!st) return { error: 'Unknown stage.' }
-        if (n > 1 && !(C.stars[n - 1] > 0)) return { error: 'Stage locked.' }
-        if (!a.won) { addXP(10); return {} }
-        const got = 1 + ((a.ko || 0) <= 1 ? 1 : 0) + ((a.turns || 99) <= 12 ? 1 : 0), had = C.stars[n] || 0; C.stars[n] = Math.max(had, got); addXP(had ? 20 : 80)
-        if (had) { P.coins += 400; return { msg: '★'.repeat(got) + ' Replayed. +400 coins.' } }
-        P.coins += st.coins; let extra = ''
-        if (st.boss) { P.pending.premium = (P.pending.premium || 0) + 2; P.shards = (P.shards || 0) + 3000; P.tickets = (P.tickets || 0) + 5; extra = ', 2 Premium Drops, ◆3,000 shards and 5 Training Tickets' }
-        return { msg: `${'★'.repeat(got)} ${st.name} cleared! +${st.coins.toLocaleString()} coins${extra}.` }
-      }
+      if (a.mode === 'villain') return { error: 'The previous Campaign has retired.' }
       if (a.mode === 'rift') {
         const R = riftNow(); if (+a.id !== R.id || !R.open) return { error: 'This rift has closed.' }
         if (R.done) return { error: 'You already sealed this rift.' }
@@ -1572,27 +1563,7 @@ function act(a) {
         const bonus = Math.random() < .25; if (bonus) P.pending.premium++
         return { msg: `Rift sealed! +8,000 coins, ◆1,500 shards and ${bonus ? '2 Premium Drops (lucky!)' : 'a Premium Drop'}.` }
       }
-      if (a.mode === 'camp') {
-        const hard = String(a.id).startsWith('H'), [ci, si] = String(a.id).replace(/^H/, '').split(':').map(Number), ch = CAMPAIGN.find(c => c.id === ci), st = ch && ch.stages.find(s => s.n === si); if (!st) return { error: 'Unknown stage.' }
-        const C = campP()
-        if (hard) { // HARD MODE: unlocked by beating the normal boss; double rewards
-          const key = 'H' + ci + ':' + si, open = (C.stars[ci + ':6'] || 0) > 0 && (si === 1 || (C.stars['H' + ci + ':' + (si - 1)] || 0) > 0); if (!open) return { error: 'Hard stage locked.' }
-          if (!a.won) { addXP(15); return {} }
-          const got = 1 + ((a.ko || 0) <= 1 ? 1 : 0) + ((a.turns || 99) <= 12 ? 1 : 0), had = C.stars[key] || 0; C.stars[key] = Math.max(had, got); addXP(had ? 30 : 100)
-          if (had) { P.coins += 600; return { msg: '★'.repeat(got) + ' Hard stage replayed. +600 coins.' } }
-          P.coins += st.coins * 2; let extra = ''
-          if (st.boss) { P.pending.premium = (P.pending.premium || 0) + 2; P.shards = (P.shards || 0) + 3000; P.tickets = (P.tickets || 0) + 5; extra = ', 2 Premium Drops, ◆3,000 shards and 5 Training Tickets' }
-          return { msg: `HARD ${'★'.repeat(got)} ${st.name} cleared! +${(st.coins * 2).toLocaleString()} coins${extra}.` }
-        }
-        const key = ci + ':' + si, prev = si === 1 ? (ci === 1 || (C.stars[(ci - 1) + ':6'] || 0) > 0) : (C.stars[ci + ':' + (si - 1)] || 0) > 0; if (!prev) return { error: 'Stage locked.' }
-        if (!a.won) { addXP(10); return {} }
-        const got = 1 + ((a.ko || 0) <= 1 ? 1 : 0) + ((a.turns || 99) <= 12 ? 1 : 0), had = C.stars[key] || 0; C.stars[key] = Math.max(had, got); addXP(had ? 20 : 60)
-        if (st.rule === 'rescue') C.rescued = [...new Set([...(C.rescued || []), ...(Array.isArray(a.rescued) ? a.rescued.filter(name => RESCUE_NAMES.includes(name)) : [])])]
-        if (had) { P.coins += 300; return { msg: '★'.repeat(got) + ' Stage replayed. +300 coins.' } }
-        P.coins += st.coins; let extra = ''
-        if (st.boss) { giveCard(ch.boss); P.last = [ch.boss]; P.pending.premium = (P.pending.premium || 0) + 1; extra = ', ' + cardName(ch.boss) + ' and a Premium Drop' }
-        return { msg: `${'★'.repeat(got)} ${st.name} cleared! +${st.coins.toLocaleString()} coins${extra}.` }
-      }
+      if (a.mode === 'camp') return { error: 'The previous Campaign has retired.' }
       if (a.mode === 'arc') {
         const [id, ch] = String(a.id).split(':'), arc = ARCS.find(x => x.id === id), c = Number(ch), chapter = arc?.chapters[c]; if (!ch || !Number.isInteger(c) || !chapter) return { error: 'Unknown chapter.' }
         const A = (P.arcs = P.arcs || {}), done = A[id] || 0; if (c > done) return { error: 'Chapter locked.' }
@@ -1713,8 +1684,7 @@ function act(a) {
       if (L.every(o => o.claimed || o.id === x.id)) { P.pending.premium = (P.pending.premium || 0) + 1; return { msg: 'All done! +' + x.rw.toLocaleString() + ' coins and a Premium Drop for finishing Getting Started.' } }
       return { msg: '+' + x.rw.toLocaleString() + ' coins' }
     }
-    case 'campChest': { const C = campP(), ci = +a.c || 1, ii = +a.i, i = ci === 1 ? ii : ci * 10 + ii, R = CAMP_CHEST[ii]; if (!R) return { error: 'Unknown chest.' }; const tot = Object.entries(C.stars).filter(([k]) => k.startsWith(ci + ':')).reduce((n, [, v]) => n + v, 0); if (tot < R.at) return { error: 'Need ' + R.at + ' stars.' }; if (C.chests.includes(i)) return { error: 'Already opened.' }
-      C.chests.push(i); let bonus = ''; if (ci === 3 && ii === 1) { giveCard('Story/ab4c25df0a27d36e85485d0a795650ad.jpg'); P.last = ['Story/ab4c25df0a27d36e85485d0a795650ad.jpg']; bonus = ' WHIS joins your club!' } P.coins += R.coins; if (R.pack) P.pending[R.pack] = (P.pending[R.pack] || 0) + 1; if (R.shards) P.shards = (P.shards || 0) + R.shards; return { msg: 'Chest opened: +' + R.coins.toLocaleString() + ' coins and a ' + PACKS[R.pack].name + (R.shards ? ' and ◆' + R.shards.toLocaleString() + ' shards' : '') + '.' + bonus } }
+    case 'campChest': return { error: 'The previous Campaign has retired.' }
     case 'awk': {
       const c = byKey(a.key), o = c && P.club.cards[a.key], N = AWK.find(n => n.id === a.node); if (!o || !N) return { error: 'Unknown card or node.' }
       const have = o.awk || (o.awk = []); if (have.includes(N.id)) return { error: 'Already unlocked.' }
@@ -1764,7 +1734,7 @@ function state() {
     raid: { ...raidNow(), me: raidP() },
     presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
-    camp: CAMPAIGN, campP: campP(), campChest: CAMP_CHEST, vcamp: VCAMP, vcampP: vcampP(), rift: riftNow(), deadzones: DEADZONES, rzAll: S.profile.rz || {},
+    rift: riftNow(), deadzones: DEADZONES, rzAll: S.profile.rz || {},
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
@@ -1811,6 +1781,19 @@ function retireKuramaLink(save) {
   if (shards) P.shards = (P.shards || 0) + shards
   return shards
 }
+const RETIRED_CAMPAIGN_CARDS = new Set(['kaguya_progenitor', 'whis_angel_attendant', 'goku_black_rift_walker', 'imu_true_form', 'muzan_demon_king', 'ichigo_last_door', 'uryu_keeper_of_names'])
+function unlockRetiredCampaign() {
+  const profile = S.profile
+  if (profile.retiredCampaignUnlocked) return []
+  const granted = []
+  for (const card of CARDS) {
+    if (!card.key.startsWith('Story/') || !RETIRED_CAMPAIGN_CARDS.has(card.id) || profile.club.cards[card.key]?.n > 0) continue
+    giveCard(card.key)
+    granted.push(card.name)
+  }
+  profile.retiredCampaignUnlocked = true
+  return granted
+}
 async function boot() {
   CARDS = await (await fetch('cards-list.json', { cache: 'no-cache' })).json()
   const who = await initAccount(CFG); LS_SAVE = 'aut-save-v3-' + who.uid
@@ -1855,6 +1838,8 @@ async function boot() {
     const reward = grantArcCard(arc)
     if (reward) notice(arc.name + ' clear reward: ' + reward.name + ' · ' + reward.ver, 'ok')
   }
+  const campaignCards = unlockRetiredCampaign()
+  if (campaignCards.length) notice('Former Campaign rewards added to your club: ' + campaignCards.join(', ') + '.', 'ok')
   if (!S.market.listings.length) { for (let i = 0; i < 15; i++) tick(true) } else tick(true)
   save(); publish(summary(), true)
   setInterval(() => tick(), 10000)
