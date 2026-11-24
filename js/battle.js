@@ -145,12 +145,13 @@ function tagPartner(f, turn, side) {
   f.partnerTurn = turn
   f.partnerSide = !f.partnerSide
   if (f.pe.tagGuard) f.guard = 1
+  if (side && f.pe.team7 && !f.partnerSide) side.ki = Math.min(KI_MAX, side.ki + 2)
   if (side && f.pe.gyro && f.partnerSide) side.gauge = Math.min(GAUGE_MAX, side.gauge + 15)
   pasNote(f, partnerNames(f)[Number(f.partnerSide)] + ' TAGS IN')
   return true
 }
 function autoTagPartner(f, turn) {
-  if (f.pe.gyro || f.pe.tagGuard || f.card.id === 'gon_vs_killua_best_friends') return
+  if (f.pe.team7 || f.pe.beastDuo || f.pe.gyro || f.pe.tagGuard || f.card.id === 'gon_vs_killua_best_friends') return
   const ready = f.pe.deadCalm ? f.sunCounter : f.pe.sashMark ? f.sashReady : f.pe.storeFlame ? f.flame >= 3 : f.hp >= f.max * .6
   if (!!ready !== !!f.partnerSide) tagPartner(f, turn)
 }
@@ -261,6 +262,11 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       def.uiEnergyTurn = clock
       D.ki = Math.min(KI_MAX, D.ki + 2)
     }
+    if (ed.muiCounter && offensive && A && D && def.muiCounterTurn !== clock) {
+      def.muiCounterTurn = clock
+      const counter = hit(def, att, 220, def.pwr, false, D, A, 'counter')
+      pasNote(def, 'ULTRA INSTINCT COUNTER · ' + counter.dmg + ' DMG')
+    }
     pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
   if (ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; def.ko = true; att.kos++; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
   const crit = rnd(A || D) < .08 + att.tec / 1200 + (pa.crit || 0) / 100 + (ea.crit || 0) / 100 || (ea.every3crit && (att.attacks + 1) % 3 === 0)
@@ -316,6 +322,12 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (ed.adapt && !ea.trueDmg && !mod.ignoreDR) dmg *= 1 - Math.min(ed.adaptMax || 30, ed.adapt * def.hitsTaken) / 100
   if (ed.wheel && !mod.ignoreDR) { const seen = def.wheelSeen || (def.wheelSeen = {}); dmg *= 1 - Math.min(48, 12 * def.hitsTaken) / 100; if (seen[kind]) dmg *= .8; else seen[kind] = 1; if (def.hitsTaken < 4) pasNote(def, def.hitsTaken === 3 ? 'FULLY ADAPTED' : 'WHEEL TURNS · ' + (def.hitsTaken + 1)) }
   if (def.fort) dmg *= .7
+  if (offensive && ranged && ed.truthOrbs &&
+      (def.orbTurn !== clock || (A?.reworkAction && def.orbAction === A.reworkAction))) {
+    def.orbTurn = clock
+    def.orbAction = A?.reworkAction
+    dmg *= .5
+  }
   if (ea.hiei && def.burnT) dmg *= 1.35
   if (ea.magicEater && isDragon(def.card)) dmg *= 1.3
   if (ea.mugetsu) dmg *= att.ultFired ? 1.1 : 1.25
@@ -425,7 +437,12 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     }
     else if (!noSurvive && D && D.angel && D.angel !== def) { D.angel.angelUsed = 1; D.angel = null; def.hp = 1; pasNote(def, 'SAVED') }
     else if (ed.ablaze && !def.ablazeUsed && def.hp / def.max < .3) { def.ablazeUsed = 1; def.hp = 1; pasNote(def, 'HEART ABLAZE') }
-    else if (def.revive > 0 && !mod.noRevive) { healHP(def, def.max * def.revive / 100); def.revive = 0; if (ed.jackpot) { def.rage = (def.rage || 0) + ed.jackpot; pasNote(def, 'JACKPOT! FULLY HEALED') } else pasNote(def, 'REVIVED') }
+    else if (def.revive > 0 && !mod.noRevive) { healHP(def, def.max * def.revive / 100); def.revive = 0;
+      if (ed.ashRally && D) for (const ally of D.team) if (ally !== def && !ally.ko) {
+        healHP(ally, ally.max * .15)
+        ally.guard = 1
+      }
+      if (ed.jackpot) { def.rage = (def.rage || 0) + ed.jackpot; pasNote(def, 'JACKPOT! FULLY HEALED') } else pasNote(def, 'REVIVED') }
     else {
       def.ko = true; att.kos++
       if (ea.curseWarding && def.curseOwner === att.key && A && D && act(A) === att) {
@@ -572,6 +589,7 @@ function playArt(B, who, idx) {
     }
     if (kit.natsuRework) { healHP(a, a.max * .12); me.ki = Math.min(KI_MAX, me.ki + 2) }
     if (kit.yuta) for (const ally of alive(me)) healHP(ally, ally.max * .1)
+    if (kit.truthOrbs && landed) a.shieldHp = Math.max(a.shieldHp || 0, Math.round(a.max * .2))
     if (kit.conjunction) me.conjunction = true
     if (kit.hundredHeal) for (const ally of alive(me)) healHP(ally, ally.max * .15)
     if (kit.gravityKing) foe.ki = Math.max(0, foe.ki - 1)
@@ -593,6 +611,7 @@ function playArt(B, who, idx) {
     if (PE(a).splash) for (const t of alive(foe)) if (t !== d) ev.hits.push({ t, ...hit(a, t, base * PE(a).splash / 100, Math.max(a.pwr, a.ki), pierce, me, foe, 'special') })
     if (d.rivalBarrier == null && PE(a).shambles && !a.shamUsed && a.hp / a.max < d.hp / d.max) { a.shamUsed = 1; const pa = a.hp / a.max, pd = d.hp / d.max; a.hp = Math.round(a.max * pd); d.hp = Math.max(1, Math.round(d.max * pa)); pasNote(a, 'SHAMBLES') }
   }
+  if (a.ko) ev.waveCounter = true
   const dealt = ev.hits.reduce((n, x) => n + x.dmg, 0)
   if (a.reworkDamp && dealt > 0) a.futureDamp = false
   a.reworkDamp = false
@@ -690,10 +709,11 @@ function ultimate(B, who) {
   const base = pctOf(a.card) * 6 * (awk ? 1.35 : 1), stat = Math.max(a.pwr, a.ki), pierce = /Ignores Guard/.test(kitTxt(a.card))
   const dodged = new Set()
   const H = (t, b, p, mod) => {
-    if (t.ko) return
+    if (a.ko || t.ko) return
     if (dodged.has(t)) { ev.hits.push({ t, dmg: 0, miss: 'DODGED' }); return }
     const prior = t.waveDodged
     ev.hits.push({ t, ...hit(a, t, b, stat, p || PE(a).pierce, me, foe, 'ult', undefined, mod) })
+    if (a.ko) ev.waveCounter = true
     foe.waveDodgeTarget = null
     if ((!prior && t.waveDodged) || (PE(t).nikaDodge && ev.hits.at(-1).miss === 'DODGED') || (PE(t).magicEater && ev.hits.at(-1).miss === 'ABSORBED')) dodged.add(t)
   }
@@ -733,6 +753,18 @@ function ultimate(B, who) {
     a.violetReady = false; a.resolveArts = 0
   } else if (ea.sacrifice) { for (const t of [d]) H(t, base * ea.sacrifice, true); a.hp = 0; a.ko = true; pasNote(a, 'GATE OF DEATH'); ev.kit = []; a.ultFired = 1; return ev }
   if (ev.ult !== uname) { ev.kit = kitEffects(me, a); a.ultFired = 1; return ev }
+  if (a.pe.team7 || a.pe.beastDuo) {
+    ev.ult = a.pe.team7 ? 'RASENGAN × CHIDORI' : 'BEAST & ORANGE'
+    for (const t of alive(foe)) {
+      const ratio = a.pe.team7 ? (t === d ? .68 : .38) : (t === d ? .85 : .28)
+      H(t, base * ratio, true)
+      H(t, base * ratio, true)
+    }
+    ev.kit = kitEffects(me, a)
+    a.ultFired = 1
+    if (a.ko) ev.waveCounter = true
+    return ev
+  }
   if (ea.ultAoe) { for (const t of alive(foe)) H(t, t === d ? base * (ea.yusuke ? 1.5 : 1) : base * .55);
     if (ea.yuta) for (const ally of alive(me)) ally.guard = 1
     if (ea.todoroki && !d.ko) d.frozen = 1; if (ea.ultHeal) healHP(a, Math.round(a.max * ea.ultHeal / 100)); ev.kit = kitEffects(me, a); a.ultFired = 1; return ev }
@@ -1566,6 +1598,12 @@ export function startBattle(stage) {
   }
   for (const side of [B.you, B.ai]) for (const f of side.team) f.startingMax = f.max
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
+  for (const side of [B.you, B.ai]) {
+    const active = act(side)
+    if (side.team.some(f => !f.ko && PE(f).beastDuo)) {
+      active.shieldHp = Math.max(active.shieldHp || 0, Math.round(active.max * .2))
+    }
+  }
   sealNow()
   syncReworkMatchup(B.you, B.ai)
   refill(B.you); refill(B.ai)
@@ -2028,7 +2066,7 @@ export function startBattle(stage) {
       draw(); await wait(400)
     }
     if (ev.waveCounter && act(B[side]).ko) {
-      log(act(B[side]).card.name + ' was knocked out by Bungee Gum!')
+      log(act(B[side]).card.name + ' was knocked out by a counter!')
       if (!nextAlive(B[side])) return end(side === 'ai')
       draw()
     }
@@ -2207,6 +2245,7 @@ export function startBattle(stage) {
     const e = PE(a0)
     if (PE(act(foe)).shanks) s.ki = Math.max(0, s.ki - 1)
     for (const ally of s.team) if (!ally.ko && PE(ally).choso) healHP(a0, a0.max * .08)
+    for (const ally of s.team) if (ally !== a0 && !ally.ko && PE(ally).team7) healHP(a0, a0.max * .08)
     a0.turns++
     for (const ally of s.team) if (ally !== a0 && !ally.ko && PE(ally).hundredHeal) healHP(a0, a0.max * .08)
     if (e.hellfire) a0.heat = Math.min(4, (a0.heat || 0) + 1)
