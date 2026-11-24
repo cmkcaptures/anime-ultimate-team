@@ -1,6 +1,6 @@
 import { RESCUE_NAMES } from './last-door.js?v=1'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
-import { rivalryPage, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=last-door-1'
+import { rivalryPage, rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=last-door-2'
 import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=last-door-1'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
@@ -1827,7 +1827,7 @@ export function battlePage(el) {
   if (MODE === 'war') return warPage(el)
   if (MODE === 'rivalry') return rivalryPage(el, X, (vegeta, toppo, squad, mastery, rival) => {
     if (rival.id !== 'toppo') {
-      const stage = { mode: 'rivalry', id: mastery ? 'mastery' : 'story', rival: rival.id, name: rival.name,
+      const stage = { mode: 'rivalry', id: mastery ? 'mastery' : 'story', rival: rival.id, rivalrySetup: rival, name: rival.name,
         label: 'Rivalry · ' + rival.name, level: 5, boost: rival.id === 'baryon' ? (mastery ? 1.65 : 1.4) : (mastery ? 2.75 : 2.1),
         team: [toppo.key], playerTeam: [vegeta.key, ...squad] }
       if (!mastery && !P.rivalry?.[rival.id]?.story) {
@@ -1869,6 +1869,7 @@ export function startBattle(stage) {
   const { h, cardImg, eff, BYKEY, P } = X
   const LV = stage.live || null
   const yours = LV ? LV.myTeam : stage.storyTeam ? stage.storyTeam.map(k => BYKEY[k]) : (stage.playerTeam || P.team).filter(Boolean).map((k, i) => (stage.rivalry || stage.rival || !P.club.cards[k]) && i === 0 ? BYKEY[k] : eff(BYKEY[k])).filter(Boolean)
+  if (stage.rivalrySetup?.kit && yours[0]) yours[0] = rivalryLead(yours[0], stage.rivalrySetup, X.POOL)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
   const turningPoints = createTurningPoints()
@@ -2356,7 +2357,7 @@ export function startBattle(stage) {
     if (stage.rival && side === 'you' && act(B.ai).ko) {
       const lead = act(B.you)
       B.rivalMastered = {
-        prayer: lead.card.id === 'netero_vs_meruem' && ev.prayerSpent === 3,
+        prayer: lead.card.id === stage.rivalrySetup?.lead && ev.prayerSpent === 3,
         flame: lead.card.id === 'zoro_asura' && ev.art === 'ultimate' && !act(B.ai).rivalFlame,
         overload: lead.card.id === 'all_might_united_states_smash' && ev.art === 'ultimate' && B.overloadSurvived,
         baryon: lead.card.id === 'baryon_isshiki' && B.turn <= 2,

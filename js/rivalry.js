@@ -1,4 +1,4 @@
-import { LAST_DOOR_RIVALS } from './last-door.js?v=1'
+import { LAST_DOOR_RIVALS } from './last-door.js?v=2'
 
 export const VEGETA = 'vegeta_ssb_evolved'
 export const TOPPO = 'toppo_god_of_destruction'
@@ -6,6 +6,11 @@ export const RIVALRY_TITLE = 'title_beyond_destruction'
 
 const TOPPO_RIVAL = { id: 'toppo', name: 'Vegeta vs. Toppo', lead: VEGETA, foe: TOPPO,
   goal: 'Survive Hakai and KO Toppo with Final Explosion.' }
+export function rivalryLead(card, rival, pool) {
+  const kit = rival?.kit && pool.find(entry => entry.id === rival.kit)
+  return kit ? { ...card, mv: kit.mv, tx: kit.tx, pas: kit.pas } : card
+}
+
 let selectedRival = 'toppo'
 export function rivalryPage(el, X, launch) {
   const { h, POOL, P } = X
@@ -20,7 +25,7 @@ export function rivalryPage(el, X, launch) {
     tabs.append(tab)
   }
   el.append(tabs)
-  const vegeta = POOL.find(c => c.id === rival.lead), toppo = POOL.find(c => c.id === rival.foe)
+  const vegeta = rivalryLead(POOL.find(c => c.id === rival.lead), rival, POOL), toppo = POOL.find(c => c.id === rival.foe)
   if (!vegeta || !toppo) return
   const text = (tag, cls, value) => { const node = h(tag, cls); node.textContent = value; return node }
   const hero = h('section', 'rivalry-hero')

@@ -111,7 +111,7 @@ export const LAST_DOOR_ARCS = [
 ]
 
 export const LAST_DOOR_RIVALS = [
-  { id: 'prayer', name: 'Netero vs. Meruem', lead: 'netero_vs_meruem', foe: 'meruem_the_king', goal: 'Finish Meruem with a three-Prayer Zero Hand.' },
+  { id: 'prayer', name: 'Netero vs. Meruem', lead: 'netero_100_type_guanyin', kit: 'netero_vs_meruem', foe: 'meruem_the_king', goal: 'Finish Meruem with a three-Prayer Zero Hand.' },
   { id: 'flame', name: 'Asura Zoro vs. King', lead: 'zoro_asura', foe: 'king_wildfire', goal: 'Finish King with Dead Man’s Game while his flame is out.' },
   { id: 'overload', name: 'All Might vs. All For One', lead: 'all_might_united_states_smash', foe: 'all_for_one_quirk_overload', goal: 'Survive his charged Ultimate, then finish with All Might’s Ultimate.' },
   { id: 'baryon', name: 'Baryon Naruto vs. Isshiki', lead: 'baryon_isshiki', foe: 'isshiki', goal: 'Finish Isshiki with Naruto during his first two active turns.' },
