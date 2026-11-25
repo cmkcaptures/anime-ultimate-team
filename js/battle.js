@@ -1,3 +1,4 @@
+import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate } from './first-batch.js?v=1'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=1'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
@@ -9,7 +10,7 @@ import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missio
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
 import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
-import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=encounter-1'
+import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=first-batch-1'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
@@ -53,11 +54,14 @@ export const LINKS = [
   { n: 'Team 7', a: ['NARUTO', 'SASUKE', 'SAKURA', 'KAKASHI'], pct: 10 }, { n: 'Uchiha Blood', a: ['SASUKE', 'ITACHI', 'MADARA', 'OBITO'], pct: 8 },
   { n: 'Monster Trio', a: ['LUFFY', 'ZORO', 'SANJI'], pct: 10 }, { n: 'ASL Brothers', a: ['LUFFY', 'ACE', 'SABO'], pct: 10 }, { n: 'Emperors', a: ['SHANKS', 'KAIDO', 'BIG MOM', 'BLACKBEARD', 'LUFFY'], pct: 8 },
   { n: 'The Strongest', a: ['GOJO', 'YUTA', 'ITADORI', 'MEGUMI', 'NOBARA'], pct: 10 }, { n: 'King of Curses', a: ['SUKUNA', 'MAHITO', 'JOGO', 'GETO', 'KENJAKU'], pct: 8 },
-  { n: 'Kamado Bond', a: ['TANJIRO', 'NEZUKO', 'ZENITSU', 'INOSUKE', 'KAMABOKO'], pct: 10 }, { n: 'Hashira', a: ['RENGOKU', 'GIYU', 'TENGEN', 'SHINOBU', 'MITSURI', 'OBANAI'], pct: 8 },
+  { n: 'Kamado Bond', a: ['TANJIRO', 'NEZUKO', 'ZENITSU', 'INOSUKE', 'KAMABOKO'], pct: 10 }, { n: 'Hashira', a: ['RENGOKU', 'GIYU', 'TENGEN', 'SHINOBU', 'MITSURI', 'OBANAI', 'MUICHIRO', 'GYOMEI', 'SANEMI'], pct: 8 },
   { n: 'Urameshi Team', a: ['YUSUKE', 'KUWABARA', 'KURAMA', 'HIEI', 'GENKAI', 'TEAM URAMESHI'], pct: 10 },
   { n: 'Deku & Kacchan', a: ['DEKU', 'BAKUGO', 'ALL MIGHT'], pct: 10 }, { n: 'Soul Reapers', a: ['ICHIGO', 'RUKIA', 'RENJI', 'URAHARA', 'YAMAMOTO', 'KENPACHI', 'BYAKUYA', 'UNOHANA'], pct: 8 },
-  { n: 'Seven Deadly Sins', a: ['MELIODAS', 'ESCANOR', 'BAN', 'KING', 'ELIZABETH'], pct: 10, anime: 'SDS' }, { n: 'Hunters', a: ['GON', 'KILLUA', 'KURAPIKA', 'HISOKA'], pct: 8 },
+  { n: 'Seven Deadly Sins', a: ['MELIODAS', 'ESCANOR', 'BAN', 'KING', 'ELIZABETH', 'DIANE', 'GOWTHER', 'MERLIN'], pct: 10, anime: 'SDS' }, { n: 'Hunters', a: ['GON', 'KILLUA', 'KURAPIKA', 'HISOKA'], pct: 8 },
   { n: 'Survey Corps', a: ['LEVI', 'EREN', 'MIKASA', 'ARMIN', 'HANGE'], pct: 8 }, { n: 'Devil Hunters', a: ['DENJI', 'POWER', 'AKI', 'KISHIBE', 'KOBENI', 'MAKIMA'], pct: 8 },
+  { n: 'Shinazugawa Brothers', a: ['SANEMI', 'GENYA'], pct: 12, anime: 'DS' },
+  { n: 'Ice Zanpakutō', a: ['RUKIA', 'TŌSHIRŌ'], pct: 12, anime: 'BLE' },
+  { n: 'Water and Ice', a: ['JUVIA', 'GRAY'], pct: 12, anime: 'FT' },
   { n: 'Sword Masters', cat: 'Swordsmen', pct: 5 }, { n: 'Dark Alliance', cat: 'Villains', pct: 5 }, { n: 'Tag Partners', cat: 'Tag Teams', pct: 4 }, { n: 'Power Surge', cat: 'Transformations', pct: 4 },
   { n: 'Comrades', fac: 1, pct: 6 },
 ]
@@ -177,10 +181,10 @@ function autoTagPartner(f, turn) {
 const rangedHit = (fighter, kind) => kind === 'blast' || kind === 'burst' || (kind === 'special' && fighter.card.rangedSpecial)
 // Avoid feeding an absorber if a different attack is affordable. Otherwise
 // spend an Art so an all-ranged hand can draw a replacement next turn.
-function avoidAbsorbedArts(side, target) {
-  const fighter = act(side)
+function avoidAbsorbedArts(side, opponent) {
+  const fighter = act(side), target = act(opponent)
   return PE(target).absorbRanged && !PE(fighter).antiKit &&
-    side.hand.some(kind => ATTACK_ARTS.includes(kind) && !rangedHit(fighter, kind) && artCost(fighter, kind, side, target) <= side.ki)
+    side.hand.some(kind => ATTACK_ARTS.includes(kind) && !rangedHit(fighter, kind) && artCost(fighter, kind, side, opponent) <= side.ki)
 }
 function absorbBlast(att, def) {
   if (def.absorbSource !== att.key) { def.absorbSource = att.key; def.absorbed = 0 }
@@ -206,7 +210,7 @@ function drawOne(s) { if (s.deck) { if (!s.pile || !s.pile.length) { s.pile = []
 const ATTACK_ARTS = ['strike', 'blast', 'special', 'burst']
 const turnClock = side => side?.formTurn || 0
 const storyStrikeDiscount = (f, art, side) => art === 'strike' && PE(f).storyRush && f.storyStrikeClock !== turnClock(side) ? 1 : 0
-const artCost = (f, art, side, opponent) => ARTS[art].cost + (f.fcFrostTax && ATTACK_ARTS.includes(art) ? 2 : 0) - (art === 'special' && f.crDiscount ? 2 : 0) - (art === 'special' && gtForm(f) === 2 && f.gtDiscountTurn === turnClock(side) ? 2 : 0) - storyStrikeDiscount(f, art, side) + Number(!!f.gravityArts && ATTACK_ARTS.includes(art)) + Number(!!f.sageTax && ATTACK_ARTS.includes(art)) + waveArtTax(side, opponent, ATTACK_ARTS.includes(art), PE)
+const artCost = (f, art, side, opponent) => ARTS[art].cost + (f.fcFrostTax && ATTACK_ARTS.includes(art) ? 2 : 0) - (art === 'special' && f.crDiscount ? 2 : 0) - (art === 'special' && gtForm(f) === 2 && f.gtDiscountTurn === turnClock(side) ? 2 : 0) - storyStrikeDiscount(f, art, side) + Number(!!f.gravityArts && ATTACK_ARTS.includes(art)) + Number(!!f.sageTax && ATTACK_ARTS.includes(art)) + waveArtTax(side, opponent && act(opponent), ATTACK_ARTS.includes(art), PE) + (ATTACK_ARTS.includes(art) ? batchTax(art, side, opponent, PE) : 0)
 const healHP = (f, amount) => {
   const reduced = amount > 0 && f.hp < f.max && f.crHealCut
   if (reduced) f.crHealCut = false
@@ -363,6 +367,19 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
     if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!shrineWaveSurvive(def, pasNote) && !fusionCaptainSave(def, D, pasNote) && !fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ }; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
   }
+  if (offensive && !mod.noDodge && ed.batch && def.batchDodge && (ed.batch !== 'juvia' || kind === 'strike')) {
+    def.batchDodge = false
+    if (D?.waveArtRunning) D.waveDodgeTarget = def
+    if (ed.batch === 'muichiro') def.batchCounter = true
+    if (ed.batch === 'mirio' && A && D && !att.ko) hit(def, att, 510, def.pwr, true, D, A, 'counter')
+    pasNote(def, ed.batch === 'mirio' ? 'PERMEATION COUNTER' : 'DODGED')
+    return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
+  }
+  if (offensive && att.batchChill) {
+    if (att.batchChillAction == null) att.batchChillAction = A?.reworkAction ?? 0
+    if (att.batchChillAction === (A?.reworkAction ?? 0)) base *= .5
+    else att.batchChill = false
+  }
   const opening = offensive && !mod.followup && crewOpening(att, def, A)
   if (opening && ea.crew === 'asura' && kind === 'ult') base *= 1.25
   let ignoreDef = mod.ignoreDef || 0
@@ -492,12 +509,30 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     def.queenCharge = 0
     pasNote(def, 'BRACHIO LAUNCHERS · DISARMED')
   }
-  if (def.guard) { if (!pierceAll) dmg *= ed.guardStrong ? 1 - ed.guardStrong / 100 : .5; def.guard = 0 }
+  if (def.guard) {
+    if (blocked) {
+      dmg *= ed.guardStrong ? 1 - ed.guardStrong / 100 : .5
+      if (offensive && ed.batch === 'gyomei') def.batchCounter = true
+    }
+    const merlin = offensive && blocked && !ea.antiKit && !mod.sever && D?.team.find(f => !f.ko && PE(f).batch === 'merlin' && f.batchGuardTurn !== turnClock(D))
+    if (merlin) { merlin.batchGuardTurn = turnClock(D); pasNote(merlin, 'INFINITY · GUARD EXTENDED') }
+    else def.guard = 0
+  }
   dmg = mod.fixedDamage ?? (Math.max(1, Math.round(dmg)) + (mod.stored || 0))
   if (def.gtSaved && def.gtSaveTurn === turnClock(D)) dmg = Math.round(dmg * .5)
   if (ed.gtForm === 1 && !def.turns) dmg = Math.round(dmg * .75)
   const shieldBeforeHit = def.shieldHp
+  if (mod.batchStrip) def.shieldHp = 0
   if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) { def.recapShielded = (def.recapShielded || 0) + s2; pasNote(def, 'SHIELD') } }
+  if (offensive && ea.batch === 'gildarts' && (piercedGuard || (shieldBeforeHit > 0 && !def.shieldHp))) {
+    att.batchCrush = true
+    pasNote(att, 'CRUSH · FOLLOW-UP READY')
+  }
+  if (offensive && !ea.antiKit && !mod.sever) {
+    const remaining = batchDefense(att, def, dmg, D, mod.area || (kind === 'special' && isAoe(att.card)), PE, pasNote)
+    if (dmg > 0 && remaining === 0) return { dmg: 0, hpDamage: 0, crit: false, mu, miss: 'INTERCEPTED' }
+    dmg = remaining
+  }
   const shibai = offensive && !mod.sever && !mod.area && !(kind === 'special' && isAoe(att.card)) && kind !== 'burst' && !ea.antiKit && shinobiAlly(D, 14, def)
   if (shibai && dmg > 0 && alive(D).filter(f => f !== shibai).every(f => f.hp / f.max >= def.hp / def.max)) {
     const share = Math.round(dmg * .3)
@@ -543,6 +578,10 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   const previousHP = def.hp
   if (def.newGenBoss) dmg = Math.min(dmg, Math.ceil(def.max * .32))
   const hpDamage = Math.min(def.hp, dmg)
+  if (offensive && hpDamage > 0) {
+    if (D?.team.some(f => !f.ko && PE(f).batch === 'orihime')) def.batchLastHit = hpDamage
+    if (ed.batch === 'diane') def.batchQuake = Math.min(3, (def.batchQuake || 0) + 1)
+  }
   def.hp = Math.max(0, def.hp - dmg); if (def.hp < 1) def.hp = 0; att.dealt += dmg; def.hitsTaken++
   if (D && hpDamage > 0 && (ed.gtForm === 1 || ed.gtForm === 4) && def.gtHitTurn !== turnClock(D)) {
     def.gtHitTurn = turnClock(D)
@@ -762,7 +801,7 @@ function ghostDetonation(target, side, enemy, extra) {
 }
 
 function playArt(B, who, idx) {
-  const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], art = me.hand[idx], a = act(me), d = act(foe), cost = artCost(a, art, me, d)
+  const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], art = me.hand[idx], a = act(me), d = act(foe), cost = artCost(a, art, me, foe)
   if (me.ki < cost || a.ko || d.ko) return null
   if (art === 'special' && me.confiscated && !unwritten(a)) return null
   if (art === 'burst' && me.ki < 2) return null
@@ -770,6 +809,8 @@ function playArt(B, who, idx) {
   if (firstStoryStrike) a.storyStrikeClock = turnClock(me)
   me.ki -= cost; me.hand.splice(idx, 1)
   if (ATTACK_ARTS.includes(art)) {
+    if (foe.team.some(f => !f.ko && PE(f).batch === 'gowther')) me.batchMemory = art
+    else me.batchMemory = null
     a.fcFrostTax = false
     const ghost = ghostDetonation(a, me, foe)
     if (ghost && a.ko) return { ...ghost, who: who === 'you' ? 'ai' : 'you' }
@@ -793,6 +834,7 @@ function playArt(B, who, idx) {
   if (brief) me.waveBrief = false
   if (!unwritten(a)) recordWaveArt(me, foe, art, PE, KI_MAX, pasNote)
   const ev = { who, art, hits: [] }
+  const crushReady = a.batchCrush
   const gt = gtForm(a), apeArt = gtArt(a, art)
   if (apeArt) ev.move = apeArt.name
   if (art === 'special' && gt === 2) delete a.gtDiscountTurn
@@ -885,8 +927,17 @@ function playArt(B, who, idx) {
     }
   }
   else if (art === 'special') {
+    const batch = kit.batch
+    const stone = batch === 'gyomei' && a.batchCounter
+    const mist = batch === 'muichiro' && a.batchCounter
+    const lotus = batch === 'lee' && a.batchStrikes >= 2
+    const blood = batch === 'sanemi' && a.hp < a.max * .6
+    const orange = batch === 'piccolo' ? a.batchCharge || 0 : 0
     const story = storySpecial(a, d, me, foe)
     let base = pctOf(a.card) * 3.2 * chain * story.multiplier
+    if (stone) base *= 1.55
+    if (blood) base *= 1.45
+    if (lotus) { base *= 1.6; a.hp = Math.max(1, a.hp - Math.round(a.max * .08)); a.batchStrikes = 0 }
     const clock = turnClock(me)
     const lightPierce = kit.ftStingForce && a.ftStingPierceTurn !== clock
     const trunksGuard = kit.fusionStage === 1 && a.fcTrunks && a.fcTrunksProc !== clock
@@ -946,12 +997,24 @@ function playArt(B, who, idx) {
       for (let i = 0; i < 3 && !d.ko; i++) ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, true, me, foe, 'special') })
     } else if (isAoe(a.card) || dragonFlame || pairedFlame) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, (t === d ? base * .75 : base * .3) * (t !== d && PE(a).aoeBoost ? 1 + PE(a).aoeBoost / 100 : 1), Math.max(a.pwr, a.ki), pierce || wavePierce || dragonFlame, me, foe, 'special') })
     else if (PE(a).twinSpec || kit.godspeed) { ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }); if (!d.ko) ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }) }
-    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart || slayerSpear || dragonFist || trunksGuard || petalPierce, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored, noDodge: !!slayerSpear }) })
+    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart || slayerSpear || dragonFist || trunksGuard || petalPierce || stone || mist || lotus || blood || orange > 0, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored: stored + orange, batchStrip: stone, noDodge: !!slayerSpear }) })
     if (kit.storyClone && !a.ko && !d.ko && ev.hits[0]?.hpDamage > 0)
       ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, false, me, foe, 'special') })
     const bench = kit.benchSpecial && weakestBench(foe, d)
     if (bench) ev.hits.push({ t: bench, ...hit(a, bench, base * .5, a.pwr, true, me, foe, 'special') })
     const landed = ev.hits.some(x => (x.hpDamage ?? x.dmg) > 0)
+    if (landed && batch && !a.ko) {
+      if (stone || mist) a.batchCounter = false
+      if (mist) me.ki = Math.min(KI_MAX, me.ki + 2)
+      if (orange) { a.batchCharge = 0; pasNote(a, 'ORANGE COVER CHANGE · POWER RETURNED') }
+      if (blood) for (const enemy of alive(foe)) if (enemy !== d)
+        ev.hits.push({ t: enemy, ...hit(a, enemy, base * .35, a.pwr, true, me, foe, 'counter') })
+      if (!d.ko || batch === 'genya' || (batch === 'toga' && a.batchCopy)) {
+        const follow = batchSpecial(a, d, me, foe, PE, healHP, pasNote)
+        if (follow && !d.ko) ev.hits.push({ t: d, ...hit(a, d, follow, a.pwr, true, me, foe, 'counter') })
+      }
+      if (batch === 'rukia' && !d.ko) d.batchChillAction = null
+    }
     if (landed && trunksGuard) a.guard = 1
     if (landed && !d.ko) {
       if (kit.fusionStage === 2) { d.fcGhost = a.key; pasNote(d, 'GHOST PLANTED') }
@@ -1033,6 +1096,22 @@ function playArt(B, who, idx) {
       a.fcGotenProc = turnClock(me)
       me.ki = Math.min(KI_MAX, me.ki + 2)
       pasNote(a, 'GOTEN · +2 ENERGY')
+    }
+  }
+  if (!a.ko && ev.hits.some(result => result.dmg > 0)) {
+    if (kit.batch === 'lee' && art === 'strike') a.batchStrikes = Math.min(2, (a.batchStrikes || 0) + 1)
+    if (kit.batch === 'gildarts' && art === 'strike' && crushReady) {
+      const target = weakestBench(foe, d)
+      if (target) {
+        a.batchCrush = false
+        ev.hits.push({ t: target, ...hit(a, target, 470, a.pwr, true, me, foe, 'counter') })
+      }
+    }
+    if (a.card.anime === 'FT' && a.card.name.startsWith('GRAY') && d.batchWater && !d.ko &&
+        alive(me).some(f => f.key === d.batchWater && PE(f).batch === 'juvia')) {
+      d.batchWater = null
+      ev.hits.push({ t: d, ...hit(a, d, 500, a.ki, true, me, foe, 'counter') })
+      pasNote(a, 'WATER AND ICE · FOLLOW-UP')
     }
   }
   fairyAfterArt(a, d, me, art, ev.hits, PE, pasNote)
@@ -1124,7 +1203,11 @@ function playArt(B, who, idx) {
   return ev
 }
 const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION', 'Pierces Guard · +60% vs targets under 40% HP'], SUPPORT: ['RALLY', 'Big hit · heals the whole team 20%'], TANK: ['FORTRESS', 'Big hit · takes 30% less damage until your next turn'], SHOOTER: ['OVERDRIVE', 'Hits every enemy hard'], STRIKER: ['OVERDRIVE', 'Hits every enemy hard'] }
-const ultOf = c => c.pas?.e?.fusionStage === 2 ? ['SUPER GHOST KAMIKAZE ATTACK', 'Hits all enemies and detonates planted ghosts'] :
+const ultOf = c => c.pas?.e?.batch === 'star' ? ['NEW ORDER', 'Choose Protect or Suppress'] :
+  c.pas?.e?.batch === 'merlin' ? ['INFINITY', 'Strip buffs and refund Energy and Ultimate gauge'] :
+  c.pas?.e?.batch === 'rukia' ? ['WHITE MOON', 'Hits all enemies and shatters ice'] :
+  c.pas?.e?.batch === 'diane' ? ['MOTHER CATASTROPHE', 'Hits all enemies and spends accumulated charges'] :
+  c.pas?.e?.fusionStage === 2 ? ['SUPER GHOST KAMIKAZE ATTACK', 'Hits all enemies and detonates planted ghosts'] :
   c.pas?.e?.captainPetals ? ['SENKEI', '+60% damage against Petal marks'] :
   c.pas?.e?.captainFrost ? ['DAIGUREN HYŌRINMARU', 'Hits all enemies and shatters Frost'] :
   c.pas?.e?.crVegeta ? ['FINAL SHINE ATTACK', 'Deals up to +60% damage after blocking attacks'] :
@@ -1180,7 +1263,7 @@ function ultimate(B, who, choice) {
   const sever = lastDoor === 'sever'
   const quirkDefenders = new Set()
   const opposingKit = PE(d).shinobi
-  const single = PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
+  const single = ['star', 'merlin'].includes(storyKit.batch) || PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
     (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso)
   const damaging = kit !== 14 && kit !== 20 && !PE(a).antiKit
   const minato = single && damaging && !sever && shinobiAlly(foe, 18, d)
@@ -1210,7 +1293,8 @@ function ultimate(B, who, choice) {
     ev.hits.push({ t, ...hit(a, t, b * reduction, stat, p || PE(a).pierce, me, foe, 'ult', undefined, { area: !single, ...mod, stored: Math.round((mod?.stored || 0) * reduction), fixedDamage: mod?.fixedDamage == null ? undefined : Math.round(mod.fixedDamage * reduction) }) })
     if (a.ko) ev.waveCounter = true
     foe.waveDodgeTarget = null
-    if ((!prior && t.waveDodged) || (PE(t).nikaDodge && ev.hits.at(-1).miss === 'DODGED') || (PE(t).magicEater && ev.hits.at(-1).miss === 'ABSORBED')) dodged.add(t)
+    if ((!prior && t.waveDodged) || ((PE(t).nikaDodge || PE(t).batch === 'mirio' || PE(t).batch === 'muichiro') && ev.hits.at(-1).miss === 'DODGED') || (PE(t).magicEater && ev.hits.at(-1).miss === 'ABSORBED')) dodged.add(t)
+    return ev.hits.at(-1)
   }
   const finish = () => {
     const defender = interceptor?.raijinUsed ? interceptor : isshiki && d.isshikiUsed ? d : null
@@ -1250,14 +1334,7 @@ function ultimate(B, who, choice) {
     }
     return finish()
   }
-  if (ea.captainFrost) {
-    for (const target of alive(foe)) {
-      const frosted = !!target.fcFrost
-      H(target, base * (target === d ? 1 : .55) * (frosted ? 1.5 : 1), true)
-      if (frosted && ev.hits.at(-1)?.dmg > 0) { delete target.fcFrost; delete target.fcFrostTax }
-    }
-    return finish()
-  }
+  if (batchUltimate(a, d, me, foe, choice, base, H, PE, pasNote)) return finish()
   if (ea.crVegeta) {
     H(d, base * (1 + (a.crShineCharge || 0) * .2), true)
     a.crShineCharge = 0
@@ -1457,6 +1534,7 @@ function switchFighter(B, who, index) {
   const standardTag = side.seq.includes('special') || side.ultTurn === B.turn
   setActive(side, index)
   const entering = act(side), target = act(foe)
+  const wingAssist = batchTag(side, leaving, entering, PE, healHP, pasNote)
   const fairyAssist = fairyTag(side, leaving, entering, PE, KI_MAX, pasNote)
   const duoAssist = tojiLink(leaving, entering, side, target, pasNote)
   const ghost = ghostDetonation(leaving, side, foe, entering)
@@ -1475,11 +1553,11 @@ function switchFighter(B, who, index) {
       hits: [{ t: entering, ...hit(target, entering, 410, target.pwr, true, foe, side, 'strike') }] }
     pasNote(target, 'MALEVOLENT SHRINE · CLEAVE')
   }
-  if (entering.ko || !(standardTag || fairyAssist || duoAssist) || target.ko) return trap
+  if (entering.ko || !(standardTag || fairyAssist || duoAssist || wingAssist) || target.ko) return trap
   side.gauge = Math.min(GAUGE_MAX, side.gauge + 10)
   side.reworkAction = (side.reworkAction || 0) + 1
-  return { who, art: 'strike', before: trap, move: duoAssist ? 'SPLIT SOUL KATANA' : fairyAssist ? 'FAIRY TAIL FOLLOW-UP' : 'TAG ASSIST',
-    hits: [{ t: target, ...hit(entering, target, duoAssist ? 420 : fairyAssist ? 300 : 200, Math.max(entering.pwr, entering.ki), duoAssist, side, foe, 'strike') }] }
+  return { who, art: 'strike', before: trap, move: wingAssist ? 'FIERCE WINGS' : duoAssist ? 'SPLIT SOUL KATANA' : fairyAssist ? 'FAIRY TAIL FOLLOW-UP' : 'TAG ASSIST',
+    hits: [{ t: target, ...hit(entering, target, wingAssist ? 590 : duoAssist ? 420 : fairyAssist ? 300 : 200, Math.max(entering.pwr, entering.ki), duoAssist || wingAssist, side, foe, 'strike') }] }
 }
 function nextAlive(s) { const i = s.team.findIndex(f => !f.ko); if (i >= 0) setActive(s, i); return i >= 0 }
 
@@ -1523,8 +1601,8 @@ function smartTurn(B, who) {
       const ultD = estHit(mine, opp, pctOf(mine.card) * 6, Math.max(mine.pwr, mine.ki), /Ignores Guard/.test(kitTxt(mine.card)))
       if (ultD >= opp.hp || !opp.guard || foe.gauge >= 85 || opp.cylinder) { const e = ultimate(B, who); if (e) { evs.push(e); continue } }
     }
-    const avoidRanged = avoidAbsorbedArts(me, opp)
-    const hand = me.hand.map((a, i) => [a, i]), can = a => hand.find(([x]) => x === a && artCost(mine, x, me, opp) <= me.ki && !(x === 'burst' && me.ki < 2) && !(avoidRanged && rangedHit(mine, x)))
+    const avoidRanged = avoidAbsorbedArts(me, foe)
+    const hand = me.hand.map((a, i) => [a, i]), can = a => hand.find(([x]) => x === a && artCost(mine, x, me, foe) <= me.ki && !(x === 'burst' && me.ki < 2) && !(avoidRanged && rangedHit(mine, x)))
     const chainN = me.seq.length, dmgOf = a => estArt(me, foe, a, chainN)
     // 3) pop a Magic Cylinder trap with the cheapest hit first
     if (opp.cylinder) { const p = can('strike') || can('blast'); if (p) { const e = playArt(B, who, p[1]); if (e) { evs.push(e); continue } } }
@@ -1579,8 +1657,8 @@ function planTurn(B, level, who = 'ai') {
   for (let n = 0; n < 8; n++) {
     if (act(foe).ko || act(me).ko) break
     if (me.gauge >= GAUGE_MAX && (clever || Math.random() < .7)) { const e = ultimate(B, who); if (e) { evs.push(e); continue } }
-    const avoidRanged = avoidAbsorbedArts(me, act(foe))
-    const playable = me.hand.map((a, i) => [a, i]).filter(([a]) => artCost(act(me), a, me, act(foe)) <= me.ki && !(avoidRanged && rangedHit(act(me), a)))
+    const avoidRanged = avoidAbsorbedArts(me, foe)
+    const playable = me.hand.map((a, i) => [a, i]).filter(([a]) => artCost(act(me), a, me, foe) <= me.ki && !(avoidRanged && rangedHit(act(me), a)))
     if (!playable.length) break
     const hasSpecial = me.hand.includes('special'), opp = act(foe), mine = act(me)
     let pick = null
@@ -2726,7 +2804,7 @@ export function startBattle(stage) {
     const s = B.you, my = !B.busy && !B.over
     updateMarkup($a('.ar-ki'), `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`)
     const hand = $a('.ar-hand'), f = act(s), hkey = f.card.id + '|' + s.hand.join(',')
-    if (hand.dataset.k === hkey && hand.children.length === s.hand.length) { s.hand.forEach((a, i) => { const el = hand.children[i]; el.querySelector('.gem b').textContent = a === 'burst' ? 'ALL' : artCost(f, a, s, act(B.ai)); el.disabled = !my || s.ki < artCost(f, a, s, act(B.ai)) || (a === 'burst' && s.ki < 2) }) }
+    if (hand.dataset.k === hkey && hand.children.length === s.hand.length) { s.hand.forEach((a, i) => { const el = hand.children[i]; el.querySelector('.gem b').textContent = a === 'burst' ? 'ALL' : artCost(f, a, s, B.ai); el.disabled = !my || s.ki < artCost(f, a, s, B.ai) || (a === 'burst' && s.ki < 2) }) }
     else { hand.dataset.k = hkey; hand.innerHTML = ''
     const rc = X.tierCol(f.card.r), fx = Math.round((f.card.fx ?? .5) * 100), fy = Math.round((f.card.fy ?? .22) * 100)
     const KIND = { strike: ['PHYSICAL', '#ff3d4a', '#ff9a3a'], blast: ['ENERGY', '#ffb020', '#fff04a'], guard: ['DEFENSE', '#20e0a0', '#a8ffda'], special: ['SIGNATURE', tcol(f.card), '#ffffff'], burst: ['TACTIC', '#ff3b6b', '#ffd0dc'], senzu: ['ITEM', '#3aa83a', '#d8ffb0'], cylinder: ['ITEM', '#c8102e', '#ffd23a'], rumble: ['ITEM', '#ff7ab0', '#ffe0ee'], finger: ['ITEM', '#8a0a2a', '#ffb0c0'], deathnote: ['ITEM', '#111', '#e0e0e0'], hogyoku: ['ITEM', '#7a3aff', '#e0d0ff'], wing: ['ITEM', '#ff9a1a', '#fff0a0'], scroll: ['ITEM', '#c8a050', '#fff3d0'], clock: ['ITEM', '#3a8aff', '#d0e8ff'], charge: ['TACTIC', '#ff9a00', '#ffe2a8'], transfer: ['TACTIC', '#3ab8ff', '#c8ecff'], heal: ['TACTIC', '#2fe0b0', '#c8fff0'], cleanse: ['TACTIC', '#a46bff', '#e8d8ff'] }
@@ -2735,16 +2813,16 @@ export function startBattle(stage) {
       b.className = 'art2 ' + a + (d.item ? ' item' : '')
       b.style.cssText = `--c1:${c1};--c2:${c2};--rc:${rc};--i:${i - (s.hand.length - 1) / 2};--art:url("${d.item || f.card.url}");--fx:${d.item ? 50 : fx}%;--fy:${d.item ? 50 : fy}%`
       b.innerHTML = `<span class="fr"></span><span class="pic"></span><span class="holo"></span><span class="glints"><i></i><i></i><i></i><i></i></span>
-        <span class="gem"><b>${a === 'burst' ? 'ALL' : artCost(f, a, s, act(B.ai))}</b></span><span class="kind">${kind}</span>
+        <span class="gem"><b>${a === 'burst' ? 'ALL' : artCost(f, a, s, B.ai)}</b></span><span class="kind">${kind}</span>
         <span class="sym">${ICON[a] || `<b class="tac-ic">${TAC_ICON[a]}</b>`}</span>
         <span class="plate"><b>${sp ? f.card.mv : d.name}</b><small>${sp ? (isAoe(f.card) ? 'HITS ALL ENEMIES' : 'MASSIVE SINGLE HIT') : d.desc.toUpperCase()}</small></span>`
-      b.disabled = !my || s.ki < artCost(f, a, s, act(B.ai)) || (a === 'burst' && s.ki < 2)
+      b.disabled = !my || s.ki < artCost(f, a, s, B.ai) || (a === 'burst' && s.ki < 2)
       b.onclick = () => doArt(i)
       hand.append(b)
     }) }
     for (const [i, button] of [...hand.children].entries()) {
       const kind = s.hand[i]
-      const unavailable = !my || s.ki < artCost(f, kind, s, act(B.ai)) || (kind === 'burst' && s.ki < 2) || (kind === 'special' && s.confiscated && !unwritten(f))
+      const unavailable = !my || s.ki < artCost(f, kind, s, B.ai) || (kind === 'burst' && s.ki < 2) || (kind === 'special' && s.confiscated && !unwritten(f))
       button.disabled = !previewMode && unavailable
       button.onpointerenter = () => {
         const info = previewArt(kind, unavailable)
@@ -3224,14 +3302,14 @@ export function startBattle(stage) {
   }
   $a('.ar-ult').onclick = () => {
     if (B.busy || B.over || ov.querySelector('.omnipotence-picker')) return
-    const shibai = act(B.you)
-    if (PE(shibai).shinobi !== 14) return playerUltimate()
+    const kit = PE(act(B.you))
+    if (kit.shinobi !== 14 && kit.batch !== 'star') return playerUltimate()
     const picker = document.createElement('div')
     picker.className = 'qconf omnipotence-picker'
     const box = document.createElement('div')
     box.className = 'qc-box'
     const title = document.createElement('b')
-    title.textContent = 'OMNIPOTENCE'
+    title.textContent = kit.batch === 'star' ? 'NEW ORDER' : 'OMNIPOTENCE'
     box.append(title)
     const options = document.createElement('div')
     options.className = 'qc-b'
@@ -3243,10 +3321,15 @@ export function startBattle(stage) {
       button.onclick = () => { picker.remove(); run?.() }
       options.append(button)
     }
-    option('SHINJUTSU REVERSAL', () => playerUltimate(null), true)
-    if (!B.you.shinobiRestored) B.you.team.forEach((ally, i) => {
-      if (ally.ko) option('RESTORE ' + ally.card.name + ' · ' + ally.card.ver, () => playerUltimate(i), true)
-    })
+    if (kit.batch === 'star') {
+      option('PROTECT · TEAM SHIELD AND GUARD', () => playerUltimate('protect'), true)
+      option('SUPPRESS · SEAL AND RAISE ART COSTS', () => playerUltimate('suppress'), true)
+    } else {
+      option('SHINJUTSU REVERSAL', () => playerUltimate(null), true)
+      if (!B.you.shinobiRestored) B.you.team.forEach((ally, i) => {
+        if (ally.ko) option('RESTORE ' + ally.card.name + ' · ' + ally.card.ver, () => playerUltimate(i), true)
+      })
+    }
     option('CANCEL')
     box.append(options)
     picker.append(box)
@@ -3425,7 +3508,7 @@ export function startBattle(stage) {
   }
   // ================= LIVE PVP =================
   const LQ = []; let lvWake = null, lvN = 0, lvLast = Date.now(), lvFirstRemote = !!LV && !youFirst, lvMyTurnAt = 0, lvUnsub = null, lvTimer = null
-  const SIDE_KEYS = ['fcCaptainCombo', 'ftWendySaved', 'ftTwinTurn', 'antithesisUsed', 'switchSerial', 'teamDmg', 'shinobiRestored', 'kuramaTarget', 'chosoSaved', 'chainReward', 'conjunction', 'reworkAction', 'hypnosisTurn', 'hypnosisAction', 'waveAttacked', 'waveBasic', 'wavePrevious', 'waveRead', 'waveBrief', 'waveParasite', 'formTurn', 'lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
+  const SIDE_KEYS = ['batchOrder', 'batchMemory', 'fcCaptainCombo', 'ftWendySaved', 'ftTwinTurn', 'antithesisUsed', 'switchSerial', 'teamDmg', 'shinobiRestored', 'kuramaTarget', 'chosoSaved', 'chainReward', 'conjunction', 'reworkAction', 'hypnosisTurn', 'hypnosisAction', 'waveAttacked', 'waveBasic', 'wavePrevious', 'waveRead', 'waveBrief', 'waveParasite', 'formTurn', 'lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
   const serF = f => { const o = {}; for (const k in f) { if (k === 'card' && !f.transformed && !f.baseForm) continue; const v = f[k]; if (typeof v !== 'function') o[k] = v } return o }
   const serS = sd => { const o = { team: sd.team.map(serF) }; for (const k of SIDE_KEYS) o[k] = sd[k]; return o }
   const lvSnap = () => { const H = LV.role === 'h' ? B.you : B.ai, G = H === B.you ? B.ai : B.you; return JSON.parse(JSON.stringify({ h: serS(H), g: serS(G), turn: B.turn })) }
