@@ -3,7 +3,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=fusion-captains-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=new-gen-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -20,7 +20,6 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
 // ================= data =================
 let POOL = [], BYKEY = {}, ST = null, P = null
 const club = () => P.club.cards
-const effL = (c, l) => (l ? { ...c, lvl: l } : c)
 const LB_KEYS = ['dmg', 'dodge', 'dr', 'regen', 'teamHeal', 'spec', 'strikeBoost', 'exec', 'aoeBoost', 'vsAnimeB', 'vsTypeB', 'teamDmg', 'avenge', 'crit', 'spd', 'ultBoost']
 const effSig = c => { const o = club()[c.key]; if (!o) return c
   const dia = Math.min(7, o.dia || 3), lv = o.lv || 1, mult = 1 + (dia - 3) * .04 + (lv - 1) * .0015
@@ -218,8 +217,8 @@ function rr2(x, X, Y, w, h, r) { x.beginPath(); x.roundRect(X, Y, w, h, r) }
 const packEl = (type, w) => { const cv = document.createElement('canvas'); packCanvas(type, w).then(src => { cv.width = src.width; cv.height = src.height; cv.getContext('2d').drawImage(src, 0, 0) }); return cv }
 
 // ================= router + transitions =================
-const TABS = ['home', 'cards', 'team', 'market', 'shop', 'battle']
-const TITLES = { guide: 'HOW TO PLAY',  deck: 'ARTS DECK',  museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', market: 'TRANSFERS', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
+const TABS = ['home', 'cards', 'team', 'battle', 'shop']
+const TITLES = { guide: 'HOW TO PLAY',  deck: 'ARTS DECK',  museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
 let CUR = null, CURARG = null, curEl = null
 const PAGES = {}
 const NAVTOP = new Map(); addEventListener('resize', () => NAVTOP.clear())
@@ -293,7 +292,6 @@ PAGES.home = (el) => {
     mb('c-sum', '召喚', 'SUMMON', B ? 'Limited banner' : 'Packs', feat, () => go('shop'), 'NEW'),
     mb('c-team', 'チーム', 'TEAM', teamSub(), owned1 || pick(c => c.anime === 'FT'), () => go('team')),
     mb('c-cards', 'コレクション', 'CARDS', Object.keys(club()).length + ' owned', pick(c => c.anime === 'BLE'), () => go('cards')),
-    mb('c-mkt', 'マーケット', 'MARKET', 'Live auctions', pick(c => c.anime === 'MHA'), () => go('market')),
   )
   { const L = ST.onb, left = L.filter(x => !x.claimed); if (left.length) el.append(onbBlock(L)) }
   lob.append(fc, mn); el.append(lob)
@@ -602,7 +600,6 @@ async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
       sh.append(d)
       return
     }
-    d.append(h('span', 'eyebrow', `MARKET VALUE ~ ${fmt(ST.values[key])} COINS`))
     if (e) {
       const a = h('div', 'acts')
       const add = (cls, label, dis, fn) => { const b = h('button', 'btn sm ' + cls, label); b.disabled = !!dis; b.onclick = fn; a.append(b) }
@@ -616,13 +613,10 @@ async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
       add('dark', e.locked ? '🔒 UNLOCK COPIES' : 'LOCK ALL COPIES', false, () => flag('locked'))
       add('violet', inTeam ? 'IN TEAM' : 'ADD TO TEAM', inTeam, () => { const T = P.team.slice(), i = T.indexOf(null); closeModal(); if (i < 0) { toast('Your team is full. Swap a card on the Team page.'); go('team'); return } T[i] = key; act('team', { team: T }).then(() => go('team')) })
       if (false) add('green', lvl >= 5 ? 'MAX ★' : `LEVEL UP ★${lvl + 1}`, !(e.n > 1 && lvl < 5), async () => { await act('awaken', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
-      if (!c.arcReward && !c.campReward && !c.campaignUnlock && !deadZoneReward(c)) add('gold', 'SELL ON MARKET', spare < 1, () => listSheet(key))
       add('dark', `QUICK SELL ${fmt(ST.quick[key])}`, spare < 1 || ((c.arcReward || c.campReward || c.campaignUnlock || deadZoneReward(c)) && e.n <= 1), async () => { await act('quickSell', { key }); if (club()[key]) cardDetail(key); else closeModal(); if (CUR === 'cards') rerender() })
       if (e.n > 1) add('dark', `SHRED ${e.n - 1} → ◆${fmt((e.n - 1) * ST.shardGet[c.r])}`, spare < 1, async () => { await act('shred', { key }); cardDetail(key); if (CUR === 'cards') rerender() })
       d.append(a)
       d.append(h('span', 'muted', `<small style="font-weight:700">Duplicates add a Diamond (max 7◆). Spare copies after that can be sold or shredded.</small>`))
-    } else if (!c.arcReward && !c.campReward && !c.campaignUnlock && !deadZoneReward(c)) {
-      const b = h('button', 'btn block', 'FIND ON MARKET'); b.onclick = () => { MS.q = c.name.toLowerCase(); MS.view = 'results'; go('market') }; d.append(b)
     }
     if (deadZoneReward(c)) d.append(h('span', 'season-tag', unlockRoutes(c)[0]))
     else if (c.arcReward) {
@@ -634,21 +628,6 @@ async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
     sh.append(d)
   })
 }
-function listSheet(key) {
-  const c = BYKEY[key], v = ST.values[key]
-  openModal(sh => {
-    sh.append(h('div', 'sec', `<h3>LIST ON TRANSFER MARKET</h3>`))
-    const row = h('div', 'shoprow'); const im = cardImg(eff(c), 180); im.style.width = '90px'; row.append(im, h('div', '', `<h4>${c.name}</h4><p>${c.ver}<br>Value ~ ${fmt(v)} coins. Sellers pay 5% tax.</p>`)); sh.append(row)
-    const mk = (lbl, val) => { const s = h('div', 'stepper'); s.innerHTML = `<span class="lbl">${lbl}</span><button aria-label="Lower">−</button><input inputmode="numeric" value="${val}"><button aria-label="Higher">+</button>`; const i = s.querySelector('input'); const [mi, pl] = s.querySelectorAll('button'); const st = () => Math.max(50, Math.round(+i.value * .05 / 50) * 50); mi.onclick = () => i.value = Math.max(50, +i.value - st()); pl.onclick = () => i.value = +i.value + st(); return [s, i] }
-    const [s1, start] = mk('START', Math.round(v * .7 / 50) * 50), [s2, bin] = mk('BUY NOW', Math.round(v * 1.05 / 50) * 50)
-    const f = h('div', 'searchform'); f.append(h('label', '', 'START PRICE'), s1, h('label', '', 'BUY NOW PRICE'), s2, h('label', '', 'DURATION'))
-    let hours = 1; f.append(segmented(['1H', '3H', '6H', '12H'], 0, i => hours = [1, 3, 6, 12][i]))
-    const go2 = h('button', 'btn gold block', 'LIST CARD'); go2.style.marginTop = '8px'
-    go2.onclick = async () => { const r = await act('list', { key, start: +start.value, bin: +bin.value, hours }); if (!r.error) { closeModal(); if (CUR === 'cards') rerender() } }
-    f.append(go2); sh.append(f)
-  })
-}
-
 // ================= TEAM =================
 function teamStats() {
   const T = P.team, cs = T.map(k => k && BYKEY[k]).filter(Boolean)
@@ -975,141 +954,6 @@ function teamPicker(slot) {
   })
 }
 
-// ================= MARKET (FC style) =================
-const MS = { tab: 0, view: 'search', q: '', anime: 'ALL', rar: 'ALL', maxBin: 0, page: 0, sel: 0 }
-let MKT = { listings: [], history: {}, won: [], now: Date.now() }
-async function loadMarket() { try { MKT = await api('/api/market'); SKEW = MKT.now - Date.now() } catch { } }
-PAGES.market = async (el) => {
-  const tabs = segmented(['SEARCH', 'TRANSFER LIST', 'TARGETS'], MS.tab, i => { MS.tab = i; MS.view = 'search'; rerender() })
-  tabs.classList.add('mtabs'); el.append(tabs)
-  const body = h('div', ''); el.append(body)
-  await loadMarket()
-  if (MS.tab === 0) MS.view === 'results' ? marketResults(body) : marketSearch(body)
-  else if (MS.tab === 1) transferList(body)
-  else transferTargets(body)
-}
-function marketSearch(el) {
-  marketHub(el)
-  el.append(h('div', 'sec', '<h3>SEARCH THE MARKET</h3>'))
-  const f = h('div', 'panel pad searchform')
-  const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Character name, e.g. Gojo'; q.value = MS.q; q.oninput = () => MS.q = q.value.trim().toLowerCase()
-  const an = h('div', 'chips'), ra = h('div', 'chips')
-  const chipRow = (box, opts, key) => { box.innerHTML = ''; for (const [v, l] of opts) { const b = h('button', 'chip' + (MS[key] === v ? ' on' : ''), l); if (key === 'rar' && TIER[v]) b.style.setProperty('--rc', tierCol(v)); b.onclick = () => { MS[key] = v; chipRow(box, opts, key) }; box.append(b) } }
-  chipRow(an, [['ALL', 'Any series'], ...[...new Set(POOL.map(c => c.anime))].map(a => [a, ANAME(a)])], 'anime'); an.classList.add('serieschips')
-  ra.classList.add('rarchips')
-  chipRow(ra, [['ALL', 'Any rarity'], ...ORDER.slice().reverse().filter(r => POOL.some(c => c.r === r)).map(r => [r, TIER[r].name[0] + TIER[r].name.slice(1).toLowerCase()])], 'rar')
-  const s = h('div', 'stepper'); s.innerHTML = `<span class="lbl">MAX</span><button aria-label="Lower">−</button><input inputmode="numeric" placeholder="Any" value="${MS.maxBin || ''}"><button aria-label="Higher">+</button>`
-  const mi = s.querySelector('input'), [m1, m2] = s.querySelectorAll('button'), stp = v => v < 1000 ? 100 : v < 10000 ? 500 : v < 100000 ? 5000 : 25000
-  m1.onclick = () => { mi.value = Math.max(0, (+mi.value || 0) - stp(+mi.value || 0)) || ''; MS.maxBin = +mi.value || 0 }; m2.onclick = () => { mi.value = (+mi.value || 0) + stp(+mi.value || 0); MS.maxBin = +mi.value }; mi.oninput = () => MS.maxBin = +mi.value || 0
-  const go2 = h('button', 'btn gold block', 'SEARCH'); go2.onclick = () => { MS.view = 'results'; MS.page = 0; MS.sel = 0; rerender() }
-  const reset = h('button', 'ghost', 'Reset'); reset.onclick = () => { Object.assign(MS, { q: '', anime: 'ALL', rar: 'ALL', maxBin: 0 }); rerender() }
-  f.append(h('label', '', 'NAME'), q, h('label', '', 'SERIES'), an, h('label', '', 'RARITY'), ra, h('label', '', 'MAX BUY NOW PRICE'), s, go2, reset)
-  el.append(f)
-  const live = MKT.listings.filter(l => !l.you).length
-  el.append(h('p', 'muted', `<small style="font-weight:700;display:block;text-align:center;margin-top:12px">${live} cards on the market right now. Traders list new auctions every few seconds.</small>`))
-}
-function searchHits() {
-  return MKT.listings.filter(l => { const c = BYKEY[l.key]; return c && !l.you && (MS.anime === 'ALL' || c.anime === MS.anime) && (MS.rar === 'ALL' || c.r === MS.rar) && (!MS.q || (c.name + ' ' + c.ver).toLowerCase().includes(MS.q)) && (!MS.maxBin || l.bin <= MS.maxBin) })
-    .sort((a, b) => a.exp - b.exp)
-}
-function marketResults(el) {
-  el.append(h('div', 'crumbs', 'TRANSFERS › SEARCH › <b>LIVE SEARCH RESULTS</b>'))
-  const hits = searchHits(), per = 12, pages = Math.max(1, Math.ceil(hits.length / per))
-  MS.page = clamp(MS.page, 0, pages - 1)
-  const items = hits.slice(MS.page * per, MS.page * per + per)
-  if (!items.length) { el.append(h('div', 'panel pad empty', '<b>No results</b>Try fewer filters or a higher max price.')); const b = h('button', 'btn block', 'BACK TO SEARCH'); b.onclick = () => { MS.view = 'search'; rerender() }; el.append(b); return }
-  MS.sel = clamp(MS.sel, 0, items.length - 1)
-  const res = h('div', 'results'), pg = h('div', 'rpage', `<span>PAGE ${MS.page + 1} / ${pages}</span><span>${hits.length} RESULTS</span>`)
-  const track = h('div', 'rtrack'); res.append(pg, track); el.append(res)
-  const deck = h('div', 'adeck'), hero = h('div', 'ahero'), side = h('div', 'aside2')
-  const info = h('div', 'auct2'), bidbar = h('div', 'bidbar'), more = h('div', 'grid2'); more.style.marginTop = '10px'
-  side.append(info, bidbar, more); deck.append(hero, side); el.append(deck)
-  const btns = items.map((l, i) => {
-    const b = h('button', 'ritem'); b.append(cardImg(effL(BYKEY[l.key], l.lvl), 300))
-    if (l.bidder === 'YOU') b.append(h('span', 'tag2 win', 'WINNING'))
-    b.onclick = () => { MS.sel = i; pick(true) }
-    track.append(b); return b
-  })
-  const pick = (scroll) => {
-    btns.forEach((b, i) => b.classList.toggle('sel', i === MS.sel))
-    if (scroll) btns[MS.sel].scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
-    const l = items[MS.sel], c = BYKEY[l.key], d = l.value / l.bin
-    const col = tierCol(c.r), dl = d > 1.05 ? ['win', 'GOOD DEAL'] : d < .95 ? ['lose', 'PRICEY'] : ['active', 'FAIR PRICE']
-    deck.style.setProperty('--rc', col)
-    hero.innerHTML = ''; const hc = h('div', 'ah-card'); hc.append(cardImg(effL(c, l.lvl), 520)); hero.append(hc)
-    hero.onpointermove = e => { const r = hero.getBoundingClientRect(); hc.style.transform = `rotateY(${((e.clientX - r.left) / r.width - .5) * 22}deg) rotateX(${-((e.clientY - r.top) / r.height - .5) * 16}deg)` }
-    hero.onpointerleave = () => hc.style.transform = ''
-    info.innerHTML = `<div class="a-head"><div><span class="a-rar">${RARITY_MARK[c.r]} ${TIER[c.r].name}</span><h3>${c.name}</h3><small>${c.ver}${l.lvl ? ' · ★' + l.lvl : ''}</small></div><b class="a-ovr" style="color:${GRADE_COL[gradeOf(c.ovr)]}">${gradeOf(c.ovr)}</b></div>
-      <div class="a-timer"><span>TIME REMAINING</span><b data-urgent data-until="${l.exp - SKEW}" data-done="Ended"></b></div>
-      <div class="a-tiles">
-        <div><span>START</span><b>${fmt(l.start)}</b></div>
-        <div class="hl"><span>CURRENT BID</span><b>${l.bid ? fmt(l.bid) : '–'}</b><small>${l.bidder ? (l.bidder === 'YOU' ? 'you are winning' : l.bidder) : 'no bids yet'}</small></div>
-        <div class="bn"><span>BUY NOW</span><b>${fmt(l.bin)}</b><small class="status ${dl[0]}">${dl[1]}</small></div>
-      </div>
-      <div class="a-seller"><span>SELLER</span><b>${l.seller}</b><span>${ANAME(c.anime)}</span></div>`
-    bidbar.innerHTML = ''
-    const s = h('div', 'stepper'); s.innerHTML = `<span class="lbl">BID</span><button aria-label="Lower bid">−</button><input inputmode="numeric" value="${l.next}"><button aria-label="Raise bid">+</button>`
-    const bi = s.querySelector('input'), [b1, b2] = s.querySelectorAll('button'), st = v => Math.max(50, Math.round(v * .05 / 50) * 50)
-    b1.onclick = () => bi.value = Math.max(l.next, +bi.value - st(+bi.value)); b2.onclick = () => bi.value = Math.min(l.bin - 50, +bi.value + st(+bi.value))
-    const bb = h('button', 'btn violet sm', 'BID'); bb.disabled = l.bidder === 'YOU'
-    bb.onclick = async () => { const r = await act('bid', { id: l.id, amount: +bi.value }); if (!r.error) { await loadMarket(); rerender() } }
-    bidbar.append(s, bb)
-    more.innerHTML = ''
-    const buy = h('button', 'btn gold', `BUY NOW<small>${fmt(l.bin)}</small>`); buy.disabled = P.coins < l.bin
-    buy.onclick = async () => { buy.disabled = true; const r = await act('buy', { id: l.id }); if (!r.error) { await loadMarket(); rerender() } else buy.disabled = false }
-    const cmp = h('button', 'btn dark', 'COMPARE<small>recent sales</small>'); cmp.onclick = () => comparePrice(l.key)
-    more.append(buy, cmp)
-  }
-  track.onscroll = () => { clearTimeout(track._t); track._t = setTimeout(() => { const mid = track.scrollLeft + track.clientWidth / 2; let best = 0, bd = 1e9; btns.forEach((b, i) => { const d = Math.abs(b.offsetLeft + b.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = i } }); if (best !== MS.sel) { MS.sel = best; pick(false) } }, 90) }
-  pick(false); requestAnimationFrame(() => btns[MS.sel].scrollIntoView({ inline: 'center', block: 'nearest' }))
-  const nav = h('div', 'grid2'); nav.style.marginTop = '10px'
-  const back = h('button', 'ghost', '‹ New search'); back.onclick = () => { MS.view = 'search'; rerender() }
-  const next = h('button', 'ghost', pages > 1 ? 'Next page ›' : 'Refresh'); next.onclick = async () => { MS.page = (MS.page + 1) % pages; MS.sel = 0; await loadMarket(); rerender() }
-  nav.append(back, next); el.append(nav)
-}
-function comparePrice(key) {
-  const c = BYKEY[key], hist = (MKT.history[key] || []).slice(-20)
-  openModal(sh => {
-    sh.append(h('div', 'sec', `<h3>COMPARE PRICE · ${c.name}</h3>`))
-    sh.append(h('p', 'muted', `${c.ver}. Current value ~ ${fmt(ST.values[key])} coins.`))
-    if (hist.length > 1) {
-      const max = Math.max(...hist.map(x => x.p)), min = Math.min(...hist.map(x => x.p)), W = 460, H = 60
-      const pts = hist.map((x, i) => `${i / (hist.length - 1) * W},${H - 6 - (x.p - min) / Math.max(1, max - min) * (H - 12)}`).join(' ')
-      sh.append(h('div', 'panel pad', `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#a8ffcf" stroke-width="3" stroke-linejoin="round"/></svg><div style="display:flex;justify-content:space-between;font:800 12px var(--ui);color:var(--ink3)"><span>LOW ${fmt(min)}</span><span>HIGH ${fmt(max)}</span></div>`))
-    }
-    const live = MKT.listings.filter(l => l.key === key && !l.you).sort((a, b) => a.bin - b.bin).slice(0, 6)
-    sh.append(h('div', 'sec', '<h3>CHEAPEST BUY NOW</h3>'))
-    if (!live.length) sh.append(h('p', 'muted', 'None listed right now.'))
-    live.forEach(l => sh.append(h('div', 'mrow', `<b>${fmt(l.bin)} coins</b><span class="muted" style="font-weight:800;font-size:12px">${l.seller}</span>`)))
-    sh.append(h('div', 'sec', '<h3>RECENT SALES</h3>'))
-    if (!hist.length) sh.append(h('p', 'muted', 'No sales yet.'))
-    hist.slice().reverse().slice(0, 8).forEach(x => sh.append(h('div', 'mrow', `<b>${fmt(x.p)} coins</b><span class="muted" style="font-weight:800;font-size:12px">${hms(Date.now() - x.t)} ago</span>`)))
-  })
-}
-function transferList(el) {
-  el.append(h('div', 'crumbs', 'TRANSFERS › <b>TRANSFER LIST</b>'))
-  const mine = MKT.listings.filter(l => l.you).sort((a, b) => a.exp - b.exp)
-  el.append(h('p', 'muted', `<small style="font-weight:700">${mine.length}/10 listed. To sell, open a card in My Cards and tap Sell on Market.</small>`))
-  if (!mine.length) { el.append(h('div', 'panel pad empty', '<b>Nothing listed</b>Duplicates sell well. Cheaper Buy Now prices sell faster.')); const b = h('button', 'btn block', 'GO TO MY CARDS'); b.onclick = () => go('cards'); el.append(b); return }
-  for (const l of mine) {
-    const c = BYKEY[l.key], r = h('div', 'mcard'); r.append(cardImg(effL(c, l.lvl), 160))
-    r.append(h('div', 'info', `<b>${c.name}</b><span>${c.ver}</span><span>Start ${fmt(l.start)} · Buy Now ${fmt(l.bin)}</span><span>${l.bid ? `Top bid <b style="font:inherit;color:var(--gold)">${fmt(l.bid)}</b> by ${l.bidder}` : 'No bids yet'} · <span data-until="${l.exp - SKEW}" data-done="ending"></span></span>`))
-    const side = h('div', '', `<span class="status ${l.bid ? 'bids' : 'active'}">${l.bid ? 'BIDS' : 'ACTIVE'}</span>`); side.style.cssText = 'display:flex;flex-direction:column;gap:8px;align-items:flex-end'
-    if (!l.bid) { const x = h('button', 'ghost', 'Remove'); x.onclick = async () => { await act('cancel', { id: l.id }); await loadMarket(); rerender() }; side.append(x) }
-    r.append(side); el.append(r)
-  }
-}
-function transferTargets(el) {
-  el.append(h('div', 'crumbs', 'TRANSFERS › <b>TRANSFER TARGETS</b>'))
-  const bids = MKT.listings.filter(l => l.bidder === 'YOU')
-  el.append(h('div', 'sec', '<h3>ACTIVE BIDS</h3>'))
-  if (!bids.length) el.append(h('p', 'muted', 'You are not bidding on anything. Outbid coins come straight back.'))
-  for (const l of bids) { const c = BYKEY[l.key], r = h('div', 'mcard'); r.append(cardImg(effL(c, l.lvl), 160)); r.append(h('div', 'info', `<b>${c.name}</b><span>${c.ver}</span><span>Your bid ${fmt(l.bid)} · Buy Now ${fmt(l.bin)}</span><span data-urgent data-until="${l.exp - SKEW}" data-done="ending"></span>`), h('span', 'status win', 'WINNING')); el.append(r) }
-  el.append(h('div', 'sec', '<h3>WON ITEMS</h3>'))
-  if (!MKT.won.length) el.append(h('p', 'muted', 'Cards you win or buy show up here and go straight to My Cards.'))
-  for (const w of MKT.won.slice(0, 10)) { const c = BYKEY[w.key]; if (!c) continue; const r = h('div', 'mcard'); r.append(cardImg(effL(c, w.lvl), 160)); r.append(h('div', 'info', `<b>${c.name}</b><span>${c.ver}</span><span>Paid ${fmt(w.price)} · ${hms(Date.now() - w.t)} ago</span>`), h('span', 'status win', 'WON')); el.append(r) }
-}
-
 // ================= SHOP + PACK POINTS =================
 const quickReveal = () => { try { return localStorage.getItem('aut-quick-reveal') === '1' } catch { return false } }
 PAGES.shop = (el) => {
@@ -1229,7 +1073,6 @@ const bootDone = () => { const o = document.getElementById('boot'); if (o) { o.c
   setInterval(async () => {
     if (document.hidden || document.body.classList.contains('in-battle') || document.body.classList.contains('in-opener')) return
     await refresh()
-    if (CUR === 'market' && MS.tab !== 0) { await loadMarket(); if ($('#modal').hidden) rerender() }
   }, 10000)
 })()
 
@@ -1531,34 +1374,6 @@ function shopHero(el) {
     strip.append(b)
   }
   el.append(h('div', 'sec', '<h3>ALL PACKS</h3><span class="muted" style="font-weight:800;font-size:12px">pick a pack to preview it</span>'), strip)
-}
-
-// ================= MARKET HUB v2 =================
-function marketHub(el) {
-  const live = MKT.listings.filter(l => !l.you), mine = MKT.listings.filter(l => l.you).length
-  const hot = live.slice().sort((a, b) => TIER[BYKEY[b.key]?.r || 'C'].rank - TIER[BYKEY[a.key]?.r || 'C'].rank || a.exp - b.exp).slice(0, 14)
-  const hero = h('section', 'mhero')
-  hero.innerHTML = `<div class="mh-bg"></div><div class="mh-grid"></div>
-    <div class="mh-l"><span class="sh-tag">● LIVE</span><h2>TRANSFER<br>MARKET</h2><p>Snipe deals, win auctions and flip cards for coins.</p></div>
-    <div class="mh-stats"><div><b>${live.length}</b><span>LIVE AUCTIONS</span></div><div><b>${mine}</b><span>YOUR LISTINGS</span></div><div><b>${(MKT.won || []).length}</b><span>WON</span></div></div>`
-  el.append(hero)
-  // ticker
-  const tk = h('div', 'mticker'), inner = h('div', 'mt-in')
-  const items = live.slice(0, 18).map(l => { const c = BYKEY[l.key]; return c ? `<span><em style="color:${tierCol(c.r)}">◆</em> ${c.name} <small>${c.ver}</small> <b>${fmt(l.bin)}</b></span>` : '' }).join('')
-  inner.innerHTML = items + items; tk.append(inner); el.append(tk)
-  // hot strip
-  el.append(h('div', 'sec', '<h3>🔥 HOT RIGHT NOW</h3><span class="muted" style="font-weight:800;font-size:12px">top rarities, ending soonest</span>'))
-  const strip = h('div', 'hotstrip')
-  for (const l of hot) {
-    const c = BYKEY[l.key]; if (!c) continue
-    const b = h('button', 'hot'); b.style.setProperty('--rc', tierCol(c.r))
-    b.append(cardImg(eff(c), 240))
-    b.append(h('div', 'hot-p', `<span>BUY NOW</span><b><i class="coin-i"></i>${fmt(l.bin)}</b><small class="timer" data-until="${l.exp - SKEW}"></small>`))
-    b.onclick = () => { Object.assign(MS, { q: c.name.toLowerCase(), anime: 'ALL', rar: c.r, maxBin: 0, view: 'results', page: 0, sel: 0 }); rerender() }
-    strip.append(b)
-  }
-  if (!hot.length) strip.append(h('div', 'empty', '<b>Quiet market</b>Traders list new cards every few seconds.'))
-  el.append(strip)
 }
 
 // ================= UI sounds + mute toggle =================
@@ -2151,7 +1966,7 @@ function onbBlock(L) {
 const GUIDE = [
   ['🎴', 'WHAT IS THIS GAME?', 'Collect anime fighters as cards, build a team of 6, and battle. Every card is a real moment from an anime (like Goku at the Spirit Bomb), with its own stats, move and a unique passive called a <b>Moment</b>.', 'cards'],
   ['💎', 'RARITIES', 'Common → Uncommon → Rare → Epic → Legendary → Mythic → <b>Rainbow Secret</b> (the rarest). Higher rarity = higher rating and stronger stats. The big number in the corner of a card is its <b>rating</b>.', 'cards'],
-  ['📦', 'GETTING CARDS', '<b>Free packs</b> refill on Home every 12 hours. Buy more in the <b>Shop</b> with coins: cheap Bronze packs up to Lightning packs with the best odds. The <b>Banner</b> has 2 featured cards and guarantees a Mythic within 80 pulls. You can also try the <b>Gacha machine</b>, <b>Wonder Pick</b>, or buy cards from other players on the <b>Market</b>.', 'shop'],
+  ['📦', 'GETTING CARDS', '<b>Free packs</b> refill on Home every 12 hours. Buy more in the <b>Shop</b> with coins: cheap Bronze packs up to Lightning packs with the best odds. The <b>Banner</b> has 2 featured cards and guarantees a Mythic within 80 pulls. You can also try the <b>Gacha machine</b>, <b>Wonder Pick</b>, or trade with friends.', 'shop'],
   ['🪙', 'COINS & SHARDS', '<b>Coins</b> come from battles, missions, achievements and selling cards. <b>Shards</b> (◆) come from shredding duplicate cards; spend them to craft the exact card you want. Pack Points from opening packs buy specific cards too.', 'shop'],
   ['👥', 'YOUR TEAM', 'Go to <b>Team</b>. You pick 6 cards: a <b>Leader</b>, 2 <b>Starters</b> and 3 on the <b>Bench</b>. Slot 1 is your <b>Leader</b>: its <b>Leader Skill</b> boosts every fighter that shares a category with it (a series like Naruto, or a trait like Villains, Swordsmen or Saiyans). Aim for 6/6 boosted. Not sure? Use the <b>Team Builder</b> with the Leader Boost goal.', 'team'],
   ['⚔️', 'HOW BATTLES WORK', 'It\'s 6 vs 6 but only <b>one fighter</b> is out at a time. Each turn you get <b>+3 Energy</b>. You hold <b>4 cards</b>: tap one to use it (its cost is the number in the corner). Strike = cheap hit, Blast = bigger hit, Guard = block, Special = the fighter\'s signature move. Hit <b>END TURN</b> when you\'re done. Knock out all 6 enemies to win. Stuck? Tap <b>AUTO</b> and the game plays for you.', 'battle'],

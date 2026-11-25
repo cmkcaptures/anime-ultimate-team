@@ -1,0 +1,40 @@
+.draft-hero {
+  border: 1px solid #8f6ac8;
+  background: radial-gradient(ellipse at 95% 0, #543384, transparent 55%), #17112d;
+}
+.draft-hero small { color: #ffd991; font-weight: 750; }
+.draft-countdown { color: #e9d7ff; font-size: 12px; font-weight: 800; }
+.draft-countdown b { display: block; color: #ffd991; font-size: 18px; }
+.draft-offers, .draft-squad, .draft-rounds {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(6px, 2vw, 14px);
+  margin-block: 14px;
+}
+.draft-squad { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.draft-fighter, .draft-rounds span {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  justify-items: center;
+  text-align: center;
+  padding: 8px;
+  border: 1px solid #6f5297;
+  border-radius: 10px;
+  background: linear-gradient(155deg, #35234f, #18112a);
+}
+.draft-fighter:is(button) { cursor: pointer; }
+.draft-fighter:is(button):hover, .draft-rounds .active { border-color: #ffd991; color: #ffd991; }
+.draft-fighter:is(button):disabled { cursor: wait; opacity: .55; }
+.draft-fighter img { width: 100%; max-width: 180px; }
+.draft-fighter small { color: #e4cdf8; overflow-wrap: anywhere; }
+.draft-fighter.defeated { filter: grayscale(1); opacity: .65; }
+.draft-rounds .cleared { border-color: #6fc9a3; color: #a5efd0; }
+.draft-summary { font-weight: 900; color: #ffd991; }
+.draft-reset { margin: 14px 0 0 10px; }
+@media (max-width: 800px) {
+  #nav { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 520px) {
+  .draft-squad { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

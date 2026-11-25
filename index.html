@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="ambient-palette.css?v=dark-1">
 <link rel="stylesheet" href="battle-tabs.css?v=scroll-rails-2">
 <link rel="stylesheet" href="team-auras.css?v=1">
+<link rel="stylesheet" href="draft-gauntlet.css?v=1">
 </head>
 <body>
 <div id="boot"><div class="bt-in"><b>ANIME<br>ULTIMATE TEAM</b><i><s id="btBar"></s></i><small id="btTx">Loading…</small></div></div>
@@ -51,7 +52,6 @@
     <button data-go="cards" aria-label="My cards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="4" y="3" width="13" height="17" rx="2"/><path d="M8 7h5M20 7v13a1 1 0 0 1-1 1H8"/></svg><span>CARDS</span></button>
     <button data-go="team" aria-label="My team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="7" r="3.2"/><circle cx="5" cy="10" r="2.4"/><circle cx="19" cy="10" r="2.4"/><path d="M6.5 20a5.5 5.5 0 0 1 11 0M1.5 19a3.6 3.6 0 0 1 5-3.3M22.5 19a3.6 3.6 0 0 0-5-3.3"/></svg><span>TEAM</span></button>
     <button data-go="battle" aria-label="Battle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5 20.5 3.5 20.5 9.5 9 21 3 15Z"/><path d="M7 13l4 4M3.5 20.5l3-3"/></svg><span>BATTLE</span></button>
-    <button data-go="market" aria-label="Market"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg><span>MARKET</span><b class="dot" id="mktDot" hidden></b></button>
     <button data-go="shop" aria-label="Shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8Z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg><span>SHOP</span></button>
   </nav>
   <div id="sideProfile"></div>
@@ -59,8 +59,8 @@
   <div id="modal" hidden></div>
 </div>
 <script src="config.js?v=form-control"></script>
-<script type="module" src="js/engine.js?v=campaign-6"></script>
-<script type="module" src="js/app.js?v=fusion-captains-1"></script>
+<script type="module" src="js/engine.js?v=new-gen-1"></script>
+<script type="module" src="js/app.js?v=new-gen-1"></script>
 <script type="module" src="js/battle-tabs.js?v=tab-scroll-1"></script>
 <script>if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script>
 </body>
