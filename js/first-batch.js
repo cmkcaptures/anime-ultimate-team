@@ -35,8 +35,8 @@ export function batchDefense(att, def, damage, side, area, passive, note) {
   const harribel = side.team.find(f => !f.ko && passive(f).batch === 'harribel' && ready(f, side, 'batchTideTurn'))
   if (harribel) {
     spend(harribel, side, 'batchTideTurn')
-    const prevented = Math.ceil(damage * .55)
-    harribel.batchTide = Math.min(harribel.max, (harribel.batchTide || 0) + prevented)
+    const prevented = Math.ceil(damage * .4)
+    harribel.batchTide = Math.min(Math.round(harribel.max * .7), (harribel.batchTide || 0) + prevented)
     note(harribel, 'TIBURÓN · DAMAGE ABSORBED')
     return damage - prevented
   }
@@ -123,17 +123,17 @@ export function batchUltimate(a, d, me, foe, choice, base, hit, passive, note) {
   const kit = passive(a).batch
   if (kit === 'yoruichi') {
     const marked = d.batchThunder === a.key
-    const result = hit(d, base * (marked ? 1.65 : 1), true, { noDodge: marked })
+    const result = hit(d, base * (marked ? 1.5 : 1), true, { noDodge: marked })
     if (marked && result?.dmg > 0) {
       d.batchThunder = null
-      gauge(me, 35)
-      energy(me, 2)
+      gauge(me, 25)
+      energy(me, 1)
       note(a, 'RAIJIN SENKI · MARK DETONATED')
     }
     return true
   }
   if (kit === 'harribel') {
-    for (const ally of living(me)) shield(ally, .4)
+    for (const ally of living(me)) shield(ally, .3)
     const stored = a.batchTide || 0
     a.batchTide = 0
     for (const enemy of living(foe)) hit(enemy, base * (enemy === d ? 1 : .58), true, { stored: enemy === d ? stored : 0 })

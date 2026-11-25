@@ -31,7 +31,7 @@ export function fighterStatuses(f, passive, next, side, turn, enemyBasic) {
     'Land a Strike (+1) or Getsuga Cross (+2), once per team turn. At 3, your next Ultimate becomes Final Getsuga.' : 'Resolve is currently sealed.')
   if (f.pe.galaxyImpact) add('Wipe ' + (f.galaxyUsed ? 'spent' : passive.galaxyImpact ? 'ready' : 'sealed'),
     f.galaxyUsed ? 'Galaxy Impact already removed the enemy shields this battle.' : 'The first Galaxy Impact removes every enemy shield before dealing damage. Requires a full Ultimate gauge and an active passive.')
-  if (f.batchFlash && passive.batch === 'yoruichi') add('Shunkō ready', 'Next Special strips shields, pierces Guard and gains 45% damage.')
+  if (f.batchFlash && passive.batch === 'yoruichi') add('Shunkō ready', 'Next Special strips shields, pierces Guard and gains 30% damage.')
   if (f.batchThunder) add('Thunder mark', 'Yoruichi can detonate this mark with Raijin Senki.')
   if (f.batchTide && passive.batch === 'harribel') add('Tiburón · ' + f.batchTide, 'Stored damage goes into your next landed Special or Cascada.')
   if (f.batchIce) add('White Moon', f.batchChill && f.batchChillAction == null ?
