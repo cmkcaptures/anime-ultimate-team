@@ -1,4 +1,4 @@
-import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate } from './first-batch.js?v=2'
+import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate } from './first-batch.js?v=3'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=1'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
@@ -10,7 +10,7 @@ import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missio
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
 import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
-import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=bleach-mythics-1'
+import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=bleach-mythics-2'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
@@ -315,11 +315,11 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (offensive && !mod.noDodge && ed.batch === 'yoruichi' && A && D && def === act(D) && def.batchFlashTurn !== clock) {
     def.batchFlashTurn = clock
     if (D.waveArtRunning) D.waveDodgeTarget = def
-    D.ki = Math.min(KI_MAX, D.ki + 2)
-    D.gauge = Math.min(GAUGE_MAX, D.gauge + 25)
+    D.ki = Math.min(KI_MAX, D.ki + 1)
+    D.gauge = Math.min(GAUGE_MAX, D.gauge + 15)
     def.batchFlash = true
-    hit(def, att, 650, def.pwr, true, D, A, 'counter')
-    pasNote(def, 'FLASH GODDESS · COUNTER · +2 ENERGY · +25% ULT')
+    hit(def, att, 480, def.pwr, true, D, A, 'counter')
+    pasNote(def, 'FLASH GODDESS · COUNTER · +1 ENERGY · +15% ULT')
     return { dmg: 0, hpDamage: 0, crit: false, mu: 1, miss: 'DODGED' }
   }
   if (kind !== 'redirect' && !mod.sever) {
@@ -948,7 +948,7 @@ function playArt(B, who, idx) {
     const story = storySpecial(a, d, me, foe)
     let base = pctOf(a.card) * 3.2 * chain * story.multiplier
     if (stone) base *= 1.55
-    if (flash) base *= 1.45
+    if (flash) base *= 1.3
     if (blood) base *= 1.45
     if (lotus) { base *= 1.6; a.hp = Math.max(1, a.hp - Math.round(a.max * .08)); a.batchStrikes = 0 }
     const clock = turnClock(me)
@@ -1222,7 +1222,7 @@ function playArt(B, who, idx) {
   return ev
 }
 const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION', 'Pierces Guard · +60% vs targets under 40% HP'], SUPPORT: ['RALLY', 'Big hit · heals the whole team 20%'], TANK: ['FORTRESS', 'Big hit · takes 30% less damage until your next turn'], SHOOTER: ['OVERDRIVE', 'Hits every enemy hard'], STRIKER: ['OVERDRIVE', 'Hits every enemy hard'] }
-const ultOf = c => c.pas?.e?.batch === 'yoruichi' ? ['RAIJIN SENKI', 'Detonates Thunder marks for +65% damage and refunds Energy and gauge'] :
+const ultOf = c => c.pas?.e?.batch === 'yoruichi' ? ['RAIJIN SENKI', 'Detonates Thunder marks for +50% damage and refunds Energy and gauge'] :
   c.pas?.e?.batch === 'harribel' ? ['CASCADA', 'Hits all enemies, spends stored damage and shields your team'] :
   c.pas?.e?.batch === 'star' ? ['NEW ORDER', 'Choose Protect or Suppress'] :
   c.pas?.e?.batch === 'merlin' ? ['INFINITY', 'Strip buffs and refund Energy and Ultimate gauge'] :
