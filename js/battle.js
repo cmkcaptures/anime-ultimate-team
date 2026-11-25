@@ -1,3 +1,4 @@
+import { fairyTag, fairySurvive, fairyCharge, fairyAfterArt } from './fairy-tail.js?v=1'
 import { gtForm, gtSurvive, gtArt } from './gt-goku.js?v=1'
 import { pveBalance, deadZoneIntent, deadZonePunishment } from './pve-balance.js?v=3'
 import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missionId } from './transfer-campaign.js?v=2'
@@ -12,7 +13,7 @@ import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR
 import { TIER, TYPE, thumbURL } from './cardkit.js?v=shinobi-1'
 import { sfx, sfxOn, music } from './sfx.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=gt-goku-1'
+import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=fairy-tail-1'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -256,6 +257,12 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     }
     if (att.gtPierceAction === gtAction) { pierce = true; mod = { ...mod, noDodge: true } }
   }
+  if (kind === 'ult' && ea.ftErza) {
+    mod = { ...mod, noDodge: true }
+    if (att.ftErzaBreakTurn === turnClock(A)) base *= 1.5
+  }
+  const ice = (kind === 'special' || kind === 'ult') && def.ftIce
+  if (ice) base *= 1.4
   let sharinganRead = false
   if (offensive && ed.storyRead && A && !unwritten(att)) {
     const entry = (A.switchSerial || 0) + ':' + att.key
@@ -315,7 +322,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
     }
     // defensive dodges / nullifies first
-    if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0 && !gtSurvive(att, A)) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
+    if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0 && !gtSurvive(att, A) && !fairySurvive(att, A, PE, pasNote)) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
     if (ed.absorbRanged && ranged) {
       if (kind === 'blast') {
         const alreadyMatched = def.absorbSource === att.key && def.absorbed === 4
@@ -339,7 +346,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
         pasNote(def, 'ULTRA INSTINCT COUNTER · ' + counter.dmg + ' DMG')
       }
       pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
-    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; if (!gtSurvive(def, D)) { def.ko = true; att.kos++ } else pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
+    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ }; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
   }
   const opening = offensive && !mod.followup && crewOpening(att, def, A)
   if (opening && ea.crew === 'asura' && kind === 'ult') base *= 1.25
@@ -527,6 +534,14 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       pasNote(def, 'GREAT APE RAGE · ' + def.gtRage + '/3')
     }
   }
+  if (hpDamage > 0) {
+    fairyCharge(D, def, turnClock(D), PE, pasNote)
+    if (ice) {
+      def.ftIce = null
+      if (ice === att.key && ea.ftGray) healHP(att, att.max * .2)
+      pasNote(att, 'DEVIL ICE · SHATTERED')
+    }
+  }
   // on-hit passives
   if (dmg > 0 && kind === 'strike' && ea.lifeErosion && A && D && att.erosionTurn !== (A.formTurn || 0)) {
     att.erosionTurn = A.formTurn || 0
@@ -580,6 +595,10 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     pasNote(def, 'FINAL STAND · ULTIMATE READY')
   }
   if (def.hp === 0 && !def.ko && gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED AT 25% HP')
+  if (def.hp === 0 && !def.ko) {
+    const noSurvive = ea.noSurvive || mod.noSurvive
+    if (!noSurvive) fairySurvive(def, D, PE, pasNote)
+  }
   if (def.hp === 0 && !def.ko) {
     const noSurvive = ea.noSurvive || mod.noSurvive
     if (noSurvive && (def.endure > 0 || def.revive > 0 || (ed.ablaze && !def.ablazeUsed))) { def.endure = 0; def.revive = 0; def.ablazeUsed = 1; pasNote(att, 'NO SECOND CHANCES') }
@@ -769,15 +788,19 @@ function playArt(B, who, idx) {
     if (kit.shadowDrive) a.shadowStrike = true
   }
   else if (art === 'strike') {
+    const redLightning = kit.ftRedLightning && a.ftLightningTurn !== turnClock(me)
+    if (redLightning) a.ftLightningTurn = turnClock(me)
     const ea = PE(a), n = ea.tripleStrike ? 3 : 1, per = ea.tripleStrike ? .4 : 1
     if (ea.galaxyImpact && d.shieldHp > 0) me.gauge = Math.min(GAUGE_MAX, me.gauge + 10)
     const iron = ea.ironShadow && a.iron > 0, shadow = ea.shadowDrive && a.shadowStrike
     if (iron) { a.iron--; healHP(a, a.max * .12); pasNote(a, 'IRON SHADOW · HEALED') }
     if (shadow) a.shadowStrike = false
-    for (let i = 0; i < n; i++) ev.hits.push({ t: d, ...hit(a, d, 260 * chain * per * (gt === 4 ? 1.8 : 1), a.pwr, iron || shadow, me, foe, 'strike') })
+    for (let i = 0; i < n; i++) ev.hits.push({ t: d, ...hit(a, d, 260 * chain * per * (gt === 4 ? 1.8 : 1), a.pwr, iron || shadow || redLightning, me, foe, 'strike') })
     if (shadow && d.ko) me.ki = Math.min(KI_MAX, me.ki + 2)
     if (ea.doubleStrike && rnd(me) * 100 < ea.doubleStrike && !d.ko) { ev.hits.push({ t: d, ...hit(a, d, 260 * chain * .6, a.pwr, false, me, foe, 'strike') }); pasNote(a, 'DOUBLE STRIKE') }
     if (gt === 4) for (const t of alive(foe)) if (t !== d) ev.hits.push({ t, ...hit(a, t, 145 * chain, a.pwr, false, me, foe, 'strike', false, { area: true }) })
+    if (redLightning) for (const target of alive(foe)) if (target !== d)
+      ev.hits.push({ t: target, ...hit(a, target, 185 * chain, a.pwr, true, me, foe, 'strike', false, { area: true }) })
     if (ea.benchChip) { const b = alive(foe).filter(f => f !== d)[0]; if (b) ev.hits.push({ t: b, ...hit(a, b, 260 * ea.benchChip / 100, a.pwr, false, me, foe, 'strike') }) }
     if ((ea.zoro || ea.repeatStrike) && !d.ko) ev.hits.push({ t: d, ...hit(a, d, 130 * chain, a.pwr, false, me, foe, 'strike') })
     const bench = ea.benchStrike && weakestBench(foe, d)
@@ -811,6 +834,21 @@ function playArt(B, who, idx) {
   else if (art === 'special') {
     const story = storySpecial(a, d, me, foe)
     let base = pctOf(a.card) * 3.2 * chain * story.multiplier
+    const clock = turnClock(me)
+    const lightPierce = kit.ftStingForce && a.ftStingPierceTurn !== clock
+    const clearHeart = kit.ftErza && a.ftErzaSpecialTurn !== clock
+    const brokeDefense = clearHeart && (d.guard || d.shieldHp > 0)
+    if (lightPierce) a.ftStingPierceTurn = clock
+    if (clearHeart) a.ftErzaSpecialTurn = clock
+    if (clearHeart || a.ftMeteor) d.shieldHp = 0
+    if (brokeDefense) {
+      a.ftErzaBreakTurn = clock
+      me.ki = Math.min(KI_MAX, me.ki + 2)
+      pasNote(a, 'CLEAR HEART · +2 ENERGY')
+    }
+    if (a.ftMeteor) { a.ftMeteor = false; base *= 1.35 }
+    if (a.ftTwinSpecial) { a.ftTwinSpecial = false; base *= 1.3 }
+    if (kit.ftIgnia && d.burnT > 0) base *= 1.45
     if (kit.stripSpecial || kit.zoro || kit.chainJail) d.shieldHp = 0
     if (kit.chainJail && !d.ko) d.erasedUntil = d.turns + 1
     const read = kit.skillHunter && foe.waveBasic
@@ -844,12 +882,16 @@ function playArt(B, who, idx) {
       for (let i = 0; i < 3 && !d.ko; i++) ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, true, me, foe, 'special') })
     } else if (isAoe(a.card) || dragonFlame || pairedFlame) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, (t === d ? base * .75 : base * .3) * (t !== d && PE(a).aoeBoost ? 1 + PE(a).aoeBoost / 100 : 1), Math.max(a.pwr, a.ki), pierce || wavePierce || dragonFlame, me, foe, 'special') })
     else if (PE(a).twinSpec || kit.godspeed) { ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }); if (!d.ko) ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }) }
-    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored }) })
+    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored }) })
     if (kit.storyClone && !a.ko && !d.ko && ev.hits[0]?.hpDamage > 0)
       ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, false, me, foe, 'special') })
     const bench = kit.benchSpecial && weakestBench(foe, d)
     if (bench) ev.hits.push({ t: bench, ...hit(a, bench, base * .5, a.pwr, true, me, foe, 'special') })
     const landed = ev.hits.some(x => (x.hpDamage ?? x.dmg) > 0)
+    if (landed && lightPierce) {
+      me.ki = Math.min(KI_MAX, me.ki + 2)
+      pasNote(a, 'DRAGON FORCE · +2 ENERGY')
+    }
     if (landed) {
       me.ki = Math.min(KI_MAX, me.ki + (kit.refundRework || Number(!!kit.zoro)))
       if (kit.drainSpecial) foe.ki = Math.max(0, foe.ki - kit.drainSpecial)
@@ -882,6 +924,7 @@ function playArt(B, who, idx) {
     if (d.rivalBarrier == null && PE(a).shambles && !a.shamUsed && a.hp / a.max < d.hp / d.max) { a.shamUsed = 1; const pa = a.hp / a.max, pd = d.hp / d.max; a.hp = Math.round(a.max * pd); d.hp = Math.max(1, Math.round(d.max * pa)); pasNote(a, 'SHAMBLES') }
   }
   if (a.ko) ev.waveCounter = true
+  fairyAfterArt(a, d, me, art, ev.hits, PE, pasNote)
   const dealt = ev.hits.reduce((n, x) => n + x.dmg, 0)
   if (a.reworkDamp && dealt > 0) a.futureDamp = false
   a.reworkDamp = false
@@ -1244,6 +1287,19 @@ function ultimate(B, who, choice) {
   else for (const t of alive(foe)) H(t, t === d ? base * .85 : base * .45, pierce)
   return finish()
 }
+function switchFighter(B, who, index) {
+  const side = B[who], foe = B[who === 'you' ? 'ai' : 'you'], leaving = act(side)
+  if (index === side.active) return null
+  const standardTag = side.seq.includes('special') || side.ultTurn === B.turn
+  setActive(side, index)
+  const entering = act(side), target = act(foe)
+  const fairyAssist = fairyTag(side, leaving, entering, PE, KI_MAX, pasNote)
+  if (!(standardTag || fairyAssist) || target.ko) return null
+  side.gauge = Math.min(GAUGE_MAX, side.gauge + 10)
+  side.reworkAction = (side.reworkAction || 0) + 1
+  return { who, art: 'strike', move: fairyAssist ? 'FAIRY TAIL FOLLOW-UP' : 'TAG ASSIST',
+    hits: [{ t: target, ...hit(entering, target, fairyAssist ? 300 : 200, Math.max(entering.pwr, entering.ki), false, side, foe, 'strike') }] }
+}
 function nextAlive(s) { const i = s.team.findIndex(f => !f.ko); if (i >= 0) setActive(s, i); return i >= 0 }
 
 // ---------------- AI ----------------
@@ -1275,7 +1331,7 @@ function smartTurn(B, who) {
     const best = bench.sort((x, y) => score(y[0]) - score(x[0]))[0]
     const dying = cur.hp / cur.max < .2 && foe.gauge >= 70
     if (best && ((matchup(opp, cur) > 1 && matchup(best[0], opp) >= 1 && best[0].hp / best[0].max > .45) || (dying && best[0].hp / best[0].max > .5) || score(best[0]) - score(cur) > 1.4)) {
-      setActive(me, best[1]); me.switched = true; evs.push({ who, swap: true })
+      const assist = switchFighter(B, who, best[1]); me.switched = true; evs.push({ who, swap: true }); if (assist) evs.push(assist)
     }
   }
   let guarded = false
@@ -1336,7 +1392,7 @@ function planTurn(B, level, who = 'ai') {
     const adv = bench.filter(([f]) => matchup(f, opp) > 1 && f.hp / f.max > .4).sort((x, y) => y[0].hp - x[0].hp)[0]
     const hurt = cur.hp / cur.max < .22 ? bench.sort((x, y) => y[0].hp - x[0].hp)[0] : null
     const pick = (matchup(cur, opp) < 1 && adv) ? adv : hurt
-    if (pick) { setActive(me, pick[1]); me.switched = true; evs.push({ who, swap: true }) }
+    if (pick) { const assist = switchFighter(B, who, pick[1]); me.switched = true; evs.push({ who, swap: true }); if (assist) evs.push(assist) }
   }
   let guarded = false
   for (let n = 0; n < 8; n++) {
@@ -2918,10 +2974,9 @@ export function startBattle(stage) {
   }
   async function doSwitch(i) {
     if (B.busy || B.over || (B.you.switched && !B.you.conjunction) || B.you.team[i].ko) return
-    const tag = B.you.seq.includes('special') || B.you.ultTurn === B.turn
     const free = B.you.conjunction && PE(act(B.you)).conjunction
     B.you.conjunction = false
-    setActive(B.you, i)
+    const assist = switchFighter(B, 'you', i)
     if (stage.chapterRule === 'forecast') B.calledArt = null
     if (stage.chapterRule === 'open-switch') {
       B.you.raidOpening = true
@@ -2933,13 +2988,14 @@ export function startBattle(stage) {
       log('CROSSING REINFORCED · Incoming ally shielded.')
     }
     if (free) { act(B.you).guard = 1; B.you.gauge = Math.min(GAUGE_MAX, B.you.gauge + 15) }
-    else B.you.switched = true; if (!tag || act(B.ai).ko) lvSend({ t: 'sw', i }); sfx('bswitch'); log(`Go, ${act(B.you).card.name}!`); draw()
-    if (tag && !act(B.ai).ko) { // TAG ASSIST: tagging in right after a Special or Ultimate = free follow-up hit
-      B.busy = true; controls(); const a = act(B.you), d = act(B.ai)
-      const ev = { who: 'you', art: 'strike', move: 'TAG ASSIST', hits: [{ t: d, ...hit(a, d, 200, Math.max(a.pwr, a.ki), false, B.you, B.ai, 'strike') }] }
-      B.you.gauge = Math.min(GAUGE_MAX, B.you.gauge + 10); lvSend({ t: 'sw', i }); log(`TAG ASSIST! ${a.card.name} follows up!`); banner('TAG ASSIST', a.card.name + ' jumps in', '#22d8ff')
-      await show(ev); B.busy = false; if (!B.over) controls()
-    }
+    else B.you.switched = true
+    lvSend({ t: 'sw', i })
+    sfx('bswitch'); log(`Go, ${act(B.you).card.name}!`); draw()
+    if (assist) {
+      B.busy = true; controls()
+      banner(assist.move, act(B.you).card.name + ' jumps in', '#22d8ff')
+      await show(assist); B.busy = false; if (!B.over) controls()
+    } else flushPas()
   }
   $a('.ar-trans').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); const f = act(B.you)
     if (f.pe.partner) {
@@ -3149,7 +3205,7 @@ export function startBattle(stage) {
   }
   // ================= LIVE PVP =================
   const LQ = []; let lvWake = null, lvN = 0, lvLast = Date.now(), lvFirstRemote = !!LV && !youFirst, lvMyTurnAt = 0, lvUnsub = null, lvTimer = null
-  const SIDE_KEYS = ['antithesisUsed', 'switchSerial', 'teamDmg', 'shinobiRestored', 'kuramaTarget', 'chosoSaved', 'chainReward', 'conjunction', 'reworkAction', 'hypnosisTurn', 'hypnosisAction', 'waveAttacked', 'waveBasic', 'wavePrevious', 'waveRead', 'waveBrief', 'waveParasite', 'formTurn', 'lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
+  const SIDE_KEYS = ['ftWendySaved', 'ftTwinTurn', 'antithesisUsed', 'switchSerial', 'teamDmg', 'shinobiRestored', 'kuramaTarget', 'chosoSaved', 'chainReward', 'conjunction', 'reworkAction', 'hypnosisTurn', 'hypnosisAction', 'waveAttacked', 'waveBasic', 'wavePrevious', 'waveRead', 'waveBrief', 'waveParasite', 'formTurn', 'lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
   const serF = f => { const o = {}; for (const k in f) { if (k === 'card' && !f.transformed && !f.baseForm) continue; const v = f[k]; if (typeof v !== 'function') o[k] = v } return o }
   const serS = sd => { const o = { team: sd.team.map(serF) }; for (const k of SIDE_KEYS) o[k] = sd[k]; return o }
   const lvSnap = () => { const H = LV.role === 'h' ? B.you : B.ai, G = H === B.you ? B.ai : B.you; return JSON.parse(JSON.stringify({ h: serS(H), g: serS(G), turn: B.turn })) }
@@ -3166,11 +3222,11 @@ export function startBattle(stage) {
   async function lvNext() { for (;;) { if (B.over) return null; if (LQ.length) return LQ.shift(); await new Promise(res => { lvWake = res; setTimeout(res, 1000) }); lvWake = null } }
   async function remoteSwitch(i, sn) {
     const s = B.ai; if (s.switched || !s.team[i] || s.team[i].ko) return
-    const tag = s.seq.includes('special') || s.ultTurn === B.turn
-    setActive(s, i); s.switched = true; sfx('bswitch'); log(`${LV.oppName} sends in ${act(s).card.name}!`)
-    if (tag && !act(B.you).ko) { const a = act(s), d = act(B.you)
-      const ev = { who: 'ai', art: 'strike', move: 'TAG ASSIST', hits: [{ t: d, ...hit(a, d, 200, Math.max(a.pwr, a.ki), false, B.ai, B.you, 'strike') }] }
-      s.gauge = Math.min(GAUGE_MAX, s.gauge + 10); lvApply(sn); draw(); banner('TAG ASSIST', a.card.name + ' jumps in', '#ff3d6a'); await show(ev) } else { lvApply(sn); draw() }
+    const assist = switchFighter(B, 'ai', i)
+    s.switched = true; sfx('bswitch'); log(`${LV.oppName} sends in ${act(s).card.name}!`)
+    lvApply(sn); draw()
+    if (assist) await show(assist)
+    else flushPas()
   }
   async function remotePhase() {
     if (B.over || sweepKO()) return
