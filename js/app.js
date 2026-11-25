@@ -1,14 +1,14 @@
 import { deadZoneReward } from './deadzone-rewards.js?v=1'
 import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
-import { formCard } from './transformations.js?v=fairy-tail-1'
+import { formCard } from './transformations.js?v=shrine-wave-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=fairy-tail-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=shrine-wave-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=shinobi-1'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=shrine-wave-1'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -409,10 +409,12 @@ PAGES.cards = (el, view) => {
   const grid = h('div', 'cardgrid'); el.append(grid)
   const chipRow = (box, opts, key) => { box.innerHTML = ''; for (const [v, l] of opts) { const b = h('button', 'chip' + (CF[key] === v ? ' on' : ''), l); b.onclick = () => { CF[key] = v; draw() }; box.append(b) } }
   function draw() {
+    const animeScroll = an.scrollLeft, rarityScroll = ra.scrollLeft
     chipRow(an, [['ALL', 'All series'], ...[...new Set(POOL.map(c => c.anime))].map(a => [a, ANAME(a)])], 'anime')
     chipRow(ra, [['ALL', 'All rarities'], ...ORDER.slice().reverse().filter(r => POOL.some(c => c.r === r)).map(r => [r, RARITY_MARK[r] + ' ' + TIER[r].name[0] + TIER[r].name.slice(1).toLowerCase()])], 'rar')
     { const b = h('button', 'chip' + (CF.sort === 'NEW' ? ' on' : ''), CF.sort === 'NEW' ? '🆕 Newest' : '⭐ Best first'); b.onclick = () => { CF.sort = CF.sort === 'NEW' ? '' : 'NEW'; draw() }; ra.prepend(b) }
     q.style.display = ra.style.display = CF.mode === 'BINDER' ? 'none' : ''
+    an.scrollLeft = animeScroll; ra.scrollLeft = rarityScroll
     grid.className = 'cardgrid'
     if (CF.mode === 'BINDER') return drawBinder(grid)
     if (CF.mode === 'EVOLVE') return drawEvolve(grid)

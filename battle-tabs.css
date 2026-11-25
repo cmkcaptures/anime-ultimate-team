@@ -30,3 +30,21 @@
     scrollbar-color: #b58afb #251742;
   }
 }
+
+/* Horizontal rails retain native drag, touch, and keyboard scrolling. */
+:is(.chips, .mtabs, .evo-line, .fuse-row, .hotstrip, .pass-reel, .ptrack, .recent, .rtrack, .tb-targets, .battle-status, .battle-recap-scroll) {
+  scrollbar-width: thin;
+  scrollbar-color: #b58afb #251742;
+}
+:is(.chips, .mtabs, .evo-line, .fuse-row, .hotstrip, .pass-reel, .ptrack, .recent, .rtrack, .tb-targets, .battle-status, .battle-recap-scroll)::-webkit-scrollbar {
+  display: block;
+  height: 8px;
+}
+:is(.chips, .mtabs, .evo-line, .fuse-row, .hotstrip, .pass-reel, .ptrack, .recent, .rtrack, .tb-targets, .battle-status, .battle-recap-scroll)::-webkit-scrollbar-track {
+  background: #251742;
+  border-radius: 8px;
+}
+:is(.chips, .mtabs, .evo-line, .fuse-row, .hotstrip, .pass-reel, .ptrack, .recent, .rtrack, .tb-targets, .battle-status, .battle-recap-scroll)::-webkit-scrollbar-thumb {
+  background: #b58afb;
+  border-radius: 8px;
+}
