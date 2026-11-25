@@ -82,20 +82,26 @@ export async function claimCoinGrant(localSave) {
   if (name !== 'soapy' && name !== 'antiminx') return null
   const username = F.doc(db, 'usernames', name)
   const save = F.doc(db, 'users', USER.uid)
-  const grant = name + '-coins-20261125'
+  const grants = [name + '-coins-20261125']
+  if (name === 'antiminx') grants.push('antiminx-coins-20261125-second')
   return F.runTransaction(db, async tx => {
     const owner = await tx.get(username)
     if (owner.data()?.uid !== USER.uid) return null
     const record = await tx.get(save)
     const cloud = record.exists() ? JSON.parse(record.data().data) : null
-    if (cloud?.profile?.gifts?.[grant]) {
-      if (localSave.profile.gifts?.[grant]) return null
+    if (grants.every(grant => cloud?.profile?.gifts?.[grant])) {
+      if (grants.every(grant => localSave.profile.gifts?.[grant])) return null
       return cloud
     }
     const current = cloud && (cloud.savedAt || 0) >= (localSave.savedAt || 0) ? cloud : localSave
     const next = structuredClone(current)
     next.profile.gifts ||= {}
-    if (!next.profile.gifts[grant]) {
+    for (const grant of grants) {
+      if (next.profile.gifts[grant]) continue
+      if (cloud?.profile?.gifts?.[grant] || localSave.profile.gifts?.[grant]) {
+        next.profile.gifts[grant] = 1
+        continue
+      }
       next.profile.gifts[grant] = 1
       next.profile.coins += 500000
       next.notices ||= []
