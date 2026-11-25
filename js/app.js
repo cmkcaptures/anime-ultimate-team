@@ -748,8 +748,10 @@ const auraMatch = (source, target) => {
 }
 const auraPairText = (verb, match) => verb + ' +' + match.pct + '% · ' + match.tags.map(auraTag).join(' / ')
 
-function auraPlanner(team, initialFocus) {
-  let focus = initialFocus ?? team.findIndex(Boolean), mode = 'any', query = '', limit = 12
+function auraPlanner(team, initialFocus, state = {}) {
+  let focus = initialFocus ?? team.findIndex(Boolean)
+  let { mode = 'any', query = '', limit = 12 } = state
+  const filtersState = { series: '', rarity: '', role: '', aura: '', destination: '', sort: 'fit', ...state.filters }
   openModal(sh => {
     sh.classList.add('aura-workbench')
     const close = h('button', 'btn dark sm', 'CLOSE')
@@ -815,7 +817,35 @@ function auraPlanner(team, initialFocus) {
       search.type = 'search'; search.placeholder = 'Search owned cards or tags'; search.value = query
       search.setAttribute('aria-label', 'Search owned teammates')
       const results = h('div', 'aura-results')
-      panel.append(filters, search, results)
+      const filterGrid = h('div', 'aura-filter-grid')
+      const choices = (values, label = value => value) => [...new Set(values)].filter(Boolean)
+        .map(value => [value, label(value)]).sort((a, b) => a[1].localeCompare(b[1]))
+      function select(key, label, entries) {
+        const field = h('label', 'aura-select')
+        const input = h('select', 'field')
+        for (const [value, caption] of entries) input.append(new Option(caption, value))
+        if (!entries.some(([value]) => value === filtersState[key])) filtersState[key] = entries[0][0]
+        input.value = filtersState[key]
+        input.onchange = () => { filtersState[key] = input.value; limit = 12; renderResults() }
+        field.append(h('span', '', label), input); filterGrid.append(field)
+        return input
+      }
+      select('series', 'Series', [['', 'All series'], ...choices(candidates.map(c => c.anime), ANAME)])
+      select('rarity', 'Rarity', [['', 'All rarities'], ...ORDER.slice().reverse().filter(r => candidates.some(c => c.r === r)).map(r => [r, TIER[r].name])])
+      select('role', 'Role', [['', 'All roles'], ...choices(candidates.map(c => c.role))])
+      select('aura', 'Aura tag', [['', 'Any aura tag'], ...choices(candidates.flatMap(c => [...tagsOf(c), ...(c.aura || [])]), auraTag)])
+      select('destination', 'Slot', [['', 'Best available slot'], ...availableSlots.map(i => [String(i), TEAM_SLOT_NAMES[i] + (team[i] ? ' · ' + team[i].name : ' · Empty')])])
+      select('sort', 'Sort by', [['fit', 'Best aura fit'], ['rating', 'Highest rating'], ['name', 'Name A–Z']])
+      const footer = h('div', 'aura-results-header')
+      const count = h('strong')
+      const reset = h('button', 'ghost', 'RESET FILTERS')
+      reset.onclick = () => {
+        Object.assign(filtersState, { series: '', rarity: '', role: '', aura: '', destination: '', sort: 'fit' })
+        query = ''; mode = 'any'; limit = 12; draw()
+      }
+      footer.append(count, reset)
+      if (!focusCard) panel.append(h('p', 'aura-locked', 'Start with a fighter, then build around their aura.'))
+      panel.append(filters, search, filterGrid, footer, results)
       search.oninput = () => { query = search.value; limit = 12; renderResults() }
       function renderResults() {
         for (const [i, btn] of [...filters.children].entries()) {
@@ -828,6 +858,10 @@ function auraPlanner(team, initialFocus) {
         const ranked = []
         const oldKits = kitPairs(team)
         for (const card of candidates) {
+          if ((filtersState.series && card.anime !== filtersState.series) ||
+              (filtersState.rarity && card.r !== filtersState.rarity) ||
+              (filtersState.role && card.role !== filtersState.role) ||
+              (filtersState.aura && ![...tagsOf(card), ...(card.aura || [])].includes(filtersState.aura))) continue
           const incoming = auraMatch(card, focusCard), outgoing = auraMatch(focusCard, card)
           const helpsLocked = locked.some(c => auraHits(card, c) || auraHits(c, card))
           const addsKit = kitPairs([...team, card]).some(pair => !oldKits.includes(pair))
@@ -835,6 +869,7 @@ function auraPlanner(team, initialFocus) {
           if (needle && ![card.name, card.ver, ...tagsOf(card), ...(card.aura || [])].some(s => s && auraTag(s).toLowerCase().includes(needle))) continue
           let best
           for (const slot of availableSlots) {
+            if (filtersState.destination && slot !== Number(filtersState.destination)) continue
             const next = team.slice(); next[slot] = card
             const after = teamAuras(next)
             const pinnedGain = pinned.reduce((sum, i) => sum + after[i] - before[i], 0)
@@ -845,19 +880,21 @@ function auraPlanner(team, initialFocus) {
           }
           if (best) ranked.push({ card, incoming, outgoing, ...best })
         }
-        ranked.sort((a, b) => b.score - a.score || b.card.ovr - a.card.ovr)
+        ranked.sort((a, b) => (filtersState.sort === 'name' ? a.card.name.localeCompare(b.card.name) :
+          filtersState.sort === 'rating' || !focusCard ? b.card.ovr - a.card.ovr : b.score - a.score) || b.card.ovr - a.card.ovr)
+        count.textContent = ranked.length + (ranked.length === 1 ? ' fighter' : ' fighters')
         results.replaceChildren()
         for (const { card, incoming, outgoing, slot, after, activatesKit } of ranked.slice(0, limit)) {
           const tile = h('button', 'aura-candidate')
           const details = h('div')
-          details.append(h('b', '', card.name), h('small', 'muted', card.ver))
+          details.append(h('b', '', card.name), h('small', 'muted', card.ver), h('small', 'aura-candidate-meta', ANAME(card.anime) + ' · ' + TIER[card.r].name + ' · ' + card.role + ' · ' + card.ovr + ' OVR'))
           if (incoming) details.append(h('span', 'aura-pill', auraPairText('Gives', incoming)))
           if (activatesKit) details.append(h('span', 'aura-pill', 'Battle kit combo'))
           if (outgoing) details.append(h('span', 'aura-pill received', auraPairText('Receives', outgoing)))
           if (focusCard) details.append(h('small', 'muted', focusCard.name + ' aura change · ' + auraDelta(after[focus] - before[focus])))
-          details.append(h('small', 'aura-preview-link', 'Preview in ' + TEAM_SLOT_NAMES[slot] + ' →'))
+          details.append(h('small', 'aura-preview-link', (filtersState.destination || focusCard ? 'Preview in ' + TEAM_SLOT_NAMES[slot] : 'Choose a slot') + ' →'))
           tile.append(cardImg(card, 180), details)
-          tile.onclick = () => previewTeamSwap(card, slot, () => auraPlanner(team, focus), focusCard?.key)
+          tile.onclick = () => previewTeamSwap(card, slot, () => auraPlanner(team, focus, { filters: filtersState, mode, query, limit }), focusCard?.key)
           results.append(tile)
         }
         if (!ranked.length) results.append(h('p', 'muted', 'No matches. Try another fighter or aura filter.'))
