@@ -1,4 +1,4 @@
-import { shrineWaveReady, shrineWaveEnter } from './shrine-wave.js?v=1'
+import { shrineWaveReady, shrineWaveEnter } from './shrine-wave.js?v=2'
 import { fairyReady, fairyEnter } from './fairy-tail.js?v=1'
 import { gtForm, gtReady, gtEnter } from './gt-goku.js?v=1'
 

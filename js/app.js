@@ -1,9 +1,9 @@
 import { deadZoneReward } from './deadzone-rewards.js?v=1'
 import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
-import { formCard } from './transformations.js?v=shrine-wave-1'
+import { formCard } from './transformations.js?v=easy-forms-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=shrine-wave-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=easy-forms-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'

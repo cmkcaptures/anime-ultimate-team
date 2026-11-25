@@ -3,8 +3,8 @@ const MAKI_TOJI = 'maki_toji_heavenly_restricti'
 
 export function shrineWaveReady(fighter) {
   const kit = passive(fighter)
-  if (kit.crToji === 1) return fighter.crSaved || fighter.crTagReady || fighter.crBrokeShield || fighter.crSpecials >= 2
-  if (kit.crSukuna === 1) return fighter.crSaved || Object.values(fighter.crSpecialTargets || {}).some(count => count >= 2)
+  if (kit.crToji === 1) return fighter.crSaved || fighter.crTagReady || fighter.crBrokeShield || fighter.crSpecialLanded
+  if (kit.crSukuna === 1) return fighter.crSaved || fighter.crSpecialLanded
   return true
 }
 
