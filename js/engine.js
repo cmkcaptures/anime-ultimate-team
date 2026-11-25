@@ -1,3 +1,5 @@
+import { NEW_GEN_ZONES } from './new-gen-zones.js?v=1'
+import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=1'
 import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=2'
 import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=3'
@@ -100,7 +102,6 @@ function value(c, lvl = 0) {
 }
 const serMult = k => { const o = S && S.profile.club.cards[k]; return o && o.ser ? (o.ser <= 10 ? 3 : o.ser <= 100 ? 1.5 : 1) : 1 }
 const quickSell = (c, lvl) => Math.max(50, Math.round(value(c, lvl) * .2 / 50) * 50)
-const TAX = .05
 
 // ---------------- save ----------------
 const today = () => new Date().toISOString().slice(0, 10)
@@ -841,7 +842,7 @@ const PKZONE = { id: 'pk1', name: 'League Gauntlet', sub: 'Dead Zone · Pokémon
     weak: ['S:PKM', 'Rivals', 'Dragons'], weakB: 55, resist: 65, tip: 'Every champion, led by Ash at his peak. Your best trainers, rivals like Paul and Gary, and dragons. Kizaru and Aokiji hit this weakness with Specials and Ultimates. Aokiji cancels World Monarch’s bonus against himself. Save Awakened Ultimates for Ash.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
-const DEADZONES = [REDZONE, DARKT, DBZONE, PKZONE, ...LAST_DOOR_ZONES]
+const DEADZONES = [REDZONE, DARKT, DBZONE, PKZONE, ...LAST_DOOR_ZONES, ...NEW_GEN_ZONES]
 // ---------- VILLAIN CAMPAIGN ----------
 const VCAMP = { name: 'The Dark Alliance', sub: 'Villain Campaign · Every world\'s villains unite', boss: 'AIZEN', stages: [
   { n: 1, name: 'The Covenant Moves', coins: 2500, enemy: ['KAKASHI', 'ZORO', 'BAKUGO', 'MEGUMI', 'GOHAN', 'YAMAMOTO'],
@@ -1194,8 +1195,6 @@ function rewards() {
     { id: 'daily-login-' + d, group: 'DAILY', name: 'Daily login bonus', prog: 1, need: 1, coins: 1000 },
     { id: 'daily-open-' + d, group: 'DAILY', name: 'Open 3 packs', prog: Math.min(3, P.day.opened), need: 3, coins: 2000 },
     { id: 'daily-wonder-' + d, group: 'DAILY', name: 'Do a Wonder Pick', prog: Math.min(1, P.day.wonder || 0), need: 1, coins: 1000 },
-    { id: 'daily-sell-' + d, group: 'DAILY', name: 'Sell a card on the market', prog: Math.min(1, P.day.sold), need: 1, coins: 1500 },
-    { id: 'daily-buy-' + d, group: 'DAILY', name: 'Buy or win a card on the market', prog: Math.min(1, P.day.bought), need: 1, coins: 1500 },
     { id: 'daily-awaken-' + d, group: 'DAILY', name: 'Awaken a card', prog: Math.min(1, P.day.awakened), need: 1, coins: 1500 },
   ]
   rollWeek(); const W = P.week, wk = W.id
@@ -1204,7 +1203,6 @@ function rewards() {
     { id: 'wk-epic-' + wk, group: 'WEEKLY', name: 'Pull 5 Epic or better cards', prog: Math.min(5, W.epic), need: 5, coins: 8000 },
     { id: 'wk-legend-' + wk, group: 'WEEKLY', name: 'Pull a Legendary or better', prog: Math.min(1, W.legend), need: 1, coins: 10000 },
     { id: 'wk-wonder-' + wk, group: 'WEEKLY', name: 'Do 5 Wonder Picks', prog: Math.min(5, W.wonder), need: 5, coins: 6000 },
-    { id: 'wk-trade-' + wk, group: 'WEEKLY', name: 'Make 5 market trades', prog: Math.min(5, W.sold + W.bought), need: 5, coins: 9000 },
     { id: 'wk-awaken-' + wk, group: 'WEEKLY', name: 'Awaken 3 cards', prog: Math.min(3, W.awakened), need: 3, coins: 6000 })
   for (const n of [10, 20, 30, 50, 75, 100]) if (n <= all.length || n === 10) out.push({ id: 'collect-' + n, group: 'COLLECTION', name: `Collect ${n} different cards`, prog: Math.min(n, own.length), need: n, coins: n * 500 })
   out.push({ id: 'collect-all-' + all.length, group: 'COLLECTION', name: `Complete the whole set (${all.length})`, prog: own.length, need: all.length, coins: 100000 })
@@ -1232,64 +1230,35 @@ function aiPack() {
   if (Math.random() < .2) out[Math.floor(Math.random() * 5)] = (weightedCard({ C: 0, U: 0, R: 10, E: 5, L: 1.2, M: .25, X: .05 }) || {}).key
   return out.filter(Boolean)
 }
-function record(key, price) { const h = S.market.history[key] || (S.market.history[key] = []); h.push({ p: price, t: Date.now() }); if (h.length > 40) h.shift() }
-const step = p => Math.max(50, Math.round(p * .05 / 50) * 50)
-const nextBid = l => l.bid ? l.bid + step(l.bid) : l.start
-function settle(l, how, buyer) {
-  const M = S.market, P = S.profile, price = how === 'bin' ? l.bin : l.bid
-  M.listings.splice(M.listings.indexOf(l), 1); record(l.key, price)
-  M.demand[l.key] = Math.min(1.6, (M.demand[l.key] || 1) * 1.03)
-  const winner = how === 'bin' ? buyer : l.bidder
-  if (how === 'bin' && l.bidder === 'YOU' && buyer !== 'YOU') { P.coins += l.bid; notice(`${cardName(l.key)} was bought outright, so your ${l.bid.toLocaleString()} bid came back.`) }
-  if (l.you) { const got = Math.round(price * (1 - TAX)); P.coins += got; bump('sold'); addXP(20); notice(`${winner} ${how === 'bin' ? 'bought' : 'won'} your ${cardName(l.key)} for ${price.toLocaleString()}. You got ${got.toLocaleString()} coins after 5% tax.`, 'sold') }
-  if (winner === 'YOU') {
-    giveCard(l.key, l.lvl); bump('bought'); P.last = [l.key]; addXP(20)
-    M.won = [{ key: l.key, lvl: l.lvl, price, t: Date.now() }, ...(M.won || [])].slice(0, 20)
-    if (how === 'bid') notice(`You won ${cardName(l.key)} for ${price.toLocaleString()} coins. It is in your box.`, 'sold')
-  }
-}
-function placeBid(l, who, amount) {
-  if (l.bidder === 'YOU') { S.profile.coins += l.bid; if (who !== 'YOU') notice(`You were outbid on ${cardName(l.key)}. Your ${l.bid.toLocaleString()} coins came back.`) }
-  l.bid = amount; l.bidder = who
-  if (l.exp - Date.now() < 30000) l.exp = Date.now() + 30000
-}
 const campaignLocked = card => !!(card?.campaignUnlock || card?.campaignEnemy || deadZoneReward(card))
-function tick(noSave) {
-  const M = S.market, now = Date.now(), all = cards().filter(c => !c.season)
-  M.listings = M.listings.filter(l => {
-    if (!byKey(l.key)?.arcReward && !campaignLocked(byKey(l.key))) return true
-    if (l.bidder === 'YOU') S.profile.coins += l.bid
-    if (l.you) giveCard(l.key, l.lvl)
-    return false
-  })
-  for (const c of all) { const d = M.demand[c.key] || 1; M.demand[c.key] = Math.max(.7, Math.min(1.6, d * (1 + (Math.random() - .5) * .06))) }
-  for (const l of [...M.listings]) if (l.exp <= now) {
-    if (l.bid) settle(l, 'bid')
-    else { M.listings.splice(M.listings.indexOf(l), 1); if (l.you) { giveCard(l.key, l.lvl); notice(`Nobody bought your ${cardName(l.key)}. It went back to your box.`) } }
+function retireMarket() {
+  let cardsReturned = 0, coinsRefunded = 0
+  for (const listing of S.market.listings) {
+    if (listing.bidder === 'YOU') coinsRefunded += listing.bid || 0
+    if (!listing.you || !byKey(listing.key)) continue
+    const current = S.profile.club.cards[listing.key]
+    if (current) current.n++
+    else giveCard(listing.key)
+    const returned = S.profile.club.cards[listing.key]
+    if (listing.lvl) returned.lvl = Math.max(returned.lvl || 0, listing.lvl)
+    cardsReturned++
   }
-  const npc = M.listings.filter(l => !l.you).length
-  for (let i = 0; i < (npc < 50 ? 4 : npc < 90 ? 1 : 0); i++) {
-    const c = weightedCard(); if (!c) break
-    const lvl = Math.random() < .15 ? 1 + Math.floor(Math.random() * 3) : 0, v = value(c, lvl)
-    const bin = Math.round(v * (.85 + Math.random() * .5) / 50) * 50, start = Math.max(50, Math.round(bin * (.55 + Math.random() * .3) / 50) * 50)
-    M.listings.push({ id: M.seq++, key: c.key, lvl, start, bin, bid: 0, bidder: null, seller: pick(TRADERS), you: false, at: now, exp: now + (8 + Math.random() * 170) * 60000 })
-  }
-  for (const l of [...M.listings]) {
-    const c = byKey(l.key); if (!c) { M.listings.splice(M.listings.indexOf(l), 1); if (l.you) notice('A listed card no longer exists and was removed.'); continue }
-    const v = value(c, l.lvl)
-    if (l.bin && l.bin <= v * (l.you ? 1.15 : .97) && Math.random() < (l.you ? .3 : .08) * Math.pow(v / l.bin, 3)) { settle(l, 'bin', pick(TRADERS)); continue }
-    const nb = nextBid(l)
-    if (nb < v * .92 && (!l.bin || nb < l.bin) && Math.random() < (l.you ? .35 : .12)) placeBid(l, pick(TRADERS.filter(t => t !== l.seller)), nb)
-  }
+  S.market.listings = []
+  S.profile.coins += coinsRefunded
+  if (cardsReturned || coinsRefunded) notice('Market closed. Returned cards: ' + cardsReturned + ' · Refunded coins: ' + coinsRefunded.toLocaleString() + '.', 'ok')
+}
+
+function refreshWonder(noSave) {
+  const now = Date.now()
   S.wonder = S.wonder.filter(w => w.exp > now && !w.keys.some(k => byKey(k)?.arcReward || campaignLocked(byKey(k))))
-  while (S.wonder.length < 6) S.wonder.push({ id: M.seq++, who: pick(TRADERS), keys: aiPack(), exp: now + (60 + Math.random() * 240) * 60000 })
+  while (S.wonder.length < 6) S.wonder.push({ id: S.market.seq++, who: pick(TRADERS), keys: aiPack(), exp: now + (60 + Math.random() * 240) * 60000 })
   if (!noSave) save()
 }
 
 // ---------------- actions ----------------
 function act(a) {
   rollDay(); rollFree()
-  const P = S.profile, M = S.market, now = Date.now()
+  const P = S.profile, now = Date.now()
   const own = k => P.club.cards[k]
   const inTeam = k => P.team.includes(k)
   const spare = k => spendableCopies(own(k), inTeam(k))
@@ -1299,6 +1268,32 @@ function act(a) {
   if (a.type === 'awk' && own(a.key)?.locked && AWK.find(n => n.id === a.node)?.dup > 0) return protectedCard
   if ((a.type === 'sbc' || a.type === 'tradeEscrow' || a.type === 'tradeEscrow_') && ((a.type === 'sbc' ? a.keys : a.offer) || []).some(k => own(k)?.locked)) return protectedCard
   switch (a.type) {
+    case 'draftStart': {
+      const info = draftWeek(CARDS, now)
+      if (P.draftRun?.week === info.week && ['drafting', 'ready'].includes(P.draftRun.status)) return { error: 'Finish or abandon your current run.' }
+      if (info.pool.length < 8) return { error: 'The draft pool is unavailable.' }
+      P.draftRun = createDraft(info, String(now) + '-' + Math.random().toString(36).slice(2, 8))
+      return {}
+    }
+    case 'draftAbandon':
+    case 'draftPick':
+    case 'draftResult': {
+      const info = draftWeek(CARDS, now), run = P.draftRun
+      if (!run || run.id !== a.id || run.week !== info.week) return { error: 'This draft run has expired.' }
+      if (a.type === 'draftAbandon') { delete P.draftRun; return {} }
+      if (a.type === 'draftPick') return pickDraftCard(run, info, a.key) ? {} : { error: 'That pick is no longer available.' }
+      if (!finishDraftRound(run, a.round, a.won, a.hp)) return { error: 'This result could not be recorded.' }
+      if (run.status === 'lost') return { msg: 'Draft run ended. You can draft again.' }
+      if (run.status !== 'won') return { msg: 'Fight cleared. Your remaining HP carries into the next fight.' }
+      if (P.draftRewardWeek === info.week) return { msg: 'Gauntlet cleared. Weekly reward already earned.' }
+      P.draftRewardWeek = info.week
+      P.coins += DRAFT_REWARDS.coins
+      P.shards = (P.shards || 0) + DRAFT_REWARDS.shards
+      P.pending[DRAFT_REWARDS.pack] = (P.pending[DRAFT_REWARDS.pack] || 0) + 1
+      addXP(150)
+      return { msg: 'Gauntlet cleared! +12,000 coins, 500 shards and a Premium Drop.' }
+    }
+
     case 'import': return { error: 'Not available online.' }
     case 'freePack': {
       if (P.free.charges < 1) return { error: 'No free pack ready yet.' }
@@ -1408,45 +1403,7 @@ function act(a) {
       const e = own(a.key); if (!e) return { error: 'You do not own that card.' }
       if ((e.lvl || 0) >= 5) return { error: 'Already fully awakened.' }
       if (e.n < 2) return { error: 'You need a duplicate to awaken this card.' }
-      e.n--; e.lvl = (e.lvl || 0) + 1; bump('awakened'); addXP(15); return { msg: `Awakened to ★${e.lvl}. Market value is up; rating and stats stay the same.` }
-    }
-    case 'list': {
-      const e = own(a.key), c = byKey(a.key); if (!e || !c) return { error: 'You do not own that card.' }
-      if (c.arcReward || c.campReward || campaignLocked(c)) return { error: 'Story rewards cannot be listed.' }
-      if (spare(a.key) < 1) return { error: 'That card is in your team. Remove it first, or get a duplicate.' }
-      const start = Math.round(+a.start / 50) * 50, bin = Math.round(+a.bin / 50) * 50, hours = [1, 3, 6, 12].includes(+a.hours) ? +a.hours : 1
-      if (!(start >= 50 && start <= 9999950)) return { error: 'Set a start price between 50 and 9,999,950.' }
-      if (!(bin > start && bin <= 9999950)) return { error: 'Buy Now has to be higher than the start price.' }
-      if (M.listings.filter(l => l.you).length >= 10) return { error: 'You can have 10 cards on the transfer list at once.' }
-      e.n--; const lvl = e.lvl || 0; if (e.n <= 0) delete P.club.cards[a.key]
-      M.listings.push({ id: M.seq++, key: a.key, lvl, start, bin, bid: 0, bidder: null, seller: 'YOU', you: true, at: now, exp: now + hours * 3600e3 })
-      return { msg: `Listed. Start ${start.toLocaleString()}, Buy Now ${bin.toLocaleString()}, for ${hours}h.` }
-    }
-    case 'cancel': {
-      const l = M.listings.find(l => l.id === a.id && l.you); if (!l) return { error: 'Listing not found.' }
-      if (l.bid) return { error: 'Someone has already bid, so this listing cannot be pulled.' }
-      M.listings.splice(M.listings.indexOf(l), 1); giveCard(l.key, l.lvl)
-      return { msg: 'Listing removed. The card is back in your box.' }
-    }
-    case 'bid': {
-      const l = M.listings.find(l => l.id === a.id); if (!l || l.exp <= now) return { error: 'That auction has ended.' }
-      if (l.you) return { error: 'You cannot bid on your own card.' }
-      if (l.bidder === 'YOU') return { error: 'You are already the highest bidder.' }
-      const amt = Math.round(+a.amount / 50) * 50, min = nextBid(l)
-      if (!(amt >= min)) return { error: `The lowest bid allowed is ${min.toLocaleString()}.` }
-      if (l.bin && amt >= l.bin) return { error: 'That is the Buy Now price or more. Use Buy Now instead.' }
-      if (P.coins < amt) return { error: `You need ${amt.toLocaleString()} coins.` }
-      P.coins -= amt; placeBid(l, 'YOU', amt)
-      return { msg: `Bid placed: ${amt.toLocaleString()}. Coins are held until you win or get outbid.` }
-    }
-    case 'buy': {
-      const l = M.listings.find(l => l.id === a.id); if (!l || l.exp <= now) return { error: 'Someone else got that one first.' }
-      if (l.you) return { error: 'That is your own listing.' }
-      if (campaignLocked(byKey(l.key))) return { error: 'Campaign cards cannot be purchased.' }
-      if (P.coins < l.bin) return { error: `You need ${l.bin.toLocaleString()} coins.` }
-      P.coins -= l.bin; if (l.bidder === 'YOU') P.coins += l.bid
-      settle(l, 'bin', 'YOU')
-      return { msg: `Bought ${cardName(l.key)} for ${l.bin.toLocaleString()} coins.` }
+      e.n--; e.lvl = (e.lvl || 0) + 1; bump('awakened'); addXP(15); return { msg: `Awakened to ★${e.lvl}. Rating and stats stay the same.` }
     }
     case 'warStart': {
       const war = warState(P)
@@ -1757,7 +1714,13 @@ const levelOf = xp => { let lv = 1, need = 100, x = xp; while (x >= need) { x -=
 function state() {
   rollFree()
   const P = S.profile
+  const draft = draftWeek(CARDS)
+  const run = P.draftRun?.week === draft.week ? P.draftRun : null
   const out = {
+    draft: { theme: draft.theme, ends: draft.ends, run,
+      offers: run?.status === 'drafting' ? draftOffers(draft, run.picks) : [],
+      enemies: run?.status === 'ready' ? draftEnemyTeam(draft, CARDS, run.round) : [],
+      rewarded: P.draftRewardWeek === draft.week },
     warLanes: currentWarLanes(warState(P).week),
     profile: P, notices: S.notices, packs: PACKS, banner: banner(), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
@@ -1781,11 +1744,6 @@ function state() {
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
   return JSON.parse(JSON.stringify(out))
 }
-function market() {
-  const now = Date.now(), M = S.market
-  return JSON.parse(JSON.stringify({ now, listings: M.listings.filter(l => l.exp > now && byKey(l.key)).map(l => ({ ...l, next: nextBid(l), value: value(byKey(l.key), l.lvl) })), history: M.history, won: M.won || [] }))
-}
-
 // ---------------- boot ----------------
 function bootError(e) {
   const o = document.createElement('div'); o.style.cssText = 'position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:20px;background:#0b0a12;color:#fff;font:700 15px Nunito,sans-serif;text-align:center'
@@ -1877,6 +1835,7 @@ async function boot() {
     for (const w of S.wonder) w.keys = w.keys.map(fix)
     S.market.won = (S.market.won || []).map(w => ({ ...w, key: fix(w.key) })) }
   const retiredShards = retireKuramaLink(S)
+  retireMarket()
   if (retiredShards) notice('Kurama Link Mode Naruto was retired. You received ◆' + retiredShards.toLocaleString() + ' shards.', 'ok')
   for (const arc of ARCS) {
     if (!arcCleared(S.profile, arc)) continue
@@ -1889,9 +1848,9 @@ async function boot() {
   }
   const campaignCards = unlockRetiredCampaign()
   if (campaignCards.length) notice('Former Campaign rewards added to your club: ' + campaignCards.join(', ') + '.', 'ok')
-  if (!S.market.listings.length) { for (let i = 0; i < 15; i++) tick(true) } else tick(true)
+  refreshWonder(true)
   save(); publish(summary(), true)
-  setInterval(() => tick(), 10000)
+  setInterval(() => refreshWonder(), 10000)
   // pull fresh cloud data when coming back to the tab (e.g. played on the other device)
   document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState !== 'visible' || !SB) return
@@ -1905,12 +1864,11 @@ const reply = o => new Response(JSON.stringify(o), { headers: { 'Content-Type': 
 window.fetch = async (input, init = {}) => {
   const u = typeof input === 'string' ? input : input.url
   const p = new URL(u, location.href).pathname
-  const m = p.match(/\/api\/(cards|state|market|act)$/)
+  const m = p.match(/\/api\/(cards|state|act)$/)
   if (!m) return realFetch(input, init)
   await ready
   if (m[1] === 'cards') return reply(CARDS)
   if (m[1] === 'state') { const s = state(); S.notices = []; save(); return reply(s) }
-  if (m[1] === 'market') return reply(market())
   let a = {}; try { a = JSON.parse(init.body || '{}') } catch { }
   const r = act(a); save(); return reply({ ...r, state: state() })
 }

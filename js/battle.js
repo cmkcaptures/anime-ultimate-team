@@ -1,12 +1,14 @@
+import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=1'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
+import { draftPage } from './draft-page.js?v=1'
 import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=2'
 import { fairyTag, fairySurvive, fairyCharge, fairyAfterArt } from './fairy-tail.js?v=1'
 import { gtForm, gtSurvive, gtArt } from './gt-goku.js?v=1'
-import { pveBalance, deadZoneIntent, deadZonePunishment } from './pve-balance.js?v=3'
+import { pveSquadPower, pveBalance, deadZoneIntent, deadZonePunishment } from './pve-balance.js?v=3'
 import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missionId } from './transfer-campaign.js?v=2'
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
-import { rivalryPage, rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
+import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
 import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=encounter-1'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
@@ -539,6 +541,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     pasNote(att, mark.kind === 'quincy' ? 'COVERING FIRE · +1 ENERGY' : 'DIVINE DOGS · FOLLOW-UP')
   }
   const previousHP = def.hp
+  if (def.newGenBoss) dmg = Math.min(dmg, Math.ceil(def.max * .32))
   const hpDamage = Math.min(def.hp, dmg)
   def.hp = Math.max(0, def.hp - dmg); if (def.hp < 1) def.hp = 0; att.dealt += dmg; def.hitsTaken++
   if (D && hpDamage > 0 && (ed.gtForm === 1 || ed.gtForm === 4) && def.gtHitTurn !== turnClock(D)) {
@@ -616,11 +619,11 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (def.hp === 0 && !def.ko && gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED AT 25% HP')
   if (def.hp === 0 && !def.ko && !shrineWaveSurvive(def, pasNote)) fusionCaptainSave(def, D, pasNote)
   if (def.hp === 0 && !def.ko) {
-    const noSurvive = ea.noSurvive || mod.noSurvive
+    const noSurvive = !def.newGenBoss && (ea.noSurvive || mod.noSurvive)
     if (!noSurvive) fairySurvive(def, D, PE, pasNote)
   }
   if (def.hp === 0 && !def.ko) {
-    const noSurvive = ea.noSurvive || mod.noSurvive
+    const noSurvive = !def.newGenBoss && (ea.noSurvive || mod.noSurvive)
     if (noSurvive && (def.endure > 0 || def.revive > 0 || (ed.ablaze && !def.ablazeUsed))) { def.endure = 0; def.revive = 0; def.ablazeUsed = 1; pasNote(att, 'NO SECOND CHANCES') }
     const choso = !noSurvive && !D?.chosoSaved && D?.team.find(f => !f.ko && PE(f).choso)
     const protector = !noSurvive && !ea.antiKit && D?.team.find(f => f !== def && !f.ko && !f.bondUsed && PE(f).shinobi === 17)
@@ -771,7 +774,14 @@ function playArt(B, who, idx) {
     const ghost = ghostDetonation(a, me, foe)
     if (ghost && a.ko) return { ...ghost, who: who === 'you' ? 'ai' : 'you' }
   }
-  if (who === 'you' && B.dzIntent?.art === art) B.dzIntent.triggered = true
+  if (who === 'you' && B.dzIntent) {
+    const intent = B.dzIntent
+    if (intent.art === art) intent.triggered = true
+    if (intent.kind === 'mix' && ATTACK_ARTS.includes(art)) {
+      if (intent.lastArt === art) intent.triggered = true
+      intent.lastArt = art
+    }
+  }
   if (ATTACK_ARTS.includes(art)) {
     a.sageTax = false
     a.shinobiActedRound = B.turn
@@ -1651,7 +1661,7 @@ function eventTeam(pool, difficulty) {
 }
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['transfer-campaign', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['rivalry', 'RIVALRY BATTLES'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
+  for (const [k, n] of [['transfer-campaign', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['draft', 'DRAFT GAUNTLET'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -1890,10 +1900,10 @@ function redzonePage(el, ok) {
     const box = h('section', 'rz-st' + (open ? '' : ' locked') + (clr ? ' done' : '') + (st.final ? ' final' : ''), `<div class="rz-art" style="background-image:url('${boss ? boss.url : ''}')"><span>DZ-${st.n}${st.final ? ' · FINAL' : ''}</span></div>
       <div class="rz-body"><h3>${st.name.toUpperCase()} ${clr ? '<em>✓ CLEARED</em>' : ''}</h3><p class="rz-vs">vs ${st.enemy.map(name => cardById(name)?.name || name).join(', ')} · enemy power ×${st.boost}</p>
       <div class="rz-rules">${st.rules.map(r => `<span class="rz-rule"><b>⚠ ${r[0]}</b>${r[1]}</span>`).join('')}${st.n >= 4 ? '<span class="rz-rule"><b>Pressure</b>Enemy warnings come every other round.</span>' : ''}${st.final ? '<span class="rz-rule"><b>Final Stand</b>The opening boss returns once at 35% HP with Guard and a full Ultimate gauge.</span>' : ''}</div>
-      <div class="rz-weak"><b>WEAK TO</b>${st.weak.map(t => `<span>${rzTag(t)} +${st.weakB}%</span>`).join('')}<i>Everyone else −${Math.min(30, st.resist)}% damage</i></div>
+      ${st.weak.length ? `<div class="rz-weak"><b>WEAK TO</b>${st.weak.map(t => `<span>${rzTag(t)} +${st.weakB}%</span>`).join('')}<i>Everyone else −${Math.min(30, st.resist)}% damage</i></div>` : ''}
       <p class="rz-tip">💡 ${st.tip}</p><p class="rz-rw">🎁 First clear: ${rw}</p></div>`)
     const acts = h('div', 'rz-acts'), go = h('button', 'btn gold', open ? (clr ? 'REPLAY' : '💀 ENTER') : '🔒 LOCKED'); go.disabled = !ok || !open
-    go.onclick = () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, pveFloor: st.n, pveFinal: st.final, encounter: st.encounter, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
+    go.onclick = () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, pveFloor: st.n, pveFinal: st.final, newGen: st.newGen, mechanic: st.mechanic, encounter: st.encounter, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
     acts.append(go, cxBtn(() => team.map(k => X.BYKEY[k]), 'DZ-' + st.n + ' · ' + st.name)); box.querySelector('.rz-body').append(acts); el.append(box)
   }
 }
@@ -2312,28 +2322,25 @@ function transferCampaignPage(el) {
   })
 }
 
+function draftStage(run) {
+  const team = X.ST().draft.enemies
+  if (run?.status !== 'ready' || !team.length || !run.picks.every(key => X.BYKEY[key])) return null
+  return { mode: 'draft', id: run.round, name: 'Draft Fight ' + (run.round + 1), level: [3, 4, 5][run.round],
+    boost: [1, 1.12, 1.25][run.round], team, draft: run }
+}
+
 export function battlePage(el) {
   const { h, P } = X
-  try { const m = sessionStorage.getItem('bmode'); if (m) { sessionStorage.removeItem('bmode'); MODE = ['camp', 'villain'].includes(m) ? 'redzone' : m } } catch { }
+  try { const m = sessionStorage.getItem('bmode'); if (m) { sessionStorage.removeItem('bmode'); MODE = m === 'rivalry' ? 'draft' : ['camp', 'villain'].includes(m) ? 'redzone' : m } } catch { }
   const prog = (P.battle && P.battle.cleared) || 0
   const team = P.team.filter(Boolean)
   modeTabs(el)
   if (MODE === 'transfer-campaign') return transferCampaignPage(el)
   if (MODE === 'war') return warPage(el)
-  if (MODE === 'rivalry') return rivalryPage(el, X, (vegeta, toppo, squad, mastery, rival) => {
-    if (rival.id !== 'toppo') {
-      const stage = { mode: 'rivalry', id: mastery ? 'mastery' : 'story', rival: rival.id, rivalrySetup: rival, name: rival.name,
-        label: 'Rivalry · ' + rival.name, level: 5, boost: rival.id === 'baryon' ? (mastery ? 1.65 : 1.4) : (mastery ? 2.75 : 2.1),
-        team: [toppo.key], playerTeam: [vegeta.key, ...squad] }
-      if (!mastery && !P.rivalry?.[rival.id]?.story) {
-        return scene([[toppo.name, 'Is that the squad you’re bringing?'], [vegeta.name, 'You’ll find out soon enough.']], rival.name, toppo.url, () => startBattle(stage), new Map([[toppo.name, toppo], [vegeta.name, vegeta]]))
-      }
-      return startBattle(stage)
-    }
-    const stage = { mode: 'rivalry', id: mastery ? 'mastery' : 'story', rivalry: true, name: 'Vegeta vs. Toppo', label: 'RIVALRY · VEGETA VS. TOPPO', level: 5, team: [toppo.key], playerTeam: [vegeta.key, ...squad] }
-    const begin = () => startBattle(stage)
-    if (!mastery && !P.rivalry?.story) scene([['TOPPO', 'I’ll cast everything aside for the power of destruction.'], ['VEGETA', 'I have five allies at my back. I don’t need to throw them away to surpass you.']], stage.name, toppo.url, begin, new Map([['TOPPO', toppo], ['VEGETA', vegeta]]))
-    else begin()
+  if (MODE === 'draft') return draftPage(el, X, run => {
+    const stage = draftStage(run)
+    if (stage) go2(stage)
+    else X.toast('This draft fight is unavailable.', 'red')
   })
   if (MODE !== 'story') {
     if (team.length < 6 && MODE !== 'arcs') { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
@@ -2363,11 +2370,15 @@ export function battlePage(el) {
 export function startBattle(stage) {
   const { h, cardImg, eff, BYKEY, P } = X
   const LV = stage.live || null
-  const yours = LV ? LV.myTeam : stage.storyTeam ? stage.storyTeam.map(k => BYKEY[k]) : (stage.playerTeam || P.team).filter(Boolean).map((k, i) => (((stage.rivalry || stage.rival) && i === 0) || ((stage.transfer || i === 0) && !P.club.cards[k])) ? BYKEY[k] : eff(BYKEY[k])).filter(Boolean)
+  const yours = LV ? LV.myTeam : stage.draft ? stage.draft.picks.map(key => BYKEY[key]) : stage.storyTeam ? stage.storyTeam.map(k => BYKEY[k]) : (stage.playerTeam || P.team).filter(Boolean).map((k, i) => (((stage.rivalry || stage.rival) && i === 0) || ((stage.transfer || i === 0) && !P.club.cards[k])) ? BYKEY[k] : eff(BYKEY[k])).filter(Boolean)
   const lockedKit = stage.rivalrySetup || (stage.lockedKit && { kit: stage.lockedKit, form: stage.lockedForm })
   if (lockedKit?.kit && yours[0]) yours[0] = rivalryLead(yours[0], lockedKit, X.POOL)
   const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
   PASLOG = []
+  if (stage.draft) {
+    B.you.team.forEach((f, i) => { f.ko = stage.draft.hp[i] === 0 })
+    B.you.active = B.you.team.findIndex(f => !f.ko)
+  }
   const mission = stage.transfer
   const operation = mission?.data.goal
   let crossingOpen = false
@@ -2379,7 +2390,7 @@ export function startBattle(stage) {
   const workCost = () => currentWork()?.approach === 'break' && objectiveHitAt !== B.turn ? 2 : 1
   const turningPoints = createTurningPoints()
   const highlight = (side, text, priority) => turningPoints.add(B.turn, side, text, priority)
-  { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (!stage.storyTeam && D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
+  { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (!stage.storyTeam && !stage.draft && D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
   if (LV) { B.you.deck = LV.myDeck || null; B.ai.deck = LV.oppDeck || null; B.you.hand = []; B.ai.hand = []; B.you.pile = B.ai.pile = null; B.you.rngS = (LV.seed + (LV.role === 'h' ? 1 : 2)) | 0; B.ai.rngS = (LV.seed + (LV.role === 'h' ? 2 : 1)) | 0 }
   if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * .88); f.ki = Math.round(f.ki * .88); f.def = Math.round(f.def * 1.15) }
   if (stage.youCat) for (const f of B.you.team) if ((f.card.cat || []).includes(stage.youCat)) for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.15)
@@ -2397,6 +2408,7 @@ export function startBattle(stage) {
   }
   for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) {
     for (const f of me.team) {
+      if (f.ko) continue
       const e = PE(f)
       if (e.energy) me.ki = Math.min(KI_MAX, me.ki + e.energy)
       if (e.ultStart) me.gauge = Math.max(me.gauge, e.ultStart)
@@ -2425,12 +2437,14 @@ export function startBattle(stage) {
     }
   }
   const balanceMode = stage.mode ?? (stage.war ? 'war' : stage.enemy && !stage.pvp && !LV ? 'story' : null)
+  const newGen = stage.newGen != null
   const balance = arcBalance || pveBalance(balanceMode, B.you.team, {
     floor: stage.pveFloor, enemies: B.ai.team.length, finale: stage.pveFinal,
     progression: stage.pveProgress ?? (stage.mode === 'rivalry' ? Number(stage.id === 'mastery') : stage.war ? (stage.level - 1) / 4 : ((stage.n || 1) - 1) / 9),
   })
+  if (newGen) Object.assign(balance, newGenBalance(stage.newGen, pveSquadPower(B.you.team)))
   if (balance) {
-    if (deadZone) for (const enemy of B.ai.team) enemy.deadZoneEnemy = true
+    if (deadZone) for (const enemy of B.ai.team) { enemy.deadZoneEnemy = true; enemy.newGenBoss = newGen }
     B.ai.campaignDamage = balance.damage
     for (const enemy of B.ai.team) {
       if (deadZone) enemy.deadZoneRegenBase = enemy.max
@@ -2479,6 +2493,9 @@ export function startBattle(stage) {
   if (stage.chapterRule === 'open-survive') B.ai.gauge = GAUGE_MAX
   if (stage.rival === 'overload') B.you.gauge = 70
   for (const side of [B.you, B.ai]) for (const f of side.team) f.startingMax = f.max
+  if (stage.draft) B.you.team.forEach((f, i) => {
+    f.hp = f.ko ? 0 : Math.max(1, Math.round(f.max * stage.draft.hp[i]))
+  })
   const sealNow = () => { for (const [me, foe] of [[B.you, B.ai], [B.ai, B.you]]) { const a = act(me), o = act(foe); if (a && o && PE(a).nullPassive && !a.ko) o.sealed = 1 } }
   for (const side of [B.you, B.ai]) {
     const active = act(side)
@@ -2492,6 +2509,7 @@ export function startBattle(stage) {
   const fA = PE(act(B.you)).first, fB = PE(act(B.ai)).first
   let youFirst = fA && !fB ? true : fB && !fA ? false : act(B.you).spd >= act(B.ai).spd
   if (LV) { const H = LV.role === 'h' ? B.you : B.ai, G = H === B.you ? B.ai : B.you, fH = PE(act(H)).first, fG = PE(act(G)).first, hostFirst = fH && !fG ? true : fG && !fH ? false : act(H).spd >= act(G).spd; youFirst = LV.role === 'h' ? hostFirst : !hostFirst }
+  if (newGen) youFirst = true
   if (youFirst && PE(act(B.you)).stopFirst) B.ai.skip = 1
   if (!youFirst && PE(act(B.ai)).stopFirst) B.you.skip = 1
 
@@ -2791,7 +2809,7 @@ export function startBattle(stage) {
     if (dzWarning) {
       const intent = B.dzIntent
       const warning = intent && intent.enemy === act(B.ai) && !intent.enemy.ko
-        ? intent.art ? (intent.triggered ? 'READ LANDED · Boss retaliation incoming' : 'ENEMY READ · Avoid ' + ARTS[intent.art].name)
+        ? newGen ? newGenWarning(intent, ARTS[intent.art]?.name) : intent.art ? (intent.triggered ? 'READ LANDED · Boss retaliation incoming' : 'ENEMY READ · Avoid ' + ARTS[intent.art].name)
           : 'HEAVY RUSH · Guard, shield or switch'
         : ''
       dzWarning.hidden = !warning
@@ -3238,7 +3256,7 @@ export function startBattle(stage) {
   const mb = $a('.ar-mute'), mdraw = () => { mb.textContent = sfxOn() ? '🔊 SOUND' : '🔇 MUTED'; mb.classList.toggle('off', !sfxOn()) }
   mb.onclick = () => { sfxOn(!sfxOn()); mdraw() }; mdraw()
   $a('.ar-end').onclick = () => endTurn()
-  $a('.ar-quit').onclick = () => { if (B.over) { if (!stage.war) close(); return } if (ov.querySelector('.qconf')) return; const q = document.createElement('div'); q.className = 'qconf'; q.innerHTML = '<div class="qc-box"><b>QUIT BATTLE?</b><p>You will leave this fight with no rewards.' + (stage.war ? ' This lane will count as a loss.' : stage.boss ? ' Your boss attempt is not used.' : '') + '</p><div class="qc-b"><button class="btn dark">KEEP FIGHTING</button><button class="btn red">QUIT</button></div></div>'; const [k, x] = q.querySelectorAll('button'); k.onclick = () => q.remove(); x.onclick = async () => { q.remove(); if (stage.war) { if (!B.over) await end(false) } else close() }; ov.append(q) }
+  $a('.ar-quit').onclick = () => { if (B.over) { if (!stage.war && !stage.draft) close(); return } if (ov.querySelector('.qconf')) return; const q = document.createElement('div'); q.className = 'qconf'; q.innerHTML = '<div class="qc-box"><b>QUIT BATTLE?</b><p>You will leave this fight with no rewards.' + (stage.draft ? ' This will end your draft run.' : stage.war ? ' This lane will count as a loss.' : stage.boss ? ' Your boss attempt is not used.' : '') + '</p><div class="qc-b"><button class="btn dark">KEEP FIGHTING</button><button class="btn red">QUIT</button></div></div>'; const [k, x] = q.querySelectorAll('button'); k.onclick = () => q.remove(); x.onclick = async () => { q.remove(); if (stage.war || stage.draft) { if (!B.over) await end(false) } else close() }; ov.append(q) }
   function close({ immediate = false, route = true } = {}) {
     if (B.closed) return
     if (LV && !B.over) { lvSend({ t: "quit" }); B.over = true; try { lvUnsub && lvUnsub(); clearInterval(lvTimer) } catch { } X.ACC.pvpFinish(LV.code, LV.oppUid) }
@@ -3343,10 +3361,18 @@ export function startBattle(stage) {
     flushPas()
     if (deadZone) {
       const escalating = Math.min(.48, Math.max(0, B.turn - 4) * .08)
-      const punished = deadZonePunishment(B.dzIntent, act(B.you), act(B.ai))
+      const intent = B.dzIntent
+      const punished = newGen && intent
+        ? newGenFailed(intent, act(B.you), (B.you.switchSerial || 0) !== intent.switchSerial)
+        : deadZonePunishment(intent, act(B.you), act(B.ai))
+      if (newGen && intent && !punished) {
+        s.gauge = Math.max(0, s.gauge - 25)
+        log('OPENING · Enemy loses 25% Ultimate gauge and hits softer this round.')
+      }
       B.dzIntent = null
-      s.campaignDamage = balance.damage * (1 + escalating + (punished ? .5 : 0))
+      s.campaignDamage = balance.damage * (1 + escalating + (punished ? .5 : newGen && intent ? -.22 : 0))
       if (punished) {
+        if (newGen && stage.newGen === 4) B.you.ki = Math.max(0, B.you.ki - 2)
         s.gauge = Math.min(GAUGE_MAX, s.gauge + 35)
         s.ki = Math.min(KI_MAX, s.ki + 2)
         log('PUNISHED · Enemy gains 35% Ultimate gauge, 2 Energy and extra damage this turn.')
@@ -3463,6 +3489,14 @@ export function startBattle(stage) {
   function announceChapterRule() {
     if (deadZone && B.dzIntentTurn !== B.turn) {
       B.dzIntentTurn = B.turn
+      if (newGen) {
+        const intent = newGenIntent(stage.mechanic, act(B.you), act(B.ai), rnd(B.ai))
+        intent.switchSerial = B.you.switchSerial || 0
+        B.dzIntent = intent
+        if (intent.kind === 'break') intent.enemy.guard = 1
+        log(newGenWarning(intent, ARTS[intent.art]?.name))
+        return
+      }
       B.dzIntent = deadZoneIntent(stage.pveFloor, B.turn, act(B.you), act(B.ai), rnd(B.ai))
       if (B.dzIntent) {
         log(B.dzIntent.art ? 'ENEMY READ · Avoid ' + ARTS[B.dzIntent.art].name + ' this turn.'
@@ -3581,13 +3615,15 @@ export function startBattle(stage) {
       if (!result.error) recordWarMvp(stage.war, mvp)
       return result
     }
-    const r = (stage.rivalry || stage.rival) ? await X.act('rivalryResult', { mode: stage.id, rival: stage.rival, won, mastered: B.rivalMastered, survived: B.hakaiSurvived, explosion: B.finalExplosionKO }) : stage.war ? await recordWar() : stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0), ko: B.you.team.filter(f => f.ko).length, turns: B.turn, rescued: stage.chapterRule === 'rescue' ? rescueCards().map((card, i) => B.you.team.some(f => f.key === card.key && !f.ko) ? RESCUE_NAMES[i] : null).filter(Boolean) : undefined } : { stage: stage.n, won })
+    const recordDraft = () => X.act('draftResult', { id: stage.draft.id, round: stage.draft.round, won,
+      hp: B.you.team.map(f => f.ko ? 0 : Math.min(1, f.hp / f.max)) })
+    const r = stage.draft ? await recordDraft() : (stage.rivalry || stage.rival) ? await X.act('rivalryResult', { mode: stage.id, rival: stage.rival, won, mastered: B.rivalMastered, survived: B.hakaiSurvived, explosion: B.finalExplosionKO }) : stage.war ? await recordWar() : stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0), ko: B.you.team.filter(f => f.ko).length, turns: B.turn, rescued: stage.chapterRule === 'rescue' ? rescueCards().map((card, i) => B.you.team.some(f => f.key === card.key && !f.ko) ? RESCUE_NAMES[i] : null).filter(Boolean) : undefined } : { stage: stage.n, won })
     if (stage.mode === 'raid' && r && r.raidTotal != null && X.raidPost) { try { await X.raidPost(stage.raidId, r.raidTotal); RAIDCACHE.at = 0 } catch (e) { console.warn('raid post failed', e) } }
     sfx(stage.boss ? 'claim' : won ? 'win' : 'lose')
     const dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
     const box = document.createElement('div'); box.className = 'ar-result ' + (won ? 'win' : 'lose')
     if (won) { const cf = document.createElement('div'); cf.className = 'confetti'; cf.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="--x:${Math.random() * 100}%;--d:${(Math.random() * .8).toFixed(2)}s;--h:${Math.round(Math.random() * 360)};--r:${Math.round(Math.random() * 720 - 360)}deg"></i>`).join(''); ov.append(cf); setTimeout(() => cf.remove(), 4000) }
-    box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : (stage.rivalry || stage.rival) ? (r.msg || r.error || 'Toppo defeated your squad.') : stage.war ? (r.msg || (won ? 'Your squad won this lane.' : 'Your squad lost this lane.')) : won ? (r.msg || r.error || 'Stage cleared.') : (stage.storyTeam ? 'Your story lineup was knocked out. Try again.' : 'Your team was knocked out. Tweak your lineup and try again.')}</p>
+    box.innerHTML = `<div class="rs-burst"></div><h2>${stage.boss ? 'BOSS FIGHT' : won ? 'VICTORY' : 'DEFEAT'}</h2><p>${stage.boss ? (r.msg || '') : (stage.rivalry || stage.rival) ? (r.msg || r.error || 'Toppo defeated your squad.') : stage.draft ? (r.msg || r.error || 'Draft fight recorded.') : stage.war ? (r.msg || (won ? 'Your squad won this lane.' : 'Your squad lost this lane.')) : won ? (r.msg || r.error || 'Stage cleared.') : (stage.storyTeam ? 'Your story lineup was knocked out. Try again.' : 'Your team was knocked out. Tweak your lineup and try again.')}</p>
       <div class="rs-body"><div class="rs-mvp"><span>MVP</span><div class="rs-card"></div><b>${mvp.card.name}</b><small>${mvp.dealt.toLocaleString()} DMG · ${mvp.kos} KO</small></div>
       <div class="rs-stats"><div><b>${B.turn}</b><span>TURNS</span></div><div><b>${dealt.toLocaleString()}</b><span>TOTAL DAMAGE</span></div><div><b>${kos}</b><span>KNOCKOUTS</span></div><div><b>${B.you.team.filter(f => !f.ko).length}/${B.you.team.length}</b><span>SURVIVED</span></div></div></div>`
     box.querySelector('.rs-card').append(img(mvp, 360))
@@ -3599,9 +3635,9 @@ export function startBattle(stage) {
     addBattleRecap(box, B.you.team)
     addTurningPoints(box, turningPoints.list())
     const b = document.createElement('button'); b.className = 'btn gold'; b.textContent = 'CONTINUE'; b.onclick = async () => {
-      if (stage.war && r.error && !r.state) {
+      if ((stage.war || stage.draft) && r.error && !r.state) {
         b.disabled = true
-        const result = await recordWar()
+        const result = await (stage.draft ? recordDraft() : recordWar())
         if (result.error && !result.state) { b.disabled = false; return }
       }
       close()
@@ -3616,6 +3652,8 @@ export function startBattle(stage) {
     }
     const run = X.P.war?.run
     const nextWar = stage.war && !r.error && run?.id === stage.war.id && warStage(run, X.ST().warLanes)
+    const nextDraft = stage.draft && won && !r.error && draftStage(X.ST().draft.run)
+    if (nextDraft) shortcut('NEXT DRAFT FIGHT', () => { close({ immediate: true, route: false }); startBattle(nextDraft) })
     if (nextWar) shortcut('NEXT WAR LANE', () => { close({ immediate: true, route: false }); startBattle(nextWar) })
     if (won && !r.error && stage.nextFight) shortcut('NEXT FIGHT', () => {
       if (stage.mode === 'camp') { try { sessionStorage.removeItem('campOutro') } catch { } }
