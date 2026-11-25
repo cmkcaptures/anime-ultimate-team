@@ -77,11 +77,12 @@ export async function initAccount(cfg) {
 export const me = () => ({ uid: USER && USER.uid, profile: PROFILE })
 export async function loadSave() { const d = await F.getDoc(F.doc(db, 'users', USER.uid)); return d.exists() ? JSON.parse(d.data().data) : null }
 export async function storeSave(S) { await F.setDoc(F.doc(db, 'users', USER.uid), { data: JSON.stringify(S), savedAt: S.savedAt || Date.now() }) }
-export async function claimSoapyCoins(localSave) {
-  if (PROFILE?.nameLower !== 'soapy') return null
-  const username = F.doc(db, 'usernames', 'soapy')
+export async function claimCoinGrant(localSave) {
+  const name = PROFILE?.nameLower
+  if (name !== 'soapy' && name !== 'antiminx') return null
+  const username = F.doc(db, 'usernames', name)
   const save = F.doc(db, 'users', USER.uid)
-  const grant = 'soapy-coins-20261125'
+  const grant = name + '-coins-20261125'
   return F.runTransaction(db, async tx => {
     const owner = await tx.get(username)
     if (owner.data()?.uid !== USER.uid) return null
