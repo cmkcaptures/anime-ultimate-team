@@ -10,7 +10,7 @@ import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, claimSoapyCoins, publish, me } from './account.js?v=soapy-coins-1'
+import { initAccount, loadSave, storeSave, claimCoinGrant, publish, me } from './account.js?v=antiminx-coins-1'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -1807,14 +1807,14 @@ async function boot() {
   if (!cloud && !local) { const old = await legacySave(); if (old) { cloud = old; try { localStorage.removeItem('aut-key') } catch { } } }
   // newest save wins (cloud vs this device)
   S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
-  if (who.profile.nameLower === 'soapy') {
+  if (['soapy', 'antiminx'].includes(who.profile.nameLower)) {
     try {
-      const granted = await claimSoapyCoins(S)
+      const granted = await claimCoinGrant(S)
       if (granted) {
         S = granted
         try { localStorage.setItem(LS_SAVE, JSON.stringify(S)) } catch { }
       }
-    } catch (error) { console.warn('Soapy coin grant will retry on reload', error) }
+    } catch (error) { console.warn('Coin grant will retry on reload', error) }
   }
   const f = fresh(); S.profile = { ...f.profile, ...S.profile };
   { const P = S.profile, MV = { 'Mythic/6a3757dfa1ec3cc09a1a5a0285629427.jpg': 'Epic/ymir fritz.jpg', "Mythic/gon adult fomr.jpg": "Rainbow Secret/gon adult form.jpg", "Mythic/bakugo final fight.jpg": "Legendary/bakugo final war.jpg", "Mythic/877e64711800d36475ab18d47cb52ff0.jpg": "Legendary/mahito and nanami overtime.jpg", "Rainbow Secret/cd2b91a9d5b3c5eda9fc036f9b0a9f7e.jpg": "Mythic/kaneki centipede kakuja.jpg", "Rainbow Secret/ssj4 gogeta.jpg": "Mythic/ssj4 gogeta.jpg", "Rainbow Secret/a61ea8da5cd57be12cee748daf693e12.jpg": "Mythic/bakugo and deku shared ofa.jpg", "Mythic/9d78a90d873ce4e02dd42183df76693b.jpg": "Legendary/vegito super saiyan blue.jpg" }; for (const [o, n] of Object.entries(MV)) { const c = P.club.cards; if (c[o]) { if (c[n]) c[n].n = (c[n].n || 1) + (c[o].n || 1); else c[n] = c[o]; delete c[o] } for (const L of [P.team, ...((P.presets || []).map(p => p && p.team || p))]) if (Array.isArray(L)) L.forEach((k, i) => { if (k === o) L[i] = n }); if (P.avatar === o) P.avatar = n } }
