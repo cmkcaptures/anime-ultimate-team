@@ -706,23 +706,33 @@ PAGES.team = (el) => {
   el.append(top)
   const SB = slotBoosts(TC), filled = SB.filter(Boolean), avgB = filled.length ? Math.round(filled.reduce((n, b) => n + b.total, 0) / filled.length) : 0
   const lowT = filled.length ? Math.min(...filled.map(b => b.total)) : 0, weakI = SB.findIndex(b => b && b.total === lowT && b.total < avgB * .6)
-  let tip = null
-  if (weakI >= 0 && count >= 6) { const base = teamScore(TC); for (const c of owned()) { if (P.team.includes(c.key)) continue; const T2 = TC.slice(); T2[weakI] = eff(c); const v = teamScore(T2); if (!tip || v > tip.v) tip = { c, v } } if (tip && tip.v <= base * 1.01) tip = null; else if (tip) tip.gain = Math.round((tip.v / base - 1) * 100) }
   if (count) { const bar = h('div', 'tm-boost', `<div><small>TEAM BOOST</small><b>+${avgB}%</b></div><p>${avgB >= 30 ? '🟢 Great fit. Your cards boost each other.' : avgB >= 15 ? '🟡 Decent. Some cards don\'t link up.' : '🔴 Weak links. Cards aren\'t boosting each other.'}</p>`), dt = h('button', 'btn dark sm', TDET ? 'HIDE DETAILS' : 'DETAILS'); dt.onclick = () => { TDET = !TDET; rerender() }; bar.append(dt); el.append(bar)
     { const LA = teamLinks(TC).active; const lr = h('div', 'tm-links', '<b>🔗 LINKS</b>'); if (LA.length) for (const x of LA) lr.append(h('span', 'tl', `${TC[x.i].name.split(' ')[0]} ↔ ${TC[x.j].name.split(' ')[0]} <em>${x.links.map(l => l.n).join(' · ')} +${x.links.reduce((n, l) => n + l.pct, 0)}%</em>`)); else lr.append(h('small', '', 'No links yet. Put characters who belong together next to each other: Goku ↔ Vegeta, Luffy ↔ Zoro, two Swordsmen, same faction…')); el.append(lr) }
-    if (TDET) { const t = h('div', 'tm-det', '<div class="tdr th"><span>CARD</span><span>👑 LEADER</span><span>📺 SERIES</span><span>✦ AURA</span><span>🔗 LINK</span><span>TOTAL</span></div>'); TC.forEach((c, i) => { const b = SB[i]; if (!c) return; t.append(h('div', 'tdr', `<span>${c.name}</span><span>+${b.lead}%</span><span>+${b.series}%</span><span title="${(c.aura || []).map(auraTag).join(' · ')}">+${b.aura}%</span><span>+${b.link}%</span><b>+${b.total}%</b>`)) }); t.append(h('small', '', 'Leader: boosts cards sharing its category. Series: 3+ cards from one anime. Aura: every card buffs teammates sharing its 2 tags. Link: neighbours in lineup order (Leader → Main 1 → Main 2 → Sub 1 → Sub 2 → Sub 3) that belong together.')); el.append(t) } }
+    if (TDET) { const t = h('div', 'tm-det', '<div class="tdr th"><span>CARD</span><span>👑 LEADER</span><span>📺 SERIES</span><span>✦ AURA</span><span>🔗 LINK</span><span>TOTAL</span></div>'); TC.forEach((c, i) => { const b = SB[i]; if (!c) return; t.append(h('div', 'tdr', `<span>${c.name}</span><span>+${b.lead}%</span><span>+${b.series}%</span><span title="${(c.aura || []).map(auraTag).join(' · ')}">+${b.aura}%</span><span>+${b.link}%</span><b>+${b.total}%</b>`)) }); t.append(h('small', '', 'Leader: boosts cards sharing its category. Series: 3+ cards from one anime. Aura: tagged recipients gain bonuses from any matching card. Link: neighbours in lineup order (Leader → Main 1 → Main 2 → Sub 1 → Sub 2 → Sub 3) that belong together.')); el.append(t) } }
   // leader + slots
   const main = h('section', 'tm-main'), L = TC[0]
   const lb = h('button', 'tm-lead tap' + (L ? '' : ' empty')); lb.append(h('span', 'tm-tag', 'LEADER'))
   if (L) { lb.append(cardImg(L, 420), h('div', 'tm-meta', `<b>${L.name}</b><span>${diaStr(L.dia || 3)} · Lv ${L.lv || 1}</span>`)) } else lb.append(h('div', 'tm-plus', '+<small>PICK A LEADER</small>'))
   if (L && SB[0]) { const b = SB[0], k = weakI === 0 ? 'r' : b.total >= Math.max(15, avgB * .8) ? 'g' : 'y'; lb.classList.add('fit-' + k); lb.append(h('span', 'tm-badge fb-' + k, (k === 'g' ? '🟢 ' : k === 'y' ? '🟡 ' : '🔴 ') + '+' + b.total + '%')) }
-  lb.onclick = () => teamPicker(0); main.append(lb)
+  const auraButton = i => {
+    const button = h('button', 'aura-slot-button', '+' + SB[i].aura + '% AURA · FIND TEAMMATES')
+    button.onclick = () => auraPlanner(TC, i)
+    return button
+  }
+  lb.onclick = () => teamPicker(0)
+  const leaderSlot = h('div', 'aura-team-slot'); leaderSlot.append(lb)
+  if (L) leaderSlot.append(auraButton(0))
+  main.append(leaderSlot)
   const right = h('div', 'tm-right')
   right.append(h('div', 'tm-skill', LI.lead ? `<b>👑 LEADER SKILL</b><span>${leadText(LI.lead)}</span><em>${LI.n}/${count} BOOSTED</em>` : '<b>👑 NO LEADER</b><span>Put a card in the Leader slot. Its skill boosts every fighter that shares a category with it.</span>'))
   const slot = i => { const c = TC[i], btn = h('button', 'tm-slot tap' + (c ? (c.boosted ? ' bst' : ' nob') : ' empty'))
     if (c) { const b = SB[i], k = i === weakI ? 'r' : b.total >= Math.max(15, avgB * .8) ? 'g' : 'y'; btn.classList.add('fit-' + k); btn.append(cardImg(c, 260), h('span', 'tm-badge fb-' + k, (k === 'g' ? '🟢 ' : k === 'y' ? '🟡 ' : '🔴 ') + '+' + b.total + '%'), h('div', 'tm-sm', `<span>${diaStr(c.dia || 3)}</span><span>Lv ${c.lv || 1}</span>`)) } else btn.append(h('div', 'tm-plus', '+'))
     btn.onclick = () => teamPicker(i)
-    if (c && i === weakI && tip) { const w = h('div', 'tm-slotwrap'), sw = h('button', 'tm-swaptip', `⇄ Swap for <b>${tip.c.name}</b> <em>+${tip.gain}%</em>`); sw.onclick = async () => { const T = P.team.slice(); T[i] = tip.c.key; await act('team', { team: T }); rerender() }; w.append(btn, sw); return w }
+    if (c) {
+      const w = h('div', 'tm-slotwrap aura-team-slot')
+      w.append(btn, auraButton(i))
+      return w
+    }
     return btn }
   right.append(h('div', 'tm-lbl', 'MAIN · FIGHT FIRST')); { const g = h('div', 'tm-mainrow'); g.append(slot(1), slot(2)); right.append(g) }
   right.append(h('div', 'tm-lbl', 'SUB · SWAP IN DURING BATTLE')); { const g = h('div', 'tm-subrow'); g.append(slot(3), slot(4), slot(5)); right.append(g) }
@@ -732,7 +742,9 @@ PAGES.team = (el) => {
   const ab = h('button', 'btn gold', 'AUTO BUILD'); ab.onclick = () => { TBX.show = !TBX.show; rerender(); setTimeout(() => document.querySelector('.tbx')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60) }
   const D = ST.decks[ST.deckOn], dk = h('button', 'btn violet', 'ARTS DECK · ' + D.name.toUpperCase()); dk.onclick = () => go('deck')
   const cl = h('button', 'btn dark', 'CLEAR'); cl.onclick = async () => { await act('team', { team: [null, null, null, null, null, null] }); rerender() }
-  acts.append(ab, dk, cl); el.append(acts)
+  const suggest = h('button', 'btn violet', 'SUGGEST TEAMMATES')
+  suggest.onclick = () => auraPlanner(TC)
+  acts.append(suggest, ab, dk, cl); el.append(acts)
   if (TBX.show) teamBuilderPanel(el)
 }
 // ---- TEAM BOOST: leader + series synergy + auras rolled into one number per card ----
@@ -740,7 +752,199 @@ function slotBoosts(TC) {
   const LI = leaderInfo(TC[0] ? TC : []), syn = synergy(TC), AB = teamAuras(TC), LK = teamLinks(TC).pct
   return TC.map((c, i) => { if (!c) return null; const lead = LI.lead && leadHits(LI.lead, c) ? LI.lead.pct : 0, series = syn.anime && c.anime === syn.anime ? syn.bonus : 0, aura = AB[i] || 0, link = LK[i] || 0; return { lead, series, aura, link, total: lead + series + aura + link } })
 }
-const teamScore = TC => { const B = slotBoosts(TC); return TC.reduce((n, c, i) => n + (c ? c.ovr * (1 + (B[i] ? B[i].total : 0) / 100) : 0), 0) }
+const TEAM_SLOT_NAMES = ['Leader', 'Main 1', 'Main 2', 'Bench 1', 'Bench 2', 'Bench 3']
+const TEAM_KIT_PAIRS = [
+  ['sting_white_dragon', 'rogue_cheney_dragon_force', 'Sting + Rogue · Twin Dragons'],
+  ['toji_hidden_inventory_rearm', 'maki_toji_heavenly_restricti', 'Toji + Maki & Toji · Heavenly Restriction Duo'],
+  ['vegeta_ssj4_final_shine', 'goku_gt_primal_power', 'SSJ4 Vegeta + GT Goku · Primal Pride'],
+]
+const kitPairs = team => TEAM_KIT_PAIRS.filter(([a, b]) => team.some(c => c?.id === a) && team.some(c => c?.id === b)).map(pair => pair[2])
+const auraDelta = n => n > 0 ? '+' + n + '%' : n < 0 ? '−' + Math.abs(n) + '%' : '0%'
+const auraMatch = (source, target) => {
+  if (!auraHits(source, target)) return null
+  const targetTags = tagsOf(target)
+  return { tags: [...new Set(source.aura.filter(tag => targetTags.includes(tag)))],
+    pct: AURA_PCT[Math.min(7, Math.max(3, source.dia || 3))] }
+}
+const auraPairText = (verb, match) => verb + ' +' + match.pct + '% · ' + match.tags.map(auraTag).join(' / ')
+
+function auraPlanner(team, initialFocus) {
+  let focus = initialFocus ?? team.findIndex(Boolean), mode = 'any', query = '', limit = 12
+  openModal(sh => {
+    sh.classList.add('aura-workbench')
+    const close = h('button', 'btn dark sm', 'CLOSE')
+    close.onclick = closeModal
+    const header = h('header', 'aura-header')
+    header.append(h('h2', '', 'Find Teammates'), close)
+    const panel = h('div', 'aura-workbench-body')
+    sh.append(header, h('p', 'muted', 'Auras give bonuses to fighters with matching tags. They work from any slot, and both fighters can buff each other.'), panel)
+    const candidates = owned().filter(c => !team.some(m => m?.key === c.key)).map(eff)
+    function draw() {
+      panel.replaceChildren()
+      const roster = h('div', 'aura-roster chips')
+      const focusCard = team[focus]
+      for (const [i, card] of team.entries()) {
+        if (!card) continue
+        const btn = h('button', 'chip' + (i === focus ? ' on' : ''), card.name)
+        btn.title = card.ver + ' · ' + TEAM_SLOT_NAMES[i]
+        btn.setAttribute('aria-pressed', String(i === focus))
+        btn.onclick = () => { focus = i; mode = 'any'; limit = 12; draw() }
+        roster.append(btn)
+      }
+      if (roster.children.length) panel.append(roster)
+      const locked = team.filter(c => c && TBX.locks.includes(c.key))
+      if (focusCard) {
+        const summary = h('section', 'aura-focus')
+        const info = h('div')
+        const total = teamAuras(team)[focus]
+        info.append(h('h3', '', focusCard.name), h('small', '', focusCard.ver),
+          h('strong', '', '+' + total + '% current aura'))
+        const pin = h('button', 'btn dark sm', TBX.locks.includes(focusCard.key) ? 'UNLOCK FIGHTER' : 'LOCK FIGHTER')
+        pin.setAttribute('aria-pressed', String(TBX.locks.includes(focusCard.key)))
+        pin.onclick = () => {
+          TBX.locks = TBX.locks.includes(focusCard.key)
+            ? TBX.locks.filter(key => key !== focusCard.key) : [...TBX.locks, focusCard.key]
+          draw()
+        }
+        summary.append(cardImg(focusCard, 180), info, pin)
+        panel.append(summary)
+        const sources = h('div', 'aura-sources')
+        for (const giver of team.filter(Boolean)) {
+          const contribution = auraMatch(giver, focusCard)
+          if (contribution) sources.append(h('span', 'aura-pill', auraPairText(giver === focusCard ? 'Self' : giver.name, contribution)))
+        }
+        if (!sources.children.length) sources.append(h('small', 'muted', 'No current aura sources for this fighter.'))
+        else if (total === 40) sources.append(h('small', 'muted', 'Aura cap reached.'))
+        panel.append(sources)
+      }
+      if (locked.length) panel.append(h('p', 'aura-locked', 'Locked for suggestions and Auto Build · ' + locked.map(c => c.name).join(', ')))
+      const kits = kitPairs(team)
+      if (kits.length) panel.append(h('p', 'aura-locked', 'Battle kit combos · ' + kits.join(' / ')))
+      const availableSlots = team.map((_, i) => i).filter(i => i !== focus && (!team[i] || !TBX.locks.includes(team[i].key)))
+      if (!availableSlots.length) { panel.append(h('p', 'muted', 'Unlock a fighter to preview a replacement.')); return }
+
+      const options = focusCard ? [['any', 'All matches'], ['in', 'Buffs this fighter'], ['out', 'Receives this aura'], ['both', 'Mutual']] : [['any', 'Available fighters']]
+      const filters = h('div', 'aura-filters chips')
+      for (const [value, label] of options) {
+        const btn = h('button', 'chip' + (mode === value ? ' on' : ''), label)
+        btn.setAttribute('aria-pressed', String(mode === value))
+        btn.onclick = () => { mode = value; limit = 12; renderResults() }
+        filters.append(btn)
+      }
+      const search = h('input', 'field')
+      search.type = 'search'; search.placeholder = 'Search owned cards or tags'; search.value = query
+      search.setAttribute('aria-label', 'Search owned teammates')
+      const results = h('div', 'aura-results')
+      panel.append(filters, search, results)
+      search.oninput = () => { query = search.value; limit = 12; renderResults() }
+      function renderResults() {
+        for (const [i, btn] of [...filters.children].entries()) {
+          const pressed = mode === options[i][0]
+          btn.classList.toggle('on', pressed); btn.setAttribute('aria-pressed', String(pressed))
+        }
+        const before = teamAuras(team)
+        const pinned = team.map((c, i) => c && locked.includes(c) ? i : -1).filter(i => i >= 0)
+        const needle = query.trim().toLowerCase()
+        const ranked = []
+        const oldKits = kitPairs(team)
+        for (const card of candidates) {
+          const incoming = auraMatch(card, focusCard), outgoing = auraMatch(focusCard, card)
+          const helpsLocked = locked.some(c => auraHits(card, c) || auraHits(c, card))
+          const addsKit = kitPairs([...team, card]).some(pair => !oldKits.includes(pair))
+          if (focusCard && !(mode === 'both' ? incoming && outgoing : mode === 'in' ? incoming : mode === 'out' ? outgoing : incoming || outgoing || helpsLocked || addsKit)) continue
+          if (needle && ![card.name, card.ver, ...tagsOf(card), ...(card.aura || [])].some(s => s && auraTag(s).toLowerCase().includes(needle))) continue
+          let best
+          for (const slot of availableSlots) {
+            const next = team.slice(); next[slot] = card
+            const after = teamAuras(next)
+            const pinnedGain = pinned.reduce((sum, i) => sum + after[i] - before[i], 0)
+            const net = after.reduce((sum, value, i) => sum + value - before[i], 0)
+            const activatesKit = kitPairs(next).some(pair => !oldKits.includes(pair))
+            const score = pinnedGain * 8 + (focusCard ? (after[focus] - before[focus]) * 4 : 0) + net + Number(!team[slot]) * 12 + Number(activatesKit) * 10
+            if (!best || score > best.score) best = { slot, score, after, activatesKit }
+          }
+          if (best) ranked.push({ card, incoming, outgoing, ...best })
+        }
+        ranked.sort((a, b) => b.score - a.score || b.card.ovr - a.card.ovr)
+        results.replaceChildren()
+        for (const { card, incoming, outgoing, slot, after, activatesKit } of ranked.slice(0, limit)) {
+          const tile = h('button', 'aura-candidate')
+          const details = h('div')
+          details.append(h('b', '', card.name), h('small', 'muted', card.ver))
+          if (incoming) details.append(h('span', 'aura-pill', auraPairText('Gives', incoming)))
+          if (activatesKit) details.append(h('span', 'aura-pill', 'Battle kit combo'))
+          if (outgoing) details.append(h('span', 'aura-pill received', auraPairText('Receives', outgoing)))
+          if (focusCard) details.append(h('small', 'muted', focusCard.name + ' aura change · ' + auraDelta(after[focus] - before[focus])))
+          details.append(h('small', 'aura-preview-link', 'Preview in ' + TEAM_SLOT_NAMES[slot] + ' →'))
+          tile.append(cardImg(card, 180), details)
+          tile.onclick = () => previewTeamSwap(card, slot, () => auraPlanner(team, focus), focusCard?.key)
+          results.append(tile)
+        }
+        if (!ranked.length) results.append(h('p', 'muted', 'No matches. Try another fighter or aura filter.'))
+        if (ranked.length > limit) {
+          const more = h('button', 'btn dark sm', 'SHOW MORE · ' + (ranked.length - limit))
+          more.onclick = () => { limit += 12; renderResults() }; results.append(more)
+        }
+      }
+      renderResults()
+    }
+    draw()
+  })
+}
+
+function previewTeamSwap(card, initialSlot, back, protectedKey) {
+  let slot = initialSlot
+  openModal(sh => {
+    sh.classList.add('aura-workbench')
+    const heading = h('header', 'aura-header')
+    const returnBtn = h('button', 'btn dark sm', 'BACK')
+    returnBtn.onclick = back
+    heading.append(h('h2', '', 'Preview Swap'), returnBtn)
+    const picker = h('select', 'field')
+    picker.setAttribute('aria-label', 'Destination slot')
+    const breakdown = h('div', 'aura-swap-breakdown')
+    const save = h('button', 'btn gold', 'CONFIRM SWAP')
+    const team = P.team.map(key => BYKEY[key] ? eff(BYKEY[key]) : null)
+    const canPlace = (c, i) => i === initialSlot || (!c || (c.key !== protectedKey && !TBX.locks.includes(c.key)))
+    team.forEach((c, i) => { if (canPlace(c, i)) picker.append(new Option(TEAM_SLOT_NAMES[i] + ' · ' + (c?.name || 'Empty'), i)) })
+    picker.value = String(slot)
+    const focus = h('div', 'aura-focus')
+    focus.append(cardImg(card, 200), h('h3', '', card.name + ' · ' + card.ver))
+    sh.append(heading, focus, picker, breakdown, save)
+    const before = slotBoosts(team)
+    const draw = () => {
+      const afterTeam = team.slice(); afterTeam[slot] = card
+      const after = slotBoosts(afterTeam)
+      breakdown.replaceChildren(h('p', 'muted', team[slot] ? 'Replaces ' + team[slot].name + ' in ' + TEAM_SLOT_NAMES[slot] : 'Fills ' + TEAM_SLOT_NAMES[slot]))
+      for (const [i, c] of afterTeam.entries()) {
+        if (!c) continue
+        const delta = after[i].aura - (i === slot ? 0 : before[i].aura)
+        const row = h('div', 'aura-swap-row')
+        row.append(h('b', '', c.name), h('span', delta > 0 ? 'gain' : delta < 0 ? 'loss' : '', '+' + after[i].aura + '% aura'),
+          h('small', 'muted', i === slot ? 'Incoming fighter' : auraDelta(delta) + ' aura change'),
+          h('small', 'muted', 'Leader +' + after[i].lead + '% · Series +' + after[i].series + '% · Links +' + after[i].link + '%'))
+        breakdown.append(row)
+      }
+      const kits = kitPairs(afterTeam)
+      if (kits.length) breakdown.append(h('p', 'aura-locked', 'Battle kit combos · ' + kits.join(' / ')))
+      const links = teamLinks(afterTeam).active.flatMap(x => x.links.map(link => link.n))
+      if (links.length) breakdown.append(h('p', 'aura-locked', 'Active lineup links · ' + [...new Set(links)].join(' · ')))
+    }
+    picker.onchange = () => { slot = Number(picker.value); draw() }
+    save.onclick = async () => {
+      save.disabled = true
+      const keys = P.team.slice()
+      if (keys.includes(card.key) || keys.some((key, i) => (key || null) !== (team[i]?.key || null))) {
+        toast('Your team changed. Open a fresh preview.', 'red'); save.disabled = false; return
+      }
+      keys[slot] = card.key
+      const result = await act('team', { team: keys })
+      if (result.error) { save.disabled = false; return }
+      closeModal(); rerender()
+    }
+    draw()
+  })
+}
 let TDET = false
 function teamPicker(slot) {
   openModal(sh => {
@@ -762,9 +966,9 @@ function teamPicker(slot) {
     const g = h('div', 'cardgrid'); sh.append(g)
     function draw() {
       g.innerHTML = ''
-      const list = avail.filter(c => (TB.series === 'ALL' || (TB.series === 'TEAM' ? c.anime === teamAnime : c.anime === TB.series)) && (TB.role === 'ALL' || c.role === TB.role) && (TB.rar === 'ALL' || c.r === TB.rar) && (TB.tag === 'ALL' || (TB.tag === 'FIT' ? fitsTeam(c) : tagsOf(c).includes(TB.tag)))).sort((a, b) => scoreFor(b, TB.target) - scoreFor(a, TB.target))
+      const list = avail.filter(c => (TB.series === 'ALL' || (TB.series === 'TEAM' ? c.anime === teamAnime : c.anime === TB.series)) && (TB.role === 'ALL' || c.role === TB.role) && (TB.rar === 'ALL' || c.r === TB.rar) && (TB.tag === 'ALL' || (TB.tag === 'FIT' ? fitsTeam(c) : tagsOf(c).includes(TB.tag) || c.aura?.includes(TB.tag)))).sort((a, b) => scoreFor(b, TB.target) - scoreFor(a, TB.target))
       if (!list.length) g.append(h('div', 'empty', '<b>No cards match</b>Change the filters above.'))
-      for (const c of list) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 240)); if (slot !== 0 && P.team[0] && BYKEY[P.team[0]] && leadHits(BYKEY[P.team[0]].lead, c)) b.append(h('span', 'syn-tag', 'BOOSTED')); b.onclick = async () => { const T = P.team.slice(); T[slot] = c.key; await act('team', { team: T }); closeModal(); rerender() }; g.append(b) }
+      for (const c of list) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 240)); if (slot !== 0 && P.team[0] && BYKEY[P.team[0]] && leadHits(BYKEY[P.team[0]].lead, c)) b.append(h('span', 'syn-tag', 'BOOSTED')); b.onclick = () => previewTeamSwap(eff(c), slot, () => teamPicker(slot)); g.append(b) }
     }
     draw()
   })
@@ -2036,7 +2240,7 @@ function builderPool() {
     return true })
 }
 function buildOptions() {
-  const g = TBX.goal, locks = TBX.locks.map(k => BYKEY[k] && eff(BYKEY[k])).filter(Boolean), pool = builderPool().filter(c => !TBX.locks.includes(c.key))
+  const g = TBX.goal, locks = TBX.locks.map(k => club()[k] && BYKEY[k] && eff(BYKEY[k])).filter(Boolean), pool = builderPool().filter(c => !TBX.locks.includes(c.key))
   const ranked = pool.slice().sort((x, y) => goalScore(y, g) - goalScore(x, g)), cand = ranked.slice(0, 45)
   if (g === 'syn' || g === 'chem' || g === 'dragon') for (const c of ranked.slice(45)) if (cand.length < 90 && (isDrg(c) || ranked.slice(0, 6).some(x => x.anime === c.anime || x.faction === c.faction))) cand.push(c)
   const slots = 6 - locks.length, seen = new Map()
