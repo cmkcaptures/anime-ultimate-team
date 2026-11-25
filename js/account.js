@@ -77,6 +77,35 @@ export async function initAccount(cfg) {
 export const me = () => ({ uid: USER && USER.uid, profile: PROFILE })
 export async function loadSave() { const d = await F.getDoc(F.doc(db, 'users', USER.uid)); return d.exists() ? JSON.parse(d.data().data) : null }
 export async function storeSave(S) { await F.setDoc(F.doc(db, 'users', USER.uid), { data: JSON.stringify(S), savedAt: S.savedAt || Date.now() }) }
+export async function claimSoapyCoins(localSave) {
+  if (PROFILE?.nameLower !== 'soapy') return null
+  const username = F.doc(db, 'usernames', 'soapy')
+  const save = F.doc(db, 'users', USER.uid)
+  const grant = 'soapy-coins-20261125'
+  return F.runTransaction(db, async tx => {
+    const owner = await tx.get(username)
+    if (owner.data()?.uid !== USER.uid) return null
+    const record = await tx.get(save)
+    const cloud = record.exists() ? JSON.parse(record.data().data) : null
+    if (cloud?.profile?.gifts?.[grant]) {
+      if (localSave.profile.gifts?.[grant]) return null
+      return cloud
+    }
+    const current = cloud && (cloud.savedAt || 0) >= (localSave.savedAt || 0) ? cloud : localSave
+    const next = structuredClone(current)
+    next.profile.gifts ||= {}
+    if (!next.profile.gifts[grant]) {
+      next.profile.gifts[grant] = 1
+      next.profile.coins += 500000
+      next.notices ||= []
+      next.notices.push({ text: 'You received 500,000 coins.', kind: 'ok', t: Date.now() })
+      if (next.notices.length > 30) next.notices.shift()
+    }
+    next.savedAt = Math.max(Date.now(), (current.savedAt || 0) + 1)
+    tx.set(save, { data: JSON.stringify(next), savedAt: next.savedAt })
+    return next
+  })
+}
 let pubT = 0
 export async function publish(sum, force) {
   if (!force && Date.now() - pubT < 20000) return; pubT = Date.now()
