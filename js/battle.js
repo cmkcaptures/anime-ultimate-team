@@ -1,4 +1,4 @@
-import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=1'
+import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=2'
 import { fairyTag, fairySurvive, fairyCharge, fairyAfterArt } from './fairy-tail.js?v=1'
 import { gtForm, gtSurvive, gtArt } from './gt-goku.js?v=1'
 import { pveBalance, deadZoneIntent, deadZonePunishment } from './pve-balance.js?v=3'
@@ -14,7 +14,7 @@ import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR
 import { TIER, TYPE, thumbURL } from './cardkit.js?v=shrine-wave-1'
 import { sfx, sfxOn, music } from './sfx.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=shrine-wave-1'
+import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=easy-forms-1'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -911,7 +911,7 @@ function playArt(B, who, idx) {
     const bench = kit.benchSpecial && weakestBench(foe, d)
     if (bench) ev.hits.push({ t: bench, ...hit(a, bench, base * .5, a.pwr, true, me, foe, 'special') })
     const landed = ev.hits.some(x => (x.hpDamage ?? x.dmg) > 0)
-    if (landed && kit.crToji === 1) a.crSpecials = (a.crSpecials || 0) + 1
+    if (landed && (kit.crToji === 1 || kit.crSukuna === 1)) a.crSpecialLanded = true
     if (landed && slayerSpear) {
       d.crSealUntil = turnClock(foe) + 1
       a.crSealTurn = clock
@@ -924,11 +924,6 @@ function playArt(B, who, idx) {
       me.ki = Math.min(KI_MAX, me.ki + 3)
       me.gauge = Math.min(GAUGE_MAX, me.gauge + 25)
       pasNote(a, 'DRAGON FIST · +3 ENERGY · +25% ULT')
-    }
-    if (landed && kit.crSukuna === 1) {
-      const slot = foe.team.indexOf(d)
-      a.crSpecialTargets ||= {}
-      a.crSpecialTargets[slot] = (a.crSpecialTargets[slot] || 0) + 1
     }
     if (landed && kit.crSukuna === 2 && shrineActive(a, foe) && (foe.switchSerial || 0) === a.crShrineSwitch) {
       d.crShrineMark = a.key
