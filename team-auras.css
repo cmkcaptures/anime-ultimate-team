@@ -1,0 +1,103 @@
+.aura-team-slot {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  justify-items: stretch;
+}
+.aura-team-slot > .tm-lead {
+  width: 100%;
+}
+.aura-slot-button {
+  border: 1px solid #7762aa;
+  border-radius: 8px;
+  padding: 7px 4px;
+  background: #21183e;
+  color: #eadfff;
+  cursor: pointer;
+  font: 800 10px/1.3 var(--eUI, system-ui);
+}
+.aura-slot-button:hover, .aura-candidate:hover {
+  border-color: #d6adff;
+  background: #342454;
+}
+.aura-workbench {
+  background: radial-gradient(ellipse at 14% 0, #392659 0, #1c1530 40%, #110d22 100%);
+}
+.aura-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-block: 8px 12px;
+}
+.aura-header h2 {
+  margin: 0;
+  color: #fff3e0;
+  font: 900 clamp(28px, 5vw, 42px)/1 var(--eD, 'Barlow Condensed', system-ui);
+}
+.aura-workbench-body, .aura-swap-breakdown {
+  display: grid;
+  gap: 12px;
+}
+.aura-focus, .aura-candidate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid #65518e;
+  border-radius: 13px;
+  background: linear-gradient(120deg, #2f214b, #18132c);
+  min-width: 0;
+}
+.aura-focus h3 { margin: 0; color: #fff4dc; }
+.aura-focus strong { display: block; margin-top: 8px; color: #d7b6ff; }
+.aura-focus img { width: clamp(50px, 13vw, 84px); height: auto; }
+.aura-sources { display: flex; flex-wrap: wrap; gap: 7px; }
+.aura-pill {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #312358;
+  color: #f3e6ff;
+  font-size: 12px;
+}
+.aura-pill.received { background: #173a3f; color: #c7fff3; }
+.aura-locked {
+  padding: 8px 11px;
+  border-left: 2px solid #edbd68;
+  color: #f7dca6;
+  background: #ba893319;
+  font-size: 13px;
+}
+.aura-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+}
+.aura-results > .btn { grid-column: 1 / -1; justify-self: center; }
+.aura-candidate {
+  grid-template-columns: 58px minmax(0, 1fr);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.aura-candidate > div { display: grid; gap: 4px; }
+.aura-candidate img { width: 58px; height: auto; }
+.aura-preview-link { color: #ffd790; font-weight: 800; }
+.aura-workbench .field { margin-block: 8px; }
+.aura-swap-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  background: #221934;
+  border-radius: 7px;
+}
+.aura-swap-row .gain { color: #9cf5bf; }
+.aura-swap-row .loss { color: #ffb0b0; }
+.aura-swap-row small:last-child { grid-column: 1 / -1; }
+@media (max-width: 520px) {
+  .aura-focus { grid-template-columns: auto minmax(0, 1fr); }
+  .aura-focus .btn { grid-column: 1 / -1; justify-self: start; }
+}
