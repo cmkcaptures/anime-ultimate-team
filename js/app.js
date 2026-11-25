@@ -1,9 +1,9 @@
 import { deadZoneReward } from './deadzone-rewards.js?v=1'
 import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
-import { formCard } from './transformations.js?v=easy-forms-1'
+import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=easy-forms-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=fusion-captains-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=form-control'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -754,6 +754,7 @@ function slotBoosts(TC) {
 }
 const TEAM_SLOT_NAMES = ['Leader', 'Main 1', 'Main 2', 'Bench 1', 'Bench 2', 'Bench 3']
 const TEAM_KIT_PAIRS = [
+  ['byakuya_senbonzakura_senkei', 'toshiro_daiguren_frozen_field', 'Byakuya + Tōshirō · Captain Combo'],
   ['sting_white_dragon', 'rogue_cheney_dragon_force', 'Sting + Rogue · Twin Dragons'],
   ['toji_hidden_inventory_rearm', 'maki_toji_heavenly_restricti', 'Toji + Maki & Toji · Heavenly Restriction Duo'],
   ['vegeta_ssj4_final_shine', 'goku_gt_primal_power', 'SSJ4 Vegeta + GT Goku · Primal Pride'],

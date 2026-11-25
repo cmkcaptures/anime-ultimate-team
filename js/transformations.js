@@ -1,3 +1,4 @@
+import { fusionReady, fusionEnter } from './fusion-captains.js?v=1'
 import { shrineWaveReady, shrineWaveEnter } from './shrine-wave.js?v=2'
 import { fairyReady, fairyEnter } from './fairy-tail.js?v=1'
 import { gtForm, gtReady, gtEnter } from './gt-goku.js?v=1'
@@ -6,8 +7,8 @@ import { gtForm, gtReady, gtEnter } from './gt-goku.js?v=1'
 // for rendering so a cached thumbnail can never show the wrong form.
 export function formCard(card, formIndex) {
   if (!formIndex) return card
-  const { ver, url, fy, mv, tx, pas, rangedSpecial } = card.transformations[formIndex - 1]
-  return { ...card, id: card.id + '_phase' + formIndex, ver, url, fy, mv, tx, pas, rangedSpecial: !!rangedSpecial }
+  const { name, ver, url, fy, mv, tx, pas, rangedSpecial } = card.transformations[formIndex - 1]
+  return { ...card, id: card.id + '_phase' + formIndex, name: name || card.name, ver, url, fy, mv, tx, pas, rangedSpecial: !!rangedSpecial }
 }
 
 export function nextTransformation(fighter, side, turn) {
@@ -15,7 +16,7 @@ export function nextTransformation(fighter, side, turn) {
   const next = fighter.card.transformations[fighter.formIndex || 0]
   if (!next) return null
   const clock = side.formTurn || 0
-  const ready = shrineWaveReady(fighter) && fairyReady(fighter) && (!gtForm(fighter) || gtReady(fighter)) && turn >= (next.minTurn || 1) && side.gauge >= next.gaugeCost &&
+  const ready = fusionReady(fighter) && shrineWaveReady(fighter) && fairyReady(fighter) && (!gtForm(fighter) || gtReady(fighter)) && turn >= (next.minTurn || 1) && side.gauge >= next.gaugeCost &&
     (!next.fullTurns || clock - fighter.formEntered > next.fullTurns) &&
     (!next.maxHpPercent || fighter.hp * 100 <= fighter.max * next.maxHpPercent)
   return { ...next, ready }
@@ -36,6 +37,7 @@ export function enterTransformation(fighter, side, turn) {
   if (gtForm(fighter)) gtEnter(fighter, side)
   fairyEnter(fighter, side)
   shrineWaveEnter(fighter, side)
+  fusionEnter(fighter, side)
   return next
 }
 

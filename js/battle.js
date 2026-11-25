@@ -1,3 +1,4 @@
+import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=2'
 import { fairyTag, fairySurvive, fairyCharge, fairyAfterArt } from './fairy-tail.js?v=1'
 import { gtForm, gtSurvive, gtArt } from './gt-goku.js?v=1'
@@ -14,7 +15,7 @@ import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR
 import { TIER, TYPE, thumbURL } from './cardkit.js?v=shrine-wave-1'
 import { sfx, sfxOn, music } from './sfx.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=easy-forms-1'
+import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=fusion-captains-1'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -157,7 +158,16 @@ function tagPartner(f, turn, side) {
   pasNote(f, partnerNames(f)[Number(f.partnerSide)] + ' TAGS IN')
   return true
 }
+function tagFusionKid(f, turn) {
+  if (f.pe.fusionStage !== 1 || f.ko || f.fcTagTurn === turn) return false
+  f.fcTagTurn = turn
+  f.fcTrunks = !f.fcTrunks
+  pasNote(f, f.fcTrunks ? 'TRUNKS TAGS IN' : 'GOTEN TAGS IN')
+  return true
+}
 function autoTagPartner(f, turn) {
+  if (f.pe.fusionStage === 1 && !!(f.fcAttacks & (f.fcTrunks ? 2 : 1)) && f.fcAttacks !== 3) tagFusionKid(f, turn)
+
   if (f.pe.team7 || f.pe.beastDuo || f.pe.gyro || f.pe.tagGuard || f.card.id === 'gon_vs_killua_best_friends') return
   const ready = f.pe.deadCalm ? f.sunCounter : f.pe.sashMark ? f.sashReady : f.pe.storeFlame ? f.flame >= 3 : f.hp >= f.max * .6
   if (!!ready !== !!f.partnerSide) tagPartner(f, turn)
@@ -194,7 +204,7 @@ function drawOne(s) { if (s.deck) { if (!s.pile || !s.pile.length) { s.pile = []
 const ATTACK_ARTS = ['strike', 'blast', 'special', 'burst']
 const turnClock = side => side?.formTurn || 0
 const storyStrikeDiscount = (f, art, side) => art === 'strike' && PE(f).storyRush && f.storyStrikeClock !== turnClock(side) ? 1 : 0
-const artCost = (f, art, side, opponent) => ARTS[art].cost - (art === 'special' && f.crDiscount ? 2 : 0) - (art === 'special' && gtForm(f) === 2 && f.gtDiscountTurn === turnClock(side) ? 2 : 0) - storyStrikeDiscount(f, art, side) + Number(!!f.gravityArts && ATTACK_ARTS.includes(art)) + Number(!!f.sageTax && ATTACK_ARTS.includes(art)) + waveArtTax(side, opponent, ATTACK_ARTS.includes(art), PE)
+const artCost = (f, art, side, opponent) => ARTS[art].cost + (f.fcFrostTax && ATTACK_ARTS.includes(art) ? 2 : 0) - (art === 'special' && f.crDiscount ? 2 : 0) - (art === 'special' && gtForm(f) === 2 && f.gtDiscountTurn === turnClock(side) ? 2 : 0) - storyStrikeDiscount(f, art, side) + Number(!!f.gravityArts && ATTACK_ARTS.includes(art)) + Number(!!f.sageTax && ATTACK_ARTS.includes(art)) + waveArtTax(side, opponent, ATTACK_ARTS.includes(art), PE)
 const healHP = (f, amount) => {
   const reduced = amount > 0 && f.hp < f.max && f.crHealCut
   if (reduced) f.crHealCut = false
@@ -325,7 +335,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
     }
     // defensive dodges / nullifies first
-    if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0 && !gtSurvive(att, A) && !shrineWaveSurvive(att, pasNote) && !fairySurvive(att, A, PE, pasNote)) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
+    if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0 && !gtSurvive(att, A) && !shrineWaveSurvive(att, pasNote) && !fusionCaptainSave(att, A, pasNote) && !fairySurvive(att, A, PE, pasNote)) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
     if (ed.absorbRanged && ranged) {
       if (kind === 'blast') {
         const alreadyMatched = def.absorbSource === att.key && def.absorbed === 4
@@ -349,7 +359,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
         pasNote(def, 'ULTRA INSTINCT COUNTER · ' + counter.dmg + ' DMG')
       }
       pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
-    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!shrineWaveSurvive(def, pasNote) && !fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ }; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
+    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!shrineWaveSurvive(def, pasNote) && !fusionCaptainSave(def, D, pasNote) && !fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ }; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
   }
   const opening = offensive && !mod.followup && crewOpening(att, def, A)
   if (opening && ea.crew === 'asura' && kind === 'ult') base *= 1.25
@@ -604,7 +614,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     pasNote(def, 'FINAL STAND · ULTIMATE READY')
   }
   if (def.hp === 0 && !def.ko && gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED AT 25% HP')
-  if (def.hp === 0 && !def.ko) shrineWaveSurvive(def, pasNote)
+  if (def.hp === 0 && !def.ko && !shrineWaveSurvive(def, pasNote)) fusionCaptainSave(def, D, pasNote)
   if (def.hp === 0 && !def.ko) {
     const noSurvive = ea.noSurvive || mod.noSurvive
     if (!noSurvive) fairySurvive(def, D, PE, pasNote)
@@ -736,6 +746,18 @@ function storySpecial(attacker, target, side, foe) {
     pierce: !!(read || (rush && kit.storyRush >= 35)), ignoreDef: kit.storyQuincy ? .2 : 0 }
 }
 
+function ghostDetonation(target, side, enemy, extra) {
+  if (!target.fcGhost) return null
+  const owner = enemy.team.find(f => f.key === target.fcGhost && !f.ko && PE(f).fusionStage === 2)
+  delete target.fcGhost
+  if (!owner) return null
+  pasNote(owner, 'GHOST DETONATION · ' + target.card.name)
+  const hits = [target, extra].filter(Boolean).filter(f => !f.ko).map(f => ({
+    t: f, ...hit(owner, f, f === target ? 490 : 290, owner.ki, true, enemy, side, 'counter', false, { area: !!extra, noDodge: true }),
+  }))
+  return { art: 'strike', move: 'GHOST DETONATION', hits }
+}
+
 function playArt(B, who, idx) {
   const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], art = me.hand[idx], a = act(me), d = act(foe), cost = artCost(a, art, me, d)
   if (me.ki < cost || a.ko || d.ko) return null
@@ -744,6 +766,11 @@ function playArt(B, who, idx) {
   const firstStoryStrike = storyStrikeDiscount(a, art, me)
   if (firstStoryStrike) a.storyStrikeClock = turnClock(me)
   me.ki -= cost; me.hand.splice(idx, 1)
+  if (ATTACK_ARTS.includes(art)) {
+    a.fcFrostTax = false
+    const ghost = ghostDetonation(a, me, foe)
+    if (ghost && a.ko) return { ...ghost, who: who === 'you' ? 'ai' : 'you' }
+  }
   if (who === 'you' && B.dzIntent?.art === art) B.dzIntent.triggered = true
   if (ATTACK_ARTS.includes(art)) {
     a.sageTax = false
@@ -852,6 +879,10 @@ function playArt(B, who, idx) {
     let base = pctOf(a.card) * 3.2 * chain * story.multiplier
     const clock = turnClock(me)
     const lightPierce = kit.ftStingForce && a.ftStingPierceTurn !== clock
+    const trunksGuard = kit.fusionStage === 1 && a.fcTrunks && a.fcTrunksProc !== clock
+    const petalPierce = kit.captainPetals && a.fcPetalTurn !== clock
+    if (trunksGuard) a.fcTrunksProc = clock
+    if (petalPierce) { a.fcPetalTurn = clock; d.shieldHp = 0 }
     const slayerSpear = kit.crToji === 2 && a.crSpearTurn !== clock
     const dragonFist = kit.crGoku && !a.crFistLanded
     if (a.crDiscount) a.crDiscount = false
@@ -905,12 +936,23 @@ function playArt(B, who, idx) {
       for (let i = 0; i < 3 && !d.ko; i++) ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, true, me, foe, 'special') })
     } else if (isAoe(a.card) || dragonFlame || pairedFlame) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, (t === d ? base * .75 : base * .3) * (t !== d && PE(a).aoeBoost ? 1 + PE(a).aoeBoost / 100 : 1), Math.max(a.pwr, a.ki), pierce || wavePierce || dragonFlame, me, foe, 'special') })
     else if (PE(a).twinSpec || kit.godspeed) { ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }); if (!d.ko) ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }) }
-    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart || slayerSpear || dragonFist, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored, noDodge: !!slayerSpear }) })
+    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart || slayerSpear || dragonFist || trunksGuard || petalPierce, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored, noDodge: !!slayerSpear }) })
     if (kit.storyClone && !a.ko && !d.ko && ev.hits[0]?.hpDamage > 0)
       ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, false, me, foe, 'special') })
     const bench = kit.benchSpecial && weakestBench(foe, d)
     if (bench) ev.hits.push({ t: bench, ...hit(a, bench, base * .5, a.pwr, true, me, foe, 'special') })
     const landed = ev.hits.some(x => (x.hpDamage ?? x.dmg) > 0)
+    if (landed && trunksGuard) a.guard = 1
+    if (landed && !d.ko) {
+      if (kit.fusionStage === 2) { d.fcGhost = a.key; pasNote(d, 'GHOST PLANTED') }
+      if (petalPierce) { d.fcPetals = a.key; pasNote(d, 'PETALS · MARKED') }
+      if (kit.captainFrost && a.fcFrostTurn !== clock) {
+        a.fcFrostTurn = clock
+        d.fcFrost = a.key
+        d.fcFrostTax = true
+        pasNote(d, 'FROST · NEXT ATTACK COSTS +2 ENERGY')
+      }
+    }
     if (landed && (kit.crToji === 1 || kit.crSukuna === 1)) a.crSpecialLanded = true
     if (landed && slayerSpear) {
       d.crSealUntil = turnClock(foe) + 1
@@ -973,6 +1015,14 @@ function playArt(B, who, idx) {
       a.crYujiPrimed = clock
       a.crBlackFlash = true
       pasNote(a, 'BLACK FLASH READY')
+    }
+  }
+  if (kit.fusionStage === 1 && ATTACK_ARTS.includes(art) && ev.hits.some(hit => hit.dmg > 0)) {
+    a.fcAttacks = (a.fcAttacks || 0) | (a.fcTrunks ? 2 : 1)
+    if (!a.fcTrunks && art === 'strike' && a.fcGotenProc !== turnClock(me)) {
+      a.fcGotenProc = turnClock(me)
+      me.ki = Math.min(KI_MAX, me.ki + 2)
+      pasNote(a, 'GOTEN · +2 ENERGY')
     }
   }
   fairyAfterArt(a, d, me, art, ev.hits, PE, pasNote)
@@ -1064,7 +1114,10 @@ function playArt(B, who, idx) {
   return ev
 }
 const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION', 'Pierces Guard · +60% vs targets under 40% HP'], SUPPORT: ['RALLY', 'Big hit · heals the whole team 20%'], TANK: ['FORTRESS', 'Big hit · takes 30% less damage until your next turn'], SHOOTER: ['OVERDRIVE', 'Hits every enemy hard'], STRIKER: ['OVERDRIVE', 'Hits every enemy hard'] }
-const ultOf = c => c.pas?.e?.crVegeta ? ['FINAL SHINE ATTACK', 'Deals up to +60% damage after blocking attacks'] :
+const ultOf = c => c.pas?.e?.fusionStage === 2 ? ['SUPER GHOST KAMIKAZE ATTACK', 'Hits all enemies and detonates planted ghosts'] :
+  c.pas?.e?.captainPetals ? ['SENKEI', '+60% damage against Petal marks'] :
+  c.pas?.e?.captainFrost ? ['DAIGUREN HYŌRINMARU', 'Hits all enemies and shatters Frost'] :
+  c.pas?.e?.crVegeta ? ['FINAL SHINE ATTACK', 'Deals up to +60% damage after blocking attacks'] :
   c.pas?.e?.crSukuna === 2 ? ['WORLD CUTTING SLASH', 'Pierces Guard and deals 50% more damage to Shrine-marked enemies'] :
   c.pas?.e?.gtForm === 4 ? ['RAMPAGE', 'Crush the active enemy and hit the entire bench'] :
   c.pas?.e?.gtForm === 5 ? ['10× KAMEHAMEHA', 'Break shields and fire at the active enemy'] : c.tag ? ['DUO FINISH', 'Both partners strike · double hit'] : (ULT[c.role] || ULT.FIGHTER)
@@ -1101,7 +1154,10 @@ function ultimate(B, who, choice) {
   const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], a = act(me), d = act(foe)
   if (me.gauge < GAUGE_MAX || a.ko || d.ko) return null
   me.reworkAction = (me.reworkAction || 0) + 1
-  me.gauge = 0; me.seq = []; me.ultTurn = B.turn; a.shinobiActedRound = B.turn
+  me.gauge = 0
+  const ghost = ghostDetonation(a, me, foe)
+  if (ghost && a.ko) return { ...ghost, who: who === 'you' ? 'ai' : 'you' }
+  me.seq = []; me.ultTurn = B.turn; a.shinobiActedRound = B.turn
   const [uname] = ultOf(a.card), ev = { who, art: 'ultimate', move: a.card.mv, ult: uname, hits: [] }
   const awk = !!(a.card.maxed || (a.card.dia || 0) >= 7); if (awk) { ev.awakened = 1; me.ki = Math.min(KI_MAX, me.ki + 2); healHP(a, Math.round(a.max * .15)) }
   const base = pctOf(a.card) * 6 * (awk ? 1.35 : 1), stat = Math.max(a.pwr, a.ki), pierce = /Ignores Guard/.test(kitTxt(a.card))
@@ -1114,7 +1170,7 @@ function ultimate(B, who, choice) {
   const sever = lastDoor === 'sever'
   const quirkDefenders = new Set()
   const opposingKit = PE(d).shinobi
-  const single = gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
+  const single = PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
     (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso)
   const damaging = kit !== 14 && kit !== 20 && !PE(a).antiKit
   const minato = single && damaging && !sever && shinobiAlly(foe, 18, d)
@@ -1158,6 +1214,40 @@ function ultimate(B, who, choice) {
     return ev
   }
   const ea = PE(a)
+  if (ea.fusionStage === 1) a.fcAttacks = (a.fcAttacks || 0) | (a.fcTrunks ? 2 : 1)
+  if (ea.fusionStage === 2) {
+    let detonations = 0
+    for (const target of alive(foe)) {
+      const planted = target.fcGhost === a.key
+      if (planted) { delete target.fcGhost; detonations++ }
+      H(target, base * (target === d ? 1.05 : .54) + (planted ? base * .45 : 0), true)
+    }
+    me.ki = Math.min(KI_MAX, me.ki + Math.min(3, detonations))
+    return finish()
+  }
+  if (ea.captainPetals) {
+    const petals = d.fcPetals === a.key
+    H(d, base * (petals ? 1.6 : 1), true)
+    if (!ev.hits.some(hit => hit.dmg > 0)) return finish()
+    if (petals) delete d.fcPetals
+    const toshiro = !me.fcCaptainCombo && me.team.find(f => !f.ko && PE(f).captainFrost && f.key === d.fcFrost)
+    if (toshiro) {
+      me.fcCaptainCombo = true
+      delete d.fcFrost; delete d.fcFrostTax
+      if (!d.ko) H(d, base * .65, true)
+      me.gauge = Math.min(GAUGE_MAX, me.gauge + 30)
+      pasNote(toshiro, 'CAPTAIN COMBO · +30% ULT')
+    }
+    return finish()
+  }
+  if (ea.captainFrost) {
+    for (const target of alive(foe)) {
+      const frosted = !!target.fcFrost
+      H(target, base * (target === d ? 1 : .55) * (frosted ? 1.5 : 1), true)
+      if (frosted && ev.hits.at(-1)?.dmg > 0) { delete target.fcFrost; delete target.fcFrostTax }
+    }
+    return finish()
+  }
   if (ea.crVegeta) {
     H(d, base * (1 + (a.crShineCharge || 0) * .2), true)
     a.crShineCharge = 0
@@ -1359,10 +1449,19 @@ function switchFighter(B, who, index) {
   const entering = act(side), target = act(foe)
   const fairyAssist = fairyTag(side, leaving, entering, PE, KI_MAX, pasNote)
   const duoAssist = tojiLink(leaving, entering, side, target, pasNote)
-  let trap = null
-  if (!target.ko && PE(target).crSukuna === 2 && shrineActive(target, side) && target.crCleaveTurn !== turnClock(side)) {
+  const ghost = ghostDetonation(leaving, side, foe, entering)
+  const trapWho = who === 'you' ? 'ai' : 'you'
+  let trap = ghost && { ...ghost, who: trapWho }
+  const petals = !entering.ko && leaving.fcPetals && foe.team.find(f => f.key === leaving.fcPetals && !f.ko && PE(f).captainPetals)
+  if (petals) {
+    delete leaving.fcPetals
+    entering.fcPetals = petals.key
+    trap = { who: trapWho, art: 'strike', move: 'THOUSAND PETALS', before: trap,
+      hits: [{ t: entering, ...hit(petals, entering, 340, petals.pwr, true, foe, side, 'counter') }] }
+  }
+  if (!entering.ko && !target.ko && PE(target).crSukuna === 2 && shrineActive(target, side) && target.crCleaveTurn !== turnClock(side)) {
     target.crCleaveTurn = turnClock(side)
-    trap = { who: who === 'you' ? 'ai' : 'you', art: 'strike', move: 'SHRINE · CLEAVE',
+    trap = { who: who === 'you' ? 'ai' : 'you', art: 'strike', move: 'SHRINE · CLEAVE', before: trap,
       hits: [{ t: entering, ...hit(target, entering, 410, target.pwr, true, foe, side, 'strike') }] }
     pasNote(target, 'MALEVOLENT SHRINE · CLEAVE')
   }
@@ -2403,7 +2502,7 @@ export function startBattle(stage) {
     <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t"></small></div><div class="bct-s ai"></div></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
     <div class="ar-mid"><div class="ar-log"></div><div class="battle-info-tools"><button type="button" class="battle-art-preview" aria-pressed="false">ART PREVIEW</button><button type="button" class="battle-history">LOG</button></div></div>
     <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
-    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
+    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-trans ar-fusion-tag" hidden><b>TAG</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
   document.body.append(ov); document.body.classList.add('in-battle'); music('battle')
   for (const side of [B.you, B.ai]) for (const f of side.team) for (const form of f.card.transformations || []) {
     const image = new Image()
@@ -2641,11 +2740,15 @@ export function startBattle(stage) {
     }
     {
       const tb = $a('.ar-trans'), partner = !!f.pe.partner, next = !stage.storyTeam && nextTransformation(f, s, B.turn)
+      const swapKid = $a('.ar-fusion-tag')
+      swapKid.hidden = f.pe.fusionStage !== 1
+      swapKid.disabled = !my || f.fcTagTurn === B.turn
+      swapKid.querySelector('small').textContent = f.fcTrunks ? '→ GOTEN' : '→ TRUNKS'
       const ok = partner ? canTagPartner(f, B.turn) : canTransform(f, s)
       const timer = $a('.ar-form-timer')
       timer.hidden = f.formExpires == null && gtForm(f) !== 4
       if (gtForm(f) === 4) timer.textContent = 'RAGE ' + f.gtRage + '/3' + (f.gtRemembered ? ' · SSJ4 READY' : '')
-      else if (!timer.hidden) timer.textContent = 'BARYON · ' + (f.formExpires - (s.formTurn || 0)) + ' TURNS LEFT'
+      else if (!timer.hidden) timer.textContent = (f.pe.fusionStage === 2 ? 'FUSION · ' : 'BARYON · ') + (f.formExpires - (s.formTurn || 0)) + ' TURNS LEFT'
       tb.hidden = !partner && !next && !ok
       tb.disabled = !my || !ok
       tb.classList.toggle('form-step', !!next)
@@ -3085,6 +3188,9 @@ export function startBattle(stage) {
       await show(assist); B.busy = false; if (!B.over) controls()
     } else flushPas()
   }
+  $a('.ar-fusion-tag').onclick = () => {
+    if (!B.over && !B.busy && tagFusionKid(act(B.you), B.turn)) { lvSend({ t: 'fusion-tag' }); draw(); flushPas() }
+  }
   $a('.ar-trans').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); const f = act(B.you)
     if (f.pe.partner) {
       if (tagPartner(f, B.turn, B.you)) { lvSend({ t: 'partner' }); draw(); flushPas() }
@@ -3293,7 +3399,7 @@ export function startBattle(stage) {
   }
   // ================= LIVE PVP =================
   const LQ = []; let lvWake = null, lvN = 0, lvLast = Date.now(), lvFirstRemote = !!LV && !youFirst, lvMyTurnAt = 0, lvUnsub = null, lvTimer = null
-  const SIDE_KEYS = ['ftWendySaved', 'ftTwinTurn', 'antithesisUsed', 'switchSerial', 'teamDmg', 'shinobiRestored', 'kuramaTarget', 'chosoSaved', 'chainReward', 'conjunction', 'reworkAction', 'hypnosisTurn', 'hypnosisAction', 'waveAttacked', 'waveBasic', 'wavePrevious', 'waveRead', 'waveBrief', 'waveParasite', 'formTurn', 'lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
+  const SIDE_KEYS = ['fcCaptainCombo', 'ftWendySaved', 'ftTwinTurn', 'antithesisUsed', 'switchSerial', 'teamDmg', 'shinobiRestored', 'kuramaTarget', 'chosoSaved', 'chainReward', 'conjunction', 'reworkAction', 'hypnosisTurn', 'hypnosisAction', 'waveAttacked', 'waveBasic', 'wavePrevious', 'waveRead', 'waveBrief', 'waveParasite', 'formTurn', 'lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
   const serF = f => { const o = {}; for (const k in f) { if (k === 'card' && !f.transformed && !f.baseForm) continue; const v = f[k]; if (typeof v !== 'function') o[k] = v } return o }
   const serS = sd => { const o = { team: sd.team.map(serF) }; for (const k of SIDE_KEYS) o[k] = sd[k]; return o }
   const lvSnap = () => { const H = LV.role === 'h' ? B.you : B.ai, G = H === B.you ? B.ai : B.you; return JSON.parse(JSON.stringify({ h: serS(H), g: serS(G), turn: B.turn })) }
@@ -3336,6 +3442,7 @@ export function startBattle(stage) {
       else if (a.t === 'ult') { const ev = ultimate(B, 'ai', a.choice); lvApply(a.sn); if (ev) await show(ev) }
       else if (a.t === 'ape-stomp') { const ev = apeStomp('ai'); lvApply(a.sn); if (ev) await show(ev) }
       else if (a.t === 'sw') await remoteSwitch(a.i, a.sn)
+      else if (a.t === 'fusion-tag') { tagFusionKid(act(B.ai), B.turn); lvApply(a.sn); draw(); flushPas() }
       else if (a.t === 'partner') { tagPartner(act(B.ai), B.turn, B.ai); lvApply(a.sn); draw(); flushPas() }
       else if (a.t === 'tr') {
         const fighter = act(B.ai)
