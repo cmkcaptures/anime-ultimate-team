@@ -428,6 +428,7 @@ PAGES.cards = (el, view) => {
     for (const c of list) {
       const e = club()[c.key], b = h('button', 'cg' + (e ? '' : ' miss')); b.append(cardImg(eff(c), 240))
       if (e) { b.append(h('span', 'n', e.n)); if (e.favorite || e.locked) b.append(h('span', 'card-flags', (e.favorite ? '★' : '') + (e.locked ? ' 🔒' : ''))); if (e.ser && e.ser <= 100) b.append(h('span', 'sr', '#' + e.ser)); if (e.lvl) b.append(h('span', 'lv', '★' + e.lvl)); if ((P.last || []).includes(c.key) && e.n === 1) b.append(h('span', 'nw', 'NEW')) }
+      if (!e) b.append(h('span', 'cg-unowned', 'NOT OWNED'))
       if (CF.mode === 'WATCHLIST') {
         const route = h('small', 'watchlist-route')
         route.textContent = e ? 'Owned' : unlockRoutes(c)[0]
