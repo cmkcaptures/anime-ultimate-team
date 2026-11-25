@@ -1,3 +1,4 @@
+import { shrineWaveReady, shrineWaveEnter } from './shrine-wave.js?v=1'
 import { fairyReady, fairyEnter } from './fairy-tail.js?v=1'
 import { gtForm, gtReady, gtEnter } from './gt-goku.js?v=1'
 
@@ -14,7 +15,7 @@ export function nextTransformation(fighter, side, turn) {
   const next = fighter.card.transformations[fighter.formIndex || 0]
   if (!next) return null
   const clock = side.formTurn || 0
-  const ready = fairyReady(fighter) && (!gtForm(fighter) || gtReady(fighter)) && turn >= (next.minTurn || 1) && side.gauge >= next.gaugeCost &&
+  const ready = shrineWaveReady(fighter) && fairyReady(fighter) && (!gtForm(fighter) || gtReady(fighter)) && turn >= (next.minTurn || 1) && side.gauge >= next.gaugeCost &&
     (!next.fullTurns || clock - fighter.formEntered > next.fullTurns) &&
     (!next.maxHpPercent || fighter.hp * 100 <= fighter.max * next.maxHpPercent)
   return { ...next, ready }
@@ -34,6 +35,7 @@ export function enterTransformation(fighter, side, turn) {
   if (next.entryShield) fighter.shieldHp = Math.max(fighter.shieldHp || 0, Math.round(fighter.max * next.entryShield / 100))
   if (gtForm(fighter)) gtEnter(fighter, side)
   fairyEnter(fighter, side)
+  shrineWaveEnter(fighter, side)
   return next
 }
 

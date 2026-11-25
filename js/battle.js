@@ -1,3 +1,4 @@
+import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=1'
 import { fairyTag, fairySurvive, fairyCharge, fairyAfterArt } from './fairy-tail.js?v=1'
 import { gtForm, gtSurvive, gtArt } from './gt-goku.js?v=1'
 import { pveBalance, deadZoneIntent, deadZonePunishment } from './pve-balance.js?v=3'
@@ -10,10 +11,10 @@ import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, wa
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
-import { TIER, TYPE, thumbURL } from './cardkit.js?v=shinobi-1'
+import { TIER, TYPE, thumbURL } from './cardkit.js?v=shrine-wave-1'
 import { sfx, sfxOn, music } from './sfx.js?v=form-control'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=fairy-tail-1'
+import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=shrine-wave-1'
 
 let X = null // app context: { h, $, cardImg, eff, BYKEY, POOL, P, act, go, toast, tierCol, ANAME }
 export function initBattle(ctx) { X = ctx }
@@ -143,7 +144,7 @@ function newSide(cards) { return { team: cards.map(c => fighter(c)), active: 0, 
 const act = s => s.team[s.active]
 const alive = s => s.team.filter(f => !f.ko)
 const unwritten = f => f?.card.pas?.e?.lastDoor === 'sever'
-const PE = f => (unwritten(f) ? f.pe : f && !f.silverSealed && !f.sealed && !f.aizenSealed && !(f.erasedUntil > 0) && (f.partnerSide ? f.pe.partner : f.pe)) || {}
+const PE = f => (unwritten(f) ? f.pe : f && !f.crSealUntil && !f.silverSealed && !f.sealed && !f.aizenSealed && !(f.erasedUntil > 0) && (f.partnerSide ? f.pe.partner : f.pe)) || {}
 const canTagPartner = (f, turn) => !!f.pe.partner && !f.ko && f.partnerTurn !== turn
 const partnerNames = f => f.pe.partners || ['ANDROID 17', 'GOLDEN FRIEZA']
 function tagPartner(f, turn, side) {
@@ -193,9 +194,11 @@ function drawOne(s) { if (s.deck) { if (!s.pile || !s.pile.length) { s.pile = []
 const ATTACK_ARTS = ['strike', 'blast', 'special', 'burst']
 const turnClock = side => side?.formTurn || 0
 const storyStrikeDiscount = (f, art, side) => art === 'strike' && PE(f).storyRush && f.storyStrikeClock !== turnClock(side) ? 1 : 0
-const artCost = (f, art, side, opponent) => ARTS[art].cost - (art === 'special' && gtForm(f) === 2 && f.gtDiscountTurn === turnClock(side) ? 2 : 0) - storyStrikeDiscount(f, art, side) + Number(!!f.gravityArts && ATTACK_ARTS.includes(art)) + Number(!!f.sageTax && ATTACK_ARTS.includes(art)) + waveArtTax(side, opponent, ATTACK_ARTS.includes(art), PE)
+const artCost = (f, art, side, opponent) => ARTS[art].cost - (art === 'special' && f.crDiscount ? 2 : 0) - (art === 'special' && gtForm(f) === 2 && f.gtDiscountTurn === turnClock(side) ? 2 : 0) - storyStrikeDiscount(f, art, side) + Number(!!f.gravityArts && ATTACK_ARTS.includes(art)) + Number(!!f.sageTax && ATTACK_ARTS.includes(art)) + waveArtTax(side, opponent, ATTACK_ARTS.includes(art), PE)
 const healHP = (f, amount) => {
-  const gain = Math.min(f.max - f.hp, Math.round(amount * (f.curseOwner ? .5 : 1)))
+  const reduced = amount > 0 && f.hp < f.max && f.crHealCut
+  if (reduced) f.crHealCut = false
+  const gain = Math.min(f.max - f.hp, Math.round(amount * (f.curseOwner ? .5 : 1) * (reduced ? .5 : 1)))
   f.hp += gain
   if (gain > 0) f.recapHealing = (f.recapHealing || 0) + gain
   return gain
@@ -322,7 +325,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
     }
     // defensive dodges / nullifies first
-    if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0 && !gtSurvive(att, A) && !fairySurvive(att, A, PE, pasNote)) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
+    if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0 && !gtSurvive(att, A) && !shrineWaveSurvive(att, pasNote) && !fairySurvive(att, A, PE, pasNote)) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
     if (ed.absorbRanged && ranged) {
       if (kind === 'blast') {
         const alreadyMatched = def.absorbSource === att.key && def.absorbed === 4
@@ -346,7 +349,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
         pasNote(def, 'ULTRA INSTINCT COUNTER · ' + counter.dmg + ' DMG')
       }
       pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
-    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ }; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
+    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!shrineWaveSurvive(def, pasNote) && !fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ }; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
   }
   const opening = offensive && !mod.followup && crewOpening(att, def, A)
   if (opening && ea.crew === 'asura' && kind === 'ult') base *= 1.25
@@ -469,6 +472,10 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (sealActive(def, D)) clearShinobiBuffs(def)
   const piercedGuard = !!def.guard && !!pierceAll
   const blocked = def.guard && !pierceAll
+  if (blocked && offensive && ed.crVegeta) {
+    def.crShineCharge = Math.min(3, (def.crShineCharge || 0) + 1)
+    pasNote(def, 'FINAL SHINE · ' + def.crShineCharge * 20 + '% BONUS')
+  }
   if (offensive && ed.queen && def.guard && pierceAll) {
     def.queenCharge = 0
     pasNote(def, 'BRACHIO LAUNCHERS · DISARMED')
@@ -477,6 +484,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   dmg = mod.fixedDamage ?? (Math.max(1, Math.round(dmg)) + (mod.stored || 0))
   if (def.gtSaved && def.gtSaveTurn === turnClock(D)) dmg = Math.round(dmg * .5)
   if (ed.gtForm === 1 && !def.turns) dmg = Math.round(dmg * .75)
+  const shieldBeforeHit = def.shieldHp
   if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) { def.recapShielded = (def.recapShielded || 0) + s2; pasNote(def, 'SHIELD') } }
   const shibai = offensive && !mod.sever && !mod.area && !(kind === 'special' && isAoe(att.card)) && kind !== 'burst' && !ea.antiKit && shinobiAlly(D, 14, def)
   if (shibai && dmg > 0 && alive(D).filter(f => f !== shibai).every(f => f.hp / f.max >= def.hp / def.max)) {
@@ -534,6 +542,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       pasNote(def, 'GREAT APE RAGE · ' + def.gtRage + '/3')
     }
   }
+  if (ea.crToji === 1 && shieldBeforeHit > 0 && def.shieldHp === 0) att.crBrokeShield = true
   if (hpDamage > 0) {
     fairyCharge(D, def, turnClock(D), PE, pasNote)
     if (ice) {
@@ -595,6 +604,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     pasNote(def, 'FINAL STAND · ULTIMATE READY')
   }
   if (def.hp === 0 && !def.ko && gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED AT 25% HP')
+  if (def.hp === 0 && !def.ko) shrineWaveSurvive(def, pasNote)
   if (def.hp === 0 && !def.ko) {
     const noSurvive = ea.noSurvive || mod.noSurvive
     if (!noSurvive) fairySurvive(def, D, PE, pasNote)
@@ -788,6 +798,8 @@ function playArt(B, who, idx) {
     if (kit.shadowDrive) a.shadowStrike = true
   }
   else if (art === 'strike') {
+    const blackFlash = kit.crYuji && a.crBlackFlash
+    if (blackFlash) { a.crBlackFlash = false; ev.move = 'BLACK FLASH' }
     const redLightning = kit.ftRedLightning && a.ftLightningTurn !== turnClock(me)
     if (redLightning) a.ftLightningTurn = turnClock(me)
     const ea = PE(a), n = ea.tripleStrike ? 3 : 1, per = ea.tripleStrike ? .4 : 1
@@ -795,10 +807,14 @@ function playArt(B, who, idx) {
     const iron = ea.ironShadow && a.iron > 0, shadow = ea.shadowDrive && a.shadowStrike
     if (iron) { a.iron--; healHP(a, a.max * .12); pasNote(a, 'IRON SHADOW · HEALED') }
     if (shadow) a.shadowStrike = false
-    for (let i = 0; i < n; i++) ev.hits.push({ t: d, ...hit(a, d, 260 * chain * per * (gt === 4 ? 1.8 : 1), a.pwr, iron || shadow || redLightning, me, foe, 'strike') })
+    for (let i = 0; i < n; i++) ev.hits.push({ t: d, ...hit(a, d, 260 * chain * per * (gt === 4 ? 1.8 : blackFlash ? 1.75 : 1), a.pwr, iron || shadow || redLightning || blackFlash, me, foe, 'strike') })
     if (shadow && d.ko) me.ki = Math.min(KI_MAX, me.ki + 2)
     if (ea.doubleStrike && rnd(me) * 100 < ea.doubleStrike && !d.ko) { ev.hits.push({ t: d, ...hit(a, d, 260 * chain * .6, a.pwr, false, me, foe, 'strike') }); pasNote(a, 'DOUBLE STRIKE') }
     if (gt === 4) for (const t of alive(foe)) if (t !== d) ev.hits.push({ t, ...hit(a, t, 145 * chain, a.pwr, false, me, foe, 'strike', false, { area: true }) })
+    if (blackFlash && ev.hits.some(hit => hit.dmg > 0)) {
+      d.crHealCut = true
+      pasNote(a, 'BLACK FLASH · NEXT HEAL HALVED')
+    }
     if (redLightning) for (const target of alive(foe)) if (target !== d)
       ev.hits.push({ t: target, ...hit(a, target, 185 * chain, a.pwr, true, me, foe, 'strike', false, { area: true }) })
     if (ea.benchChip) { const b = alive(foe).filter(f => f !== d)[0]; if (b) ev.hits.push({ t: b, ...hit(a, b, 260 * ea.benchChip / 100, a.pwr, false, me, foe, 'strike') }) }
@@ -836,6 +852,13 @@ function playArt(B, who, idx) {
     let base = pctOf(a.card) * 3.2 * chain * story.multiplier
     const clock = turnClock(me)
     const lightPierce = kit.ftStingForce && a.ftStingPierceTurn !== clock
+    const slayerSpear = kit.crToji === 2 && a.crSpearTurn !== clock
+    const dragonFist = kit.crGoku && !a.crFistLanded
+    if (a.crDiscount) a.crDiscount = false
+    if (slayerSpear) {
+      a.crSpearTurn = clock
+      d.shieldHp = 0
+    }
     const clearHeart = kit.ftErza && a.ftErzaSpecialTurn !== clock
     const brokeDefense = clearHeart && (d.guard || d.shieldHp > 0)
     if (lightPierce) a.ftStingPierceTurn = clock
@@ -882,12 +905,35 @@ function playArt(B, who, idx) {
       for (let i = 0; i < 3 && !d.ko; i++) ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, true, me, foe, 'special') })
     } else if (isAoe(a.card) || dragonFlame || pairedFlame) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, (t === d ? base * .75 : base * .3) * (t !== d && PE(a).aoeBoost ? 1 + PE(a).aoeBoost / 100 : 1), Math.max(a.pwr, a.ki), pierce || wavePierce || dragonFlame, me, foe, 'special') })
     else if (PE(a).twinSpec || kit.godspeed) { ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }); if (!d.ko) ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }) }
-    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored }) })
+    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart || slayerSpear || dragonFist, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored, noDodge: !!slayerSpear }) })
     if (kit.storyClone && !a.ko && !d.ko && ev.hits[0]?.hpDamage > 0)
       ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, false, me, foe, 'special') })
     const bench = kit.benchSpecial && weakestBench(foe, d)
     if (bench) ev.hits.push({ t: bench, ...hit(a, bench, base * .5, a.pwr, true, me, foe, 'special') })
     const landed = ev.hits.some(x => (x.hpDamage ?? x.dmg) > 0)
+    if (landed && kit.crToji === 1) a.crSpecials = (a.crSpecials || 0) + 1
+    if (landed && slayerSpear) {
+      d.crSealUntil = turnClock(foe) + 1
+      a.crSealTurn = clock
+      a.crSealTarget = d.key
+      if (d.ko) me.ki = Math.min(KI_MAX, me.ki + 2)
+      pasNote(d, 'CURSED TOOL MASTERY · PASSIVE SEALED')
+    }
+    if (landed && dragonFist) {
+      a.crFistLanded = true
+      me.ki = Math.min(KI_MAX, me.ki + 3)
+      me.gauge = Math.min(GAUGE_MAX, me.gauge + 25)
+      pasNote(a, 'DRAGON FIST · +3 ENERGY · +25% ULT')
+    }
+    if (landed && kit.crSukuna === 1) {
+      const slot = foe.team.indexOf(d)
+      a.crSpecialTargets ||= {}
+      a.crSpecialTargets[slot] = (a.crSpecialTargets[slot] || 0) + 1
+    }
+    if (landed && kit.crSukuna === 2 && shrineActive(a, foe) && (foe.switchSerial || 0) === a.crShrineSwitch) {
+      d.crShrineMark = a.key
+      pasNote(d, 'MALEVOLENT SHRINE · MARKED')
+    }
     if (landed && lightPierce) {
       me.ki = Math.min(KI_MAX, me.ki + 2)
       pasNote(a, 'DRAGON FORCE · +2 ENERGY')
@@ -924,6 +970,16 @@ function playArt(B, who, idx) {
     if (d.rivalBarrier == null && PE(a).shambles && !a.shamUsed && a.hp / a.max < d.hp / d.max) { a.shamUsed = 1; const pa = a.hp / a.max, pd = d.hp / d.max; a.hp = Math.round(a.max * pd); d.hp = Math.max(1, Math.round(d.max * pa)); pasNote(a, 'SHAMBLES') }
   }
   if (a.ko) ev.waveCounter = true
+  if (kit.crYuji && (art === 'strike' || art === 'special') && ev.hits.some(hit => hit.dmg > 0)) {
+    const clock = turnClock(me)
+    if (a.crYujiTurn !== clock) { a.crYujiTurn = clock; a.crYujiArts = 0 }
+    a.crYujiArts |= art === 'strike' ? 1 : 2
+    if (a.crYujiArts === 3 && a.crYujiPrimed !== clock) {
+      a.crYujiPrimed = clock
+      a.crBlackFlash = true
+      pasNote(a, 'BLACK FLASH READY')
+    }
+  }
   fairyAfterArt(a, d, me, art, ev.hits, PE, pasNote)
   const dealt = ev.hits.reduce((n, x) => n + x.dmg, 0)
   if (a.reworkDamp && dealt > 0) a.futureDamp = false
@@ -1013,7 +1069,9 @@ function playArt(B, who, idx) {
   return ev
 }
 const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION', 'Pierces Guard · +60% vs targets under 40% HP'], SUPPORT: ['RALLY', 'Big hit · heals the whole team 20%'], TANK: ['FORTRESS', 'Big hit · takes 30% less damage until your next turn'], SHOOTER: ['OVERDRIVE', 'Hits every enemy hard'], STRIKER: ['OVERDRIVE', 'Hits every enemy hard'] }
-const ultOf = c => c.pas?.e?.gtForm === 4 ? ['RAMPAGE', 'Crush the active enemy and hit the entire bench'] :
+const ultOf = c => c.pas?.e?.crVegeta ? ['FINAL SHINE ATTACK', 'Deals up to +60% damage after blocking attacks'] :
+  c.pas?.e?.crSukuna === 2 ? ['WORLD CUTTING SLASH', 'Pierces Guard and deals 50% more damage to Shrine-marked enemies'] :
+  c.pas?.e?.gtForm === 4 ? ['RAMPAGE', 'Crush the active enemy and hit the entire bench'] :
   c.pas?.e?.gtForm === 5 ? ['10× KAMEHAMEHA', 'Break shields and fire at the active enemy'] : c.tag ? ['DUO FINISH', 'Both partners strike · double hit'] : (ULT[c.role] || ULT.FIGHTER)
 function signatureUltimate(f, target) {
   if (PE(f).shinobi || PE(f).crew || PE(f).villain || PE(f).lastDoor) return [f.card.mv, f.card.pas.d]
@@ -1061,7 +1119,7 @@ function ultimate(B, who, choice) {
   const sever = lastDoor === 'sever'
   const quirkDefenders = new Set()
   const opposingKit = PE(d).shinobi
-  const single = gtForm(a) === 5 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
+  const single = gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
     (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso)
   const damaging = kit !== 14 && kit !== 20 && !PE(a).antiKit
   const minato = single && damaging && !sever && shinobiAlly(foe, 18, d)
@@ -1105,6 +1163,17 @@ function ultimate(B, who, choice) {
     return ev
   }
   const ea = PE(a)
+  if (ea.crVegeta) {
+    H(d, base * (1 + (a.crShineCharge || 0) * .2), true)
+    a.crShineCharge = 0
+    return finish()
+  }
+  if (ea.crSukuna === 2) {
+    const marked = d.crShrineMark === a.key
+    H(d, base * (marked ? 1.5 : 1), true)
+    if (marked && ev.hits.some(hit => hit.dmg > 0)) d.crShrineMark = null
+    return finish()
+  }
   const gt = gtForm(a)
   if (gt === 3) a.gtApeReady = true
   if (gt === 4) {
@@ -1294,11 +1363,19 @@ function switchFighter(B, who, index) {
   setActive(side, index)
   const entering = act(side), target = act(foe)
   const fairyAssist = fairyTag(side, leaving, entering, PE, KI_MAX, pasNote)
-  if (!(standardTag || fairyAssist) || target.ko) return null
+  const duoAssist = tojiLink(leaving, entering, side, target, pasNote)
+  let trap = null
+  if (!target.ko && PE(target).crSukuna === 2 && shrineActive(target, side) && target.crCleaveTurn !== turnClock(side)) {
+    target.crCleaveTurn = turnClock(side)
+    trap = { who: who === 'you' ? 'ai' : 'you', art: 'strike', move: 'SHRINE · CLEAVE',
+      hits: [{ t: entering, ...hit(target, entering, 410, target.pwr, true, foe, side, 'strike') }] }
+    pasNote(target, 'MALEVOLENT SHRINE · CLEAVE')
+  }
+  if (entering.ko || !(standardTag || fairyAssist || duoAssist) || target.ko) return trap
   side.gauge = Math.min(GAUGE_MAX, side.gauge + 10)
   side.reworkAction = (side.reworkAction || 0) + 1
-  return { who, art: 'strike', move: fairyAssist ? 'FAIRY TAIL FOLLOW-UP' : 'TAG ASSIST',
-    hits: [{ t: target, ...hit(entering, target, fairyAssist ? 300 : 200, Math.max(entering.pwr, entering.ki), false, side, foe, 'strike') }] }
+  return { who, art: 'strike', before: trap, move: duoAssist ? 'SPLIT SOUL KATANA' : fairyAssist ? 'FAIRY TAIL FOLLOW-UP' : 'TAG ASSIST',
+    hits: [{ t: target, ...hit(entering, target, duoAssist ? 420 : fairyAssist ? 300 : 200, Math.max(entering.pwr, entering.ki), duoAssist, side, foe, 'strike') }] }
 }
 function nextAlive(s) { const i = s.team.findIndex(f => !f.ko); if (i >= 0) setActive(s, i); return i >= 0 }
 
@@ -2800,8 +2877,23 @@ export function startBattle(stage) {
     if (f.card.transformations) {
       const next = enterTransformation(f, side, B.turn)
       if (!next) return
+      const foe = who === 'you' ? B.ai : B.you
+      if (f.pe.crSukuna === 2) {
+        f.crShrineUntil = turnClock(foe) + 2
+        f.crShrineSwitch = foe.switchSerial || 0
+        log('MALEVOLENT SHRINE · ACTIVE FOR TWO ENEMY TURNS')
+      }
       log(`${f.card.name} transforms: ${f.card.ver}`)
       await transformationScene(next, f.card, who)
+      if (B.closed) return
+      const vegeta = gtForm(f) === 5 && side.team.find(ally => !ally.ko && PE(ally).crVegeta && !ally.crGokuAssist)
+      const target = act(foe)
+      if (vegeta && !target.ko) {
+        vegeta.crGokuAssist = true
+        const strike = hit(vegeta, target, 480, Math.max(vegeta.pwr, vegeta.ki), true, side, foe, 'strike')
+        log('PRIMAL PRIDE · Vegeta assists GT Goku.')
+        await show({ who, art: 'strike', move: 'FINAL SHINE ASSIST', hits: [{ t: target, ...strike }] })
+      }
       if (!B.closed) draw()
       return
     }
@@ -2819,6 +2911,7 @@ export function startBattle(stage) {
     sfx('bcharge'); log(`${f.card.name} ${full ? 'transforms: ' + name : 'powers up'}!`); await wait(1500); draw()
   }
   async function show(ev) {
+    if (ev.before) { await show(ev.before); if (B.over || B.closed) return }
     if (ev.swap) { log('Enemy switched fighters'); sfx('bswitch'); draw(); await wait(500); return }
     const side = ev.who, other = side === 'you' ? 'ai' : 'you'
     const atk = $a(`.ar-side.${side} .ar-active`)
@@ -2993,7 +3086,7 @@ export function startBattle(stage) {
     sfx('bswitch'); log(`Go, ${act(B.you).card.name}!`); draw()
     if (assist) {
       B.busy = true; controls()
-      banner(assist.move, act(B.you).card.name + ' jumps in', '#22d8ff')
+      banner(assist.move, act(B[assist.who]).card.name, assist.who === 'you' ? '#22d8ff' : '#ff5335')
       await show(assist); B.busy = false; if (!B.over) controls()
     } else flushPas()
   }
@@ -3305,6 +3398,7 @@ export function startBattle(stage) {
     s.waveAttacked = false
     s.waveRead = false
     advanceFormTurn(s)
+    for (const fighter of s.team) if (fighter.crSealUntil && turnClock(s) > fighter.crSealUntil) fighter.crSealUntil = 0
     if (gtForm(act(s)) === 3) s.ki = Math.max(0, s.ki - 1)
     for (const fighter of s.team) if (fighter.silverSealed && fighter.silverSealed <= s.formTurn) fighter.silverSealed = 0
     if (unwritten(act(s))) { s.skip = 0; act(s).frozen = 0 }

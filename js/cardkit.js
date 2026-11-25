@@ -280,7 +280,7 @@ export function drawCard(x, d) {
 const THUMBS = {}
 const SMALL = innerWidth < 700
 const bucket = w => SMALL ? (w <= 300 ? 220 : w <= 460 ? 380 : 480) : w <= 260 ? 260 : w <= 440 ? 440 : 560
-const sig = c => ['g1', c.key, c.dia || 0, c.lv || 0, c.maxed || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.z, c.mv, c.role, c.pas && c.pas.d, c.total, c.awoke || 0, (c.st || []).join(',')].join('|')
+const sig = c => ['g1', c.key, c.url, c.dia || 0, c.lv || 0, c.maxed || 0, c.ovr, c.name, c.ver, c.r, c.fx, c.fy, c.fit, c.z, c.mv, c.role, c.pas && c.pas.d, c.total, c.awoke || 0, (c.st || []).join(',')].join('|')
 // one render at a time, yielding to the browser between cards so scrolling stays smooth
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
