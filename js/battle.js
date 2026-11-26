@@ -3307,23 +3307,36 @@ export function startBattle(stage) {
     if (f.card.transformations) return !!nextTransformation(f, side, B.turn)?.ready
     return !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5
   }
+  // In-place transformation: the fighter's own card charges, flips into the new form and bursts. The arena stays visible.
+  async function transformFX(who, color, title, sub, kicker) {
+    const el = $a(`.ar-side.${who} .ar-active`)
+    if (!el) { draw(); return }
+    const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2
+    const layer = h('div', 'tfx'); layer.style.setProperty('--tc', color)
+    layer.style.cssText += `;--x:${cx}px;--y:${cy}px;--w:${r.width}px;--h:${r.height}px;--t:${r.top}px;--l:${r.left}px`
+    layer.innerHTML = '<i class="tfx-pillar"></i><i class="tfx-ring"></i><i class="tfx-ring r2"></i><i class="tfx-flash"></i>'
+    ov.append(layer)
+    el.classList.add('tfx-charge'); el.style.setProperty('--tc', color)
+    sfx('bcharge'); try { FXC.gather(cx, cy, color, .9, 46) } catch { }
+    try {
+      await wait(900); if (B.closed) return
+      layer.classList.add('flash'); el.classList.add('tfx-flip')
+      await wait(220); if (B.closed) return
+      el.dataset.k = ''; draw()
+      const el2 = $a(`.ar-side.${who} .ar-active`) || el; el2.classList.add('tfx-flip', 'tfx-glow'); el2.style.setProperty('--tc', color)
+      sfx('reveal', 5); shake(3)
+      try { FXC.hit(cx, cy, color, 2.2); FXC.rays(cx, cy, color, 22, 1000, 1.6) } catch { }
+      layer.classList.add('burst')
+      const plate = h('div', 'tfx-plate', `<small>${kicker}</small><b>${title}</b><span>${sub}</span>`)
+      plate.style.cssText = `--tc:${color};left:${cx}px;top:${r.bottom + 6}px`; ov.append(plate)
+      await wait(1250)
+      plate.classList.add('out'); setTimeout(() => plate.remove(), 400)
+      el2.classList.remove('tfx-flip', 'tfx-charge'); setTimeout(() => el2.classList.remove('tfx-glow'), 1600)
+    } finally { el.classList.remove('tfx-charge', 'tfx-flip'); layer.remove() }
+  }
   async function transformationScene(form, card, side) {
     highlight(side, card.name + ' transformed into ' + card.ver.split(' · ')[0] + '.', form.cinematicStyle === 'baryon' ? 100 : 85)
-    const scene = h('div', 'form-awakening' + (form.cinematicStyle === 'baryon' ? ' baryon' : ''))
-    scene.style.setProperty('--form-color', form.color)
-    scene.innerHTML = `<div class="form-streaks"></div><div class="form-orbit"></div><div class="form-orbit second"></div>
-      <div class="form-portrait"></div><div class="form-impact"></div><div class="form-letterbox"></div>
-      <div class="form-title"><small>${form.cinematic}</small><strong>${card.ver.split(' · ')[0]}</strong><span>${card.name}</span></div>`
-    scene.querySelector('.form-portrait').style.backgroundImage = `url("${card.url}")`
-    ov.append(scene)
-    sfx('bcharge')
-    try {
-      await wait(440)
-      if (B.closed) return
-      scene.classList.add('burst')
-      sfx(form.cinematicStyle === 'baryon' ? 'bimpact' : 'reveal', 5)
-      await wait(1650)
-    } finally { scene.remove() }
+    await transformFX(side, form.color || '#ffcc00', card.ver.split(' · ')[0], card.name, form.cinematic || 'TRANSFORMATION')
   }
   async function transform(side, who) {
     const f = act(side); if (!canTransform(f, side)) return
@@ -3359,9 +3372,9 @@ export function startBattle(stage) {
     else f.aura = 1
     const name = full ? f.card.form.name : 'POWER UP'
     highlight(who, f.card.name + (full ? ' transformed into ' + name : ' powered up') + '.', 80)
-    cutin(f.card, name, (who === 'you' ? '' : 'ENEMY · ') + 'TRANSFORMATION', '#ffcc00', true, name)
-    const el = $a(`.ar-side.${who} .ar-active`); if (el) { el.dataset.k = ''; const [x, y] = ctr(el); FXC.gather(x, y, '#ffcc00', .6, 30); setTimeout(() => FXC.hit(x, y, '#ffcc00', 1.6), 600) }
-    sfx('bcharge'); log(`${f.card.name} ${full ? 'transforms: ' + name : 'powers up'}!`); await wait(1500); draw()
+    log(`${f.card.name} ${full ? 'transforms: ' + name : 'powers up'}!`)
+    await transformFX(who, full ? '#ffcc00' : '#ffd96a', name, f.card.name, (who === 'you' ? '' : 'ENEMY · ') + (full ? 'TRANSFORMATION' : 'POWER UP'))
+    if (!B.closed) draw()
   }
   async function show(ev) {
     lockDzHp()
