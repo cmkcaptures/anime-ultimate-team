@@ -1663,7 +1663,7 @@ function bannerBlock(el) {
   w.style.setProperty('--bart1', `url("${feat[0].url}")`); if (feat[1]) w.style.setProperty('--bart2', `url("${feat[1].url}")`)
   w.innerHTML = `<div class="bnr-art a1"></div><div class="bnr-art a2"></div><div class="bnr-shade"></div>
     <div class="bnr-info"><span class="bnr-tag">LIMITED BANNER</span><h2>${espada ? B.name : feat.map(c => c.name).join(' &amp; ')}</h2>
-      <p>Featured: ${feat.map(c => '<b>' + c.name + '</b>').join(', ')}. A pull that hits a featured rarity has a 50% chance to draw from its featured cards.</p>
+      <p>A pull that hits a featured rarity has a 50% chance to draw from its featured cards.</p>
       <div class="bnr-time">${ended ? 'Banner ended · unopened packs can still be claimed' : `Ends in <b class="timer" data-until="${B.ends - SKEW}"></b>`}</div>
       <div class="bnr-pity"><div><span>MYTHIC+ GUARANTEED</span><i><s style="width:${Math.min(100, pr.m / B.pityMythic * 100)}%"></s></i><b>${pr.m}/${B.pityMythic}</b></div>
         <div><span>FEATURED GUARANTEED</span><i><s style="width:${Math.min(100, pr.f / B.pityFeatured * 100)}%"></s></i><b>${pr.f}/${B.pityFeatured}</b></div></div>
@@ -1675,7 +1675,22 @@ function bannerBlock(el) {
   one.onclick = async () => { if (pend) return openPack('banner'); const x = await act('buyPack', { pack: 'banner', bannerId: B.id }); if (!x.error) openPack('banner'); else rerender() }
   const ten = h('button', 'btn gold big', `<span>PULL ×10</span><b><i class="coin-i"></i>${fmt(Math.round(B.cost * 9))}</b>`); ten.disabled = ended || P.coins < B.cost * 9
   ten.onclick = () => buyMulti('banner', ten, B.id)
-  bb.append(one, ten); if (pend) bb.append(h('span', 'bnr-pend', pend + ' unopened'))
+  const featured = h('button', 'btn dark big', 'WHO’S FEATURED?')
+  featured.onclick = () => openModal(sh => {
+    sh.append(h('div', 'sec', '<h3>WHO’S FEATURED?</h3>'))
+    const close = h('button', 'btn dark', 'CLOSE')
+    close.onclick = () => { closeModal(); featured.focus() }
+    const grid = h('div', 'cardgrid')
+    for (const card of feat) {
+      const tile = h('button', 'cg')
+      tile.append(cardImg(card, 240))
+      tile.onclick = () => cardDetail(card.key, { kitOnly: true })
+      grid.append(tile)
+    }
+    sh.append(close, grid)
+    close.focus()
+  }, true)
+  bb.append(one, ten, featured); if (pend) bb.append(h('span', 'bnr-pend', pend + ' unopened'))
   el.append(w)
 }
 let buyingPacks = false
