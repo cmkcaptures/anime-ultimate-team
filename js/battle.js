@@ -275,12 +275,12 @@ function surviveHogyoku(fighter) {
 
 function newGenSignatureBudget(att, def, side, kind) {
   // Specials and Ultimates share a per-target budget across their follow-up hits.
-  if (!att.newGenBoss || (kind !== 'special' && kind !== 'ult')) return null
-  if (side.newGenSignature?.action !== side.reworkAction || !side.newGenSignature) {
-    side.newGenSignature = { action: side.reworkAction, targets: new WeakMap() }
+  if (!att.newGenBoss || !['strike', 'blast', 'special', 'ult', 'burst'].includes(kind)) return null // every boss attack shares one per-turn budget per target
+  if (!side.newGenSignature || side.newGenSignature.turn !== (side.formTurn || 0)) {
+    side.newGenSignature = { turn: side.formTurn || 0, targets: new WeakMap() }
   }
   const { targets } = side.newGenSignature
-  const fraction = (kind === 'ult' ? .55 : .40) + (side.newGenPunished ? .10 : 0)
+  const fraction = .30 + (side.newGenPunished ? .12 : 0)
   const limit = Math.max(1, Math.floor(def.max * fraction))
   const remaining = Math.max(0, limit - (targets.get(def) || 0))
   return { remaining, spend: damage => targets.set(def, limit - remaining + damage) }
