@@ -476,8 +476,10 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (A && !suppressBuffs) {
     m += (A.teamDmg || 0) / 100
     if (A.team.some(f => f !== att && !f.ko && PE(f).batch === 'soiFon')) m += .2
-    if ((att.card.faction === 'Espada' || att.card.cat?.includes('Espada')) &&
-        A.team.some(f => f !== att && !f.ko && PE(f).nelEspada)) m += .25
+    if (att.card.faction === 'Espada' || att.card.cat?.includes('Espada')) {
+      const nelBonus = A.team.reduce((best, f) => f !== att && !f.ko ? Math.max(best, PE(f).nelEspada || 0) : best, 0)
+      m += nelBonus / 100
+    }
     if ((A.batchResolveUntil ?? -1) >= turnClock(A)) m += .2
   }
   if (ed.vuln) m += ed.vuln / 100
@@ -1075,9 +1077,10 @@ function playArt(B, who, idx) {
     const landed = ev.hits.some(x => (x.hpDamage ?? x.dmg) > 0)
     if (batch === 'orihimeFinal' && !a.ko) batchSupportSpecial(me, healHP)
     if (kit.nelEspada && !a.ko) {
+      const support = kit.nelRelease ? .22 : .18
       for (const ally of alive(me)) {
-        healHP(ally, ally.max * .18)
-        ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * .18))
+        healHP(ally, ally.max * support)
+        ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * support))
       }
     }
     if (kit.resonance && landed && !d.ko) d.nobaraMark = a.key
@@ -1372,7 +1375,7 @@ function ultimate(B, who, choice) {
   const sever = lastDoor === 'sever'
   const quirkDefenders = new Set()
   const opposingKit = PE(d).shinobi
-  const single = !storyKit.nelEspada && !storyKit.samehada && (storyKit.resonance || ['star', 'merlin', 'yoruichi', 'soiFon'].includes(storyKit.batch) || PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
+  const single = !storyKit.nelRelease && !storyKit.samehada && (storyKit.nelEspada || storyKit.resonance || ['star', 'merlin', 'yoruichi', 'soiFon'].includes(storyKit.batch) || PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
     (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso))
   const damaging = kit !== 14 && kit !== 20 && storyKit.batch !== 'orihimeFinal' && !PE(a).antiKit
   const minato = single && damaging && !sever && shinobiAlly(foe, 18, d)
@@ -1443,12 +1446,16 @@ function ultimate(B, who, choice) {
     }
     return finish()
   }
-  if (ea.nelEspada || ea.samehada) {
+  if (ea.nelEspada && !ea.nelRelease) {
+    H(d, base, false)
+    return finish()
+  }
+  if (ea.nelRelease || ea.samehada) {
     const charge = ea.samehada ? a.samehadaCharge || 0 : 0
     a.samehadaCharge = 0
     for (const enemy of alive(foe))
-      H(enemy, base * (enemy === d ? 1 : .55) * (1 + charge * .15), true, { batchStrip: !!ea.nelEspada })
-    if (ea.nelEspada) me.ki = Math.min(KI_MAX, me.ki + 3)
+      H(enemy, base * (enemy === d ? 1 : .55) * (1 + charge * .15), true, { batchStrip: !!ea.nelRelease })
+    if (ea.nelRelease) me.ki = Math.min(KI_MAX, me.ki + 4)
     else for (const ally of alive(me)) ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * (.18 + charge * .06)))
     return finish()
   }

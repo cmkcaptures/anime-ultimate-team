@@ -78,15 +78,15 @@ const PACKS = {
 // weekly banner: 2 featured Legendary+ cards, rotates every Monday, same for everyone
 const BANNER_COST = 3000, PITY_MYTHIC = 80, PITY_FEATURED = 160
 const ESPADA_START = Date.UTC(2026, 10, 26), ESPADA_END = ESPADA_START + 7 * 864e5
-const ESPADA_FEATURED = [
+const RESURRECCION_FEATURED = ['nel_gamuza', 'ichigo_release_drop', ...[
   'grimmjow', 'ulquiorra', 'starrk', 'barragan', 'harribel',
   'yammy', 'nnoitra', 'zommari', 'szayelaporro', 'aaroniero'
-].map(id => id + '_release_drop').concat('nel_gamuza')
+].map(id => id + '_release_drop')]
 function banner(at = Date.now()) {
   if (at >= ESPADA_START && at < ESPADA_END) {
-    const featured = ESPADA_FEATURED.map(id => CARDS.find(c => c.id === id)?.key).filter(Boolean)
-    if (featured.length === ESPADA_FEATURED.length) return {
-      id: 'espada-2026-11', name: 'ESPADA · RESURRECCIÓN', cost: BANNER_COST,
+    const featured = RESURRECCION_FEATURED.map(id => CARDS.find(c => c.id === id)?.key).filter(Boolean)
+    if (featured.length === RESURRECCION_FEATURED.length) return {
+      id: 'espada-2026-11', name: 'RESURRECCIÓN', cost: BANNER_COST,
       featured, ends: ESPADA_END, pityMythic: PITY_MYTHIC, pityFeatured: PITY_FEATURED
     }
   }

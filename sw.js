@@ -10,7 +10,8 @@ self.addEventListener('fetch', e => {
   const r = e.request, u = new URL(r.url)
   if (r.method !== 'GET' || u.pathname.startsWith('/api/')) return
   if (u.origin !== location.origin && !/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return
-  if (LONG.test(u.pathname + u.search) || /fonts\.gstatic\.com$/.test(u.hostname)) {
+  const replaceableArt = /\/atg\/M_(nel_gamuza|barragan_release_drop)_form1\.png$/.test(u.pathname)
+  if (!replaceableArt && (LONG.test(u.pathname + u.search) || /fonts\.gstatic\.com$/.test(u.hostname))) {
     e.respondWith(caches.open(C).then(async c => { const hit = await c.match(r); if (hit) return hit; const res = await fetch(r); if (res.ok || res.type === 'opaque') c.put(r, res.clone()); return res }))
     return
   }

@@ -4,7 +4,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=espada-guard-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=resurreccion-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=session-qol-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -1658,11 +1658,11 @@ function bannerBlock(el) {
   const B = ST.banner; if (!B) return
   const feat = B.featured.map(k => BYKEY[k]).filter(Boolean), pr = ((P.pity || {})[B.id]) || { m: 0, f: 0 }, pend = P.pending.banner || 0
   if (!feat.length) return
-  const espada = B.id === 'espada-2026-11', ended = B.ends <= now()
+  const releaseBanner = B.id === 'espada-2026-11', ended = B.ends <= now()
   const w = h('section', 'bnr')
   w.style.setProperty('--bart1', `url("${feat[0].url}")`); if (feat[1]) w.style.setProperty('--bart2', `url("${feat[1].url}")`)
   w.innerHTML = `<div class="bnr-art a1"></div><div class="bnr-art a2"></div><div class="bnr-shade"></div>
-    <div class="bnr-info"><span class="bnr-tag">LIMITED BANNER</span><h2>${espada ? B.name : feat.map(c => c.name).join(' &amp; ')}</h2>
+    <div class="bnr-info"><span class="bnr-tag">LIMITED BANNER</span><h2>${releaseBanner ? B.name : feat.map(c => c.name).join(' &amp; ')}</h2>
       <p>A pull that hits a featured rarity has a 50% chance to draw from its featured cards.</p>
       <div class="bnr-time">${ended ? 'Banner ended · unopened packs can still be claimed' : `Ends in <b class="timer" data-until="${B.ends - SKEW}"></b>`}</div>
       <div class="bnr-pity"><div><span>MYTHIC+ GUARANTEED</span><i><s style="width:${Math.min(100, pr.m / B.pityMythic * 100)}%"></s></i><b>${pr.m}/${B.pityMythic}</b></div>
