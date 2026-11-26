@@ -2,6 +2,11 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-26 · Codex
+- Completed the OVR portion of the rarity audit. Adjusted 83 cards to their current rarity bands: 7 Epics, 45 Legendaries and 31 Mythics. Kept card IDs, rarities, stats and kits intact.
+- The passive-description audit and the later backlog are still open. Card data is fetched without cache, so this change needs no cache-tag bump.
+
+---
 ## 2026-11-26 · Claude
 **Done (all live):**
 - Balance: enemies scale 55% with your team in Campaign, Dead Zone and Boss (`TEAM_SCALING`). Dead Zone enemies can't heal
