@@ -1,0 +1,38 @@
+.training-plan {
+  color: var(--ink);
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.training-plan h2, .training-plan p { margin: 0; }
+.training-plan label { font-weight: 700; }
+.training-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+.training-picker .training-select { flex: 1; }
+.training-select {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid #6b6486;
+  background: #211b34;
+  color: #fff;
+  font: inherit;
+  padding: 8px 12px;
+}
+.training-select option { background: #211b34; color: #fff; }
+.training-price {
+  padding: 12px;
+  border: 1px solid #6b6486;
+  border-radius: 8px;
+  background: #211b34;
+  font-weight: 800;
+}
+.training-plan .training-warning {
+  margin: 2px 0 8px;
+  color: #ffd18a;
+}
+.training-picker button { min-height: 44px; }

@@ -1,3 +1,4 @@
+import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
 import { deadZoneReward } from './deadzone-rewards.js?v=1'
 import { cardCounterPage } from './card-counter.js?v=counter-1'
@@ -647,7 +648,7 @@ async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
     d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${kitOnly ? ' · OPPONENT' : e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}`))
     d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
     d.append(h('div', 'movebox', `<b style="color:${TYPE[c.t].c[2]}">${TYPE[c.t].en} · ${c.mv}</b><p>${c.tx.join(' ')}</p>`))
-    if (e) d.append(progBox(key, c))
+    if (e) d.append(progBox(key))
     if (false) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
     if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
     { const kb = kitBullets(c); if (kb.length) d.append(h('div', 'movebox howbox', `<b>🔍 HOW IT WORKS</b><ul>${kb.map(x => '<li>' + x + '</li>').join('')}</ul>`)) }
@@ -2394,15 +2395,101 @@ function builderResults() {
 
 // ================= DIAMONDS · LEVEL · ASCENSION =================
 const diaStr = n => '◆'.repeat(n) + '◇'.repeat(7 - n)
-function progBox(key, c) {
+function trainingSheet(key, initialTarget) {
+  const owned = club()[key]
+  const card = BYKEY[key]
+  if (!card || !owned || (owned.lv || 1) >= LV_MAX) return cardDetail(key)
+  const level = owned.lv || 1
+  openModal(sh => {
+    const panel = h('section', 'training-plan')
+    const heading = h('h2', '', 'Train to level')
+    const name = h('p', 'muted')
+    name.textContent = card.name + ' · Currently Lv ' + level
+    const picker = h('div', 'training-picker')
+    const target = h('select', 'training-select')
+    target.id = 'training-target'
+    for (let n = level + 1; n <= LV_MAX; n++) {
+      const option = h('option', '', 'Lv ' + n)
+      option.value = n
+      target.append(option)
+    }
+    target.value = initialTarget ?? level + 1
+    const max = h('button', 'btn dark', 'SET MAX')
+    max.onclick = () => { target.value = LV_MAX; render() }
+    const targetLabel = h('label', '', 'Target level')
+    targetLabel.htmlFor = target.id
+    picker.append(target, max)
+    const payment = h('select', 'training-select')
+    payment.id = 'training-payment'
+    for (const [value, label] of [['coins', 'Coins only'], ['tickets', 'Training Tickets only'], ['mixed', 'Tickets + coins']]) {
+      const option = h('option', '', label)
+      option.value = value
+      payment.append(option)
+    }
+    payment.value = ST.tickets > 0 ? 'mixed' : 'coins'
+    const paymentLabel = h('label', '', 'Pay with')
+    paymentLabel.htmlFor = payment.id
+    const price = h('div', 'training-price')
+    price.setAttribute('aria-live', 'polite')
+    const warning = h('p', 'training-warning')
+    const back = h('button', 'btn dark', 'BACK')
+    back.onclick = () => cardDetail(key)
+    const train = h('button', 'btn gold', 'CONFIRM TRAINING')
+    const actions = h('div', 'training-picker')
+    actions.append(back, train)
+    let busy = false
+    function render() {
+      const quote = trainingQuote(club()[key] || owned, Number(target.value), payment.value, ST.tickets || 0)
+      const coins = P.coins, tickets = ST.tickets || 0
+      price.textContent = quote ? fmt(quote.coins) + ' coins + ' + fmt(quote.tickets) + ' Training Tickets' : 'Choose a higher level.'
+      const affordable = quote && coins >= quote.coins && tickets >= quote.tickets
+      warning.textContent = !quote ? '' : (affordable ? 'Training spends these resources permanently.' : 'You don’t have enough resources for this option.') +
+        (quote.unusedXP ? ' ' + fmt(quote.unusedXP) + ' XP from the final ticket won’t be used.' : '')
+      balance.textContent = 'Available: ' + fmt(coins) + ' coins · ' + fmt(tickets) + ' Training Tickets'
+      train.disabled = busy || !affordable
+      target.disabled = payment.disabled = max.disabled = back.disabled = busy
+      return affordable ? quote : null
+    }
+    const balance = h('p', 'muted')
+    target.onchange = payment.onchange = render
+    train.onclick = async () => {
+      if (busy) return
+      const quote = render()
+      if (!quote) return
+      const next = Number(target.value)
+      if (!confirm('Train ' + card.name + ' to Lv ' + next + ' for ' + price.textContent + '? ' + warning.textContent)) return
+      busy = true
+      render()
+      const result = await act('trainTo', { key, target: next, payment: payment.value, ...quote })
+      if (!panel.isConnected) return
+      if (!result.error) {
+        if (CUR === 'cards') rerender()
+        cardDetail(key)
+      } else {
+        busy = false
+        render()
+      }
+    }
+    panel.append(heading, name, targetLabel, picker, paymentLabel, payment, price, balance, warning, actions)
+    sh.append(panel)
+    render()
+  })
+}
+
+function progBox(key) {
   const o = club()[key], dia = o.dia || 3, lv = o.lv || 1, need = (ST.lvNeed || [])[lv] || 1, xp = o.xp || 0
   const w = h('div', 'prog' + (dia >= 7 ? ' maxed' : ''), `<div class="pg-d"><b>${diaStr(dia)}</b><span>${dia >= 7 ? 'LIMIT BREAK · passive 25% stronger' : (7 - dia) + ' more duplicate' + (7 - dia > 1 ? 's' : '') + ' to max'}</span></div>
     <div class="pg-l"><b>Lv ${lv}</b><i><s style="width:${lv >= 100 ? 100 : Math.round(xp / need * 100)}%"></s></i><span>${lv >= 100 ? 'MAX LEVEL' : xp + ' / ' + need + ' XP'}</span></div>
     <div class="pg-a"><b>A${o.asc || 0}</b><span>ASCENSION · coming soon</span></div>`)
-  if (lv < 100) { const r = h('div', 'pg-train'), t = h('button', 'btn green sm', `TRAIN · TICKET (${ST.tickets || 0})`), cb = h('button', 'btn dark sm', 'TRAIN · 2,000 COINS')
-    t.disabled = !(ST.tickets > 0); cb.disabled = P.coins < 2000
-    t.onclick = async () => { const r2 = await act('train', { key, with: 'ticket' }); if (!r2.error) cardDetail(key) }; cb.onclick = async () => { const r2 = await act('train', { key, with: 'coins' }); if (!r2.error) cardDetail(key) }
-    r.append(t, cb); w.append(r) }
+  if (lv < LV_MAX) {
+    const actions = h('div', 'pg-train')
+    const train = h('button', 'btn green sm', 'TRAIN TO LEVEL')
+    const max = h('button', 'btn dark sm', 'TRAIN TO MAX')
+    train.onclick = () => trainingSheet(key)
+    max.onclick = () => trainingSheet(key, LV_MAX)
+    actions.append(train, max)
+    w.append(actions)
+  }
   return w
 }
 

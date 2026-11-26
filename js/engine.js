@@ -1,3 +1,4 @@
+import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-3'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=1'
@@ -161,7 +162,6 @@ const giveCard = k => giveCardTo(S.profile, k)
 const giveCardTo = (profile, k) => { const sr = rollSerial(k), r = giveCard0(k, profile), o = profile.club.cards[k]; if (o) o.ser = Math.min(o.ser || 1e9, sr); return r }
 const giveCard0 = (k, profile = S.profile) => { const now = Date.now(), C = profile.club.cards, had = C[k], e = had || (C[k] = { n: 1, first: now, dia: 3, lv: 1, xp: 0, asc: 0 }); if (had) { if ((e.dia || 3) < 7) e.dia = (e.dia || 3) + 1; else e.n++ } e.last = now; return e }
 // ---------- LEVEL (1-100) ----------
-const LV_MAX = 100, lvNeed = l => 40 + l * 8
 function addCardXP(o, n) { o.lv = o.lv || 1; o.xp = (o.xp || 0) + n; let up = 0; while (o.lv < LV_MAX && o.xp >= lvNeed(o.lv)) { o.xp -= lvNeed(o.lv); o.lv++; up++ } if (o.lv >= LV_MAX) o.xp = 0; return up }
 const addXP = n => { const P = S.profile; P.xp = (P.xp || 0) + n; passP().xp += n * 3 }
 // ---------- SEASON PASS: 4-week seasons, 50 tiers, 300 pass XP per tier ----------
@@ -1613,6 +1613,20 @@ function act(a) {
       let extra = ''
       if (first) { P.battle.cleared = n; if (PK[n]) { P.pending[PK[n]] = (P.pending[PK[n]] || 0) + 1; extra = ` and a ${PK[n] === 'premium' ? 'Premium' : 'Legends'} pack` } }
       return { msg: `Stage ${n} ${first ? 'cleared' : 'won'}! +${coins.toLocaleString()} coins${extra}.` }
+    }
+    case 'trainTo': {
+      const card = P.club.cards[a.key]
+      if (!card) return { error: 'You do not own that card.' }
+      const quote = trainingQuote(card, a.target, a.payment, P.tickets || 0)
+      if (!quote) return { error: 'Choose a higher level up to Lv ' + LV_MAX + '.' }
+      if (quote.coins !== a.coins || quote.tickets !== a.tickets || quote.xp !== a.xp) {
+        return { error: 'Training cost changed. Review the new price before confirming.' }
+      }
+      if (P.coins < quote.coins || (P.tickets || 0) < quote.tickets) return { error: 'You need more resources for that level.' }
+      P.coins -= quote.coins
+      P.tickets = (P.tickets || 0) - quote.tickets
+      addCardXP(card, quote.xp)
+      return { msg: cardName(a.key) + ' trained to Lv ' + card.lv + '.' }
     }
     case 'train': { const o = P.club.cards[a.key]; if (!o) return { error: 'You do not own that card.' }; if ((o.lv || 1) >= LV_MAX) return { error: 'Already Lv 100.' }
       if (a.with === 'ticket') { if ((P.tickets || 0) < 1) return { error: 'No Training Tickets.' }; P.tickets--; const u = addCardXP(o, 400); return { msg: '+400 XP' + (u ? ' · Lv ' + o.lv : '') } }

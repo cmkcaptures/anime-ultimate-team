@@ -3,6 +3,11 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
 ## 2026-11-26 · Codex
+- Added exact target-level training and a level-100 shortcut on owned cards. The preview shows costs and balances for coin, ticket, and mixed payment, with a confirmation before spending. Coin training uses the existing 8 coins per XP rate. Tickets-only training warns about unused XP from rounding, and mixed payment uses whole tickets plus the exact coin remainder. The engine rejects stale quotes.
+- Existing single-train engine actions and battle XP still work. No card or balance edits.
+
+---
+## 2026-11-26 · Codex
 - First card balance pass. Reduced Gear 5 Luffy’s Special refunds, Flash Goddess Yoruichi’s counter and mark returns, Full Hollow Ichigo’s Ultimate refund, and Samehada Kisame’s baseline Water Dome shield. Removed Kisame’s generic Energy burn while keeping the Blast absorption and steal.
 - Buffed Light-Speed Admiral Kizaru’s shield removal, Ice Age Aokiji’s frontline shield and damage reduction, and Strength of a Hundred Tsunade’s bench healing and team shielding. Card IDs, rarities and OVR are intact. Retest these seven in PvP and dedicated New Gen lineups before broader changes.
 
