@@ -4,8 +4,9 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond } from './battle.js?v=claude-6'
-const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-7'
+const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
+const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=session-qol-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
@@ -654,6 +655,7 @@ async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
     if (c.lead) d.append(h('div', 'movebox leadbox', `<b>👑 LEADER SKILL</b><p>${leadText(c.lead)}</p>`))
     if (!kitOnly) { const dd = Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox awkbox' + (dd >= 7 ? ' on' : ''), dd >= 7 ? `<b>✦ AWAKENED ULTIMATE · UNLOCKED</b><p>Ultimate deals <b>+35%</b>, gives <b>+2 Energy</b>, heals <b>15%</b> and plays a full cinematic.</p>` : `<b>✦ AWAKENED ULTIMATE · 🔒 7◆</b><p>Reach 7◆ (${dd}/7) to awaken: Ultimate +35% damage, +2 Energy, heals 15%, full cinematic.</p>`)) }
     if (c.aura?.length) { const dd = kitOnly ? auraDiamonds : Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox aurabox', `<b>✦ TEAM AURA</b><p>From any slot: <b>+${AURA_PCT[dd]}%</b> to teammates tagged ${c.aura.map(tag => '<span class="atag">' + auraTag(tag) + '</span>').join(' or ')}.</p><small>Grows with diamonds: 3◆ +3% · 5◆ +5% · 7◆ +10%. Auras stack up to +40% per fighter.</small>`)) }
+    if (c.arch?.length) d.append(h('div', 'archrow', c.arch.map(x => `<span>${ARCH_ICON[x] || ''} ${x}</span>`).join('')))
     d.append(h('div', 'catrow', [ANAME(c.anime), ...(c.cat || [])].map(x => `<span>${x}</span>`).join('')))
     if (kitOnly) {
       const close = h('button', 'btn dark sm', 'CLOSE KIT')
@@ -759,6 +761,7 @@ PAGES.team = (el) => {
   el.append(top)
   const SB = slotBoosts(TC), filled = SB.filter(Boolean), avgB = filled.length ? Math.round(filled.reduce((n, b) => n + b.total, 0) / filled.length) : 0
   const lowT = filled.length ? Math.min(...filled.map(b => b.total)) : 0, weakI = SB.findIndex(b => b && b.total === lowT && b.total < avgB * .6)
+  if (count) { const MV = multiverse(TC); el.append(h('div', 'tm-bond' + (MV.pct ? ' on mv' : ''), MV.pct ? `<b>🌌 MULTIVERSE · ${MV.n} SERIES</b><span>Mixed team: +${MV.pct}% HP and stats${MV.ki ? ', +1 Energy every turn' : ''}.</span>` : `<b>🌌 MULTIVERSE · ${MV.n} SERIES</b><span>Mix 3+ series for +5% stats, 4 for +8%, 5–6 for +12% and +1 Energy a turn.</span>`)) }
   if (count) { const BD = squadBond(TC); el.append(h('div', 'tm-bond' + (BD.tier ? ' on' : ''), BD.tier ? `<b>🛡️ SQUAD BOND · ${BD.n}/6 ${auraTag(BD.tag || '')}</b><span>Team takes ${BD.dr}% less damage${BD.regen ? ', heals ' + BD.regen + '% a turn' : ''}${BD.save ? ', your leader survives one KO' : ''}.</span>` : `<b>🛡️ SQUAD BOND · ${BD.n}/6</b><span>Get 4+ fighters sharing one aura tag for team damage reduction. 5 adds healing, 6 adds a KO save.</span>`)) }
   if (count) { const bar = h('div', 'tm-boost', `<div><small>TEAM BOOST</small><b>+${avgB}%</b></div><p>${avgB >= 30 ? '🟢 Great fit. Your cards boost each other.' : avgB >= 15 ? '🟡 Decent. Some cards don\'t link up.' : '🔴 Weak links. Cards aren\'t boosting each other.'}</p>`), dt = h('button', 'btn dark sm', TDET ? 'HIDE DETAILS' : 'DETAILS'); dt.onclick = () => { TDET = !TDET; rerender() }; bar.append(dt); el.append(bar)
     { const LA = teamLinks(TC).active; const lr = h('div', 'tm-links', '<b>🔗 LINKS</b>'); if (LA.length) for (const x of LA) lr.append(h('span', 'tl', `${TC[x.i].name.split(' ')[0]} ↔ ${TC[x.j].name.split(' ')[0]} <em>${x.links.map(l => l.n).join(' · ')} +${x.links.reduce((n, l) => n + l.pct, 0)}%</em>`)); else lr.append(h('small', '', 'No links yet. Put characters who belong together next to each other: Goku ↔ Vegeta, Luffy ↔ Zoro, two Swordsmen, same faction…')); el.append(lr) }
@@ -1080,12 +1083,12 @@ function teamPicker(slot) {
     const series = [...new Set(avail.map(c => c.anime))].sort((a, b) => ANAME(a).localeCompare(ANAME(b)))
     const mates = P.team.map((k, j) => j !== slot && k && BYKEY[k]).filter(Boolean), fitsTeam = c => mates.some(m => auraHits(m, c) || auraHits(c, m))
     const bar = h('div', 'tp-bar')
-    bar.append(sel('SERIES', 'series', [['ALL', 'All series'], ...(teamAnime ? [['TEAM', 'Matches team (' + ANAME(teamAnime) + ')']] : []), ...series.map(a => [a, ANAME(a)])]), sel('ROLE', 'role', [['ALL', 'All roles'], ...['FIGHTER', 'ASSASSIN', 'TANK', 'SUPPORT', 'SHOOTER', 'STRIKER'].filter(r => avail.some(c => c.role === r)).map(r => [r, r])]), sel('RARITY', 'rar', [['ALL', 'All rarities'], ...ORDER.slice().reverse().filter(r => avail.some(c => c.r === r)).map(r => [r, TIER[r].name])]), (() => { const cnt = {}; for (const c of avail) for (const t of new Set([...(c.cat || []), ...(c.aura || [])])) cnt[t] = (cnt[t] || 0) + 1; return sel('TAG / AURA', 'tag', [['ALL', 'All tags'], ['FIT', '✦ Fits my team'], ...Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).map(t => [t, auraTag(t) + ' · ' + cnt[t]])]) })())
+    bar.append(sel('SERIES', 'series', [['ALL', 'All series'], ...(teamAnime ? [['TEAM', 'Matches team (' + ANAME(teamAnime) + ')']] : []), ...series.map(a => [a, ANAME(a)])]), sel('ROLE', 'role', [['ALL', 'All roles'], ...['FIGHTER', 'ASSASSIN', 'TANK', 'SUPPORT', 'SHOOTER', 'STRIKER'].filter(r => avail.some(c => c.role === r)).map(r => [r, r])]), sel('RARITY', 'rar', [['ALL', 'All rarities'], ...ORDER.slice().reverse().filter(r => avail.some(c => c.r === r)).map(r => [r, TIER[r].name])]), (() => { const cnt = {}; for (const c of avail) for (const t of new Set([...(c.arch || []).map(x => 'ARCH:' + x), ...(c.cat || []), ...(c.aura || [])])) cnt[t] = (cnt[t] || 0) + 1; return sel('TAG / AURA', 'tag', [['ALL', 'All tags'], ['FIT', '✦ Fits my team'], ...Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).map(t => [t, auraTag(t) + ' · ' + cnt[t]])]) })())
     sh.append(bar)
     const g = h('div', 'cardgrid'); sh.append(g)
     function draw() {
       g.innerHTML = ''
-      const list = avail.filter(c => (TB.series === 'ALL' || (TB.series === 'TEAM' ? c.anime === teamAnime : c.anime === TB.series)) && (TB.role === 'ALL' || c.role === TB.role) && (TB.rar === 'ALL' || c.r === TB.rar) && (TB.tag === 'ALL' || (TB.tag === 'FIT' ? fitsTeam(c) : tagsOf(c).includes(TB.tag) || c.aura?.includes(TB.tag)))).sort((a, b) => scoreFor(b, TB.target) - scoreFor(a, TB.target))
+      const list = avail.filter(c => (TB.series === 'ALL' || (TB.series === 'TEAM' ? c.anime === teamAnime : c.anime === TB.series)) && (TB.role === 'ALL' || c.role === TB.role) && (TB.rar === 'ALL' || c.r === TB.rar) && (TB.tag === 'ALL' || (TB.tag === 'FIT' ? fitsTeam(c) : tagsOf(c).includes(TB.tag.replace(/^ARCH:/, '')) || c.aura?.includes(TB.tag)))).sort((a, b) => scoreFor(b, TB.target) - scoreFor(a, TB.target))
       if (!list.length) g.append(h('div', 'empty', '<b>No cards match</b>Change the filters above.'))
       for (const c of list) { const b = h('button', 'cg'); b.append(cardImg(eff(c), 240)); if (slot !== 0 && P.team[0] && BYKEY[P.team[0]] && leadHits(BYKEY[P.team[0]].lead, c)) b.append(h('span', 'syn-tag', 'BOOSTED')); b.onclick = () => previewTeamSwap(eff(c), slot, () => teamPicker(slot)); g.append(b) }
     }
@@ -2299,7 +2302,7 @@ function builderPool() {
     if (TBX.series.length && !TBX.series.includes(c.anime)) return false
     if (TBX.types.length && !TBX.types.includes(c.t || typeOfA(c.anime))) return false
     if (TBX.roles.length && !TBX.roles.includes(c.role)) return false
-    if (TBX.atags.length && !TBX.atags.some(t => tagsOf(c).includes(t))) return false
+    if (TBX.atags.length && !TBX.atags.some(t => tagsOf(c).includes(t.replace(/^ARCH:/, '')))) return false
     const ri = R.indexOf(c.r); if (ri < lo || ri > hi) return false
     if (TBX.faction && c.faction !== TBX.faction) return false
     if (TBX.tag === 'only' && !c.tag) return false; if (TBX.tag === 'none' && c.tag) return false
@@ -2345,7 +2348,7 @@ function teamBuilderPanel(el) {
     const cnt = {}; for (const c of own) cnt[c.anime] = (cnt[c.anime] || 0) + 1
     sec('SERIES', Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x]).map(a => chip(TBX.series.includes(a), ANAME(a) + ' · ' + cnt[a], () => flip(TBX.series, a))))
     const ty = [...new Set(own.map(c => c.t || typeOfA(c.anime)))]; sec('TYPE', ty.map(t => chip(TBX.types.includes(t), (TYPE[t] || {}).en || t, () => flip(TBX.types, t))))
-    { const cnt = {}; for (const c of own) for (const t of new Set([...(c.cat || []), ...(c.aura || [])])) cnt[t] = (cnt[t] || 0) + 1; const tags = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]); sec('CATEGORY / AURA TAG · cards that share the tag boost each other', tags.map(t => chip(TBX.atags.includes(t), auraTag(t) + ' · ' + cnt[t], () => flip(TBX.atags, t)))) }
+    { const cnt = {}; for (const c of own) for (const t of new Set([...(c.arch || []).map(x => 'ARCH:' + x), ...(c.cat || []), ...(c.aura || [])])) cnt[t] = (cnt[t] || 0) + 1; const tags = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]); sec('CATEGORY / AURA TAG · cards that share the tag boost each other', tags.map(t => chip(TBX.atags.includes(t), auraTag(t) + ' · ' + cnt[t], () => flip(TBX.atags, t)))) }
     sec('ONLY THESE ROLES', ROLES.map(ro => chip(TBX.roles.includes(ro), ro, () => flip(TBX.roles, ro))))
     sec('AT LEAST (ROLES)', ROLES.map(ro => chip(!!TBX.need[ro], ro + (TBX.need[ro] ? ' ×' + TBX.need[ro] : ''), () => { TBX.need[ro] = ((TBX.need[ro] || 0) + 1) % 4; if (!TBX.need[ro]) delete TBX.need[ro]; rerender() })))
     const R = 'CURELMX'.split(''), rs = (v, f) => { const x = h('select', 'tb-sel'); x.innerHTML = R.map(q => `<option value="${q}" ${q === v ? 'selected' : ''}>${TIER[q].name}</option>`).join(''); x.onchange = () => { f(x.value); rerender() }; return x }

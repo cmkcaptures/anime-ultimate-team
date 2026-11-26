@@ -52,3 +52,6 @@
 .tm-bond { display: grid; gap: 2px; margin: 10px 0; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,.05); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset }
 .tm-bond b { font: 800 13px var(--eUI, Inter); letter-spacing: .06em; color: #b8b0d0 } .tm-bond span { font: 600 12px var(--eUI, Inter); color: #a89cc8 }
 .tm-bond.on { background: rgba(60,200,140,.12); box-shadow: 0 0 0 1px rgba(60,220,150,.45) inset } .tm-bond.on b { color: #6affc0 } .tm-bond.on span { color: #d8fff0 }
+
+.archrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px } .archrow span { padding: 3px 10px; border-radius: 999px; background: rgba(240,207,114,.14); box-shadow: 0 0 0 1px rgba(240,207,114,.45) inset; font: 800 12px var(--eUI, Inter); color: #f6e2a8 }
+.tm-bond.mv { background: rgba(120,90,255,.14); box-shadow: 0 0 0 1px rgba(160,130,255,.5) inset } .tm-bond.mv b { color: #c8b8ff } .tm-bond.mv span { color: #e8e0ff }

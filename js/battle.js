@@ -10,7 +10,7 @@ import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missio
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
 import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
-import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=claude-1'
+import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=claude-2'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
@@ -44,12 +44,12 @@ export const leadHits = (lead, c) => !!(lead && c && lead.cats.some(k => k === c
 // ---- TEAM AURAS: every fighter buffs teammates that match one of its aura tags; grows with diamonds ----
 const ROLE_TAG = { FIGHTER: 'Fighters', TANK: 'Tanks', SHOOTER: 'Shooters', ASSASSIN: 'Assassins', SUPPORT: 'Supports' }
 export const AURA_PCT = { 3: 3, 4: 4, 5: 5, 6: 7, 7: 10 }, AURA_CAP = 40
-export const tagsOf = c => ['S:' + c.anime, c.faction, ...(c.cat || []), ROLE_TAG[c.role] || 'Fighters']
+export const tagsOf = c => ['S:' + c.anime, c.faction, ...(c.cat || []), ...(c.arch || []), ROLE_TAG[c.role] || 'Fighters']
 export const auraHits = (src, c) => !!(src && c && src.aura && src.aura.some(t => tagsOf(c).includes(t)))
 // ---- SQUAD BOND: fighters that share a team aura tag protect each other (rewards themed favourite teams) ----
 export function squadBond(cards) {
   const team = cards.filter(Boolean); let best = { n: 0, tag: null }
-  for (const t of new Set(team.flatMap(c => c.aura || []))) { const n = team.filter(c => tagsOf(c).includes(t) || (c.aura || []).includes(t)).length; if (n > best.n) best = { n, tag: t } }
+  for (const t of new Set(team.flatMap(c => [...(c.aura || []), ...(c.arch || [])]))) { const n = team.filter(c => tagsOf(c).includes(t) || (c.aura || []).includes(t)).length; if (n > best.n) best = { n, tag: t } }
   const tier = best.n >= 6 ? 3 : best.n >= 5 ? 2 : best.n >= 4 ? 1 : 0
   return { ...best, tier, dr: [0, 10, 15, 20][tier], regen: [0, 0, 2, 3][tier], save: tier === 3 }
 }
@@ -57,6 +57,13 @@ function applySquadBond(side) {
   const b = squadBond(side.team.map(f => f.card)); side.bond = b; if (!b.tier) return
   for (const f of side.team) { f.pe = { ...(f.pe || {}) }; f.pe.dr = Math.min(45, (f.pe.dr || 0) + b.dr); if (b.regen) f.pe.regen = (f.pe.regen || 0) + b.regen }
   if (b.save && side.team[0]) side.team[0].endure = (side.team[0].endure || 0) + 1
+}
+// ---- MULTIVERSE: reward for mixing series (the counterweight to single-series synergy) ----
+export function multiverse(cards) { const n = new Set(cards.filter(Boolean).map(c => c.anime)).size; return { n, pct: n >= 5 ? 12 : n >= 4 ? 8 : n >= 3 ? 5 : 0, ki: n >= 5 ? 1 : 0 } }
+function applyMultiverse(side) {
+  const m = multiverse(side.team.map(f => f.card)); side.multi = m; if (!m.pct) return
+  for (const f of side.team) { f.max = f.hp = Math.round(f.max * (1 + m.pct / 100)); const k = 1 + m.pct / 100; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k) }
+  side.kiBonus = (side.kiBonus || 0) + m.ki
 }
 export function teamAuras(cards, defDia = 3) { return cards.map(c => { if (!c) return 0; let b = 0; for (const s of cards) if (s && auraHits(s, c)) b += AURA_PCT[Math.min(7, Math.max(3, s.dia || defDia))]; return Math.min(AURA_CAP, b) }) }
 function applyAuras(side, defDia) { const b = teamAuras(side.team.map(f => f.card), defDia); side.team.forEach((f, i) => { const x = b[i]; if (!x) return; f.max = f.hp = Math.round(f.max * (1 + x / 100)); const k = 1 + x / 200; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.auraB = x }); side.auraAvg = Math.round(b.reduce((n, v) => n + v, 0) / Math.max(1, b.length)) }
@@ -2727,6 +2734,7 @@ export function startBattle(stage) {
   if (stage.rules?.ultStart) B.ai.gauge = Math.max(B.ai.gauge, stage.rules.ultStart)
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
   applySquadBond(B.you); if (LV) applySquadBond(B.ai)
+  applyMultiverse(B.you); if (LV) applyMultiverse(B.ai)
   if (mission) {
     const scaling = campaignScale(B.you.team, mission.chapter, mission.mission, B.ai.team.length)
     stage = { ...stage, level: scaling.level }

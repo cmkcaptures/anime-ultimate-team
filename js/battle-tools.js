@@ -75,6 +75,7 @@ export function fighterStatuses(f, passive, next, side, turn, enemyBasic) {
   if (f.endure > 0) add('♥ KO save ×' + f.endure, 'Survives ' + (f.endure > 1 ? f.endure + ' more KOs' : 'the next KO') + ' at 1 HP.')
   if (f.firstNull > 0) add('◎ Block ×' + f.firstNull, 'The next ' + f.firstNull + ' hit' + (f.firstNull > 1 ? 's do' : ' does') + ' nothing.')
   if (f.ultDodge > 0) add('✖ Ult erase ×' + f.ultDodge, 'Erases the next Ultimate fired at this fighter.')
+  if (side && side.multi && side.multi.pct) add('🌌 ' + side.multi.n + ' series', 'Multiverse: mixed team gets +' + side.multi.pct + '% stats' + (side.multi.ki ? ' and +1 Energy per turn' : '') + '.')
   if (side && side.bond && side.bond.tier) add('🔗 Bond ' + side.bond.n + '/6', 'Squad Bond: team takes ' + side.bond.dr + '% less damage' + (side.bond.regen ? ' and heals ' + side.bond.regen + '% a turn' : '') + '.')
   return entries
 }
