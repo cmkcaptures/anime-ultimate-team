@@ -708,7 +708,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       def.burn = Math.max(def.burn, ea.artBurn); def.burnT = Math.max(def.burnT, 3)
     }
     if (ea.worldCut && (kind === 'special' || kind === 'ult')) {
-      def.max = Math.max(1, def.max - Math.round((def.startingMax || def.max) * .1))
+      def.max = Math.max(Math.round((def.startingMax || def.max) * .7), def.max - Math.round((def.startingMax || def.max) * .1)) // never below 70% of starting max HP
       def.hp = Math.min(def.hp, def.max)
     }
     if (A && D && (def.sealed || def.aizenSealed || def.erasedUntil > 0) && !A.chainReward && A.team.some(f => !f.ko && PE(f).chainJail)) {
@@ -2707,6 +2707,7 @@ export function startBattle(stage) {
     }
   }
   if (stage.rules) for (const f of B.ai.team) { const r = { ...stage.rules }; f.pe = { ...(f.pe || {}), ...r, dmg: ((f.pe || {}).dmg || 0) + (r.dmg || 0), dodge: Math.min(60, ((f.pe || {}).dodge || 0) + (r.dodge || 0)), regen: ((f.pe || {}).regen || 0) + (r.regen || 0) }; if (r.endure) f.endure = (f.endure || 0) + r.endure }
+  if (stage.mode === 'redzone') for (const f of B.ai.team) { f.pe = { ...(f.pe || {}) }; for (const k of ['regen', 'teamHeal', 'koHeal', 'drain', 'bigHitHeal', 'ultHeal']) delete f.pe[k] } // Dead Zones: enemies never heal
   if (stage.rules?.ultStart) B.ai.gauge = Math.max(B.ai.gauge, stage.rules.ultStart)
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
   if (mission) {
