@@ -752,6 +752,11 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       def.shieldHp = Math.max(def.shieldHp, Math.round(def.max * .2))
       if (A && !att.ko && !['counter', 'redirect'].includes(kind)) hit(protector, att, 120, protector.pwr, false, D, A, 'counter')
       pasNote(protector, 'PROTECTIVE BOND')
+    } else if (!noSurvive && ed.hollowInstinct && !def.hollowInstinctUsed && D) {
+      def.hollowInstinctUsed = true
+      def.hp = Math.max(1, Math.round(def.max * .4))
+      D.gauge = GAUGE_MAX
+      pasNote(def, 'HOLLOW INSTINCT · SURVIVED · ULTIMATE READY')
     } else if (!noSurvive && ed.yhwach && !def.futureUsed) {
       def.futureUsed = true
       healHP(def, def.max * .4)
@@ -1330,7 +1335,13 @@ function playArt(B, who, idx) {
   return ev
 }
 const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION', 'Pierces Guard · +60% vs targets under 40% HP'], SUPPORT: ['RALLY', 'Big hit · heals the whole team 20%'], TANK: ['FORTRESS', 'Big hit · takes 30% less damage until your next turn'], SHOOTER: ['OVERDRIVE', 'Hits every enemy hard'], STRIKER: ['OVERDRIVE', 'Hits every enemy hard'] }
-const ultOf = c => c.pas?.e?.batch === 'soiFon' ? ['JAKUHŌ RAIKŌBEN', 'Strips shields, pierces Guard and detonates the Hornet mark'] :
+const RELEASE_ULTIMATES = {
+  ichigo: ['CERO OF THE HOLLOW', 'Strips shields, pierces Guard, hits all enemies and refunds 30% Ultimate gauge'],
+  ulquiorra: ['LANZA DEL RELÁMPAGO', 'Strips shields and pierces Guard across the enemy team'],
+  grimmjow: ['PANTERA EXECUTION', 'Strips shields, pierces Guard and refunds 3 Energy on a knockout'],
+}
+const ultOf = c => RELEASE_ULTIMATES[c.pas?.e?.releaseUltimate] || defaultUltimate(c)
+const defaultUltimate = c => c.pas?.e?.batch === 'soiFon' ? ['JAKUHŌ RAIKŌBEN', 'Strips shields, pierces Guard and detonates the Hornet mark'] :
   c.pas?.e?.batch === 'orihimeFinal' ? ['I REJECT THIS FUTURE', 'Heals, shields and buffs your team'] :
   c.pas?.e?.batch === 'yoruichi' ? ['RAIJIN SENKI', 'Detonates Thunder marks for +50% damage and refunds Energy and gauge'] :
   c.pas?.e?.batch === 'harribel' ? ['CASCADA', 'Hits all enemies, spends stored damage and shields your team'] :
@@ -1394,8 +1405,8 @@ function ultimate(B, who, choice) {
   const sever = lastDoor === 'sever'
   const quirkDefenders = new Set()
   const opposingKit = PE(d).shinobi
-  const single = !storyKit.nelRelease && !storyKit.samehada && (storyKit.nelEspada || storyKit.resonance || ['star', 'merlin', 'yoruichi', 'soiFon'].includes(storyKit.batch) || PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
-    (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso))
+  const single = storyKit.releaseUltimate === 'grimmjow' || (!storyKit.releaseUltimate && !storyKit.nelRelease && !storyKit.samehada && (storyKit.nelEspada || storyKit.resonance || ['star', 'merlin', 'yoruichi', 'soiFon'].includes(storyKit.batch) || PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
+    (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso)))
   const damaging = kit !== 14 && kit !== 20 && storyKit.batch !== 'orihimeFinal' && !PE(a).antiKit
   const minato = single && damaging && !sever && shinobiAlly(foe, 18, d)
   const interceptor = minato && !minato.raijinUsed ? minato : null
@@ -1463,6 +1474,17 @@ function ultimate(B, who, choice) {
       me.gauge = Math.min(GAUGE_MAX, me.gauge + 30)
       pasNote(toshiro, 'CAPTAIN COMBO · +30% ULT')
     }
+    return finish()
+  }
+  if (ea.releaseUltimate) {
+    const finisher = ea.releaseUltimate === 'grimmjow'
+    for (const enemy of finisher ? [d] : alive(foe)) {
+      H(enemy, base * (enemy === d ? (finisher ? 1.2 : 1) : .6), true, { batchStrip: true })
+    }
+    if (ea.releaseUltimate === 'ichigo' && ev.hits.some(hit => hit.hpDamage > 0))
+      me.gauge = Math.min(GAUGE_MAX, me.gauge + 30)
+    if (finisher && ev.hits.some(hit => hit.t.ko && hit.hpDamage > 0))
+      me.ki = Math.min(KI_MAX, me.ki + 3)
     return finish()
   }
   if (ea.nelEspada && !ea.nelRelease) {
