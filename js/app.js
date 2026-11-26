@@ -1,3 +1,4 @@
+import { showPatchNotes } from './patch-notes.js?v=1'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
 import { deadZoneReward } from './deadzone-rewards.js?v=1'
@@ -1212,7 +1213,9 @@ const bootDone = () => { const o = document.getElementById('boot'); if (o) { o.c
   bootP(.45, 'Loading fonts…'); await fontsReady
   bootP(1, 'Ready!')
   const hsh = location.hash.slice(1), [name, ...rest] = hsh.split('-')
-  go(PAGES[name] ? name : 'home', rest.join('-') || null, { silent: !hsh }); bootDone()
+  bootDone()
+  await showPatchNotes(P, async version => !(await act('ackPatchNotes', { version })).error)
+  go(PAGES[name] ? name : 'home', rest.join('-') || null, { silent: !hsh })
   setInterval(async () => {
     if (document.hidden || document.body.classList.contains('in-battle') || document.body.classList.contains('in-opener')) return
     await refresh()

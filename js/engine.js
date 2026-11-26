@@ -1,3 +1,4 @@
+import { PATCH_VERSION } from './patch-notes.js?v=1'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-3'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
@@ -131,9 +132,11 @@ function fresh() {
 }
 let S = null
 let saveTimer = null
-function save() {
+function save(immediate = false) {
   clearTimeout(saveTimer)
-  saveTimer = setTimeout(() => { S.savedAt = Date.now(); try { localStorage.setItem(LS_SAVE, JSON.stringify(S)) } catch { } cloudSave() }, 600)
+  const persist = () => { S.savedAt = Date.now(); try { localStorage.setItem(LS_SAVE, JSON.stringify(S)) } catch { } cloudSave() }
+  if (immediate) persist()
+  else saveTimer = setTimeout(persist, 600)
 }
 function rollDay() { const P = S.profile; if (P.day.date !== today()) P.day = { date: today(), opened: 0, sold: 0, bought: 0, awakened: 0, wonder: 0 } }
 const weekId = () => 'w' + Math.floor((Date.now() / 864e5 + 3) / 7)
@@ -1284,6 +1287,10 @@ function act(a) {
   if (a.type === 'awk' && own(a.key)?.locked && AWK.find(n => n.id === a.node)?.dup > 0) return protectedCard
   if ((a.type === 'sbc' || a.type === 'tradeEscrow' || a.type === 'tradeEscrow_') && ((a.type === 'sbc' ? a.keys : a.offer) || []).some(k => own(k)?.locked)) return protectedCard
   switch (a.type) {
+    case 'ackPatchNotes':
+      if (a.version !== PATCH_VERSION) return { error: 'The patch version changed. Reload to see the latest notes.' }
+      P.seenPatchVersion = Math.max(P.seenPatchVersion || 0, a.version)
+      return {}
     case 'draftStart': {
       const info = draftWeek(CARDS, now)
       if (P.draftRun?.week === info.week && ['drafting', 'ready'].includes(P.draftRun.status)) return { error: 'Finish or abandon your current run.' }
@@ -1945,6 +1952,8 @@ async function boot() {
   const campaignCards = unlockRetiredCampaign()
   if (campaignCards.length) notice('Former Campaign rewards added to your club: ' + campaignCards.join(', ') + '.', 'ok')
   refreshWonder(true)
+  const seenPatchVersion = Math.max(S.profile.seenPatchVersion || 0, local?.profile?.seenPatchVersion || 0, cloud?.profile?.seenPatchVersion || 0)
+  if (seenPatchVersion) S.profile.seenPatchVersion = seenPatchVersion
   save(); publish(summary(), true)
   setInterval(() => refreshWonder(), 10000)
   // pull fresh cloud data when coming back to the tab (e.g. played on the other device)
@@ -1966,6 +1975,6 @@ window.fetch = async (input, init = {}) => {
   if (m[1] === 'cards') return reply(CARDS)
   if (m[1] === 'state') { const s = state(); S.notices = []; save(); return reply(s) }
   let a = {}; try { a = JSON.parse(init.body || '{}') } catch { }
-  const r = act(a); save(); return reply({ ...r, state: state() })
+  const r = act(a); save(a.type === 'ackPatchNotes' && !r.error); return reply({ ...r, state: state() })
 }
 window.AUT_ENGINE = { ready, get save() { return S }, cloud: !!SB }

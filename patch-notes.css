@@ -1,0 +1,50 @@
+.patch-notes {
+  box-sizing: border-box;
+  width: min(760px, calc(100% - 24px));
+  max-height: min(800px, calc(100dvh - 24px));
+  padding: 0;
+  border: 1px solid #515a75;
+  border-radius: 16px;
+  background: #151b28;
+  color: #f3f5fb;
+  box-shadow: 0 20px 80px #0009;
+  font-family: Inter, system-ui, sans-serif;
+}
+.patch-notes[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.patch-notes::backdrop { background: #070a12e8; }
+.patch-notes header,
+.patch-notes footer { padding: 16px clamp(14px, 4vw, 28px); }
+.patch-notes header { border-bottom: 1px solid #394159; }
+.patch-notes .patch-kicker {
+  margin: 0 0 5px;
+  color: #ffd58d;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.patch-notes h2 {
+  margin: 0;
+  font: 800 clamp(2rem, 6vw, 3.4rem)/.98 "Barlow Condensed", Inter, sans-serif;
+}
+.patch-notes .patch-date { display: block; margin-top: 7px; color: #b9c4da; }
+.patch-notes .patch-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px clamp(14px, 4vw, 28px) 16px;
+}
+.patch-notes section + section { border-top: 1px solid #394159; }
+.patch-notes h3 { margin: 16px 0 8px; color: #ffd58d; font-size: 1.05rem; }
+.patch-notes ul { margin: 0 0 14px; padding-left: 20px; color: #e0e7f4; line-height: 1.55; }
+.patch-notes li + li { margin-top: 7px; }
+.patch-notes footer {
+  border-top: 1px solid #394159;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.patch-notes .patch-status { margin-right: auto; color: #ffd58d; font-size: .85rem; }
+.patch-notes button { min-height: 44px; flex: 0 0 auto; }
+.patch-notes :focus-visible { outline: 2px solid #ffd58d; outline-offset: -3px; }
