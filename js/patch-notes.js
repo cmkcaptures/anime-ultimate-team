@@ -1,7 +1,13 @@
 // Increase this number and update the notes for each player-facing patch.
-export const PATCH_VERSION = 2026112602
+export const PATCH_VERSION = 2026112603
 
 const NOTES = [
+  ['Veteran Roster Update', [
+    '30 older cards have new tools or stronger specialties: 20 Legendaries and 10 Mythics.',
+    'Legendaries: Hisoka, Itachi, Geto, Maki, Hagoromo, Sanji, Jiren, Mikasa, Jiraiya, Lara Tybur, Tatsumaki, Neferpitou, Black Cat Yoruichi, Armin, Kishibe, Momo, Final War Bakugo, Reze, Zeldris and Vigilante Deku.',
+    'Mythics: Arthur (vs Dragon), Serious Saitama, Super Saiyan 4 Goku, Diavolo, Prime All Might, Blackbeard, Genos (Armor Upgrade), The Evangelist, Final Explosion Vegeta and Super Saiyan Blue Gogeta.',
+    'Highlights: Maki, Kishibe, Arthur and Saitama now strip shields with Specials. Jiren, Lara, Momo and All Might protect an incoming ally on their first live tag-out. Hagoromo, Geto, Jiraiya, Momo and The Evangelist offer more team healing. Itachi, Vigilante Deku and Blue Gogeta bypass damage reflection with Specials and Ultimates.',
+  ]],
   ['Roster Update', [
     'Epic Reiner (Armored Titan) gives the incoming ally a 25% max-HP shield the first time he tags out alive.',
     'Epic Kakashi (Double Mangekyo) strips the active enemy’s shield with his Special. Its power rises from 220% to 245%.',
