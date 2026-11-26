@@ -1,4 +1,4 @@
-import { showPatchNotes } from './patch-notes.js?v=3'
+import { showPatchNotes } from './patch-notes.js?v=4'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
 import { deadZoneReward } from './deadzone-rewards.js?v=1'
@@ -540,7 +540,7 @@ function showForms(card) {
     const kit = h('div', 'forms-kit')
     kit.setAttribute('aria-live', 'polite')
     kit.append(h('h3', '', form.ver), h('div', 'movebox', `<b>${form.mv}</b><p>${form.tx.join(' ')}</p>`),
-      h('div', 'movebox', `<b>${form.pas.n}</b><p>${form.pas.d}</p>`),
+      h('div', 'movebox', `<b>${form.pas.n}</b><p>${form.pas.d}</p>`), kitBreakdown(form),
       h('p', 'muted', i ? card.transformations[i - 1].requirement : 'Starting form. Transform during battle.'))
     panel.replaceChildren(art, kit)
   }
@@ -611,7 +611,27 @@ function unlockRoutes(card) {
 }
 // ---- plain-language passive breakdown ----
 const KIT_WORDS = { dmg: v => '+' + v + '% damage', teamDmg: v => 'Whole team +' + v + '% damage', dodge: v => v + '% chance to dodge attacks', dr: v => 'Takes ' + v + '% less damage', reflect: v => 'Reflects ' + v + '% of damage taken', regen: v => 'Heals ' + v + '% HP every turn', teamHeal: v => 'Heals the whole team ' + v + '% every turn', endure: v => 'Survives ' + (v > 1 ? v + ' KOs' : 'the first KO') + ' at 1 HP', revive: () => 'Comes back once after being KO\'d', first: () => 'Always moves first', pierce: () => 'Every attack ignores Guard', pierceStrike: () => 'Strikes ignore Guard', pierceSpec: () => 'Specials ignore Guard', firstNull: v => 'The first ' + v + ' hit' + (v > 1 ? 's' : '') + ' on this card do nothing', ultDodge: v => 'Erases the first ' + (v > 1 ? v + ' Ultimates' : 'Ultimate') + ' fired at it', nullPassive: () => 'Switches off the enemy\'s passive', burn: v => 'Attacks burn the enemy for ' + v + '% each turn', drain: v => 'Heals for ' + v + '% of damage dealt', exec: v => '+' + v + '% damage to enemies under 40% HP', ramp: v => '+' + v + '% damage every turn it stays in', crit: v => '+' + v + '% critical hit chance', spec: v => 'Specials deal +' + v + '%', strikeBoost: v => 'Strikes deal +' + v + '%', ultBoost: v => 'Ultimate deals +' + v + '%', slow: v => 'Enemy starts with ' + v + ' less Energy', energyBurn: v => 'Each hit removes ' + v + ' enemy Energy', energyTurn: v => '+' + v + ' Energy every turn', doubleUlt: () => 'Ultimate fires twice', twinUlt: () => 'Ultimate fires twice', ultAoe: () => 'Ultimate hits every enemy', doubleStrike: v => v + '% chance for Strikes to hit twice', tripleStrike: () => 'Strikes hit 3 times', adapt: v => 'Takes ' + v + '% less damage after each hit it takes', shield: v => 'Starts with a ' + v + '% HP shield', bleed: v => 'Loses ' + v + '% HP every turn (the cost of its power)', allStats: v => '+' + v + '% to all stats', timeStop: v => v + '% chance per turn to stop the enemy turn', trueDmg: () => 'Ignores the enemy\'s damage reduction', antiKit: () => 'Cancels the enemy\'s defensive passives', blackflash: v => v + '% chance for a 2.5× Black Flash hit' }
-function kitBullets(c) { const e = (c.pas && c.pas.e) || {}; const out = []; for (const [k, v] of Object.entries(e)) { const f = KIT_WORDS[k]; if (f) out.push(f(v)) } return out }
+function kitBullets(card) {
+  const effects = Object.entries(card.pas?.e || {})
+  const mapped = effects.flatMap(([key, value]) => Object.hasOwn(KIT_WORDS, key) ? [KIT_WORDS[key](value)] : [])
+  const passive = card.pas?.d?.trim()
+  if (passive && (!mapped.length || effects.some(([key]) => !Object.hasOwn(KIT_WORDS, key)))) mapped.push(passive)
+  const special = (card.tx || []).filter(Boolean).join(' ').trim()
+  if (special) mapped.push('Special: ' + special)
+  if (!mapped.length) mapped.push('This card uses the standard Strike, Blast and Guard Arts.')
+  return [...new Set(mapped)]
+}
+function kitBreakdown(card) {
+  const panel = h('div', 'movebox howbox', '<b>🔍 HOW IT WORKS</b>')
+  const bullets = h('ul')
+  for (const explanation of kitBullets(card)) {
+    const item = h('li')
+    item.textContent = explanation
+    bullets.append(item)
+  }
+  panel.append(bullets)
+  return panel
+}
 async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
   const base = BYKEY[key]; if (!base) return
   const c = kitOnly ? base : eff(base), e = kitOnly ? null : club()[key], inTeam = P.team.includes(key), spare = spendableCopies(e, inTeam), lvl = e ? e.lvl || 0 : 0
@@ -652,7 +672,7 @@ async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
     if (e) d.append(progBox(key))
     if (false) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
     if (c.pas) d.append(h('div', 'movebox pasbox', `<b>⚡ MOMENT · ${c.pas.n}</b><p>${c.pas.d}</p>`))
-    { const kb = kitBullets(c); if (kb.length) d.append(h('div', 'movebox howbox', `<b>🔍 HOW IT WORKS</b><ul>${kb.map(x => '<li>' + x + '</li>').join('')}</ul>`)) }
+    d.append(kitBreakdown(c))
     if (e) { const lv = e.lv || 1, dia = Math.min(7, e.dia || 3), stat = ((lv - 1) * .15).toFixed(1), nextR = lv >= 100 ? null : (Math.floor((lv - 1) / 25) + 1) * 25 + 1; d.append(h('div', 'movebox lvbox', `<b>📈 LEVEL & DIAMONDS</b><p><b>Lv ${lv}/100:</b> +${stat}% all stats, +${Math.floor((lv - 1) / 25)} rating${nextR ? ' · next +1 rating at Lv ' + nextR : ' · MAXED'}. Level 100 = +15% stats, +3 rating. Earn XP from battles (win +60), Training Tickets (+400) or coins.</p><p><b>${dia}◆:</b> +${(dia - 3) * 4}% stats, +${dia - 3} rating from diamonds. Each duplicate pull adds a diamond. 7◆ = Limit Break: the passive gets 25% stronger (e.g. +20% damage → +25%), plus the Awakened Ultimate.</p>`)) }
     if (c.lead) d.append(h('div', 'movebox leadbox', `<b>👑 LEADER SKILL</b><p>${leadText(c.lead)}</p>`))
     if (!kitOnly) { const dd = Math.min(7, (club()[c.key] || {}).dia || 3); d.append(h('div', 'movebox awkbox' + (dd >= 7 ? ' on' : ''), dd >= 7 ? `<b>✦ AWAKENED ULTIMATE · UNLOCKED</b><p>Ultimate deals <b>+35%</b>, gives <b>+2 Energy</b>, heals <b>15%</b> and plays a full cinematic.</p>` : `<b>✦ AWAKENED ULTIMATE · 🔒 7◆</b><p>Reach 7◆ (${dd}/7) to awaken: Ultimate +35% damage, +2 Energy, heals 15%, full cinematic.</p>`)) }

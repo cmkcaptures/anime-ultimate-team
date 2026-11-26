@@ -3,6 +3,11 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
 ## 2026-11-26 · Codex
+- How It Works now renders for every card detail, including unowned cards, kit previews and transformation forms. It includes the Special and falls back to the card’s passive description when its effect keys are custom. Uses text nodes for the bullets.
+- No kit changes. The separate audit for inaccurate passive descriptions remains open. Patch notes version 2026112604.
+
+---
+## 2026-11-26 · Codex
 - Refreshed 30 older cards (20 Legendary, 10 Mythic) with existing kit effects: cover on tag-out, shield stripping, Guard piercing, reflection counters, team healing, bench pressure, Energy drain and targeted Special upgrades. Full roster list is in the version 2026112603 patch notes.
 - Kept card IDs, OVRs and rarities intact and excluded every card resolved in current Dead Zone enemy lineups. No battle engine or Dead Zone rule changes. This is a kit pass; the wider passive-description audit is still open.
 

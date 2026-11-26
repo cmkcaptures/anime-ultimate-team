@@ -1,4 +1,4 @@
-import { PATCH_VERSION } from './patch-notes.js?v=3'
+import { PATCH_VERSION } from './patch-notes.js?v=4'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-3'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'

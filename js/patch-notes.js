@@ -1,7 +1,8 @@
 // Increase this number and update the notes for each player-facing patch.
-export const PATCH_VERSION = 2026112603
+export const PATCH_VERSION = 2026112604
 
 const NOTES = [
+  ['Card Clarity', ['Every card now has a How It Works panel with a Special summary and an explanation of its passive, including unique kits.']],
   ['Veteran Roster Update', [
     '30 older cards have new tools or stronger specialties: 20 Legendaries and 10 Mythics.',
     'Legendaries: Hisoka, Itachi, Geto, Maki, Hagoromo, Sanji, Jiren, Mikasa, Jiraiya, Lara Tybur, Tatsumaki, Neferpitou, Black Cat Yoruichi, Armin, Kishibe, Momo, Final War Bakugo, Reze, Zeldris and Vigilante Deku.',
