@@ -13,7 +13,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import struct
-          for path in sorted(Path('.').glob('image(20261126-*.png)')):
+          for path in sorted(Path('.').glob('image(20261126-*).png')):
               b = path.read_bytes()
               assert b[:8] == b'\x89PNG\r\n\x1a\n', path
               print(path.name, *struct.unpack('>II', b[16:24]))
