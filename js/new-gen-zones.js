@@ -26,7 +26,11 @@ export const NEW_GEN_ZONES = [
 
 export function newGenBalance(index, power) {
   const elite = Math.min(.9, Math.max(0, power - .94))
-  return { hp: 3 + index * .24 + elite * 2.3, damage: 1.88 + index * .115 + elite * .52 }
+  return {
+    hp: 2.9 + index * .15 + elite * 1.45,
+    damage: 1.55 + index * .075 + elite * .36,
+    incomingHitCap: .36 + index * .015,
+  }
 }
 
 export function newGenIntent(mechanic, lead, enemy, roll) {

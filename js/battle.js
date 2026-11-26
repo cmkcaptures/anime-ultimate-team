@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=4'
-import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=1'
+import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=2'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
 import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=2'
@@ -280,7 +280,7 @@ function newGenSignatureBudget(att, def, side, kind) {
     side.newGenSignature = { action: side.reworkAction, targets: new WeakMap() }
   }
   const { targets } = side.newGenSignature
-  const fraction = (kind === 'ult' ? .65 : .45) + (side.newGenPunished ? .15 : 0)
+  const fraction = (kind === 'ult' ? .55 : .40) + (side.newGenPunished ? .10 : 0)
   const limit = Math.max(1, Math.floor(def.max * fraction))
   const remaining = Math.max(0, limit - (targets.get(def) || 0))
   return { remaining, spend: damage => targets.set(def, limit - remaining + damage) }
@@ -653,7 +653,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     pasNote(att, mark.kind === 'quincy' ? 'COVERING FIRE · +1 ENERGY' : 'DIVINE DOGS · FOLLOW-UP')
   }
   const previousHP = def.hp
-  if (def.newGenBoss) dmg = Math.min(dmg, Math.ceil(def.max * .32))
+  if (def.newGenBoss) dmg = Math.min(dmg, Math.ceil(def.max * def.newGenIncomingHitCap))
   if (dmg >= def.hp && !ea.antiKit && !mod.sever && rewriteLethalHit(def, D, PE, healHP, pasNote))
     return { dmg: 0, hpDamage: 0, crit: false, mu, miss: 'REJECTED' }
   const hpDamage = Math.min(def.hp, dmg)
@@ -2730,7 +2730,11 @@ export function startBattle(stage) {
   })
   if (newGen) Object.assign(balance, newGenBalance(stage.newGen, pveSquadPower(B.you.team)))
   if (balance) {
-    if (deadZone) for (const enemy of B.ai.team) { enemy.deadZoneEnemy = true; enemy.newGenBoss = newGen }
+    if (deadZone) for (const enemy of B.ai.team) {
+      enemy.deadZoneEnemy = true
+      enemy.newGenBoss = newGen
+      if (newGen) enemy.newGenIncomingHitCap = balance.incomingHitCap
+    }
     B.ai.campaignDamage = balance.damage
     for (const enemy of B.ai.team) {
       if (deadZone) enemy.deadZoneRegenBase = enemy.max
@@ -3700,7 +3704,8 @@ export function startBattle(stage) {
     autoTagPartner(act(B.ai), B.turn)
     flushPas()
     if (deadZone) {
-      const escalating = Math.min(.48, Math.max(0, B.turn - 4) * .08)
+      const lateTurns = Math.max(0, B.turn - 4)
+      const escalating = newGen ? Math.min(.25, lateTurns * .05) : Math.min(.48, lateTurns * .08)
       const intent = B.dzIntent
       const punished = newGen && intent
         ? newGenFailed(intent, act(B.you), (B.you.switchSerial || 0) !== intent.switchSerial)
@@ -3711,7 +3716,7 @@ export function startBattle(stage) {
       }
       B.dzIntent = null
       if (newGen) s.newGenPunished = !!punished
-      s.campaignDamage = balance.damage * (1 + escalating + (punished ? .5 : newGen && intent ? -.22 : 0))
+      s.campaignDamage = balance.damage * (1 + escalating + (punished ? (newGen ? .28 : .5) : newGen && intent ? -.22 : 0))
       if (punished) {
         if (newGen && stage.newGen === 4) B.you.ki = Math.max(0, B.you.ki - 2)
         s.gauge = Math.min(GAUGE_MAX, s.gauge + 35)
