@@ -609,27 +609,37 @@ function unlockRoutes(card) {
   if (card.season) return ['Season ' + card.season + ' Pass reward']
   return ['Pack Point Exchange · ' + fmt(ST.ppCost[card.r]) + ' points', 'Craft · ' + fmt(ST.shardCost[card.r]) + ' shards']
 }
-// ---- plain-language passive breakdown ----
-const KIT_WORDS = { dmg: v => '+' + v + '% damage', teamDmg: v => 'Whole team +' + v + '% damage', dodge: v => v + '% chance to dodge attacks', dr: v => 'Takes ' + v + '% less damage', reflect: v => 'Reflects ' + v + '% of damage taken', regen: v => 'Heals ' + v + '% HP every turn', teamHeal: v => 'Heals the whole team ' + v + '% every turn', endure: v => 'Survives ' + (v > 1 ? v + ' KOs' : 'the first KO') + ' at 1 HP', revive: () => 'Comes back once after being KO\'d', first: () => 'Always moves first', pierce: () => 'Every attack ignores Guard', pierceStrike: () => 'Strikes ignore Guard', pierceSpec: () => 'Specials ignore Guard', firstNull: v => 'The first ' + v + ' hit' + (v > 1 ? 's' : '') + ' on this card do nothing', ultDodge: v => 'Erases the first ' + (v > 1 ? v + ' Ultimates' : 'Ultimate') + ' fired at it', nullPassive: () => 'Switches off the enemy\'s passive', burn: v => 'Attacks burn the enemy for ' + v + '% each turn', drain: v => 'Heals for ' + v + '% of damage dealt', exec: v => '+' + v + '% damage to enemies under 40% HP', ramp: v => '+' + v + '% damage every turn it stays in', crit: v => '+' + v + '% critical hit chance', spec: v => 'Specials deal +' + v + '%', strikeBoost: v => 'Strikes deal +' + v + '%', ultBoost: v => 'Ultimate deals +' + v + '%', slow: v => 'Enemy starts with ' + v + ' less Energy', energyBurn: v => 'Each hit removes ' + v + ' enemy Energy', energyTurn: v => '+' + v + ' Energy every turn', doubleUlt: () => 'Ultimate fires twice', twinUlt: () => 'Ultimate fires twice', ultAoe: () => 'Ultimate hits every enemy', doubleStrike: v => v + '% chance for Strikes to hit twice', tripleStrike: () => 'Strikes hit 3 times', adapt: v => 'Takes ' + v + '% less damage after each hit it takes', shield: v => 'Starts with a ' + v + '% HP shield', bleed: v => 'Loses ' + v + '% HP every turn (the cost of its power)', allStats: v => '+' + v + '% to all stats', timeStop: v => v + '% chance per turn to stop the enemy turn', trueDmg: () => 'Ignores the enemy\'s damage reduction', antiKit: () => 'Cancels the enemy\'s defensive passives', blackflash: v => v + '% chance for a 2.5× Black Flash hit' }
-function kitBullets(card) {
-  const effects = Object.entries(card.pas?.e || {})
-  const mapped = effects.flatMap(([key, value]) => Object.hasOwn(KIT_WORDS, key) ? [KIT_WORDS[key](value)] : [])
-  const passive = card.pas?.d?.trim()
-  if (passive && (!mapped.length || effects.some(([key]) => !Object.hasOwn(KIT_WORDS, key)))) mapped.push(passive)
-  const special = (card.tx || []).filter(Boolean).join(' ').trim()
-  if (special) mapped.push('Special: ' + special)
-  if (!mapped.length) mapped.push('This card uses the standard Strike, Blast and Guard Arts.')
-  return [...new Set(mapped)]
+// ---- practical play tips ----
+function kitTip(card) {
+  const e = card.pas?.e || {}
+  if (e.wheel) return 'Keep Mahoraga in against repeat attacks to build adaptation. Once the wheel fills, use it to pressure a guarded enemy.'
+  if (e.samehada) return 'Switch Kisame in against Blast-heavy enemies. Build charges before using Water Dome to protect your team.'
+  if (e.nelEspada) return 'Pair Nel with Espada damage dealers. Keep her alive and use her Special when your team needs protection.'
+  if (e.releaseUltimate === 'ichigo') return 'Save Full Hollow’s Ultimate for a shielded lineup with several enemies still standing.'
+  if (e.hollowInstinct) return 'Keep enough gauge for Full Hollow. If Hollow Instinct triggers, use the opening to transform.'
+  if (e.storyCover) return 'Open with this fighter, then tag out while alive to protect the teammate taking over.'
+  if (e.batch === 'harribel') return 'Keep Harribel alive to cover your team. Bring her in to cash out stored damage with Cascada when several allies need shields.'
+  if (e.teamHeal || e.teamDmg || e.hundredHeal) return 'Keep this fighter alive on the bench to support your lead. Bring them in when the matchup is safe.'
+  if (e.stripSpecial) return 'Save the Special for a shielded lead, then follow up while the shield is down.'
+  if (e.pierceReflect) return 'Against enemies that reflect damage, spend Energy on Specials and save gauge for your Ultimate.'
+  if (e.exec) return 'Bring this fighter in to finish a weakened target. Let another teammate soften the enemy first.'
+  if (e.ramp || e.adapt || e.stack) return 'Lead with this fighter in longer fights so their passive has time to build.'
+  if (e.ultStart || e.ultBoost || e.doubleUlt || e.twinUlt) return 'Use early Arts to build gauge, then time your Ultimate for a clean hit.'
+  if (card.transformations?.length && !/_phase\d+$/.test(card.id || '')) return 'Check the form requirements before spending Ultimate gauge. Build toward the release that suits the fight.'
+  if (e.pierceSpec || (card.tx || []).some(line => /ignores guard/i.test(line))) return 'Hold your Special for a Guard turn so you can keep pressure on the enemy.'
+  if ((card.tx || []).some(line => /all enemies/i.test(line))) return 'Use the Special early while several enemies are alive to get more value from its spread damage.'
+  return {
+    TANK: 'Use this fighter to absorb pressure, then switch before they become an easy knockout.',
+    SUPPORT: 'Bring this fighter in when the matchup is safe and keep your main damage dealer ready on the bench.',
+    ASSASSIN: 'Look for a safe switch against a weakened enemy and save enough Energy to finish them.',
+    SHOOTER: 'Build a hand with Blasts and save Energy for the Special when you have a clean opening.',
+  }[card.role] || 'Build Energy with cheaper Arts and save your Special for a clean opening.'
 }
 function kitBreakdown(card) {
   const panel = h('div', 'movebox howbox', '<b>🔍 HOW IT WORKS</b>')
-  const bullets = h('ul')
-  for (const explanation of kitBullets(card)) {
-    const item = h('li')
-    item.textContent = explanation
-    bullets.append(item)
-  }
-  panel.append(bullets)
+  const tip = h('p')
+  tip.textContent = kitTip(card)
+  panel.append(tip)
   return panel
 }
 async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
@@ -1325,7 +1335,6 @@ async function openPack(type) {
     return
   }
   const pre = cards.map(c => thumbURL(c, 440, true)) // start drawing the cards right away
-  for (const c of cards) if (TIER[c.r].rank >= 4) { const im = new Image(); im.src = c.url; if (im.decode) im.decode().catch(() => {}) } // walkout art decodes off the critical path
   const r = await act('openPack', { pack: type, keys: cards.map(c => c.key), sig: sigs })
   if (r.error) return
   const cnt = {}; cards.forEach(c => cnt[c.key] = (cnt[c.key] || 0) + 1); const isNew = k => (club()[k]?.n || 0) <= cnt[k]; const seenNew = new Set()
@@ -1394,6 +1403,7 @@ async function openPack(type) {
       const [cx, cy] = C()
       if (rk >= 4) { // walkout + orb
         try { await walkout(ov, FXC, c, rk) } catch { return }
+        if (skipping) return
         ov.classList.add('cine'); e.classList.add('charge'); shake(1); await wait(300)
       } else { sfx('charge', rk); e.classList.add('charge'); FXC.gather(cx, cy, col, .45, 16); await wait(480) }
       sfx('reveal', rk); e.classList.remove('charge', 'facedown'); e.classList.add('reveal')
@@ -1404,7 +1414,8 @@ async function openPack(type) {
       const [cx, cy] = C(); e.classList.add('reveal'); sfx('reveal', rk); FXC.hit(cx, cy, col, .7 + rk * .2)
       if (!i) await wait(200)
     }
-    setArt(urls[i])
+    if (rk < 4) setArt(urls[i])
+    else for (const backdrop of ov.querySelectorAll('.o2-art')) backdrop.classList.remove('on')
     { const [cx, cy] = C(), sr = stage.getBoundingClientRect()
       if (rk >= 2) FXC.rays(cx, cy, col, 8 + rk * 3, 700 + rk * 120, 1.1 + rk * .15)
       FXC.twinkle(cx, cy, sr.width * 1.3, sr.height * 1.1, col, 6 + rk * 3, 1.6)
@@ -1855,30 +1866,43 @@ function sbcSheet(q, last = false) {
 
 // ================= WALKOUT (Legendary+) =================
 async function walkout(ov, FXC, c, rk) {
-  const cols = ['L', 'M', 'X'].filter(r => TIER[r].rank <= rk).map(tierCol), fin = cols[cols.length - 1]
-  const wk = h('div', 'wk', `<div class="wk-bg"></div><div class="wk-beams">${'<i></i>'.repeat(11)}</div><div class="wk-orb"><i></i></div><div class="wk-sil"></div><div class="wk-info"></div><div class="wk-tap">TAP TO SPEED UP</div>`)
-  const cv = ov.querySelector('canvas'); cv ? cv.before(wk) : ov.append(wk)
-  let fast = false; wk.onclick = () => { fast = true }
-  const W = async ms => { await wait(fast ? ms * .2 : ms); if (!ov.isConnected) throw 0 }
-  const cx = innerWidth / 2, cy = innerHeight * .45, orb = wk.querySelector('.wk-orb')
-  wk.style.setProperty('--oc', cols[0]); await W(30); wk.classList.add('on'); sfx('orb', 0)
-  FXC.gather(cx, cy, cols[0], 1.1, 50); await W(1200)
-  for (let i = 1; i < cols.length; i++) {
-    orb.classList.remove('crack'); void orb.offsetWidth; orb.classList.add('crack')
-    wk.style.setProperty('--oc', cols[i]); if (i === 2) wk.classList.add('rb')
-    FXC.hit(cx, cy, cols[i], 1.6); FXC.screen(i === 2 ? '#ffffff' : cols[i], .45, .35); FXC.gather(cx, cy, cols[i], 1.3, 50); sfx('crack', i)
-    ov.classList.remove('shk2'); void ov.offsetWidth; ov.classList.add('shk2')
-    await W(1150)
+  if (reduce || !ov.isConnected) return
+  const col = tierCol(c.r)
+  const image = new Image()
+  image.src = await thumbURL(c, 440, true)
+  image.alt = c.name + ' · ' + c.ver
+  if (!ov.isConnected) return
+
+  const scene = h('div', 'pull-cinematic')
+  const rings = h('div', 'pull-cinematic-rings')
+  rings.setAttribute('aria-hidden', 'true')
+  const card = h('div', 'pull-cinematic-card')
+  card.append(image)
+  const label = h('div', 'pull-cinematic-label')
+  label.textContent = TIER[c.r].name + ' · ' + c.name
+  scene.style.setProperty('--pull-color', col)
+  scene.append(rings, card, label)
+  let skip
+  const skipped = new Promise(resolve => { skip = resolve })
+  scene.onclick = skip
+  const button = ov.querySelector('.o2-skip')
+  button?.addEventListener('click', skip)
+  ov.append(scene)
+  const x = innerWidth / 2, y = innerHeight * .46
+  try {
+    sfx('orb', 0)
+    FXC.gather(x, y, col, .65, rk >= 5 ? 38 : 22)
+    await Promise.race([wait(620), skipped])
+    if (!ov.isConnected) return
+    scene.classList.add('revealed')
+    sfx('fanfare', rk)
+    FXC.hit(x, y, col, 1.6)
+    FXC.rays(x, y, col, rk >= 5 ? 23 : 14, 900, 1)
+    await Promise.race([wait(920), skipped])
+  } finally {
+    button?.removeEventListener('click', skip)
+    scene.remove()
   }
-  sfx('fanfare', rk); FXC.hit(cx, cy, fin, 2.6); FXC.screen('#ffffff', .85, .5); FXC.rays(cx, cy, fin, 26, 1300, 1.7); wk.classList.add('burst')
-  await W(650)
-  const info = wk.querySelector('.wk-info')
-  for (const t of [ANAME(c.anime), c.faction + ' · ' + c.role, c.ver]) { info.innerHTML = `<div class="wk-line"><span>${t}</span><i></i></div>`; sfx('soft'); await W(950) }
-  info.innerHTML = ''
-  const sil = wk.querySelector('.wk-sil'); sil.style.backgroundImage = `url("${c.url}")`; sil.classList.add('in'); await W(1000)
-  sil.classList.add('lit'); sfx('reveal', rk); FXC.hit(cx, cy, fin, 1.8); FXC.rays(cx, cy, fin, 18, 1000, 1.4)
-  info.innerHTML = `<div class="wk-name">${c.name}</div>`; await W(1300)
-  wk.classList.add('out'); await W(380); wk.remove()
 }
 
 // ================= SEASON PASS =================
