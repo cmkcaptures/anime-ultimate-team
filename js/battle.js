@@ -1,4 +1,4 @@
-import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=4'
+import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-3'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
@@ -357,10 +357,10 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     def.batchFlashTurn = clock
     if (D.waveArtRunning) D.waveDodgeTarget = def
     D.ki = Math.min(KI_MAX, D.ki + 1)
-    D.gauge = Math.min(GAUGE_MAX, D.gauge + 15)
+    D.gauge = Math.min(GAUGE_MAX, D.gauge + 10)
     def.batchFlash = true
-    hit(def, att, 480, def.pwr, true, D, A, 'counter')
-    pasNote(def, 'FLASH GODDESS · COUNTER · +1 ENERGY · +15% ULT')
+    hit(def, att, 360, def.pwr, true, D, A, 'counter')
+    pasNote(def, 'FLASH GODDESS · COUNTER · +1 ENERGY · +10% ULT')
     return { dmg: 0, hpDamage: 0, crit: false, mu: 1, miss: 'DODGED' }
   }
   if (kind !== 'redirect' && !mod.sever) {
@@ -1211,7 +1211,10 @@ function playArt(B, who, idx) {
     if (kit.yuta) for (const ally of alive(me)) healHP(ally, ally.max * .1)
     if (kit.truthOrbs && landed) a.shieldHp = Math.max(a.shieldHp || 0, Math.round(a.max * .2))
     if (kit.conjunction) me.conjunction = true
-    if (kit.hundredHeal) for (const ally of alive(me)) healHP(ally, ally.max * .15)
+    if (kit.hundredHeal && !a.ko) for (const ally of alive(me)) {
+      healHP(ally, ally.max * .15)
+      ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * .15))
+    }
     if (kit.gravityKing) foe.ki = Math.max(0, foe.ki - 1)
     if (read === 'blast' || (kit.godspeed && landed)) me.ki = Math.min(KI_MAX, me.ki + 2)
     if (landed && kit.parasite) me.waveParasite = d.key
@@ -1356,7 +1359,7 @@ function playArt(B, who, idx) {
 }
 const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION', 'Pierces Guard · +60% vs targets under 40% HP'], SUPPORT: ['RALLY', 'Big hit · heals the whole team 20%'], TANK: ['FORTRESS', 'Big hit · takes 30% less damage until your next turn'], SHOOTER: ['OVERDRIVE', 'Hits every enemy hard'], STRIKER: ['OVERDRIVE', 'Hits every enemy hard'] }
 const RELEASE_ULTIMATES = {
-  ichigo: ['CERO OF THE HOLLOW', 'Strips shields, pierces Guard, hits all enemies and refunds 30% Ultimate gauge'],
+  ichigo: ['CERO OF THE HOLLOW', 'Strips shields, pierces Guard, hits all enemies and refunds 15% Ultimate gauge on a damaging hit'],
   ulquiorra: ['LANZA DEL RELÁMPAGO', 'Strips shields and pierces Guard across the enemy team'],
   grimmjow: ['PANTERA EXECUTION', 'Strips shields, pierces Guard and refunds 3 Energy on a knockout'],
 }
@@ -1502,7 +1505,7 @@ function ultimate(B, who, choice) {
       H(enemy, base * (enemy === d ? (finisher ? 1.2 : 1) : .6), true, { batchStrip: true })
     }
     if (ea.releaseUltimate === 'ichigo' && ev.hits.some(hit => hit.hpDamage > 0))
-      me.gauge = Math.min(GAUGE_MAX, me.gauge + 30)
+      me.gauge = Math.min(GAUGE_MAX, me.gauge + 15)
     if (finisher && ev.hits.some(hit => hit.t.ko && hit.hpDamage > 0))
       me.ki = Math.min(KI_MAX, me.ki + 3)
     return finish()
@@ -1517,7 +1520,7 @@ function ultimate(B, who, choice) {
     for (const enemy of alive(foe))
       H(enemy, base * (enemy === d ? 1 : .55) * (1 + charge * .15), true, { batchStrip: !!ea.nelRelease })
     if (ea.nelRelease) me.ki = Math.min(KI_MAX, me.ki + 4)
-    else for (const ally of alive(me)) ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * (.18 + charge * .06)))
+    else for (const ally of alive(me)) ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * (.12 + charge * .06)))
     return finish()
   }
   if (ea.resonance) {
@@ -4041,7 +4044,7 @@ export function startBattle(stage) {
     for (const ally of s.team) if (!ally.ko && PE(ally).choso) healHP(a0, a0.max * .08)
     for (const ally of s.team) if (ally !== a0 && !ally.ko && PE(ally).team7) healHP(a0, a0.max * .08)
     a0.turns++
-    for (const ally of s.team) if (ally !== a0 && !ally.ko && PE(ally).hundredHeal) healHP(a0, a0.max * .08)
+    for (const ally of s.team) if (ally !== a0 && !ally.ko && PE(ally).hundredHeal) healHP(a0, a0.max * .10)
     if (e.hellfire) a0.heat = Math.min(4, (a0.heat || 0) + 1)
     if (e.igneelFlame && !a0.ko && foe.flameTarget === a0.key) addFlame(a0)
     { const tags = []; if (e.regen && !e.noHeal) tags.push('REGEN +' + e.regen + '%'); if (e.teamHeal) tags.push('TEAM HEAL +' + e.teamHeal + '%'); if (e.ramp) tags.push('POWER +' + Math.min(e.rampMax || 99, e.ramp * a0.turns) + '%'); if (e.energyTurn) tags.push('+' + e.energyTurn + ' ENERGY'); if (tags.length) pasNote(a0, tags.join(' · ')) }

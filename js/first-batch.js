@@ -159,8 +159,7 @@ export function batchUltimate(a, d, me, foe, choice, base, hit, passive, note, h
     const result = hit(d, base * (marked ? 1.5 : 1), true, { noDodge: marked })
     if (marked && result?.dmg > 0) {
       d.batchThunder = null
-      gauge(me, 25)
-      energy(me, 1)
+      gauge(me, 15)
       note(a, 'RAIJIN SENKI · MARK DETONATED')
     }
     return true

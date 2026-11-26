@@ -3,6 +3,11 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
 ## 2026-11-26 · Codex
+- First card balance pass. Reduced Gear 5 Luffy’s Special refunds, Flash Goddess Yoruichi’s counter and mark returns, Full Hollow Ichigo’s Ultimate refund, and Samehada Kisame’s baseline Water Dome shield. Removed Kisame’s generic Energy burn while keeping the Blast absorption and steal.
+- Buffed Light-Speed Admiral Kizaru’s shield removal, Ice Age Aokiji’s frontline shield and damage reduction, and Strength of a Hundred Tsunade’s bench healing and team shielding. Card IDs, rarities and OVR are intact. Retest these seven in PvP and dedicated New Gen lineups before broader changes.
+
+---
+## 2026-11-26 · Codex
 - Added a full-screen pre-fight briefing to every Dead Zone stage. It shows boss kit and stage rules, warning responses, recommended team tools, damage bonus tags and entry requirements. Stage launches still go through the original battle entry point. Locked stages can be scouted.
 - No balance changes. The briefing uses the current stage rules and the nine New Gen encounter mechanics.
 
