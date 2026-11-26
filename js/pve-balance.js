@@ -1,4 +1,6 @@
 const clamp = (min, value, max) => Math.max(min, Math.min(max, value))
+// How much enemies scale with your team. Low so upgrading your cards actually makes fights easier.
+export const TEAM_SCALING = .3
 
 // Use the upgraded battle stats and give the strongest fighter most of the weight.
 export function pveSquadPower(team) {
@@ -18,15 +20,15 @@ export function pveBalance(mode, team, { floor = 1, enemies = 1, episodes = 3, b
     const elite = clamp(0, power - 1.02, .85)
     const size = 1 + clamp(0, 6 - enemies, 5) * .12
     return {
-      hp: size * (1.32 + floor * .16 + elite * 1.65),
-      damage: 1.25 + floor * .065 + elite * .44,
+      hp: size * (1.15 + floor * .14 + elite * 1.65 * TEAM_SCALING),
+      damage: 1.1 + floor * .06 + elite * .44 * TEAM_SCALING,
       phase: finale,
     }
   }
   if (mode === 'boss') {
     return {
-      hp: clamp(1, 1.22 + (power - 1) * .6, 1.75),
-      damage: clamp(1, 1.12 + (power - 1) * .56, 1.55),
+      hp: clamp(1, 1.12 + (power - 1) * .6 * TEAM_SCALING, 1.5),
+      damage: clamp(1, 1.05 + (power - 1) * .56 * TEAM_SCALING, 1.3),
       scoreBoss: true,
     }
   }
@@ -47,7 +49,7 @@ export function pveBalance(mode, team, { floor = 1, enemies = 1, episodes = 3, b
   const [baseHp, baseDamage, response] = profile
   const late = clamp(0, progression, 1)
   const stronger = clamp(0, (power - .89) / .55, 1)
-  const scale = stronger * response
+  const scale = stronger * response * TEAM_SCALING
   const outnumbered = 1 + clamp(0, team.length - enemies, 5) * (mode === 'rivalry' ? .045 : .055)
   return {
     hp: (baseHp + late * .18 + scale * (.45 + late * .25)) * outnumbered,
