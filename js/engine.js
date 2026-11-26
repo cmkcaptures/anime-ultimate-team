@@ -77,7 +77,7 @@ const PACKS = {
 }
 // weekly banner: 2 featured Legendary+ cards, rotates every Monday, same for everyone
 const BANNER_COST = 3000, PITY_MYTHIC = 80, PITY_FEATURED = 160
-const ESPADA_START = Date.UTC(2026, 10, 26), ESPADA_END = ESPADA_START + 7 * 864e5
+const ESPADA_START = Date.UTC(2026, 10, 26), ESPADA_END = Date.UTC(2026, 10, 28) // ends at midnight UK time, end of 27 Nov
 const RESURRECCION_FEATURED = ['nel_gamuza', 'ichigo_release_drop', ...[
   'grimmjow', 'ulquiorra', 'starrk', 'barragan', 'harribel',
   'yammy', 'nnoitra', 'zommari', 'szayelaporro', 'aaroniero'
