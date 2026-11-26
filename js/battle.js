@@ -41,7 +41,7 @@ export function combosFor(cards) { const names = new Set(); for (const c of card
 export const SYN = { 3: 4, 4: 6, 5: 8, 6: 10 }
 // leader skill: the leader boosts every fighter that shares one of its categories
 export const leadHits = (lead, c) => !!(lead && c && lead.cats.some(k => k === c.anime || (c.cat || []).includes(k)))
-// ---- TEAM AURAS: every fighter buffs teammates that share one of its 2 aura tags; grows with diamonds ----
+// ---- TEAM AURAS: every fighter buffs teammates that match one of its aura tags; grows with diamonds ----
 const ROLE_TAG = { FIGHTER: 'Fighters', TANK: 'Tanks', SHOOTER: 'Shooters', ASSASSIN: 'Assassins', SUPPORT: 'Supports' }
 export const AURA_PCT = { 3: 3, 4: 4, 5: 5, 6: 7, 7: 10 }, AURA_CAP = 40
 export const tagsOf = c => ['S:' + c.anime, c.faction, ...(c.cat || []), ROLE_TAG[c.role] || 'Fighters']
