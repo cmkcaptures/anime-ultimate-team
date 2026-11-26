@@ -1,4 +1,4 @@
-import { NEW_GEN_ZONES } from './new-gen-zones.js?v=1'
+import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-1'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=1'
 import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=2'
