@@ -1,4 +1,4 @@
-import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate } from './first-batch.js?v=3'
+import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=4'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=1'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
@@ -10,7 +10,7 @@ import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missio
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
 import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
-import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=bleach-mythics-2'
+import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=soi-orihime-1'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
@@ -375,7 +375,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
         pasNote(def, 'ULTRA INSTINCT COUNTER · ' + counter.dmg + ' DMG')
       }
       pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
-    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; def.hp = 0; if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!shrineWaveSurvive(def, pasNote) && !fusionCaptainSave(def, D, pasNote) && !fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ }; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
+    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; if (!ea.antiKit && rewriteLethalHit(def, D, PE, healHP, pasNote)) return { dmg: 0, hpDamage: 0, crit: false, mu: 1, miss: 'REJECTED' }; def.hp = 0; if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!shrineWaveSurvive(def, pasNote) && !fusionCaptainSave(def, D, pasNote) && !fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ }; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
   }
   if (offensive && !mod.noDodge && ed.batch && def.batchDodge && (ed.batch !== 'juvia' || kind === 'strike')) {
     def.batchDodge = false
@@ -434,7 +434,11 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (kind === 'special' && ea.spec) m += ea.spec / 100
   if (kind === 'ult' && ea.ultBoost && !(ea.ultBoost === 60 && att.ultFired)) m += ea.ultBoost / 100
   if (ea.opener && !att.opened) { m += ea.opener / 100; att.opened = 1 }
-  if (A && A.teamDmg && !suppressBuffs) m += A.teamDmg / 100
+  if (A && !suppressBuffs) {
+    m += (A.teamDmg || 0) / 100
+    if (A.team.some(f => f !== att && !f.ko && PE(f).batch === 'soiFon')) m += .2
+    if ((A.batchResolveUntil ?? -1) >= turnClock(A)) m += .2
+  }
   if (ed.vuln) m += ed.vuln / 100
   if (ea.hellfire) m += (att.heat || 0) * .10
   if (ed.hellfire) m += (def.heat || 0) * .05
@@ -587,6 +591,8 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   }
   const previousHP = def.hp
   if (def.newGenBoss) dmg = Math.min(dmg, Math.ceil(def.max * .32))
+  if (dmg >= def.hp && !ea.antiKit && !mod.sever && rewriteLethalHit(def, D, PE, healHP, pasNote))
+    return { dmg: 0, hpDamage: 0, crit: false, mu, miss: 'REJECTED' }
   const hpDamage = Math.min(def.hp, dmg)
   if (offensive && hpDamage > 0) {
     if (D?.team.some(f => !f.ko && PE(f).batch === 'orihime')) def.batchLastHit = hpDamage
@@ -943,12 +949,15 @@ function playArt(B, who, idx) {
     const lotus = batch === 'lee' && a.batchStrikes >= 2
     const blood = batch === 'sanemi' && a.hp < a.max * .6
     const orange = batch === 'piccolo' ? a.batchCharge || 0 : 0
+    const hornet = batch === 'soiFon'
+    const markedHornet = hornet && d.batchHornet === a.key
     const flash = batch === 'yoruichi' && a.batchFlash
     const tide = batch === 'harribel' ? a.batchTide || 0 : 0
     const story = storySpecial(a, d, me, foe)
     let base = pctOf(a.card) * 3.2 * chain * story.multiplier
     if (stone) base *= 1.55
     if (flash) base *= 1.3
+    if (markedHornet) base *= 1.5
     if (blood) base *= 1.45
     if (lotus) { base *= 1.6; a.hp = Math.max(1, a.hp - Math.round(a.max * .08)); a.batchStrikes = 0 }
     const clock = turnClock(me)
@@ -1010,13 +1019,21 @@ function playArt(B, who, idx) {
       for (let i = 0; i < 3 && !d.ko; i++) ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, true, me, foe, 'special') })
     } else if (isAoe(a.card) || dragonFlame || pairedFlame) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, (t === d ? base * .75 : base * .3) * (t !== d && PE(a).aoeBoost ? 1 + PE(a).aoeBoost / 100 : 1), Math.max(a.pwr, a.ki), pierce || wavePierce || dragonFlame, me, foe, 'special') })
     else if (PE(a).twinSpec || kit.godspeed) { ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }); if (!d.ko) ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }) }
-    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart || slayerSpear || dragonFist || trunksGuard || petalPierce || stone || mist || lotus || blood || flash || orange > 0 || tide > 0, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored: stored + orange + tide, batchStrip: stone || flash, noDodge: !!(slayerSpear || flash) }) })
+    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart || slayerSpear || dragonFist || trunksGuard || petalPierce || stone || mist || lotus || blood || flash || hornet || orange > 0 || tide > 0, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored: stored + orange + tide, batchStrip: stone || flash || hornet, noDodge: !!(slayerSpear || flash) }) })
     if (kit.storyClone && !a.ko && !d.ko && ev.hits[0]?.hpDamage > 0)
       ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, false, me, foe, 'special') })
     const bench = kit.benchSpecial && weakestBench(foe, d)
     if (bench) ev.hits.push({ t: bench, ...hit(a, bench, base * .5, a.pwr, true, me, foe, 'special') })
     const landed = ev.hits.some(x => (x.hpDamage ?? x.dmg) > 0)
+    if (batch === 'orihimeFinal' && !a.ko) batchSupportSpecial(me, healHP)
     if (landed && batch && !a.ko) {
+      if (hornet) {
+        d.batchHornet = markedHornet || d.ko ? null : a.key
+        if (markedHornet) {
+          me.ki = Math.min(KI_MAX, me.ki + 2)
+          pasNote(a, 'NIGEKI KESSATSU · +2 ENERGY')
+        } else if (!d.ko) pasNote(d, 'SUZUMEBACHI · MARKED')
+      }
       if (stone || mist) a.batchCounter = false
       if (flash) a.batchFlash = false
       if (tide) { a.batchTide = 0; pasNote(a, 'TIBURÓN · STORED DAMAGE RELEASED') }
@@ -1222,7 +1239,9 @@ function playArt(B, who, idx) {
   return ev
 }
 const ULT = { FIGHTER: ['BARRAGE', 'Three crushing hits'], ASSASSIN: ['EXECUTION', 'Pierces Guard · +60% vs targets under 40% HP'], SUPPORT: ['RALLY', 'Big hit · heals the whole team 20%'], TANK: ['FORTRESS', 'Big hit · takes 30% less damage until your next turn'], SHOOTER: ['OVERDRIVE', 'Hits every enemy hard'], STRIKER: ['OVERDRIVE', 'Hits every enemy hard'] }
-const ultOf = c => c.pas?.e?.batch === 'yoruichi' ? ['RAIJIN SENKI', 'Detonates Thunder marks for +50% damage and refunds Energy and gauge'] :
+const ultOf = c => c.pas?.e?.batch === 'soiFon' ? ['JAKUHŌ RAIKŌBEN', 'Strips shields, pierces Guard and detonates the Hornet mark'] :
+  c.pas?.e?.batch === 'orihimeFinal' ? ['I REJECT THIS FUTURE', 'Heals, shields and buffs your team'] :
+  c.pas?.e?.batch === 'yoruichi' ? ['RAIJIN SENKI', 'Detonates Thunder marks for +50% damage and refunds Energy and gauge'] :
   c.pas?.e?.batch === 'harribel' ? ['CASCADA', 'Hits all enemies, spends stored damage and shields your team'] :
   c.pas?.e?.batch === 'star' ? ['NEW ORDER', 'Choose Protect or Suppress'] :
   c.pas?.e?.batch === 'merlin' ? ['INFINITY', 'Strip buffs and refund Energy and Ultimate gauge'] :
@@ -1284,9 +1303,9 @@ function ultimate(B, who, choice) {
   const sever = lastDoor === 'sever'
   const quirkDefenders = new Set()
   const opposingKit = PE(d).shinobi
-  const single = ['star', 'merlin', 'yoruichi'].includes(storyKit.batch) || PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
+  const single = ['star', 'merlin', 'yoruichi', 'soiFon'].includes(storyKit.batch) || PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
     (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso)
-  const damaging = kit !== 14 && kit !== 20 && !PE(a).antiKit
+  const damaging = kit !== 14 && kit !== 20 && storyKit.batch !== 'orihimeFinal' && !PE(a).antiKit
   const minato = single && damaging && !sever && shinobiAlly(foe, 18, d)
   const interceptor = minato && !minato.raijinUsed ? minato : null
   const isshiki = damaging && !sever && !interceptor && opposingKit === 3 && !d.isshikiUsed
@@ -1355,7 +1374,7 @@ function ultimate(B, who, choice) {
     }
     return finish()
   }
-  if (batchUltimate(a, d, me, foe, choice, base, H, PE, pasNote)) return finish()
+  if (batchUltimate(a, d, me, foe, choice, base, H, PE, pasNote, healHP)) return finish()
   if (ea.crVegeta) {
     H(d, base * (1 + (a.crShineCharge || 0) * .2), true)
     a.crShineCharge = 0
@@ -3529,7 +3548,7 @@ export function startBattle(stage) {
   }
   // ================= LIVE PVP =================
   const LQ = []; let lvWake = null, lvN = 0, lvLast = Date.now(), lvFirstRemote = !!LV && !youFirst, lvMyTurnAt = 0, lvUnsub = null, lvTimer = null
-  const SIDE_KEYS = ['batchOrder', 'batchMemory', 'fcCaptainCombo', 'ftWendySaved', 'ftTwinTurn', 'antithesisUsed', 'switchSerial', 'teamDmg', 'shinobiRestored', 'kuramaTarget', 'chosoSaved', 'chainReward', 'conjunction', 'reworkAction', 'hypnosisTurn', 'hypnosisAction', 'waveAttacked', 'waveBasic', 'wavePrevious', 'waveRead', 'waveBrief', 'waveParasite', 'formTurn', 'lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
+  const SIDE_KEYS = ['batchRewrites', 'batchResolveUntil', 'batchOrder', 'batchMemory', 'fcCaptainCombo', 'ftWendySaved', 'ftTwinTurn', 'antithesisUsed', 'switchSerial', 'teamDmg', 'shinobiRestored', 'kuramaTarget', 'chosoSaved', 'chainReward', 'conjunction', 'reworkAction', 'hypnosisTurn', 'hypnosisAction', 'waveAttacked', 'waveBasic', 'wavePrevious', 'waveRead', 'waveBrief', 'waveParasite', 'formTurn', 'lastActive', 'flameTarget', 'active', 'ki', 'gauge', 'hand', 'pile', 'seq', 'switched', 'skip', 'chargeNext', 'ultTurn', 'rngS', 'kiBonus', 'confiscated']
   const serF = f => { const o = {}; for (const k in f) { if (k === 'card' && !f.transformed && !f.baseForm) continue; const v = f[k]; if (typeof v !== 'function') o[k] = v } return o }
   const serS = sd => { const o = { team: sd.team.map(serF) }; for (const k of SIDE_KEYS) o[k] = sd[k]; return o }
   const lvSnap = () => { const H = LV.role === 'h' ? B.you : B.ai, G = H === B.you ? B.ai : B.you; return JSON.parse(JSON.stringify({ h: serS(H), g: serS(G), turn: B.turn })) }

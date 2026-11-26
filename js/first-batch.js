@@ -5,6 +5,22 @@ const living = side => side.team.filter(f => !f.ko)
 const energy = (side, amount) => { side.ki = Math.min(10, side.ki + amount) }
 const gauge = (side, amount) => { side.gauge = Math.min(100, side.gauge + amount) }
 
+export function rewriteLethalHit(target, side, passive, heal, note) {
+  const orihime = side?.team.find(f => f !== target && !f.ko && passive(f).batch === 'orihimeFinal')
+  if (!orihime || side.batchRewrites >= 2 || target.ko || target.hp <= 0) return false
+  side.batchRewrites = (side.batchRewrites || 0) + 1
+  heal(target, Math.max(0, Math.ceil(target.max * .4) - target.hp))
+  shield(target, .25)
+  note(orihime, 'I REJECT · KO REWRITTEN · ' + (2 - side.batchRewrites) + ' LEFT')
+  return true
+}
+
+export function batchSupportSpecial(side, heal) {
+  const allies = living(side)
+  for (const ally of allies) { heal(ally, ally.max * .18); shield(ally, .18) }
+  side.batchResolveUntil = (side.formTurn || 0) + 1
+}
+
 export function batchTax(art, side, opponent, passive) {
   if (!side || !opponent) return 0
   const repeated = side.batchMemory === art && living(opponent).some(ally => passive(ally).batch === 'gowther')
@@ -119,8 +135,25 @@ export function batchSpecial(a, d, me, foe, passive, heal, note) {
   return 0
 }
 
-export function batchUltimate(a, d, me, foe, choice, base, hit, passive, note) {
+export function batchUltimate(a, d, me, foe, choice, base, hit, passive, note, heal) {
   const kit = passive(a).batch
+  if (kit === 'orihimeFinal') {
+    for (const ally of living(me)) {
+      ally.burn = ally.burnT = ally.frozen = ally.crHealCut = 0
+      heal(ally, ally.max * .35)
+      shield(ally, .35)
+    }
+    me.batchResolveUntil = (me.formTurn || 0) + 1
+    energy(me, 3)
+    note(a, 'I REJECT THIS FUTURE · TEAM RESTORED')
+    return true
+  }
+  if (kit === 'soiFon') {
+    const marked = d.batchHornet === a.key
+    const result = hit(d, base * (marked ? 1.55 : 1), true, { batchStrip: true })
+    if (marked && result?.dmg > 0) { d.batchHornet = null; gauge(me, 25) }
+    return true
+  }
   if (kit === 'yoruichi') {
     const marked = d.batchThunder === a.key
     const result = hit(d, base * (marked ? 1.5 : 1), true, { noDodge: marked })

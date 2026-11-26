@@ -31,6 +31,9 @@ export function fighterStatuses(f, passive, next, side, turn, enemyBasic) {
     'Land a Strike (+1) or Getsuga Cross (+2), once per team turn. At 3, your next Ultimate becomes Final Getsuga.' : 'Resolve is currently sealed.')
   if (f.pe.galaxyImpact) add('Wipe ' + (f.galaxyUsed ? 'spent' : passive.galaxyImpact ? 'ready' : 'sealed'),
     f.galaxyUsed ? 'Galaxy Impact already removed the enemy shields this battle.' : 'The first Galaxy Impact removes every enemy shield before dealing damage. Requires a full Ultimate gauge and an active passive.')
+  if (passive.batch === 'orihimeFinal') add('KO rewrites · ' + (2 - (side.batchRewrites || 0)), 'Orihime can cancel two lethal hits against other allies per battle while she is alive.')
+  if ((side.batchResolveUntil ?? -1) >= (side.formTurn || 0)) add('Resolve · +20% damage', 'Orihime boosted the team’s damage.')
+  if (f.batchHornet) add('Hornet mark', 'Soi Fon can detonate this mark with her Special or Ultimate.')
   if (f.batchFlash && passive.batch === 'yoruichi') add('Shunkō ready', 'Next Special strips shields, pierces Guard and gains 30% damage.')
   if (f.batchThunder) add('Thunder mark', 'Yoruichi can detonate this mark with Raijin Senki.')
   if (f.batchTide && passive.batch === 'harribel') add('Tiburón · ' + f.batchTide, 'Stored damage goes into your next landed Special or Cascada.')
