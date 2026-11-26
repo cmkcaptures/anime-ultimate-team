@@ -819,6 +819,7 @@ function ghostDetonation(target, side, enemy, extra) {
 function playArt(B, who, idx) {
   const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], art = me.hand[idx], a = act(me), d = act(foe), cost = artCost(a, art, me, foe)
   if (me.ki < cost || a.ko || d.ko) return null
+  if (B.noDeathNote && art === 'deathnote') return null
   if (art === 'special' && me.confiscated && !unwritten(a)) return null
   if (art === 'burst' && me.ki < 2) return null
   const firstStoryStrike = storyStrikeDiscount(a, art, me)
@@ -2485,13 +2486,30 @@ export function battlePage(el) {
 }
 
 // ---------------- arena UI ----------------
+const blocksDeathNote = stage => !stage.live && !stage.pvp && stage.mode !== 'ranked'
+
+function battleDeck(deck, stage, random = Math.random) {
+  if (!deck?.deathnote || !blocksDeathNote(stage)) return { deck, replacements: [] }
+  const { deathnote, ...copy } = deck
+  const items = Object.keys(ARTS).filter(key => ARTS[key].item && key !== 'deathnote')
+  const replacements = []
+  for (let i = 0; i < deathnote; i++) {
+    const unused = items.filter(key => !copy[key])
+    const pool = unused.length ? unused : items
+    const item = pool[Math.floor(random() * pool.length)]
+    copy[item] = (copy[item] || 0) + 1
+    replacements.push(item)
+  }
+  return { deck: copy, replacements }
+}
+
 export function startBattle(stage) {
   const { h, cardImg, eff, BYKEY, P } = X
   const LV = stage.live || null
   const yours = LV ? LV.myTeam : stage.draft ? stage.draft.picks.map(key => BYKEY[key]) : stage.storyTeam ? stage.storyTeam.map(k => BYKEY[k]) : (stage.playerTeam || P.team).filter(Boolean).map((k, i) => (((stage.rivalry || stage.rival) && i === 0) || ((stage.transfer || i === 0) && !P.club.cards[k])) ? BYKEY[k] : eff(BYKEY[k])).filter(Boolean)
   const lockedKit = stage.rivalrySetup || (stage.lockedKit && { kit: stage.lockedKit, form: stage.lockedForm })
   if (lockedKit?.kit && yours[0]) yours[0] = rivalryLead(yours[0], lockedKit, X.POOL)
-  const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false }
+  const B = { you: newSide(yours), ai: newSide(enemyTeam(stage)), turn: 1, over: false, busy: false, noDeathNote: blocksDeathNote(stage) }
   PASLOG = []
   if (stage.draft) {
     B.you.team.forEach((f, i) => { f.ko = stage.draft.hp[i] === 0 })
@@ -2508,7 +2526,9 @@ export function startBattle(stage) {
   const workCost = () => currentWork()?.approach === 'break' && objectiveHitAt !== B.turn ? 2 : 1
   const turningPoints = createTurningPoints()
   const highlight = (side, text, priority) => turningPoints.add(B.turn, side, text, priority)
-  { const D = (X.ST().decks || [])[X.ST().deckOn || 0]; if (!stage.storyTeam && !stage.draft && D && D.c) { B.you.deck = D.c; B.you.hand = []; B.you.pile = null } }
+  const selectedDeck = (X.ST().decks || [])[X.ST().deckOn || 0]
+  const { deck, replacements } = battleDeck(!stage.storyTeam && !stage.draft ? selectedDeck?.c : null, stage)
+  if (deck) { B.you.deck = deck; B.you.hand = []; B.you.pile = null }
   if (LV) { B.you.deck = LV.myDeck || null; B.ai.deck = LV.oppDeck || null; B.you.hand = []; B.ai.hand = []; B.you.pile = B.ai.pile = null; B.you.rngS = (LV.seed + (LV.role === 'h' ? 1 : 2)) | 0; B.ai.rngS = (LV.seed + (LV.role === 'h' ? 2 : 1)) | 0 }
   if (stage.boss) for (const f of B.ai.team) { f.hp = f.max = Math.round(f.max * stage.boss); f.pwr = Math.round(f.pwr * .88); f.ki = Math.round(f.ki * .88); f.def = Math.round(f.def * 1.15) }
   if (stage.youCat) for (const f of B.you.team) if ((f.card.cat || []).includes(stage.youCat)) for (const k of ['pwr', 'ki', 'def']) f[k] = Math.round(f[k] * 1.15)
@@ -2743,6 +2763,7 @@ export function startBattle(stage) {
   const log = (t, record = true) => {
     if (record) remember(t)
     const l = $a('.ar-log'); l.textContent = t; l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop') }
+  if (replacements.length) log('Death Note replaced for this battle by ' + replacements.map(item => ARTS[item].name).join(', ') + '.')
   let SPEED = 1; try { SPEED = +localStorage.getItem('aut-bspeed') || 1 } catch { }
   let AUTO = false
   const wait = ms => new Promise(r => setTimeout(r, ms / SPEED))
