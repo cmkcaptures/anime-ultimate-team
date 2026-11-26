@@ -1,7 +1,7 @@
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-2'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=1'
-import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=2'
+import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=claude-1'
 import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=3'
 import { RIVALRY_TITLE } from './rivalry.js?v=last-door-1'
 import { spendableCopies } from './qol.js?v=qol-1'

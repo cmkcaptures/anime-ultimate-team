@@ -197,11 +197,13 @@ export function campaignScale(team, chapter, mission, enemyCount) {
   })
   const peak = Math.max(...scores, 1)
   const mean = scores.reduce((sum, score) => sum + score, 0) / Math.max(1, scores.length)
-  const rating = (peak * .65 + mean * .35) / 87
+  const rawRating = (peak * .65 + mean * .35) / 87
+  // Enemies only partly follow your team (55%), so upgrading your cards makes fights easier; chapters set the real difficulty.
+  const rating = 1 + (rawRating - 1) * .55
   const progression = 1 + (chapter - 1) * .18 + (mission - 1) * .045
   const size = 1 + Math.max(0, team.length - enemyCount) * .13
   return {
-    hp: Math.max(.55, Math.min(5.5, rating ** 2.15 * progression * size)),
+    hp: Math.max(.55, Math.min(5.5, rating ** 1.6 * progression * size)),
     damage: Math.max(.52, Math.min(2.2, rating * (.74 + (chapter - 1) * .12 + (mission - 1) * .028))),
     level: chapter === 1 ? (mission < 5 ? 1 : 2) : chapter === 2 ? 3 : (chapter < 5 && mission < 5 ? 4 : 5),
   }
