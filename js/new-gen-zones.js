@@ -27,8 +27,8 @@ export const NEW_GEN_ZONES = [
 export function newGenBalance(index, power) {
   const elite = Math.min(.9, Math.max(0, power - .94))
   return {
-    hp: 2.4 + index * .13 + elite * 1.45 * .3,
-    damage: 1.35 + index * .065 + elite * .36 * .3,
+    hp: 2.65 + index * .14 + elite * 1.45 * .55,
+    damage: 1.45 + index * .07 + elite * .36 * .55,
     incomingHitCap: .36 + index * .015,
   }
 }

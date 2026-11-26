@@ -1,11 +1,11 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=4'
-import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-1'
+import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-2'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
 import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=2'
 import { fairyTag, fairySurvive, fairyCharge, fairyAfterArt } from './fairy-tail.js?v=1'
 import { gtForm, gtSurvive, gtArt } from './gt-goku.js?v=1'
-import { pveSquadPower, pveBalance, deadZoneIntent, deadZonePunishment } from './pve-balance.js?v=claude-1'
+import { pveSquadPower, pveBalance, deadZoneIntent, deadZonePunishment } from './pve-balance.js?v=claude-2'
 import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missionId } from './transfer-campaign.js?v=2'
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
@@ -280,7 +280,7 @@ function newGenSignatureBudget(att, def, side, kind) {
     side.newGenSignature = { turn: side.formTurn || 0, targets: new WeakMap() }
   }
   const { targets } = side.newGenSignature
-  const fraction = .30 + (side.newGenPunished ? .12 : 0)
+  const fraction = .45 + (side.newGenPunished ? .15 : 0)
   const limit = Math.max(1, Math.floor(def.max * fraction))
   const remaining = Math.max(0, limit - (targets.get(def) || 0))
   return { remaining, spend: damage => targets.set(def, limit - remaining + damage) }

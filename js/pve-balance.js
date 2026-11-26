@@ -1,6 +1,6 @@
 const clamp = (min, value, max) => Math.max(min, Math.min(max, value))
 // How much enemies scale with your team. Low so upgrading your cards actually makes fights easier.
-export const TEAM_SCALING = .3
+export const TEAM_SCALING = .55
 
 // Use the upgraded battle stats and give the strongest fighter most of the weight.
 export function pveSquadPower(team) {
@@ -20,8 +20,8 @@ export function pveBalance(mode, team, { floor = 1, enemies = 1, episodes = 3, b
     const elite = clamp(0, power - 1.02, .85)
     const size = 1 + clamp(0, 6 - enemies, 5) * .12
     return {
-      hp: size * (1.15 + floor * .14 + elite * 1.65 * TEAM_SCALING),
-      damage: 1.1 + floor * .06 + elite * .44 * TEAM_SCALING,
+      hp: size * (1.24 + floor * .15 + elite * 1.65 * TEAM_SCALING),
+      damage: 1.18 + floor * .063 + elite * .44 * TEAM_SCALING,
       phase: finale,
     }
   }
