@@ -1,3 +1,4 @@
+import { validGrant } from './player-grants.js?v=1'
 // AUT accounts: Firebase Auth (email/password + Google) and Firestore (private save + public profile).
 const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/'
 let A, F, auth, db, USER = null, PROFILE = null
@@ -76,7 +77,63 @@ export async function initAccount(cfg) {
 }
 export const me = () => ({ uid: USER && USER.uid, profile: PROFILE })
 export async function loadSave() { const d = await F.getDoc(F.doc(db, 'users', USER.uid)); return d.exists() ? JSON.parse(d.data().data) : null }
-export async function storeSave(S) { await F.setDoc(F.doc(db, 'users', USER.uid), { data: JSON.stringify(S), savedAt: S.savedAt || Date.now() }) }
+export async function storeSave(S) {
+  const ref = F.doc(db, 'users', USER.uid)
+  const revision = S.playerGrantRevision || 0
+  const data = { data: JSON.stringify(S), savedAt: S.savedAt || Date.now() }
+  if (!window.AUT_CONFIG?.playerGrantsEnabled) { await F.setDoc(ref, data); return }
+  data.playerGrantRevision = revision
+  await F.runTransaction(db, async tx => {
+    const existing = await tx.get(ref)
+    if ((existing.data()?.playerGrantRevision || 0) > revision) {
+      const error = new Error('This save predates a player grant.')
+      error.code = 'stale-player-grant'
+      throw error
+    }
+    tx.set(ref, data)
+  })
+}
+export async function canSendPlayerGrants() {
+  if (!USER || PROFILE?.nameLower !== 'aspext') return false
+  const owner = await F.getDoc(F.doc(db, 'usernames', 'aspext'))
+  return owner.data()?.uid === USER.uid
+}
+
+export async function sendPlayerGrant(recipient, reward) {
+  if (!validGrant(reward) || !await canSendPlayerGrants()) throw new Error('Invalid or unauthorized grant.')
+  await F.addDoc(F.collection(db, 'playerGrants'), {
+    ...reward, to: recipient, from: USER.uid, pending: true, createdAt: F.serverTimestamp()
+  })
+}
+
+export async function claimPlayerGrants(initial, apply) {
+  const queue = F.query(F.collection(db, 'playerGrants'), F.where('to', '==', USER.uid),
+    F.where('pending', '==', true))
+  let current = initial
+  for (const pending of (await F.getDocs(queue)).docs) {
+    const next = await F.runTransaction(db, async tx => {
+      const grant = (await tx.get(pending.ref)).data()
+      if (!grant?.pending || grant.to !== USER.uid || !validGrant(grant)) return null
+      const owner = await tx.get(F.doc(db, 'usernames', 'aspext'))
+      if (owner.data()?.uid !== grant.from) return null
+      const ref = F.doc(db, 'users', USER.uid)
+      const record = await tx.get(ref)
+      const cloud = record.exists() ? JSON.parse(record.data().data) : null
+      const latest = cloud && ((cloud.playerGrantRevision || 0) > (current.playerGrantRevision || 0) ||
+        (cloud.savedAt || 0) >= (current.savedAt || 0)) ? cloud : current
+      const updated = structuredClone(latest)
+      if (!apply(updated, grant)) return null
+      updated.savedAt = Math.max(Date.now(), (latest.savedAt || 0) + 1)
+      updated.playerGrantRevision = (record.data()?.playerGrantRevision || 0) + 1
+      tx.set(ref, { data: JSON.stringify(updated), savedAt: updated.savedAt, playerGrantRevision: updated.playerGrantRevision })
+      tx.update(pending.ref, { pending: false })
+      return updated
+    })
+    if (next) current = next
+  }
+  return current
+}
+
 export async function claimCoinGrant(localSave) {
   const name = PROFILE?.nameLower
   if (name !== 'soapy' && name !== 'antiminx') return null
@@ -120,7 +177,7 @@ export async function publish(sum, force) {
   try { await F.setDoc(F.doc(db, 'profiles', USER.uid), { ...sum, updatedAt: Date.now() }, { merge: true }) } catch { }
 }
 export async function leaderboard(field = 'level') { const q = F.query(F.collection(db, 'profiles'), F.orderBy(field, 'desc'), F.limit(50)); return (await F.getDocs(q)).docs.map(d => ({ uid: d.id, ...d.data() })) }
-export async function profile(uid) { const d = await F.getDoc(F.doc(db, 'profiles', uid)); return d.exists() ? { uid, ...d.data() } : null }
+export async function profile(uid) { const d = await F.getDoc(F.doc(db, 'profiles', uid)); return d.exists() ? { ...d.data(), uid } : null }
 export async function findByName(name) { const d = await F.getDoc(F.doc(db, 'usernames', name.trim().toLowerCase())); return d.exists() ? profile(d.data().uid) : null }
 export async function addFriend(uid) { if (uid === USER.uid) return; await F.updateDoc(F.doc(db, 'profiles', USER.uid), { friends: F.arrayUnion(uid) }); PROFILE.friends = [...new Set([...(PROFILE.friends || []), uid])] }
 export async function removeFriend(uid) { await F.updateDoc(F.doc(db, 'profiles', USER.uid), { friends: F.arrayRemove(uid) }); PROFILE.friends = (PROFILE.friends || []).filter(x => x !== uid) }

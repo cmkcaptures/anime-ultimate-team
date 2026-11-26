@@ -1,3 +1,4 @@
+import { playerGrantsPage } from './player-grants.js?v=1'
 import { deadZoneReward } from './deadzone-rewards.js?v=1'
 import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
@@ -5,7 +6,7 @@ import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
 import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=females-aura-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=antiminx-coins-2'
+import * as ACC from './account.js?v=player-grants-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
 import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=shrine-wave-1'
@@ -1442,6 +1443,14 @@ PAGES.players = async el => {
   { const ed = h('button', 'btn gold sm', 'EDIT PROFILE'); ed.onclick = profileEdit; head.append(ed); const ab = h('button', 'btn violet sm', 'ACHIEVEMENTS'); ab.onclick = () => go('achieve'); head.append(ab) }
   const so = h('button', 'btn dark sm', 'SIGN OUT'); so.onclick = () => { if (confirm('Sign out of this device?')) ACC.signOut() }; head.append(so)
   el.append(head)
+  if (window.AUT_CONFIG?.playerGrantsEnabled && meP.profile?.nameLower === 'aspext') {
+    ACC.canSendPlayerGrants().then(allowed => {
+      if (!allowed || !head.isConnected) return
+      const grants = h('button', 'btn gold sm', 'PLAYER GRANTS')
+      grants.onclick = () => go('player-grants')
+      head.append(grants)
+    }).catch(() => {})
+  }
   const seg = segmented(['LEADERBOARD', 'FRIENDS', 'TRADES', 'FIND PLAYER'], PS.tab, i => { PS.tab = i; rerender() }); seg.style.marginTop = '14px'; el.append(seg)
   const body = h('div', 'plist'); el.append(body)
   const row = (p, i) => {
@@ -1470,6 +1479,15 @@ PAGES.players = async el => {
       f.append(q, go2); body.append(f, out)
     }
   } catch (e) { body.innerHTML = `<div class="empty"><b>Could not load players</b>${e.message || ''}</div>` }
+}
+TITLES['player-grants'] = 'PLAYER GRANTS'
+PAGES['player-grants'] = async el => {
+  let allowed = false
+  if (window.AUT_CONFIG?.playerGrantsEnabled) {
+    try { allowed = await ACC.canSendPlayerGrants() } catch { }
+  }
+  if (!allowed) { el.append(h('p', 'empty', 'Player Grants is unavailable for this account.')); return }
+  playerGrantsPage(el, { account: ACC, h, cards: POOL, items: ST.itemDefs })
 }
 function playerSheet(p) {
   const meP = ACC.me(), mine = p.uid === meP.uid, isF = (meP.profile.friends || []).includes(p.uid)

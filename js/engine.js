@@ -10,7 +10,7 @@ import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, claimCoinGrant, publish, me } from './account.js?v=antiminx-coins-2'
+import { initAccount, loadSave, storeSave, claimCoinGrant, claimPlayerGrants, publish, me } from './account.js?v=player-grants-1'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -24,7 +24,10 @@ let cloudBusy = false, cloudAgain = false
 async function cloudSave() {
   if (cloudBusy) { cloudAgain = true; return }
   cloudBusy = true
-  try { await storeSave(S); setSync('ok'); publish(summary()) } catch { setSync('err') }
+  try { await storeSave(S); setSync('ok'); publish(summary()) } catch (error) {
+    setSync('err')
+    if (error.code === 'stale-player-grant') location.reload()
+  }
   cloudBusy = false
   if (cloudAgain) { cloudAgain = false; cloudSave() }
 }
@@ -142,8 +145,9 @@ const cardName = k => { const c = byKey(k); return c ? `${c.name} (${c.ver})` : 
 const PRINT = { C: 9999, U: 7500, R: 5000, E: 2500, L: 1000, M: 500, X: 250 }
 const rollSerial = k => { const c = byKey(k), cap = PRINT[c ? c.r : 'C'] || 9999; return 1 + Math.floor(Math.pow(Math.random(), .85) * cap) }
 // every new copy gets a serial; the card keeps its lowest (best) one
-const giveCard = (k, lvl = 0) => { const sr = rollSerial(k), r = giveCard0(k, lvl), o = S.profile.club.cards[k]; if (o) o.ser = Math.min(o.ser || 1e9, sr); return r }
-const giveCard0 = (k) => { const now = Date.now(), C = S.profile.club.cards, had = C[k], e = had || (C[k] = { n: 1, first: now, dia: 3, lv: 1, xp: 0, asc: 0 }); if (had) { if ((e.dia || 3) < 7) e.dia = (e.dia || 3) + 1; else e.n++ } e.last = now; return e }
+const giveCard = k => giveCardTo(S.profile, k)
+const giveCardTo = (profile, k) => { const sr = rollSerial(k), r = giveCard0(k, profile), o = profile.club.cards[k]; if (o) o.ser = Math.min(o.ser || 1e9, sr); return r }
+const giveCard0 = (k, profile = S.profile) => { const now = Date.now(), C = profile.club.cards, had = C[k], e = had || (C[k] = { n: 1, first: now, dia: 3, lv: 1, xp: 0, asc: 0 }); if (had) { if ((e.dia || 3) < 7) e.dia = (e.dia || 3) + 1; else e.n++ } e.last = now; return e }
 // ---------- LEVEL (1-100) ----------
 const LV_MAX = 100, lvNeed = l => 40 + l * 8
 function addCardXP(o, n) { o.lv = o.lv || 1; o.xp = (o.xp || 0) + n; let up = 0; while (o.lv < LV_MAX && o.xp >= lvNeed(o.lv)) { o.xp -= lvNeed(o.lv); o.lv++; up++ } if (o.lv >= LV_MAX) o.xp = 0; return up }
@@ -1793,6 +1797,27 @@ function unlockRetiredCampaign() {
   profile.retiredCampaignUnlocked = true
   return granted
 }
+function applyPlayerGrant(save, grant) {
+  const profile = save.profile
+  let name = grant.type
+  if (grant.type === 'item') {
+    if (!Object.hasOwn(ITEMS, grant.key)) return false
+    name = ITEMS[grant.key].name
+    profile.items ||= { senzu: 1, cylinder: 1 }
+    profile.items[grant.key] = (profile.items[grant.key] || 0) + grant.amount
+  } else if (grant.type === 'card') {
+    if (!byKey(grant.key)) return false
+    name = cardName(grant.key)
+    for (let i = 0; i < grant.amount; i++) giveCardTo(profile, grant.key)
+  } else {
+    profile[grant.type] = (profile[grant.type] || 0) + grant.amount
+  }
+  save.notices ||= []
+  save.notices.push({ text: 'Aspext sent you ' + grant.amount.toLocaleString() + ' × ' + name + '.', kind: 'ok', t: Date.now() })
+  if (save.notices.length > 30) save.notices.shift()
+  return true
+}
+
 async function boot() {
   CARDS = await (await fetch('cards-list.json', { cache: 'no-cache' })).json()
   for (const card of CARDS) {
@@ -1806,7 +1831,10 @@ async function boot() {
   // first login: bring over the old save from before accounts existed (only if this account has nothing yet)
   if (!cloud && !local) { const old = await legacySave(); if (old) { cloud = old; try { localStorage.removeItem('aut-key') } catch { } } }
   // newest save wins (cloud vs this device)
-  S = cloud && (!local || (cloud.savedAt || 0) >= (local.savedAt || 0)) ? cloud : (local || fresh())
+  const cloudGrantRevision = cloud?.playerGrantRevision || 0
+  const localGrantRevision = local?.playerGrantRevision || 0
+  S = cloud && (!local || cloudGrantRevision > localGrantRevision ||
+    (cloudGrantRevision === localGrantRevision && (cloud.savedAt || 0) >= (local.savedAt || 0))) ? cloud : (local || fresh())
   if (['soapy', 'antiminx'].includes(who.profile.nameLower)) {
     try {
       const granted = await claimCoinGrant(S)
@@ -1815,6 +1843,12 @@ async function boot() {
         try { localStorage.setItem(LS_SAVE, JSON.stringify(S)) } catch { }
       }
     } catch (error) { console.warn('Coin grant will retry on reload', error) }
+  }
+  if (CFG.playerGrantsEnabled) {
+    try {
+      S = await claimPlayerGrants(S, applyPlayerGrant)
+      try { localStorage.setItem(LS_SAVE, JSON.stringify(S)) } catch { }
+    } catch (error) { console.warn('Player grants will retry on reload', error) }
   }
   const f = fresh(); S.profile = { ...f.profile, ...S.profile };
   { const P = S.profile, MV = { 'Mythic/6a3757dfa1ec3cc09a1a5a0285629427.jpg': 'Epic/ymir fritz.jpg', "Mythic/gon adult fomr.jpg": "Rainbow Secret/gon adult form.jpg", "Mythic/bakugo final fight.jpg": "Legendary/bakugo final war.jpg", "Mythic/877e64711800d36475ab18d47cb52ff0.jpg": "Legendary/mahito and nanami overtime.jpg", "Rainbow Secret/cd2b91a9d5b3c5eda9fc036f9b0a9f7e.jpg": "Mythic/kaneki centipede kakuja.jpg", "Rainbow Secret/ssj4 gogeta.jpg": "Mythic/ssj4 gogeta.jpg", "Rainbow Secret/a61ea8da5cd57be12cee748daf693e12.jpg": "Mythic/bakugo and deku shared ofa.jpg", "Mythic/9d78a90d873ce4e02dd42183df76693b.jpg": "Legendary/vegito super saiyan blue.jpg" }; for (const [o, n] of Object.entries(MV)) { const c = P.club.cards; if (c[o]) { if (c[n]) c[n].n = (c[n].n || 1) + (c[o].n || 1); else c[n] = c[o]; delete c[o] } for (const L of [P.team, ...((P.presets || []).map(p => p && p.team || p))]) if (Array.isArray(L)) L.forEach((k, i) => { if (k === o) L[i] = n }); if (P.avatar === o) P.avatar = n } }
