@@ -419,7 +419,7 @@ PAGES.results = (el) => {
 }
 
 // ================= MY CARDS (Pocket-style binder) =================
-const CF = { q: '', anime: 'ALL', rar: 'ALL', mode: 'OWNED' }
+const CF = { q: '', anime: 'ALL', rar: 'ALL', mode: 'OWNED', aura: '' }
 PAGES.cards = (el, view) => {
   if (view === 'counter') {
     const back = h('button', 'btn dark sm', '‹ COLLECTION')
@@ -448,7 +448,16 @@ PAGES.cards = (el, view) => {
   const MODES = ['OWNED', 'UNOWNED', 'ALL', 'BINDER', 'WATCHLIST']; const seg = segmented(MODES, Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
   const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search cards or abilities, e.g. shield break'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
   const an = h('div', 'chips'), ra = h('div', 'chips')
-  tools.append(seg, q, an, ra); el.append(tools)
+  const auraFilter = h('label', 'tp-f', '<span>TEAM AURA</span>')
+  const auraSelect = h('select', 'field')
+  auraSelect.append(new Option('Any team aura', ''))
+  const auraTags = [...new Set(POOL.flatMap(c => c.aura || []))]
+    .sort((a, b) => auraTag(a).localeCompare(auraTag(b)))
+  for (const tag of auraTags) auraSelect.append(new Option(auraTag(tag), tag))
+  auraSelect.value = CF.aura
+  auraSelect.onchange = () => { CF.aura = auraSelect.value; draw() }
+  auraFilter.append(auraSelect)
+  tools.append(seg, q, auraFilter, an, ra); el.append(tools)
   const grid = h('div', 'cardgrid'); el.append(grid)
   const chipRow = (box, opts, key) => { box.innerHTML = ''; for (const [v, l] of opts) { const b = h('button', 'chip' + (CF[key] === v ? ' on' : ''), l); b.onclick = () => { CF[key] = v; draw() }; box.append(b) } }
   function draw() {
@@ -456,14 +465,14 @@ PAGES.cards = (el, view) => {
     chipRow(an, [['ALL', 'All series'], ...[...new Set(POOL.map(c => c.anime))].map(a => [a, ANAME(a)])], 'anime')
     chipRow(ra, [['ALL', 'All rarities'], ...ORDER.slice().reverse().filter(r => POOL.some(c => c.r === r)).map(r => [r, RARITY_MARK[r] + ' ' + TIER[r].name[0] + TIER[r].name.slice(1).toLowerCase()])], 'rar')
     { const b = h('button', 'chip' + (CF.sort === 'NEW' ? ' on' : ''), CF.sort === 'NEW' ? '🆕 Newest' : '⭐ Best first'); b.onclick = () => { CF.sort = CF.sort === 'NEW' ? '' : 'NEW'; draw() }; ra.prepend(b) }
-    q.style.display = ra.style.display = CF.mode === 'BINDER' ? 'none' : ''
+    q.style.display = ra.style.display = auraFilter.style.display = CF.mode === 'BINDER' ? 'none' : ''
     an.scrollLeft = animeScroll; ra.scrollLeft = rarityScroll
     grid.className = 'cardgrid'
     if (CF.mode === 'BINDER') return drawBinder(grid)
     if (CF.mode === 'EVOLVE') return drawEvolve(grid)
     if (CF.mode === 'FUSE') return drawFuse(grid)
-    const list = POOL.filter(c => (CF.mode === 'ALL' || (CF.mode === 'WATCHLIST' ? P.watchlist?.includes(c.key) : CF.mode === 'UNOWNED' ? !club()[c.key] : club()[c.key])) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && matchesCard(c, CF.q))
-      .sort((a, b) => Number(!!club()[b.key]?.favorite) - Number(!!club()[a.key]?.favorite) || (CF.sort === 'NEW' ? (b.added || 0) - (a.added || 0) : 0) || TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
+    const list = POOL.filter(c => (CF.mode === 'ALL' || (CF.mode === 'WATCHLIST' ? P.watchlist?.includes(c.key) : CF.mode === 'UNOWNED' ? !club()[c.key] : club()[c.key])) && (CF.anime === 'ALL' || c.anime === CF.anime) && (CF.rar === 'ALL' || c.r === CF.rar) && (!CF.aura || tagsOf(c).includes(CF.aura) || c.aura?.includes(CF.aura)) && matchesCard(c, CF.q))
+      .sort((a, b) => (CF.aura ? Number(!!b.aura?.includes(CF.aura)) - Number(!!a.aura?.includes(CF.aura)) : 0) || Number(!!club()[b.key]?.favorite) - Number(!!club()[a.key]?.favorite) || (CF.sort === 'NEW' ? (b.added || 0) - (a.added || 0) : 0) || TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
     grid.innerHTML = ''
     if (!list.length && CF.mode === 'WATCHLIST') {
       const empty = h('div', 'empty', '<b>No matching watched cards</b>Add a card from its detail screen or change your filters.')
@@ -474,6 +483,8 @@ PAGES.cards = (el, view) => {
       const e = club()[c.key], b = h('button', 'cg' + (e ? '' : ' miss')); b.append(cardImg(eff(c), 240))
       if (e) { b.append(h('span', 'n', e.n)); if (e.favorite || e.locked) b.append(h('span', 'card-flags', (e.favorite ? '★' : '') + (e.locked ? ' 🔒' : ''))); if (e.ser && e.ser <= 100) b.append(h('span', 'sr', '#' + e.ser)); if (e.lvl) b.append(h('span', 'lv', '★' + e.lvl)); if ((P.last || []).includes(c.key) && e.n === 1) b.append(h('span', 'nw', 'NEW')) }
       if (!e) b.append(h('span', 'cg-unowned', 'NOT OWNED'))
+      if (CF.aura) b.append(h('small', 'watchlist-route',
+        c.aura?.includes(CF.aura) ? 'Provides aura' : 'Receives aura'))
       if (CF.mode === 'WATCHLIST') {
         const route = h('small', 'watchlist-route')
         route.textContent = e ? 'Owned' : unlockRoutes(c)[0]
