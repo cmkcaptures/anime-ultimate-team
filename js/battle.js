@@ -2170,11 +2170,102 @@ function livePage(el, ok) {
   if (LIVEST.err) el.append(h('p', 'live-err', '⚠ ' + LIVEST.err))
 }
 const rzTag = t => t.startsWith('S:') ? X.ANAME(t.slice(2)) : t
+const DZ_BRIEFINGS = {
+  read: ['Enemy Read', 'The warning names an Art. Leave that Art unused for the entire turn.', 'An Arts deck with both Strike and Blast, plus a Guard or support option for turns when your best attack is called.'],
+  rush: ['Heavy Rush', 'Have Guard or a shield on your marked fighter at the end of your turn, or swap to a different fighter.', 'Guard Arts, a team shielder, and a healthy backup who can take the lead.'],
+  stay: ['Switch Trap', 'Keep your current fighter in for the entire turn. Switching out and back still triggers the trap.', 'A durable lead with shields, damage reduction, or a KO save. Set your lead before the round begins.'],
+  rotate: ['Decay Mark', 'End the turn with a different fighter active. Returning to the marked fighter triggers the punishment.', 'At least two fighters who can take a hit. A tag-in shield makes the rotation safer.'],
+  break: ['Charging', 'Land an attack into the boss’s Guard to remove it before ending your turn. A cheap hit can do it. Guard-piercing attacks are also useful.', 'Low-cost attacks so you can respond every round, plus a hard hitter for the opening after Guard drops.'],
+  mix: ['Counter Ready', 'Alternate attacking Arts during the turn. Strike → Blast → Strike works. Strike → Strike triggers punishment.', 'A mixed Arts deck. Keep a backup attack in hand when your main damage comes from Strikes or Blasts.'],
+  illusion: ['Enemy Read or Switch Trap', 'Check the actual warning each turn. Avoid the called Art on Enemy Read rounds and keep your lead in on Switch Trap rounds.', 'A durable lead and a mixed Arts deck so you can respond to either warning.'],
+}
+
+function deadZoneBriefing({ zone, stage, boss, enemies, reward, locked, teamReady, cleared, fight }) {
+  const { h } = X
+  const text = (tag, cls, value) => Object.assign(h(tag, cls), { textContent: value })
+  const dialog = h('dialog', 'dz-brief')
+  const head = h('header', 'dz-brief-head')
+  const back = h('button', 'btn dark sm', '← BACK TO DEAD ZONES')
+  back.type = 'button'; back.onclick = () => dialog.close()
+  head.append(back)
+  const main = h('div', 'dz-brief-main')
+  const hero = h('div', 'dz-brief-hero')
+  const title = h('div', 'dz-brief-title')
+  const heading = text('h2', '', stage.name)
+  heading.id = 'dz-brief-title'
+  dialog.setAttribute('aria-labelledby', heading.id)
+  const opponentNames = enemies.map(card => card.name).join(' · ')
+  title.append(text('p', 'dz-brief-kicker', zone.name + ' / DZ-' + stage.n), heading, text('p', '', opponentNames))
+  hero.append(title)
+  if (boss) {
+    const image = h('img', 'dz-brief-art')
+    image.src = boss.url
+    image.alt = boss.name + ' · ' + boss.ver
+    hero.append(image)
+  }
+  const blocks = h('div', 'dz-brief-grid')
+  const section = name => {
+    const block = h('section', 'dz-brief-panel')
+    block.append(h('h3', '', name))
+    blocks.append(block)
+    return block
+  }
+  const add = (element, name, value) => {
+    const row = h('div', 'dz-brief-row')
+    row.append(text('strong', '', name), text('p', '', value))
+    element.append(row)
+  }
+  const incoming = section('What the boss does')
+  if (boss?.pas?.d) add(incoming, boss.pas.n, boss.pas.d)
+  if (boss?.tx?.length) add(incoming, boss.mv, boss.tx.join(' '))
+  if (boss?.pas?.e?.worldCut) add(incoming, 'World Cut', 'Specials and Ultimates that reach HP cut starting max HP by 10 percentage points, down to a 70% floor. Shields help keep the hit off your HP.')
+  if (stage.newGen == null) for (const [name, description] of stage.rules) add(incoming, name, description)
+  if (stage.final) add(incoming, 'Final Stand', 'The opening boss returns once at 35% HP with Guard and a full Ultimate gauge. Keep enough Energy to respond.')
+
+  const warning = section('How to read the warning')
+  const [name, response, tools] = DZ_BRIEFINGS[stage.mechanic] || [
+    'Enemy Read and Heavy Rush',
+    'Avoid the called Art on Enemy Read rounds. On Heavy Rush rounds, Guard, gain a shield, or switch away from the marked fighter.',
+    'A mixed Arts deck, at least one defensive option, and a second fighter you can safely switch in.',
+  ]
+  add(warning, name, response)
+  if (stage.newGen != null) add(warning, 'What’s at stake', 'Answer correctly to drain 25% of the boss’s Ultimate gauge and reduce its damage that round. A miss gives it 35% gauge, 2 Energy, and extra damage.')
+  else add(warning, 'When to expect it', 'Warnings start on round one and recur every ' + (stage.n >= 4 ? 'two' : 'three') + ' rounds.')
+
+  const prep = section('What to bring')
+  add(prep, 'Recommended tools', tools)
+  if (stage.weak.length) add(prep, 'Bonus damage tags', stage.weak.map(tag => rzTag(tag) + ' +' + stage.weakB + '%').join(' · ') + '. Others deal ' + Math.min(30, stage.resist) + '% less damage.')
+  if (stage.newGen == null) {
+    const tip = { CELL: 'Bring Saiyans and Mentors to punch through his damage reduction. Save Energy to finish him after his first KO save.',
+      'MAJIN BUU': 'Tag Teams and Transformations hit harder here. Keep a shield or KO save ready for his boosted Special.' }[stage.boss] || stage.tip
+    if (tip) add(prep, 'Stage plan', tip)
+  } else if (stage.newGen === 4) add(prep, 'Hand Jack', 'Missing the read also costs you 2 Energy.')
+  add(prep, 'Long fights', 'Bosses cannot recover lost HP through healing. Their damage ramps up from round five, so keep pressure on between warnings.')
+
+  main.append(hero, blocks)
+  const foot = h('footer', 'dz-brief-foot')
+  const status = locked ? 'Clear DZ-' + (stage.n - 1) + ' to unlock.' : !teamReady ? 'Your team needs six fighters.' : cleared ? 'Stage cleared' : 'First clear · ' + reward
+  foot.append(text('p', '', status))
+  if (!locked && !teamReady) {
+    const teamButton = h('button', 'btn dark', 'EDIT MY TEAM')
+    teamButton.onclick = () => { dialog.close(); X.go('team') }
+    foot.append(teamButton)
+  }
+  const start = h('button', 'btn gold big', cleared ? 'REPLAY FIGHT' : 'START FIGHT')
+  start.disabled = locked || !teamReady || !enemies.length
+  start.onclick = () => { dialog.close(); fight() }
+  foot.append(start)
+  dialog.append(head, main, foot)
+  dialog.addEventListener('close', () => dialog.remove(), { once: true })
+  document.body.append(dialog)
+  dialog.showModal()
+  back.focus()
+}
 function redzonePage(el, ok) {
   const { h } = X, ST = X.ST(), ZS = ST.deadzones || []; if (!ZS.length) return
   const Z = ZS.find(z => z.id === DZSEL) || ZS[ZS.length - 1], done = (ST.rzAll || {})[Z.id] || []
   { const t = h('div', 'mtabs dz-tabs'); for (const z of ZS) { const n = ((ST.rzAll || {})[z.id] || []).length, b = h('button', 'mtab' + (z === Z ? ' on' : ''), z.name.toUpperCase() + ' · ' + n + '/' + z.stages.length); b.onclick = () => { DZSEL = z.id; X.go('battle') }; t.append(b) } el.append(t) }
-  el.append(h('section', 'bhero rz-hero', `<div><span class="sh-tag">💀 DEAD ZONE · ${Z.sub.toUpperCase()}</span><h2>${Z.name.toUpperCase()}</h2><p>The hardest fights in the game. Guard, shield or switch against Heavy Rush. Change Arts against Enemy Read. Weakness tags help you finish before enemy damage ramps up from round five. Enemies resist being stopped twice in a row.</p></div><div class="bstat"><b>${done.length}</b><span>/ ${Z.stages.length} CLEARED</span></div>`))
+  el.append(h('section', 'bhero rz-hero', `<div><span class="sh-tag">💀 DEAD ZONE · ${Z.sub.toUpperCase()}</span><h2>${Z.name.toUpperCase()}</h2><p>Open a stage briefing to see the boss’s abilities, how to answer its warnings, and what to bring.</p></div><div class="bstat"><b>${done.length}</b><span>/ ${Z.stages.length} CLEARED</span></div>`))
   const clearReward = X.BYKEY[Z.rewardKey]
   if (clearReward) {
     const name = clearReward.name + ' · ' + clearReward.ver
@@ -2183,16 +2274,18 @@ function redzonePage(el, ok) {
     el.querySelector('.rz-hero > div').append(prize)
   }
   for (const st of Z.stages) {
-    const open = st.n === 1 || done.includes(st.n - 1), clr = done.includes(st.n), boss = X.POOL.filter(c => (c.name === st.boss || c.id === st.boss)).sort((a, b) => b.ovr - a.ovr)[0], team = campTeam(st.enemy)
+    const open = st.n === 1 || done.includes(st.n - 1), clr = done.includes(st.n), team = campTeam(st.enemy)
+    const boss = X.BYKEY[campTeam([st.boss])[0]]
     const w = st.reward, rw = [w.coins.toLocaleString() + ' coins', w.premium && w.premium + '× Premium', w.shards && '◆' + w.shards.toLocaleString(), w.tickets && w.tickets + ' Tickets'].filter(Boolean).join(' · ')
     const box = h('section', 'rz-st' + (open ? '' : ' locked') + (clr ? ' done' : '') + (st.final ? ' final' : ''), `<div class="rz-art" style="background-image:url('${boss ? boss.url : ''}')"><span>DZ-${st.n}${st.final ? ' · FINAL' : ''}</span></div>
-      <div class="rz-body"><h3>${st.name.toUpperCase()} ${clr ? '<em>✓ CLEARED</em>' : ''}</h3><p class="rz-vs">vs ${st.enemy.map(name => cardById(name)?.name || name).join(', ')} · enemy power ×${st.boost}</p>
-      <div class="rz-rules">${st.rules.map(r => `<span class="rz-rule"><b>⚠ ${r[0]}</b>${r[1]}</span>`).join('')}${st.n >= 4 ? '<span class="rz-rule"><b>Pressure</b>Enemy warnings come every other round.</span>' : ''}${st.final ? '<span class="rz-rule"><b>Final Stand</b>The opening boss returns once at 35% HP with Guard and a full Ultimate gauge.</span>' : ''}</div>
-      ${st.weak.length ? `<div class="rz-weak"><b>WEAK TO</b>${st.weak.map(t => `<span>${rzTag(t)} +${st.weakB}%</span>`).join('')}<i>Everyone else −${Math.min(30, st.resist)}% damage</i></div>` : ''}
-      <p class="rz-tip">💡 ${st.tip}</p><p class="rz-rw">🎁 First clear: ${rw}</p></div>`)
-    const acts = h('div', 'rz-acts'), go = h('button', 'btn gold', open ? (clr ? 'REPLAY' : '💀 ENTER') : '🔒 LOCKED'); go.disabled = !ok || !open
-    go.onclick = () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, pveFloor: st.n, pveFinal: st.final, newGen: st.newGen, mechanic: st.mechanic, encounter: st.encounter, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) })
-    acts.append(go, cxBtn(() => team.map(k => X.BYKEY[k]), 'DZ-' + st.n + ' · ' + st.name)); box.querySelector('.rz-body').append(acts); el.append(box)
+      <div class="rz-body"><h3>${st.name.toUpperCase()} ${clr ? '<em>✓ CLEARED</em>' : ''}</h3><p class="rz-vs">vs ${st.enemy.map(name => cardById(name)?.name || name).join(', ')}</p><p class="rz-rw">${open ? (clr ? 'Ready to replay' : 'First clear · ' + rw) : 'Clear DZ-' + (st.n - 1) + ' to unlock'}</p></div>`)
+    const acts = h('div', 'rz-acts'), brief = h('button', 'btn gold', 'VIEW BRIEFING')
+    brief.onclick = () => deadZoneBriefing({
+      zone: Z, stage: st, boss, enemies: team.map(key => X.BYKEY[key]).filter(Boolean),
+      reward: rw, locked: !open, teamReady: ok, cleared: clr,
+      fight: () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, pveFloor: st.n, pveFinal: st.final, newGen: st.newGen, mechanic: st.mechanic, encounter: st.encounter, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) }),
+    })
+    acts.append(brief, cxBtn(() => team.map(k => X.BYKEY[k]), 'DZ-' + st.n + ' · ' + st.name)); box.querySelector('.rz-body').append(acts); el.append(box)
   }
 }
 function villainPage(el, ok) {

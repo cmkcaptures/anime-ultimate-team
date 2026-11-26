@@ -3,6 +3,11 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
 ## 2026-11-26 · Codex
+- Added a full-screen pre-fight briefing to every Dead Zone stage. It shows boss kit and stage rules, warning responses, recommended team tools, damage bonus tags and entry requirements. Stage launches still go through the original battle entry point. Locked stages can be scouted.
+- No balance changes. The briefing uses the current stage rules and the nine New Gen encounter mechanics.
+
+---
+## 2026-11-26 · Codex
 - Ranked all 612 playable cards for the first balance pass using 93 headless fights per card, split between solo, 3v3 lead and 3v3 bench scenarios. Three campaign-only NPC cards were excluded. Gear 5 Luffy, Flash Goddess Yoruichi, Gojo & Sukuna, Samehada Kisame and SSJ4 Gogeta led the benchmark.
 - Use the results as a baseline for manual testing. Initiative was alternated, gear and player upgrades were excluded, and the benchmark does not simulate live PvP choices or mode-specific boss rules. Hollow Mask Ichigo was #12, Ulquiorra #43, Nel #49 and Grimmjow #56. Test Nel with an all-Espada team before adjusting her. No gameplay edits were made.
 
