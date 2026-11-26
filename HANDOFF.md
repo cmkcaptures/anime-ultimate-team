@@ -3,6 +3,10 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
 ## 2026-11-26 · Codex
+- Veteran wave two updated 24 existing kits: 12 Legendaries, 9 Mythics and 3 Rainbows. Retained card identities and OVRs, excluded Dead Zone enemy cards, and reused combat effects. Full roster in patch notes 2026112605.
+
+---
+## 2026-11-26 · Codex
 - How It Works now gives one short play tip based on the kit, including a dedicated Mahoraga tip, across cards and form previews. Full kit text stays in its original panels.
 - Legendary, Mythic and Rainbow pack walkouts reveal the framed card with rarity-colored effects in both single and multiple pulls. Reduced motion skips the cinematic.
 

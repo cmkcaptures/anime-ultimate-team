@@ -1,0 +1,43 @@
+name: Veteran roster validation
+on: pull_request
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/check.js
+      - run: |
+          cp js/battle.js js/.veteran-test.mjs
+          printf '\nexport {newSide,playArt,ultimate,setActive};\n' >> js/.veteran-test.mjs
+          node --input-type=module <<'JS'
+          import fs from 'node:fs'
+          import assert from 'node:assert/strict'
+          import {execFileSync} from 'node:child_process'
+          globalThis.document={fonts:{load:async()=>[]}}
+          globalThis.addEventListener=()=>{}
+          globalThis.innerWidth=1280
+          const {newSide,playArt,ultimate,setActive}=await import('./js/.veteran-test.mjs')
+          const before=JSON.parse(execFileSync('git',['show','origin/main:cards-list.json']))
+          const cards=JSON.parse(fs.readFileSync('cards-list.json'))
+          assert.equal(cards.length,before.length)
+          const changed=cards.filter((c,i)=>JSON.stringify(c)!==JSON.stringify(before[i]))
+          assert.equal(changed.length,24)
+          for(const [i,c] of cards.entries())for(const key of ['id','key','r','ovr','url'])assert.equal(c[key],before[i][key])
+          const neutral={...cards.find(c=>c.id==='aokiji_ice_age'),pas:{e:{}}}
+          const fight=c=>({turn:3,you:Object.assign(newSide([c,neutral]),{ki:10,gauge:100,rngS:45,hand:['special'],formTurn:2}),ai:Object.assign(newSide([{...neutral,key:'target'},{...neutral,key:'bench'}]),{ki:6,rngS:54,formTurn:2})})
+          for(const c of changed){
+            const b=fight(c)
+            assert.ok(playArt(b,'you',0)?.hits.length,c.id)
+            assert.ok(ultimate(fight(c),'you')?.hits.length,c.id)
+            if(c.pas.e.stripSpecial){const x=fight(c);x.ai.team[0].shieldHp=50000;playArt(x,'you',0);assert.equal(x.ai.team[0].shieldHp,0,c.id)}
+            if(c.pas.e.storyCover){const x=fight(c);setActive(x.you,1);assert.equal(x.you.team[1].shieldHp,Math.round(x.you.team[1].max*c.pas.e.storyCover),c.id)}
+          }
+          JS
