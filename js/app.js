@@ -2396,7 +2396,7 @@ function builderResults() {
 const diaStr = n => '◆'.repeat(n) + '◇'.repeat(7 - n)
 function progBox(key, c) {
   const o = club()[key], dia = o.dia || 3, lv = o.lv || 1, need = (ST.lvNeed || [])[lv] || 1, xp = o.xp || 0
-  const w = h('div', 'prog' + (dia >= 7 ? ' maxed' : ''), `<div class="pg-d"><b>${diaStr(dia)}</b><span>${dia >= 7 ? 'LIMIT BREAK · passive +25%' : (7 - dia) + ' more duplicate' + (7 - dia > 1 ? 's' : '') + ' to max'}</span></div>
+  const w = h('div', 'prog' + (dia >= 7 ? ' maxed' : ''), `<div class="pg-d"><b>${diaStr(dia)}</b><span>${dia >= 7 ? 'LIMIT BREAK · all passive numbers +25% (e.g. +20% dmg → +25%)' : (7 - dia) + ' more duplicate' + (7 - dia > 1 ? 's' : '') + ' to max'}</span></div>
     <div class="pg-l"><b>Lv ${lv}</b><i><s style="width:${lv >= 100 ? 100 : Math.round(xp / need * 100)}%"></s></i><span>${lv >= 100 ? 'MAX LEVEL' : xp + ' / ' + need + ' XP'}</span></div>
     <div class="pg-a"><b>A${o.asc || 0}</b><span>ASCENSION · coming soon</span></div>`)
   if (lv < 100) { const r = h('div', 'pg-train'), t = h('button', 'btn green sm', `TRAIN · TICKET (${ST.tickets || 0})`), cb = h('button', 'btn dark sm', 'TRAIN · 2,000 COINS')
