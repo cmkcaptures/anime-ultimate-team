@@ -360,6 +360,37 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     }
     // defensive dodges / nullifies first
     if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0 && !surviveHogyoku(att) && !gtSurvive(att, A) && !shrineWaveSurvive(att, pasNote) && !fusionCaptainSave(att, A, pasNote) && !fairySurvive(att, A, PE, pasNote)) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
+    if (offensive && kind === 'blast' && A && D && (ed.samehada || ed.ukitakeReturn)) {
+      const turn = turnClock(A)
+      if (def.releaseAbsorbTurn !== turn) {
+        def.releaseAbsorbTurn = turn
+        if (ed.samehada) {
+          def.samehadaCharge = Math.min(3, (def.samehadaCharge || 0) + 1)
+          healHP(def, def.max * .12)
+          if (A.ki > 0) { A.ki--; D.ki = Math.min(KI_MAX, D.ki + 1) }
+        } else {
+          def.ukitakeCharge = true
+          D.ki = Math.min(KI_MAX, D.ki + 2)
+        }
+        pasNote(def, ed.samehada ? 'SAMEHADA · BLAST ABSORBED' : 'TWIN FISH · BLAST STORED')
+        return { dmg: 0, hpDamage: 0, crit: false, mu: 1, miss: 'ABSORBED' }
+      }
+    }
+    if (offensive && A && D && ed.vermilionEye && !mod.noDodge) {
+      const action = A.reworkAction, turn = turnClock(A)
+      const previous = def.vermilionObserved
+      if (!previous || previous.action !== action || previous.turn !== turn) {
+        def.vermilionObserved = { action, turn, kind }
+        if (previous?.kind === kind && def.vermilionCounterTurn !== turn) {
+          def.vermilionCounterTurn = turn
+          def.vermilionReady = true
+          if (D.waveArtRunning) D.waveDodgeTarget = def
+          hit(def, att, 530, def.pwr, true, D, A, 'counter')
+          pasNote(def, 'VERMILION EYE · COUNTER')
+          return { dmg: 0, hpDamage: 0, crit: false, mu: 1, miss: 'DODGED' }
+        }
+      }
+    }
     if (ed.absorbRanged && ranged) {
       if (kind === 'blast') {
         const alreadyMatched = def.absorbSource === att.key && def.absorbed === 4
@@ -445,6 +476,8 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (A && !suppressBuffs) {
     m += (A.teamDmg || 0) / 100
     if (A.team.some(f => f !== att && !f.ko && PE(f).batch === 'soiFon')) m += .2
+    if ((att.card.faction === 'Espada' || att.card.cat?.includes('Espada')) &&
+        A.team.some(f => f !== att && !f.ko && PE(f).nelEspada)) m += .25
     if ((A.batchResolveUntil ?? -1) >= turnClock(A)) m += .2
   }
   if (ed.vuln) m += ed.vuln / 100
@@ -546,6 +579,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   const shieldBeforeHit = def.shieldHp
   if (mod.batchStrip) def.shieldHp = 0
   if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) { def.recapShielded = (def.recapShielded || 0) + s2; pasNote(def, 'SHIELD') } }
+  if (ed.elasticLove && shieldBeforeHit > 0 && def.shieldHp === 0) def.elasticCharged = true
   if (offensive && ea.batch === 'gildarts' && (piercedGuard || (shieldBeforeHit > 0 && !def.shieldHp))) {
     att.batchCrush = true
     pasNote(att, 'CRUSH · FOLLOW-UP READY')
@@ -960,6 +994,8 @@ function playArt(B, who, idx) {
     const lotus = batch === 'lee' && a.batchStrikes >= 2
     const blood = batch === 'sanemi' && a.hp < a.max * .6
     const orange = batch === 'piccolo' ? a.batchCharge || 0 : 0
+    const scarlet = kit.vermilionEye && a.vermilionReady
+    const love = kit.elasticLove && a.elasticCharged
     const hornet = batch === 'soiFon'
     const markedHornet = hornet && d.batchHornet === a.key
     const flash = batch === 'yoruichi' && a.batchFlash
@@ -967,7 +1003,8 @@ function playArt(B, who, idx) {
     const story = storySpecial(a, d, me, foe)
     let base = pctOf(a.card) * 3.2 * chain * story.multiplier
     if (stone) base *= 1.55
-    if (flash) base *= 1.3
+    if (flash || scarlet) base *= 1.3
+    if (love) base *= 1.45
     if (markedHornet) base *= 1.5
     if (blood) base *= 1.45
     if (lotus) { base *= 1.6; a.hp = Math.max(1, a.hp - Math.round(a.max * .08)); a.batchStrikes = 0 }
@@ -1030,13 +1067,34 @@ function playArt(B, who, idx) {
       for (let i = 0; i < 3 && !d.ko; i++) ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, true, me, foe, 'special') })
     } else if (isAoe(a.card) || dragonFlame || pairedFlame) for (const t of alive(foe)) ev.hits.push({ t, ...hit(a, t, (t === d ? base * .75 : base * .3) * (t !== d && PE(a).aoeBoost ? 1 + PE(a).aoeBoost / 100 : 1), Math.max(a.pwr, a.ki), pierce || wavePierce || dragonFlame, me, foe, 'special') })
     else if (PE(a).twinSpec || kit.godspeed) { ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }); if (!d.ko) ev.hits.push({ t: d, ...hit(a, d, base * .6, Math.max(a.pwr, a.ki), pierce || wavePierce, me, foe, 'special') }) }
-    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart || slayerSpear || dragonFist || trunksGuard || petalPierce || stone || mist || lotus || blood || flash || hornet || orange > 0 || tide > 0, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored: stored + orange + tide, batchStrip: stone || flash || hornet, noDodge: !!(slayerSpear || flash) }) })
+    else ev.hits.push({ t: d, ...hit(a, d, base, Math.max(a.pwr, a.ki), pierce || wavePierce || finishingForm || sunCounter || story.pierce || lightPierce || clearHeart || slayerSpear || dragonFist || trunksGuard || petalPierce || stone || mist || lotus || blood || flash || hornet || orange > 0 || tide > 0, me, foe, 'special', undefined, { ignoreDef: story.ignoreDef, ignoreDR: finishingForm, noRevive: finishingForm, stored: stored + orange + tide, batchStrip: stone || flash || hornet || scarlet, noDodge: !!(slayerSpear || flash) }) })
     if (kit.storyClone && !a.ko && !d.ko && ev.hits[0]?.hpDamage > 0)
       ev.hits.push({ t: d, ...hit(a, d, base * .5, a.pwr, false, me, foe, 'special') })
     const bench = kit.benchSpecial && weakestBench(foe, d)
     if (bench) ev.hits.push({ t: bench, ...hit(a, bench, base * .5, a.pwr, true, me, foe, 'special') })
     const landed = ev.hits.some(x => (x.hpDamage ?? x.dmg) > 0)
     if (batch === 'orihimeFinal' && !a.ko) batchSupportSpecial(me, healHP)
+    if (kit.nelEspada && !a.ko) {
+      for (const ally of alive(me)) {
+        healHP(ally, ally.max * .18)
+        ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * .18))
+      }
+    }
+    if (kit.resonance && landed && !d.ko) d.nobaraMark = a.key
+    if (landed && !a.ko) {
+      if (scarlet) { a.vermilionReady = false; me.ki = Math.min(KI_MAX, me.ki + 2) }
+      if (love) {
+        a.elasticCharged = false
+        const ally = alive(me).reduce((weakest, f) => f.hp / f.max < weakest.hp / weakest.max ? f : weakest, a)
+        ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * .25))
+      }
+      const ukitake = !d.ko && alive(me).find(f => f !== a && PE(f).ukitakeReturn && f.ukitakeCharge)
+      if (ukitake) {
+        ukitake.ukitakeCharge = false
+        ev.hits.push({ t: d, ...hit(ukitake, d, 520, ukitake.ki, true, me, foe, 'counter') })
+        pasNote(ukitake, 'TWIN FISH RETURN')
+      }
+    }
     if (landed && batch && !a.ko) {
       if (hornet) {
         d.batchHornet = markedHornet || d.ko ? null : a.key
@@ -1314,8 +1372,8 @@ function ultimate(B, who, choice) {
   const sever = lastDoor === 'sever'
   const quirkDefenders = new Set()
   const opposingKit = PE(d).shinobi
-  const single = ['star', 'merlin', 'yoruichi', 'soiFon'].includes(storyKit.batch) || PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
-    (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso)
+  const single = !storyKit.nelEspada && !storyKit.samehada && (storyKit.resonance || ['star', 'merlin', 'yoruichi', 'soiFon'].includes(storyKit.batch) || PE(a).captainPetals || gtForm(a) === 5 || !!PE(a).crVegeta || PE(a).crSukuna === 2 || !!(kit || crew || villain || lastDoor || storySignature) || (!PE(a).ultAoe && !a.pe.team7 && !a.pe.beastDuo &&
+    (a.card.tag || ['BARRAGE', 'EXECUTION', 'RALLY', 'FORTRESS'].includes(uname)) && !PE(a).galaxyImpact && !PE(a).choso))
   const damaging = kit !== 14 && kit !== 20 && storyKit.batch !== 'orihimeFinal' && !PE(a).antiKit
   const minato = single && damaging && !sever && shinobiAlly(foe, 18, d)
   const interceptor = minato && !minato.raijinUsed ? minato : null
@@ -1383,6 +1441,22 @@ function ultimate(B, who, choice) {
       me.gauge = Math.min(GAUGE_MAX, me.gauge + 30)
       pasNote(toshiro, 'CAPTAIN COMBO · +30% ULT')
     }
+    return finish()
+  }
+  if (ea.nelEspada || ea.samehada) {
+    const charge = ea.samehada ? a.samehadaCharge || 0 : 0
+    a.samehadaCharge = 0
+    for (const enemy of alive(foe))
+      H(enemy, base * (enemy === d ? 1 : .55) * (1 + charge * .15), true, { batchStrip: !!ea.nelEspada })
+    if (ea.nelEspada) me.ki = Math.min(KI_MAX, me.ki + 3)
+    else for (const ally of alive(me)) ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * (.18 + charge * .06)))
+    return finish()
+  }
+  if (ea.resonance) {
+    const target = alive(foe).find(f => f.nobaraMark === a.key) || d
+    const marked = target.nobaraMark === a.key
+    if (marked) { target.nobaraMark = null; me.gauge = Math.min(GAUGE_MAX, me.gauge + 25) }
+    H(target, base * (marked ? 1.5 : 1), true)
     return finish()
   }
   if (batchUltimate(a, d, me, foe, choice, base, H, PE, pasNote, healHP)) return finish()
@@ -1591,6 +1665,13 @@ function switchFighter(B, who, index) {
   const ghost = ghostDetonation(leaving, side, foe, entering)
   const trapWho = who === 'you' ? 'ai' : 'you'
   let trap = ghost && { ...ghost, who: trapWho }
+  const nobara = !leaving.ko && leaving.nobaraMark &&
+    foe.team.find(f => f.key === leaving.nobaraMark && !f.ko && PE(f).resonance)
+  if (nobara) {
+    leaving.nobaraMark = null
+    trap = { who: trapWho, art: 'special', move: 'RESONANCE', before: trap,
+      hits: [{ t: leaving, ...hit(nobara, leaving, 690, nobara.ki, true, foe, side, 'counter') }] }
+  }
   const petals = !entering.ko && leaving.fcPetals && foe.team.find(f => f.key === leaving.fcPetals && !f.ko && PE(f).captainPetals)
   if (petals) {
     delete leaving.fcPetals
