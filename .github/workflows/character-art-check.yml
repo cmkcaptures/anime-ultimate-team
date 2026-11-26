@@ -1,7 +1,7 @@
 name: Character art check
 on:
-  push:
-    branches: [combined-espada-character-drop]
+  pull_request:
+    branches: [main]
 permissions:
   contents: read
 jobs:
