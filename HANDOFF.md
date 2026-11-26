@@ -3,6 +3,11 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
 ## 2026-11-26 · Codex
+- How It Works now gives one short play tip based on the kit, including a dedicated Mahoraga tip, across cards and form previews. Full kit text stays in its original panels.
+- Legendary, Mythic and Rainbow pack walkouts reveal the framed card with rarity-colored effects in both single and multiple pulls. Reduced motion skips the cinematic.
+
+---
+## 2026-11-26 · Codex
 - How It Works now renders for every card detail, including unowned cards, kit previews and transformation forms. It includes the Special and falls back to the card’s passive description when its effect keys are custom. Uses text nodes for the bullets.
 - No kit changes. The separate audit for inaccurate passive descriptions remains open. Patch notes version 2026112604.
 
