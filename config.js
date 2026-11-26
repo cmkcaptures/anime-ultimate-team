@@ -1,5 +1,6 @@
 // Public Firebase web config (safe to ship; access is controlled by sign-in + Firestore rules).
 window.AUT_CONFIG = {
+  playerGrantsEnabled: true,
   apiKey: 'AIzaSyD2OippaOLK4UXtVO_1c3iTG4UERRBE8Yk',
   authDomain: 'animetcg-533c0.firebaseapp.com',
   projectId: 'animetcg-533c0',
