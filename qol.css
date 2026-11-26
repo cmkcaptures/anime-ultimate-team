@@ -34,3 +34,14 @@
 }
 .grant-history-row .queued { color: #ffe096; }
 #arena :is(.art2,.ar-ult,.ar-trans)[aria-disabled="true"] { opacity: .55; cursor: help; }
+
+/* Keep the native Team Aura menu readable in both browser color themes. */
+.tp-f select.field {
+  color-scheme: dark;
+  color: #f8f4ff !important;
+  background-color: #17102b !important;
+}
+.tp-f select.field option {
+  color: #f8f4ff;
+  background-color: #17102b;
+}
