@@ -1,4 +1,4 @@
-import { validGrant } from './player-grants.js?v=1'
+import { validGrant } from './player-grants.js?v=2'
 // AUT accounts: Firebase Auth (email/password + Google) and Firestore (private save + public profile).
 const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/'
 let A, F, auth, db, USER = null, PROFILE = null
@@ -104,6 +104,18 @@ export async function sendPlayerGrant(recipient, reward) {
   await F.addDoc(F.collection(db, 'playerGrants'), {
     ...reward, to: recipient, from: USER.uid, pending: true, createdAt: F.serverTimestamp()
   })
+}
+
+export async function sentPlayerGrants() {
+  if (!await canSendPlayerGrants()) throw new Error('Grant access is unavailable.')
+  const query = F.query(F.collection(db, 'playerGrants'), F.where('from', '==', USER.uid))
+  const rows = (await F.getDocs(query)).docs.map(doc => ({ ...doc.data(), id: doc.id }))
+  const recent = rows.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)).slice(0, 40)
+  const recipients = new Map()
+  for (const uid of new Set(recent.map(grant => grant.to))) recipients.set(uid, profile(uid).catch(() => null))
+  return Promise.all(recent.map(async grant => ({
+    ...grant, recipient: (await recipients.get(grant.to))?.name || 'Unknown player'
+  })))
 }
 
 export async function claimPlayerGrants(initial, apply) {

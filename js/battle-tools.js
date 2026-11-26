@@ -9,6 +9,7 @@ export function fighterStatuses(f, passive, next, side, turn, enemyBasic) {
   if (f.shieldHp > 0) add('⬡ ' + Math.round(f.shieldHp), 'Shield absorbs up to ' + Math.round(f.shieldHp) + ' damage. It stays until depleted or removed.')
   if (f.guard) add('◆ Guard', 'Reduces damage from the next hit unless the attack pierces Guard.')
   if (f.burnT > 0) add('♨ ' + f.burnT, 'Burn triggers at the start of this fighter’s active turn. ' + f.burnT + ' ticks left at ' + f.burn + '% max HP each.')
+  if (f.hogyokuSave) add('Hōgyoku ready', 'This fighter survives their next lethal hit or status effect at 1 HP.')
   if (f.doom > 0) add('☠ ' + f.doom, 'Death Note knocks this fighter out when the active-turn countdown reaches zero.')
   if (f.frozen) add('❄ Frozen', 'This fighter loses their next turn if still frozen.')
   if (f.rivalFlame) add('Flame on', 'King takes 40% less damage. The flame goes out on even rounds.')

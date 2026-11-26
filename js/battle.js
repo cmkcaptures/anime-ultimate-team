@@ -10,7 +10,7 @@ import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missio
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
 import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
-import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=soi-orihime-1'
+import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=session-qol-1'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
@@ -265,6 +265,14 @@ const crewOpening = (attacker, target, side) => {
   return side?.team.find(f => f.key === target.crewOpening && f.card.name !== attacker.card.name)
 }
 
+function surviveHogyoku(fighter) {
+  if (fighter.hp > 0 || !fighter.hogyokuSave) return false
+  fighter.hogyokuSave = false
+  fighter.hp = 1
+  pasNote(fighter, 'HŌGYOKU · SURVIVED AT 1 HP')
+  return true
+}
+
 function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, kind), mod = {}) {
   const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = ea.antiKit || mod.sever ? {} : PE(def) // Toji: enemy defensive kit is cancelled
   const offensive = ['strike', 'blast', 'special', 'ult'].includes(kind)
@@ -351,7 +359,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
       return { dmg: 0, crit: false, mu: 1, miss: 'DODGED' }
     }
     // defensive dodges / nullifies first
-    if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0 && !gtSurvive(att, A) && !shrineWaveSurvive(att, pasNote) && !fusionCaptainSave(att, A, pasNote) && !fairySurvive(att, A, PE, pasNote)) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
+    if (def.cylinder && A !== D) { def.cylinder = 0; const r = Math.round(base * (stat / 80) * (100 / (60 + att.def * .5)) * 1.2); att.hp = Math.max(0, att.hp - r); if (att.hp <= 0 && !surviveHogyoku(att) && !gtSurvive(att, A) && !shrineWaveSurvive(att, pasNote) && !fusionCaptainSave(att, A, pasNote) && !fairySurvive(att, A, PE, pasNote)) att.ko = true; att.taken = (att.taken || 0) + r; pasNote(def, 'MAGIC CYLINDER · ' + r.toLocaleString() + ' REFLECTED'); return { dmg: 0, crit: false, mu: 1, miss: 'REFLECTED' } }
     if (ed.absorbRanged && ranged) {
       if (kind === 'blast') {
         const alreadyMatched = def.absorbSource === att.key && def.absorbed === 4
@@ -375,7 +383,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
         pasNote(def, 'ULTRA INSTINCT COUNTER · ' + counter.dmg + ' DMG')
       }
       pasNote(def, 'DODGE'); return { dmg: 0, crit: false, mu: 1, miss: 'DODGE' } }
-    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; if (!ea.antiKit && rewriteLethalHit(def, D, PE, healHP, pasNote)) return { dmg: 0, hpDamage: 0, crit: false, mu: 1, miss: 'REJECTED' }; def.hp = 0; if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!shrineWaveSurvive(def, pasNote) && !fusionCaptainSave(def, D, pasNote) && !fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ }; att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
+    if (!D?.team.some(f => f !== def && !f.ko && !D.antithesisUsed && PE(f).lastDoor === 'antithesis') && ea.onePunch && kind === 'strike' && !att.shisuiArtDamp && !(ed.remSacrifice && !def.waveRemUsed) && !(ed.yhwach && !def.futureUsed) && !D?.team.some(f => !f.ko && PE(f).choso && !D.chosoSaved) && !D?.team.some(f => f !== def && !f.ko && PE(f).shinobi === 17 && !f.bondUsed) && !def.campaignTell && !def.encounterPhase && !def.scoreBoss && !def.deadZoneEnemy && !(ed.crew === 'asura' && def.endure > 0) && def.rivalBarrier == null && def.card.r !== 'X' && rnd(A || D) * 100 < ea.onePunch) { const d0 = def.hp; if (!ea.antiKit && rewriteLethalHit(def, D, PE, healHP, pasNote)) return { dmg: 0, hpDamage: 0, crit: false, mu: 1, miss: 'REJECTED' }; def.hp = 0; if (!surviveHogyoku(def)) { if (gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED'); else if (!shrineWaveSurvive(def, pasNote) && !fusionCaptainSave(def, D, pasNote) && !fairySurvive(def, D, PE, pasNote)) { def.ko = true; att.kos++ } } att.dealt += d0; pasNote(att, 'ONE PUNCH'); return { dmg: d0, crit: true, mu: 1 } }
   }
   if (offensive && !mod.noDodge && ed.batch && def.batchDodge && (ed.batch !== 'juvia' || kind === 'strike')) {
     def.batchDodge = false
@@ -554,7 +562,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     dmg -= share
     shibai.hp -= redirected
     shibai.taken = (shibai.taken || 0) + redirected
-    if (!shibai.hp) { shibai.ko = true; att.kos++ }
+    if (!shibai.hp && !surviveHogyoku(shibai)) { shibai.ko = true; att.kos++ }
     att.dealt += redirected
     pasNote(shibai, 'DIVINE VESSEL')
   }
@@ -578,7 +586,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     D.antithesisUsed = true
     const reversal = Math.min(dmg, Math.round(att.max * .5), att.hp)
     att.hp -= reversal
-    if (!att.hp) { att.ko = true; uryu.kos++ }
+    if (!att.hp && !surviveHogyoku(att)) { att.ko = true; uryu.kos++ }
     uryu.dealt += reversal
     pasNote(uryu, 'ANTITHESIS · ' + reversal + ' DAMAGE REVERSED')
     return { dmg: 0, crit: false, mu, miss: 'REVERSED' }
@@ -671,6 +679,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     if (def.deadZoneEnemy) def.guard = 1
     pasNote(def, 'FINAL STAND · ULTIMATE READY')
   }
+  if (def.hp === 0 && !def.ko) surviveHogyoku(def)
   if (def.hp === 0 && !def.ko && gtSurvive(def, D)) pasNote(def, 'SAIYAN RESOLVE · SURVIVED AT 25% HP')
   if (def.hp === 0 && !def.ko && !shrineWaveSurvive(def, pasNote)) fusionCaptainSave(def, D, pasNote)
   if (def.hp === 0 && !def.ko) {
@@ -820,6 +829,7 @@ function playArt(B, who, idx) {
   const me = B[who], foe = B[who === 'you' ? 'ai' : 'you'], art = me.hand[idx], a = act(me), d = act(foe), cost = artCost(a, art, me, foe)
   if (me.ki < cost || a.ko || d.ko) return null
   if (B.noDeathNote && art === 'deathnote') return null
+  if (art === 'wing' && !me.team.some(fighter => fighter.ko)) return null
   if (art === 'special' && me.confiscated && !unwritten(a)) return null
   if (art === 'burst' && me.ki < 2) return null
   const firstStoryStrike = storyStrikeDiscount(a, art, me)
@@ -870,7 +880,7 @@ function playArt(B, who, idx) {
       if (d.campaignTell || d.rivalBarrier != null || d.scoreBoss || d.encounterPhase || d.deadZoneEnemy) ev.tactic = d.card.name + ' RESISTS DEATH NOTE'
       else { d.doom = 3; ev.tactic = 'DEATH NOTE · ' + d.card.name + ' HAS 3 TURNS' }
     }
-    else if (art === 'hogyoku') { a.endure = (a.endure || 0) + 1; for (const k of ['pwr', 'ki', 'def']) a[k] = Math.round(a[k] * 1.15); ev.tactic = 'HOGYOKU · EVOLVED' }
+    else if (art === 'hogyoku') { a.hogyokuSave = true; for (const k of ['pwr', 'ki', 'def']) a[k] = Math.round(a[k] * 1.15); ev.tactic = 'HOGYOKU · EVOLVED' }
     else if (art === 'wing') { const f = me.team.find(x => x.ko); if (f) { f.ko = false; healHP(f, f.max * .4); ev.tactic = 'RAINBOW WING · ' + f.card.name + ' REVIVED' } else ev.tactic = 'RAINBOW WING · NO ONE TO REVIVE' }
     else if (art === 'scroll') { d.sealed = 1; ev.tactic = 'SEALED · ' + d.card.name + "'S PASSIVE" }
     else if (art === 'clock') { foe.skip = 1; ev.tactic = 'TIME STOP · ENEMY LOSES A TURN' }
@@ -1660,7 +1670,7 @@ function smartTurn(B, who) {
     else if (can('clock') && !foe.skip) pick = can('clock')
     else if (can('scroll') && !opp.sealed && opp.pe && Object.keys(opp.pe).length) pick = can('scroll')
     else if (can('wing') && me.team.some(x => x.ko)) pick = can('wing')
-    else if (can('hogyoku') && hpP < .5 && !mine.endure) pick = can('hogyoku')
+    else if (can('hogyoku') && hpP < .5 && !mine.hogyokuSave) pick = can('hogyoku')
     else if (can('rumble') && hpP < .6) pick = can('rumble')
     else if (can('finger') && hpP > .4 && !me.chargeNext && (can('special') || me.ki >= 3)) pick = can('finger')
     if (pick) { const e = playArt(B, who, pick[1]); if (e) { evs.push(e); continue } }
@@ -1707,7 +1717,7 @@ function planTurn(B, level, who = 'ai') {
       const si = me.hand.indexOf('senzu'), yi = me.hand.indexOf('cylinder')
       if (si >= 0 && me.ki >= 2 && mine.hp / mine.max < .35) pick = ['senzu', si]
       else if (yi >= 0 && me.ki >= 2 && !mine.cylinder && mine.hp / mine.max < .7) pick = ['cylinder', yi]
-      else if ((pick = (() => { const IU = { rumble: mine.hp / mine.max < .6, finger: mine.hp / mine.max > .4, deathnote: 1, hogyoku: mine.hp / mine.max < .5, wing: me.team.some(x => x.ko), scroll: 1, clock: 1 }; for (const k in IU) { const ii = me.hand.indexOf(k); if (ii >= 0 && IU[k] && me.ki >= ARTS[k].cost) return [k, ii] } return null })())) { }
+      else if ((pick = (() => { const IU = { rumble: mine.hp / mine.max < .6, finger: mine.hp / mine.max > .4, deathnote: 1, hogyoku: mine.hp / mine.max < .5 && !mine.hogyokuSave, wing: me.team.some(x => x.ko), scroll: 1, clock: 1 }; for (const k in IU) { const ii = me.hand.indexOf(k); if (ii >= 0 && IU[k] && me.ki >= ARTS[k].cost) return [k, ii] } return null })())) { }
       else if (hi >= 0 && me.ki >= 2 && mine.hp / mine.max < .5) pick = ['heal', hi]
       else if (ti >= 0 && me.ki <= KI_MAX - 2) pick = ['transfer', ti]
       else if (cl >= 0 && me.ki >= 1 && (mine.burnT > 0)) pick = ['cleanse', cl]
@@ -2383,9 +2393,10 @@ function transferCampaignPage(el) {
     const lending = [...new Set([...data.cast, ...(data.secondFront?.cast || [])])]
     const fighters = lending.map(key => cast.get(key)?.key).filter(Boolean)
     const required = data.carrier ? [cast.get(data.carrier)?.key].filter(Boolean) : []
-    const playerTeam = chapter >= 3
-      ? [...new Set([...(loaners || !squad.length ? fighters : required), ...squad])].slice(0, 6)
-      : loaners || !squad.length ? fighters : squad
+    const buildLineup = lineup => chapter >= 3
+      ? [...new Set([...(loaners || !lineup.length ? fighters : required), ...lineup])].slice(0, 6)
+      : loaners || !lineup.length ? fighters : lineup
+    const playerTeam = buildLineup(squad)
     const enemy = data.enemies.map(id => cast.get(id)?.key).filter(Boolean)
     if (!playerTeam.length || enemy.length !== data.enemies.length) {
       X.toast('A campaign fighter is unavailable.', 'red')
@@ -2399,6 +2410,7 @@ function transferCampaignPage(el) {
       }, cast)
     }
     const stage = { mode: 'transfer-campaign', id, name: data.name, label: title, playerTeam, team: enemy,
+      retryLineup: loaners ? null : () => buildLineup(X.P.team.filter(key => key && X.BYKEY[key] && X.P.club.cards[key])),
       transfer: entry, arena: data.place === 'deck' ? 'deck' : data.place === 'city' || data.place === 'corridor' ? 'city' : 'forest',
       afterWin: outro, nextFight: entry.next ? () => outro(() => {
         const next = campaignMission(entry.next, X.P.transferCampaign)
@@ -2861,6 +2873,18 @@ export function startBattle(stage) {
       absorb: !kit.antiKit && PE(target).absorbRanged, unavailable })
   }
 
+  const unavailableArt = kind => {
+    if (B.busy || B.over) return 'Wait for your turn.'
+    const s = B.you, f = act(s)
+    if (kind === 'special' && s.confiscated && !unwritten(f)) return 'Your Special is sealed.'
+    if (kind === 'deathnote' && B.noDeathNote) return 'Death Note is unavailable in this mode.'
+    if (kind === 'wing' && !s.team.some(fighter => fighter.ko)) return 'No knocked-out teammate to revive.'
+    const missing = Math.max(kind === 'burst' ? 2 : 0, artCost(f, kind, s, B.ai)) - s.ki
+    return missing > 0 ? 'Need ' + missing + ' more Energy.' : ''
+  }
+  function explainUnavailable(title, reason) {
+    battleInfo(ov, title, [reason])
+  }
   function controls() {
     const s = B.you, my = !B.busy && !B.over
     updateMarkup($a('.ar-ki'), `<div class="kring" style="--k:${s.ki / KI_MAX}"><b>${s.ki}</b><small>ENERGY</small></div><div class="kpips">${Array.from({ length: KI_MAX }, (_, i) => `<i class="${i < s.ki ? 'on' : ''}"></i>`).join('')}</div>`)
@@ -2883,14 +2907,16 @@ export function startBattle(stage) {
     }) }
     for (const [i, button] of [...hand.children].entries()) {
       const kind = s.hand[i]
-      const unavailable = !my || s.ki < artCost(f, kind, s, B.ai) || (kind === 'burst' && s.ki < 2) || (kind === 'special' && s.confiscated && !unwritten(f))
-      button.disabled = !previewMode && unavailable
+      const reason = unavailableArt(kind)
+      const unavailable = !!reason
+      button.disabled = false
+      button.setAttribute('aria-disabled', String(unavailable && !previewMode))
       button.onpointerenter = () => {
         const info = previewArt(kind, unavailable)
-        button.title = info.lines.join(' · ')
+        button.title = [...info.lines, reason].filter(Boolean).join(' · ')
       }
       button.onclick = () => {
-        if (!previewMode) return doArt(i)
+        if (!previewMode) return reason ? explainUnavailable(ARTS[kind].name, reason) : doArt(i)
         const info = previewArt(kind, unavailable)
         battleInfo(ov, info.title, info.lines)
       }
@@ -2906,8 +2932,10 @@ export function startBattle(stage) {
       timer.hidden = f.formExpires == null && gtForm(f) !== 4
       if (gtForm(f) === 4) timer.textContent = 'RAGE ' + f.gtRage + '/3' + (f.gtRemembered ? ' · SSJ4 READY' : '')
       else if (!timer.hidden) timer.textContent = (f.pe.fusionStage === 2 ? 'FUSION · ' : 'BARYON · ') + (f.formExpires - (s.formTurn || 0)) + ' TURNS LEFT'
-      tb.hidden = !partner && !next && !ok
-      tb.disabled = !my || !ok
+      const standardForm = !stage.storyTeam && !f.card.transformations && !f.transformed && f.card.ovr >= 88
+      tb.hidden = !partner && !next && !standardForm
+      tb.disabled = false
+      tb.setAttribute('aria-disabled', String(!my || !ok))
       tb.classList.toggle('form-step', !!next)
       tb.classList.toggle('form-ready', !!next && ok && my)
       tb.title = next?.requirement || ''
@@ -2922,7 +2950,7 @@ export function startBattle(stage) {
       if (next) tb.setAttribute('aria-label', 'Transform to ' + next.ver + '. ' + status + '. ' + next.requirement)
       else tb.removeAttribute('aria-label')
     }
-    const u = $a('.ar-ult'); u.disabled = !my || s.gauge < GAUGE_MAX; u.classList.toggle('ready', s.gauge >= GAUGE_MAX)
+    const u = $a('.ar-ult'); u.disabled = false; u.setAttribute('aria-disabled', String(!my || s.gauge < GAUGE_MAX)); u.classList.toggle('ready', s.gauge >= GAUGE_MAX)
     const ult = signatureUltimate(f, act(B.ai)) || ultOf(f.card)
     u.style.setProperty('--g', s.gauge / GAUGE_MAX); u.querySelector('small').textContent = s.gauge >= GAUGE_MAX ? ult[0] : Math.floor(s.gauge) + '%'; u.title = ult.join(': ')
     if (mission) {
@@ -3348,7 +3376,18 @@ export function startBattle(stage) {
   $a('.ar-fusion-tag').onclick = () => {
     if (!B.over && !B.busy && tagFusionKid(act(B.you), B.turn)) { lvSend({ t: 'fusion-tag' }); draw(); flushPas() }
   }
-  $a('.ar-trans').onclick = async () => { if (B.busy || B.over) return; B.busy = true; controls(); const f = act(B.you)
+  $a('.ar-trans').onclick = async () => {
+    const f = act(B.you)
+    const next = nextTransformation(f, B.you, B.turn)
+    if (B.busy || B.over) return explainUnavailable('Transform', 'Wait for your turn.')
+    const ready = f.pe.partner ? canTagPartner(f, B.turn) : canTransform(f, B.you)
+    if (!ready) {
+      const status = $a('.ar-trans small').textContent
+      return explainUnavailable(f.pe.partner ? 'Tag' : 'Transform',
+        f.pe.partner ? 'This fighter has already tagged this turn.' :
+        next ? [next.requirement, status].filter(Boolean).join(' · ') : 'Drop below 50% HP to transform.')
+    }
+    B.busy = true; controls()
     if (f.pe.partner) {
       if (tagPartner(f, B.turn, B.you)) { lvSend({ t: 'partner' }); draw(); flushPas() }
     } else { await transform(B.you, 'you'); lvSend({ t: 'tr' }) }
@@ -3362,7 +3401,9 @@ export function startBattle(stage) {
     if (!B.over) controls()
   }
   $a('.ar-ult').onclick = () => {
-    if (B.busy || B.over || ov.querySelector('.omnipotence-picker')) return
+    if (ov.querySelector('.omnipotence-picker')) return
+    if (B.busy || B.over) return explainUnavailable('Ultimate', 'Wait for your turn.')
+    if (B.you.gauge < GAUGE_MAX) return explainUnavailable('Ultimate', 'Need ' + Math.ceil(GAUGE_MAX - B.you.gauge) + '% more Ultimate gauge.')
     const kit = PE(act(B.you))
     if (kit.shinobi !== 14 && kit.batch !== 'star') return playerUltimate()
     const picker = document.createElement('div')
@@ -3687,7 +3728,7 @@ export function startBattle(stage) {
       if (fighter.uzuhikoTurns > 0) {
         fighter.uzuhikoTurns--
         fighter.hp = Math.max(0, fighter.hp - Math.round(fighter.max * .08))
-        if (!fighter.hp) fighter.ko = true
+        if (!fighter.hp && !surviveHogyoku(fighter)) fighter.ko = true
         log(fighter.card.name + ' takes 8% max HP from Uzuhiko.')
       }
       if (fighter.sageTax && fighter.sageTax <= s.formTurn) fighter.sageTax = 0
@@ -3718,7 +3759,7 @@ export function startBattle(stage) {
       else if (!e.natsuRework) a0.hp = Math.max(1, a0.hp - burn)
       a0.burnT--
     }
-    if (a0.doom > 0 && --a0.doom === 0) { a0.hp = 0; a0.ko = true; log(a0.card.name + ' — the Death Note takes effect.') }
+    if (a0.doom > 0 && --a0.doom === 0) { a0.hp = 0; if (!surviveHogyoku(a0)) { a0.ko = true; log(a0.card.name + ' — the Death Note takes effect.') } }
     if (e.guardAuto) a0.guard = 1
     if (e.energyTurn) s.ki = Math.min(KI_MAX, s.ki + e.energyTurn)
     if (e.haki) { const o = act(foe); if (o && o.card.ovr < a0.card.ovr) foe.ki = Math.max(0, foe.ki - e.haki) }
@@ -3806,6 +3847,19 @@ export function startBattle(stage) {
     })
     if (!stage.war && !stage.pvp && !stage.live && !r.error && ['transfer-campaign', 'camp', 'arc', 'tower', 'redzone', 'villain', 'rivalry', undefined].includes(stage.mode)) {
       shortcut('RETRY', () => { close({ immediate: true, route: false }); startBattle(stage) })
+      if (!won && !stage.storyTeam && !stage.draft) {
+        const canEditTeam = !!stage.retryLineup || (!stage.playerTeam && !stage.rivalry && !stage.rival)
+        shortcut(canEditTeam ? 'EDIT TEAM & RETRY' : 'EDIT DECK & RETRY', () => {
+          close({ immediate: true, route: false })
+          X.prepareRetry(stage.label || stage.name, () => {
+            if (canEditTeam && !stage.retryLineup && !X.P.team.some(Boolean)) {
+              X.toast('Add a fighter before starting the rematch.', 'err')
+              return false
+            }
+            startBattle(stage.retryLineup ? { ...stage, playerTeam: stage.retryLineup() } : stage)
+          }, canEditTeam)
+        })
+      }
     }
     box.append(actions)
     ov.append(box)

@@ -45,3 +45,11 @@ match /playerGrants/{grantId} {
 ```
 
 For existing save writes, extend the existing owner-write rule to reject a missing or decreased `playerGrantRevision` after a grant. Test owner and non-owner creation, recipient and unrelated reads, and atomic redemption against the merged rules before setting `playerGrantsEnabled: true` in `config.js`.
+
+## Grant history
+
+Inside the existing `match /playerGrants/{grantId}` block, add this sender-only list rule alongside the recipient read rule. The form can then query Aspext's sent grants and show whether the recipient has redeemed them.
+
+```text
+allow list: if isGrantAdmin() && resource.data.from == request.auth.uid;
+```
