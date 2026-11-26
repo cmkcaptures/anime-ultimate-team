@@ -1,20 +1,82 @@
-name: Character art check
-on:
-  pull_request:
-    branches: [main]
+name: Character drop verification
+on: pull_request
 permissions:
   contents: read
 jobs:
-  dimensions:
+  card-drop:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import struct
-          for path in sorted(Path('.').glob('image(20261126-*).png')):
-              b = path.read_bytes()
-              assert b[:8] == b'\x89PNG\r\n\x1a\n', path
-              print(path.name, *struct.unpack('>II', b[16:24]))
-          PY
+          cp js/battle.js js/.card-drop-check.mjs
+          printf '\nexport {newSide, playArt, ultimate, hit, switchFighter};\n' >> js/.card-drop-check.mjs
+          cat > js/.drop-fixture.mjs <<'JS'
+          import assert from 'node:assert/strict'
+          import fs from 'node:fs'
+          globalThis.document = {fonts:{load:async()=>[]}}
+          globalThis.addEventListener = () => {}
+          globalThis.innerWidth = 1280
+          const {newSide, playArt, ultimate, hit, switchFighter, teamAuras} = await import('./.card-drop-check.mjs')
+          const {enterTransformation} = await import('./transformations.js')
+          const roster = JSON.parse(fs.readFileSync('cards-list.json'))
+          const ids = ["yammy_release_drop","starrk_release_drop","barragan_release_drop","harribel_release_drop","ulquiorra_release_drop","nnoitra_release_drop","grimmjow_release_drop","zommari_release_drop","szayelaporro_release_drop","aaroniero_release_drop","ichigo_release_drop","nel_gamuza","ukitake_sogyo","kisame_samehada_fusion","nobara_resonance","gentle_la_brava_love_mode","kanao_vermilion_eye"]
+          const get = id => {const c=roster.find(c=>c.id===id);assert.ok(c,id);return c}
+          const cards=ids.map(get)
+          assert.equal(cards.length,17)
+          assert.equal(new Set(roster.map(c=>c.key)).size,roster.length)
+          const neutral={...cards[0],key:'neutral',pas:{e:{}}}
+          const fight=(team,enemies=[neutral,{...neutral,key:'bench'}])=>{
+            const you=newSide(team), ai=newSide(enemies)
+            for(const s of [you,ai])Object.assign(s,{ki:10,gauge:100,formTurn:3,rngS:55})
+            for(const f of ai.team)f.hp=f.max=35000
+            return {you,ai,turn:3}
+          }
+          const special=(b,who='you')=>{b[who].hand=['special'];b[who].ki=10;return playArt(b,who,0)}
+          const useUlt=b=>{b.you.gauge=100;return ultimate(b,'you')}
+          for(const c of cards){
+            for(const k of [c,...(c.transformations||[])])assert.equal(fs.readFileSync(k.url).subarray(1,4).toString(),'PNG',k.url)
+            const b=fight([c])
+            assert.ok(special(b)?.hits.length,c.id)
+            assert.ok(useUlt(b)?.hits.length,c.id)
+            const f=b.you.team[0]
+            for(const form of c.transformations||[]){
+              b.you.gauge=100;b.you.formTurn+=2
+              assert.ok(enterTransformation(f,b.you,3),c.id)
+              assert.equal(f.card.url,form.url)
+              assert.equal(f.key,c.key)
+              assert.ok(special(b)?.hits.length,c.id)
+              assert.ok(useUlt(b)?.hits.length,c.id)
+            }
+          }
+          const espada=get('grimmjow_release_drop'), nel=get('nel_gamuza')
+          const damage=(lead,partner)=>{const b=fight([lead,partner]);return hit(b.you.team[0],b.ai.team[0],500,98,true,b.you,b.ai,'strike').dmg}
+          assert.ok(damage(espada,nel)>damage(espada,neutral))
+          assert.equal(damage({...espada,cat:[],faction:'Other'},nel),damage({...espada,cat:[],faction:'Other'},neutral))
+          let b=fight([nel,neutral]);b.you.team[1].hp=100
+          special(b);assert.ok(b.you.team[1].hp>100&&b.you.team[1].shieldHp>0)
+          b.ai.team[0].shieldHp=150;assert.equal(useUlt(b).hits.length,2);assert.equal(b.ai.team[0].shieldHp,0)
+          b=fight([get('nobara_resonance')]);special(b);assert.ok(b.ai.team[0].nobaraMark)
+          assert.equal(switchFighter(b,'ai',1).move,'RESONANCE')
+          special(b);useUlt(b);assert.equal(b.you.gauge,25)
+          b=fight([get('kisame_samehada_fusion'),neutral]);let f=b.you.team[0], d=b.ai.team[0]
+          assert.equal(hit(d,f,500,98,false,b.ai,b.you,'blast').miss,'ABSORBED')
+          assert.notEqual(hit(d,f,500,98,false,b.ai,b.you,'blast').miss,'ABSORBED')
+          assert.equal(useUlt(b).hits.length,2);assert.equal(f.samehadaCharge,0);assert.ok(b.you.team.every(f=>f.shieldHp>0))
+          b=fight([get('kanao_vermilion_eye')]);f=b.you.team[0];d=b.ai.team[0]
+          b.ai.reworkAction=1;hit(d,f,500,98,false,b.ai,b.you,'strike')
+          b.ai.reworkAction=2;assert.equal(hit(d,f,500,98,false,b.ai,b.you,'strike').miss,'DODGED')
+          d.shieldHp=500;special(b);assert.equal(d.shieldHp,0);assert.equal(f.vermilionReady,false)
+          b=fight([get('ukitake_sogyo'),neutral]);f=b.you.team[0];d=b.ai.team[0]
+          assert.equal(hit(d,f,500,98,false,b.ai,b.you,'blast').miss,'ABSORBED')
+          b.you.active=1;assert.equal(special(b).hits.length,2);assert.equal(f.ukitakeCharge,false)
+          b=fight([get('gentle_la_brava_love_mode'),neutral]);f=b.you.team[0];d=b.ai.team[0]
+          hit(d,f,1000,98,false,b.ai,b.you,'special',false,{fixedDamage:f.shieldHp});assert.equal(f.elasticCharged,true)
+          b.you.team[1].hp=100;special(b);assert.equal(f.elasticCharged,false);assert.ok(b.you.team[1].shieldHp>0)
+          assert.deepEqual(teamAuras([espada,get('ichigo_release_drop'),get('ulquiorra_release_drop')]),[9,9,9])
+          console.log('PASS: 29 PNGs, 17 cards, 12 transformations, six signature kits and shared Resurrección aura')
+          JS
+          node --check js/app.js
+          node js/.drop-fixture.mjs
