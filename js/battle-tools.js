@@ -57,6 +57,25 @@ export function fighterStatuses(f, passive, next, side, turn, enemyBasic) {
     if (side.gauge < next.gaugeCost) requirements.push('Gain ' + Math.ceil(next.gaugeCost - side.gauge) + '% more Ultimate gauge')
     add(next.ver.startsWith('BARYON') ? 'Baryon' : 'Kurama', next.ver + ' · ' + (requirements.join(' · ') || 'Ready when you can act') + ' · Costs ' + next.gaugeCost + '% Ultimate gauge.')
   }
+  // always-on passives, shown as icons so players can see what's working
+  if (passive && !f.sealed) {
+    const p = passive
+    if (p.dodge) add('💨 ' + p.dodge + '%', 'Dodges ' + p.dodge + '% of attacks completely.')
+    if (p.dr) add('🛡 -' + p.dr + '%', 'Takes ' + p.dr + '% less damage from every hit.')
+    if (p.reflect) add('↩ ' + p.reflect + '%', 'Sends ' + p.reflect + '% of damage taken back at the attacker.')
+    if (p.regen && !f.deadZoneEnemy) add('✚ ' + p.regen + '%', 'Heals ' + p.regen + '% max HP at the start of each turn.')
+    if (p.teamHeal && !f.deadZoneEnemy) add('✚ Team ' + p.teamHeal + '%', 'Heals the whole team ' + p.teamHeal + '% each turn.')
+    if (p.dmg) add('⚔ +' + p.dmg + '%', 'Deals ' + p.dmg + '% more damage.')
+    if (p.teamDmg) add('⚔ Team +' + p.teamDmg + '%', 'The whole team deals ' + p.teamDmg + '% more damage.')
+    if (p.pierce) add('➶ Pierce', 'Every attack ignores Guard.')
+    if (p.first) add('⚡ First', 'Always moves first.')
+    if (p.ramp) add('📈 +' + Math.min(p.rampMax || 99, p.ramp * (f.turns || 0)) + '%', 'Gains ' + p.ramp + '% damage every turn it stays in (max ' + (p.rampMax || 99) + '%).')
+    if (p.nullPassive) add('⊘ Sealer', 'Switches off the active enemy passive.')
+  }
+  if (f.endure > 0) add('♥ KO save ×' + f.endure, 'Survives ' + (f.endure > 1 ? f.endure + ' more KOs' : 'the next KO') + ' at 1 HP.')
+  if (f.firstNull > 0) add('◎ Block ×' + f.firstNull, 'The next ' + f.firstNull + ' hit' + (f.firstNull > 1 ? 's do' : ' does') + ' nothing.')
+  if (f.ultDodge > 0) add('✖ Ult erase ×' + f.ultDodge, 'Erases the next Ultimate fired at this fighter.')
+  if (side && side.bond && side.bond.tier) add('🔗 Bond ' + side.bond.n + '/6', 'Squad Bond: team takes ' + side.bond.dr + '% less damage' + (side.bond.regen ? ' and heals ' + side.bond.regen + '% a turn' : '') + '.')
   return entries
 }
 
