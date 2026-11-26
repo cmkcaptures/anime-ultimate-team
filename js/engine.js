@@ -10,7 +10,7 @@ import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, claimCoinGrant, claimPlayerGrants, publish, me } from './account.js?v=player-grants-1'
+import { initAccount, loadSave, storeSave, claimCoinGrant, claimPlayerGrants, publish, me } from './account.js?v=session-qol-1'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -336,7 +336,7 @@ const ITEMS = {
   rumble: { name: "RUMBLE BALL", anime: 'OP', art: 'items/rumble.jpg', cost: 2, desc: "Chopper's Rumble Ball: heals your active fighter 35% and their next attack deals +25%." },
   finger: { name: "CURSED FINGER", anime: 'JJK', art: 'items/finger.jpg', cost: 1, desc: "Sukuna's finger: your next attack deals +60%, but your fighter loses 10% HP." },
   deathnote: { name: "DEATH NOTE", anime: 'DN', art: 'items/deathnote.jpg', cost: 3, desc: "Write their name: the enemy's active fighter is KO'd after 3 of their turns unless they Cleanse." },
-  hogyoku: { name: "HOGYOKU", anime: 'BLE', art: 'items/hogyoku.jpg', cost: 2, desc: "The Hogyoku evolves its holder: survives the next KO and gains +15% PWR, ENG and DEF." },
+  hogyoku: { name: "HOGYOKU", anime: 'BLE', art: 'items/hogyoku.jpg', cost: 2, desc: "The Hogyoku evolves its holder: survives the next lethal hit or status effect at 1 HP and gains +15% PWR, ENG and DEF." },
   wing: { name: "RAINBOW WING", anime: 'PKM', art: 'items/wing.jpg', cost: 3, desc: "Ho-Oh's Rainbow Wing: brings back your first KO'd fighter at 40% HP." },
   scroll: { name: "SEALING SCROLL", anime: 'NAR', art: 'items/scroll.jpg', cost: 2, desc: "Seals the enemy active fighter's passive ability." },
   clock: { name: "TIME MAGIC CLOCK", anime: 'BC', art: 'items/clock.jpg', cost: 3, desc: "Julius's Time Magic: the enemy loses their next turn." },
@@ -1677,7 +1677,23 @@ function act(a) {
       P.shards -= r.cost; giveCard(r.out); P.last = [r.out]; bump('fuse'); addXP(40)
       return { msg: `Fusion complete: ${cardName(r.out)}!` }
     }
-    case 'deckSave': { deckP(); P.deckEdited = 1; const i = +a.i; if (!(i >= 0 && i < 3)) return { error: 'Bad slot.' }; const er = deckOk(a.c); if (er) return { error: er }; P.decks[i] = { name: String(a.name || 'Deck ' + (i + 1)).slice(0, 20), c: { ...a.c } }; if (a.use) P.deckOn = i; return { msg: 'Deck saved' + (a.use ? ' and equipped.' : '.') } }
+    case 'deckSave': {
+      const decks = deckP(), i = Number(a.i)
+      if (!Number.isInteger(i) || i < 0 || i >= decks.length) return { error: 'Bad slot.' }
+      const error = deckOk(a.c)
+      if (error) return { error }
+      decks[i] = { name: String(a.name || 'Deck ' + (i + 1)).slice(0, 20), c: { ...a.c } }
+      P.deckEdited = 1
+      if (a.use) {
+        P.deckOn = i
+        if (Number.isInteger(a.preset) && a.preset >= 0 && a.preset < 3) {
+          const list = P.presets || (P.presets = [])
+          list[a.preset] = { name: list[a.preset]?.name || 'Team ' + (a.preset + 1),
+            team: P.team.slice(), deck: i }
+        }
+      }
+      return { msg: 'Deck saved' + (a.use ? ' and equipped.' : '.') }
+    }
     case 'deckUse': { deckP(); const i = +a.i; if (!(i >= 0 && i < 3)) return { error: 'Bad slot.' }; P.deckOn = i; return {} }
     case 'guideSeen': { P.guideSeen = 1; return {} }
     case 'onbClaim': {
@@ -1697,7 +1713,15 @@ function act(a) {
       o.n -= N.dup; P.shards -= sh; have.push(N.id); addXP(15)
       return { msg: N.id === 'aw' ? c.name + ' is fully AWAKENED!' : N.name + ' unlocked for ' + c.name + '.' }
     }
-    case 'teamPreset': { const i = +a.i; if (!(i >= 0 && i < 3) || !Array.isArray(a.team)) return { error: 'Bad preset.' }; const L = P.presets || (P.presets = []); L[i] = { name: String(a.name || 'Team').slice(0, 18), team: a.team.slice(0, 6).map(k => (k && P.club.cards[k] ? k : null)) }; return { msg: 'Saved ' + L[i].name + '.' } }
+    case 'teamPreset': { const i = +a.i; if (!(i >= 0 && i < 3) || !Array.isArray(a.team)) return { error: 'Bad preset.' }; const L = P.presets || (P.presets = []); L[i] = { name: String(a.name || 'Team').slice(0, 18), team: a.team.slice(0, 6).map(k => (k && P.club.cards[k] ? k : null)), deck: P.deckOn || 0 }; return { msg: 'Saved ' + L[i].name + '.' } }
+    case 'teamPresetLoad': {
+      const i = Number(a.i)
+      if (!Number.isInteger(i) || i < 0 || i >= 3) return { error: 'Bad preset.' }
+      const preset = P.presets?.[i], saved = Array.isArray(preset) ? preset : preset?.team
+      P.team = Array.from({ length: 6 }, (_, j) => saved?.[j] && own(saved[j]) ? saved[j] : null)
+      if (Number.isInteger(preset?.deck) && deckP()[preset.deck]) P.deckOn = preset.deck
+      return preset ? { msg: 'Loaded ' + (preset.name || 'Team ' + (i + 1)) + '.' } : {}
+    }
     case 'raidWin': { const Rp = raidP(); if (!Rp.total) return { error: 'Hit the raid boss at least once to share the victory.' }; if (Rp.win) return { error: 'Already claimed.' }; if (!(a.globalDown)) return { error: 'The boss is still standing!' }
       Rp.win = 1; P.pending.premium = (P.pending.premium || 0) + 2; P.coins += 20000; P.tickets = (P.tickets || 0) + 5; return { msg: 'RAID VICTORY! +2 Premium Drops, 20,000 coins and 5 Training Tickets.' } }
     case 'avatar': { if (a.key && !own(a.key)) return { error: 'You need to own that card.' }; P.avatar = a.key || null; return {} }

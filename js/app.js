@@ -1,12 +1,12 @@
-import { playerGrantsPage } from './player-grants.js?v=1'
+import { playerGrantsPage } from './player-grants.js?v=2'
 import { deadZoneReward } from './deadzone-rewards.js?v=1'
 import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=pve-item-swap-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=session-qol-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=player-grants-1'
+import * as ACC from './account.js?v=session-qol-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
 import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=shrine-wave-1'
@@ -337,7 +337,7 @@ PAGES.pack = (el, type) => {
     a.onclick = async () => { if (pend) return openPack(t); const r = await act(free ? 'freePack' : 'buyPack', { pack: t }); if (!r.error) openPack(t) }
     const c10 = Math.round(pk.cost * 10 * .9), b = h('button', 'btn violet', `BUY 10 & OPEN<small>${fmt(c10)} coins · 10% off</small>`)
     b.disabled = P.coins < c10
-    b.onclick = async () => { const r = await act('buyPack', { pack: t, count: 10 }); if (!r.error) multiOpen(t, 10) }
+    b.onclick = () => buyMulti(t, b)
     acts.append(a, b)
     if (pend > 1) { const o = h('button', 'btn gold block', `OPEN ALL ${pend} PACKS AT ONCE`); o.style.gridColumn = '1 / -1'; o.onclick = () => multiOpen(t, Math.min(pend, 50)); acts.append(o) }
     dots.innerHTML = types.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('')
@@ -363,6 +363,50 @@ function offeringRates(t) {
 }
 
 // ================= RESULTS =================
+let bulkResults = null
+PAGES.pulls = el => {
+  if (!bulkResults) return PAGES.results(el)
+  const { type, n, cards, fresh, upgrades } = bulkResults
+  const highlights = [...new Map(cards.map(c => [c.key, c])).values()]
+    .filter(c => fresh.has(c.key) || upgrades.has(c.key) || 'LMX'.includes(c.r))
+    .sort((a,b) => Number(fresh.has(b.key)) - Number(fresh.has(a.key)) || TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
+  const hero = h('section', 'qol-hero')
+  hero.append(h('h2', '', n + '× Pack Results'), h('p', 'qol-metrics',
+    cards.length + ' pulled · ' + fresh.size + ' new · ' + upgrades.size + ' Diamond upgrades · ' + cards.filter(c => 'LMX'.includes(c.r)).length + ' Legendary+'))
+  const pack = type === 'banner' ? ST.banner : ST.packs[type]
+  const cost = pack ? Math.round(pack.cost * 9) : 0
+  if (pack && cost > 0 && type !== 'lightning') {
+    hero.append(h('p', 'muted', fmt(cost) + ' coins to open again · Balance ' + fmt(P.coins)))
+    const again = h('button','btn gold','OPEN ANOTHER 10×')
+    again.disabled = P.coins < cost
+    again.onclick = () => buyMulti(type, again)
+    hero.append(again)
+  }
+  const exit = h('button','btn dark','BACK TO SHOP')
+  exit.onclick = () => go('shop')
+  hero.append(exit); el.append(hero)
+  const render = (panel, list) => {
+    for (const c of list) {
+      const button = h('button','cg')
+      button.append(cardImg(eff(c), 240))
+      if (fresh.has(c.key)) button.append(h('span','nw','NEW'))
+      if (upgrades.has(c.key)) button.append(h('span','lv','+' + upgrades.get(c.key) + ' ◆'))
+      button.onclick = () => cardDetail(c.key)
+      panel.append(button)
+    }
+  }
+  const grid = h('div','cardgrid qol-pull-grid')
+  render(grid, highlights.slice(0, 12))
+  if (grid.children.length) el.append(h('h3','','Highlights'), grid)
+  const details = h('details','qol-hero')
+  details.append(h('summary','','All ' + cards.length + ' pulls'))
+  details.ontoggle = () => {
+    if (!details.open || details.children.length > 1) return
+    const full = h('div','cardgrid qol-pull-grid')
+    render(full,cards); details.append(full)
+  }
+  el.append(details)
+}
 PAGES.results = (el) => {
   const got = (P.last || []).map(k => BYKEY[k]).filter(Boolean).map(eff)
   el.append(h('div', 'results-head', `<span class="eyebrow">OPENING RESULTS</span><h2>${got.length ? 'NICE PULLS!' : 'NO PULLS'}</h2>`))
@@ -673,15 +717,27 @@ function autoTeam(target) {
 let TTAB = 0; try { TTAB = +(localStorage.getItem('aut-teamTab') || 0) || 0 } catch { }
 const teamPower = T => Math.round(T.reduce((n, c) => n + (c ? (c.ovr * 2400 + (c.dia || 3) * 9000 + (c.lv || 1) * 900) * (c.boosted ? 1.12 : 1) : 0), 0))
 PAGES.team = (el) => {
+  retryPanel(el, 'deck')
   const TC = P.team.map(k => k && BYKEY[k] && eff(BYKEY[k])), LI = leaderInfo(TC[0] ? TC : []), count = TC.filter(Boolean).length
   for (const c of TC) if (c && LI.lead && leadHits(LI.lead, c)) c.boosted = 1
   const presets = ST.presets || []
-  if (!presets[TTAB] && count) act('teamPreset', { i: TTAB, name: 'Team ' + (TTAB + 1), team: P.team })
   // tabs + power
   const top = h('div', 'tm-top')
   for (let i = 0; i < 3; i++) { const t = h('button', 'tm-tab' + (i === TTAB ? ' on' : ''), (presets[i] && presets[i].name) || 'Team ' + (i + 1))
-    t.onclick = async () => { if (i === TTAB) return; await act('teamPreset', { i: TTAB, name: (presets[TTAB] && presets[TTAB].name) || 'Team ' + (TTAB + 1), team: P.team }); const p = (ST.presets || [])[i]; TTAB = i; try { localStorage.setItem('aut-teamTab', i) } catch { }
-      await act('team', { team: p ? p.team.map(k => (k && club()[k] ? k : null)) : [null, null, null, null, null, null] }); rerender() }
+    t.onclick = async () => {
+      if (i === TTAB || top.dataset.loading) return
+      top.dataset.loading = '1'
+      try {
+        const saved = await act('teamPreset', { i: TTAB, name: presets[TTAB]?.name || 'Team ' + (TTAB + 1), team: P.team })
+        if (saved.error) return
+        const loaded = await act('teamPresetLoad', { i })
+        if (loaded.error) return
+        TTAB = i
+        try { localStorage.setItem('aut-teamTab', i) } catch { }
+        DK.i = ST.deckOn; DK.c = null
+        rerender()
+      } finally { delete top.dataset.loading }
+    }
     top.append(t) }
   top.append(h('div', 'tm-pow', `<small>TEAM POWER</small><b>${teamPower(TC).toLocaleString()}</b>`))
   el.append(top)
@@ -721,7 +777,7 @@ PAGES.team = (el) => {
   // actions
   const acts = h('div', 'tm-acts')
   const ab = h('button', 'btn gold', 'AUTO BUILD'); ab.onclick = () => { TBX.show = !TBX.show; rerender(); setTimeout(() => document.querySelector('.tbx')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60) }
-  const D = ST.decks[ST.deckOn], dk = h('button', 'btn violet', 'ARTS DECK · ' + D.name.toUpperCase()); dk.onclick = () => go('deck')
+  const D = ST.decks[ST.deckOn], dk = h('button', 'btn violet', 'ARTS DECK · ' + D.name.toUpperCase()); dk.onclick = () => { DK.i = ST.deckOn; DK.c = null; go('deck') }
   const cl = h('button', 'btn dark', 'CLEAR'); cl.onclick = async () => { await act('team', { team: [null, null, null, null, null, null] }); rerender() }
   const suggest = h('button', 'btn violet', 'SUGGEST TEAMMATES')
   suggest.onclick = () => auraPlanner(TC)
@@ -741,6 +797,16 @@ const TEAM_KIT_PAIRS = [
   ['vegeta_ssj4_final_shine', 'goku_gt_primal_power', 'SSJ4 Vegeta + GT Goku · Primal Pride'],
 ]
 const kitPairs = team => TEAM_KIT_PAIRS.filter(([a, b]) => team.some(c => c?.id === a) && team.some(c => c?.id === b)).map(pair => pair[2])
+function boostChangeRow(card, before, after) {
+  const row = h('div', 'aura-swap-row qol-boost-row')
+  row.append(h('b', '', card.name))
+  for (const [key, label] of [['aura','Aura'],['lead','Leader'],['series','Series'],['link','Links']]) {
+    const from = before?.[key] || 0, to = after?.[key] || 0
+    row.append(h('small', to > from ? 'gain' : to < from ? 'loss' : 'muted',
+      label + ' ' + from + '% → ' + to + '% (' + auraDelta(to - from) + ')'))
+  }
+  return row
+}
 const auraDelta = n => n > 0 ? '+' + n + '%' : n < 0 ? '−' + Math.abs(n) + '%' : '0%'
 const auraMatch = (source, target) => {
   if (!auraHits(source, target)) return null
@@ -937,12 +1003,8 @@ function previewTeamSwap(card, initialSlot, back, protectedKey) {
       breakdown.replaceChildren(h('p', 'muted', team[slot] ? 'Replaces ' + team[slot].name + ' in ' + TEAM_SLOT_NAMES[slot] : 'Fills ' + TEAM_SLOT_NAMES[slot]))
       for (const [i, c] of afterTeam.entries()) {
         if (!c) continue
-        const delta = after[i].aura - (i === slot ? 0 : before[i].aura)
-        const row = h('div', 'aura-swap-row')
-        row.append(h('b', '', c.name), h('span', delta > 0 ? 'gain' : delta < 0 ? 'loss' : '', '+' + after[i].aura + '% aura'),
-          h('small', 'muted', i === slot ? 'Incoming fighter' : auraDelta(delta) + ' aura change'),
-          h('small', 'muted', 'Leader +' + after[i].lead + '% · Series +' + after[i].series + '% · Links +' + after[i].link + '%'))
-        breakdown.append(row)
+        breakdown.append(boostChangeRow(c, i === slot ? null : before[i], after[i]))
+        if (i === slot && team[i]) breakdown.append(boostChangeRow(team[i], before[i], null))
       }
       const kits = kitPairs(afterTeam)
       if (kits.length) breakdown.append(h('p', 'aura-locked', 'Battle kit combos · ' + kits.join(' / ')))
@@ -964,6 +1026,27 @@ function previewTeamSwap(card, initialSlot, back, protectedKey) {
     draw()
   })
 }
+function previewSlotSwap(slot, other) {
+  const keys = P.team.slice(), next = keys.slice()
+  ;[next[slot], next[other]] = [next[other], next[slot]]
+  const lineup = keys => keys.map(key => BYKEY[key] ? eff(BYKEY[key]) : null)
+  const before = slotBoosts(lineup(keys)), afterTeam = lineup(next), after = slotBoosts(afterTeam)
+  openModal(sh => {
+    sh.classList.add('aura-workbench')
+    const back = h('button','btn dark sm','BACK'); back.onclick = () => teamPicker(slot)
+    sh.append(h('h2','','Preview Slot Swap'),back)
+    afterTeam.forEach((card,i) => { if (card) sh.append(boostChangeRow(card,before[keys.indexOf(card.key)],after[i])) })
+    const save = h('button','btn gold','CONFIRM SWAP')
+    save.onclick = async () => {
+      if (keys.some((key,i) => key !== P.team[i])) { toast('Your team changed. Open a fresh preview.','err'); return }
+      save.disabled = true
+      const result = await act('team',{team:next})
+      if (result.error) { save.disabled = false; return }
+      closeModal(); rerender()
+    }
+    sh.append(save)
+  })
+}
 let TDET = false
 function teamPicker(slot) {
   openModal(sh => {
@@ -973,7 +1056,7 @@ function teamPicker(slot) {
       const others = [0, 1, 2, 3, 4, 5].filter(j => j !== slot && (P.team[j] || P.team[slot]))
       if (others.length) { const sw = h('div', 'tp-swap', '<small>SWAP WITH</small>'), row = h('div', 'tp-swrow')
         for (const j of others) { const c = P.team[j] && BYKEY[P.team[j]], b = h('button', 'tp-sw', `<em>${j === 0 ? 'LEADER' : j < 3 ? 'MAIN' : 'SUB'}</em><b>${c ? c.name : 'Empty slot'}</b>`)
-          b.onclick = async () => { const T = P.team.slice(); [T[slot], T[j]] = [T[j], T[slot]]; await act('team', { team: T }); closeModal(); rerender() }; row.append(b) }
+          b.onclick = () => previewSlotSwap(slot, j); row.append(b) }
         sw.append(row); sh.append(sw) } }
     const LD0 = slot !== 0 && P.team[0] && BYKEY[P.team[0]] && BYKEY[P.team[0]].lead, avail = owned().filter(c => !P.team.includes(c.key)).sort((x, y) => (LD0 ? leadHits(LD0, y) - leadHits(LD0, x) : 0) || y.ovr - x.ovr), teamAnime = synergy(P.team.map((k, i) => i !== slot && k && BYKEY[k])).anime
     const sel = (lbl, key, opts) => { const w = h('label', 'tp-f', `<span>${lbl}</span>`), s2 = document.createElement('select'); for (const [v, t] of opts) { const o = new Option(t, v); if (TB[key] === v) o.selected = true; s2.append(o) } s2.onchange = () => { TB[key] = s2.value; draw() }; w.append(s2); return w }
@@ -1396,7 +1479,7 @@ function shopHero(el) {
   if (t === 'lightning') { const L = ST.light; buy.disabled = buy.disabled || L.n < 1; bb.after(h('div', 'lt-stock', `⚡ <b>${L.n}/${L.max}</b> in stock${L.next ? ` · next in <span class="timer" data-until="${L.next - SKEW}"></span>` : ''}`)) }
   buy.onclick = async () => { const x = await act('buyPack', { pack: t }); if (!x.error) openPack(t) }
   bb.append(buy)
-  if (t !== 'lightning') { const c10 = Math.round(pk.cost * 9), ten = h('button', 'btn gold big', `<span>BUY ×10</span><b><i class="coin-i"></i>${fmt(c10)}</b>`); ten.disabled = P.coins < c10; ten.onclick = async () => { const x = await act('buyPack', { pack: t, count: 10 }); if (!x.error) multiOpen(t, 10) }; bb.append(ten) }
+  if (t !== 'lightning') { const c10 = Math.round(pk.cost * 9), ten = h('button', 'btn gold big', `<span>BUY ×10</span><b><i class="coin-i"></i>${fmt(c10)}</b>`); ten.disabled = P.coins < c10; ten.onclick = () => buyMulti(t, ten); bb.append(ten) }
   { const wi = h('button', 'btn dark big', '<span>WHAT\'S INSIDE</span>'); wi.onclick = () => packContents(t); bb.append(wi) }
   if (pend) { const o = h('button', 'btn green big', `<span>OPEN</span><b>${pend} READY</b>`); o.onclick = () => openPack(t); bb.append(o) }
   if (pend > 1) { const o = h('button', 'btn green big', `<span>OPEN ALL</span><b>${Math.min(pend, 50)} AT ONCE</b>`); o.onclick = () => multiOpen(t, Math.min(pend, 50)); bb.append(o) }
@@ -1428,10 +1511,36 @@ document.addEventListener('click', e => { const b = e.target.closest('button'); 
   t.after(m)
 }
 
+let retryFight = null
+function prepareRetry(label, start, canEditTeam) {
+  retryFight = { label, start, canEditTeam }
+  go(canEditTeam ? 'team' : 'deck')
+}
+function retryPanel(el, alternate) {
+  if (!retryFight) return
+  const panel = h('section','qol-hero')
+  const title = h('h3',''); title.textContent = 'Retry · ' + retryFight.label
+  const retry = h('button','btn gold','START REMATCH')
+  retry.onclick = () => {
+    if (!retryFight) return
+    const request = retryFight
+    retryFight = null
+    if (request.start() === false) retryFight = request
+  }
+  const cancel = h('button','btn dark','CANCEL')
+  cancel.onclick = () => { retryFight = null; rerender() }
+  panel.append(title,retry)
+  if (alternate !== 'team' || retryFight.canEditTeam) {
+    const edit = h('button','btn violet',alternate === 'team' ? 'EDIT TEAM' : 'EDIT ARTS DECK')
+    edit.onclick = () => go(alternate); panel.append(edit)
+  }
+  panel.append(cancel); el.append(panel)
+}
+
 // ================= BATTLE =================
 PAGES.battle = el => battlePage(el)
 TITLES.battle = 'BATTLE'
-initBattle({ ACC, openModal, closeModal, cardDetail, matchesCard, raidPost: (rid, t) => ACC.raidPost(rid, t), raidStatus: rid => ACC.raidStatus(rid), h, $, cardImg, eff, ST: () => ST, lb: f => ACC.leaderboard(f), get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME })
+initBattle({ ACC, openModal, closeModal, cardDetail, matchesCard, raidPost: (rid, t) => ACC.raidPost(rid, t), raidStatus: rid => ACC.raidStatus(rid), h, $, cardImg, eff, ST: () => ST, lb: f => ACC.leaderboard(f), get BYKEY() { return BYKEY }, get POOL() { return POOL }, get P() { return P }, act, go, toast, tierCol, ANAME, prepareRetry })
 
 // ================= PLAYERS (accounts, leaderboard, friends, PvP) =================
 const PS = { tab: 0, sort: 'level' }
@@ -1552,21 +1661,51 @@ function bannerBlock(el) {
   const one = h('button', 'btn gold big', `<span>PULL ×1</span><b><i class="coin-i"></i>${fmt(B.cost)}</b>`); one.disabled = P.coins < B.cost && !pend
   one.onclick = async () => { if (pend) return openPack('banner'); const x = await act('buyPack', { pack: 'banner' }); if (!x.error) openPack('banner') }
   const ten = h('button', 'btn gold big', `<span>PULL ×10</span><b><i class="coin-i"></i>${fmt(Math.round(B.cost * 9))}</b>`); ten.disabled = P.coins < B.cost * 9
-  ten.onclick = async () => { const x = await act('buyPack', { pack: 'banner', count: 10 }); if (!x.error) multiOpen('banner', 10) }
+  ten.onclick = () => buyMulti('banner', ten)
   bb.append(one, ten); if (pend) bb.append(h('span', 'bnr-pend', pend + ' unopened'))
   el.append(w)
 }
-async function multiOpen(type, n) {
-  if (document.getElementById('opener')) return
-  const packs = type === 'banner' ? rollBannerKeys(n) : Array.from({ length: n }, () => rollPackKeys(type))
-  const hadBefore = new Set(Object.keys(club()).filter(k => (club()[k].n || 0) > 0)), all = []
-  for (const pk of packs) {
-    const sg = pk.filter(() => Math.random() < .04).map(c => c.key)
-    const r = await act('openPack', { pack: type, keys: pk.map(c => c.key), sig: sg })
-    if (r.error) break
-    all.push(...pk)
+let buyingPacks = false
+async function buyMulti(type, button) {
+  if (buyingPacks || openingBulk || document.getElementById('opener')) return
+  buyingPacks = button.disabled = true
+  try {
+    const result = await act('buyPack', { pack: type, count: 10 })
+    if (!result.error) await multiOpen(type, 10)
+  } finally {
+    buyingPacks = false
+    if (button.isConnected) {
+      const pack = type === 'banner' ? ST.banner : ST.packs[type]
+      button.disabled = !pack || P.coins < Math.round(pack.cost * 9)
+    }
   }
-  if (all.length) await revealPacks(all, n, hadBefore, quickReveal(), 'shop')
+}
+let openingBulk = false
+async function multiOpen(type, n) {
+  if (openingBulk || document.getElementById('opener')) return
+  openingBulk = true
+  try {
+    const diamonds = new Map(Object.entries(club()).map(([key, entry]) => [key, entry.dia || 3]))
+    const packs = type === 'banner' ? rollBannerKeys(n) : Array.from({ length: n }, () => rollPackKeys(type))
+    const hadBefore = new Set(Object.keys(club()).filter(k => (club()[k].n || 0) > 0)), all = []
+    let opened = 0
+    for (const pk of packs) {
+      const sg = pk.filter(() => Math.random() < .04).map(c => c.key)
+      const r = await act('openPack', { pack: type, keys: pk.map(c => c.key), sig: sg })
+      if (r.error) break
+      opened++; all.push(...pk)
+    }
+    if (all.length) {
+      const fresh = new Set(all.filter(c => !hadBefore.has(c.key)).map(c => c.key))
+      const upgrades = new Map()
+      for (const {key} of all) {
+        const diff = (club()[key]?.dia || 3) - (diamonds.get(key) || 3)
+        if (diff > 0) upgrades.set(key,diff)
+      }
+      bulkResults = { type, n: opened, cards: all, fresh, upgrades }
+      await revealPacks(all, opened, hadBefore, quickReveal(), 'pulls')
+    }
+  } finally { openingBulk = false }
 }
 async function revealPacks(cards, n, hadBefore, quick, destination) {
   const newShown = new Set()
@@ -1583,6 +1722,8 @@ async function revealPacks(cards, n, hadBefore, quick, destination) {
   done.type = 'button'
   footer.append(done)
   document.body.append(footer)
+  let complete
+  const completion = new Promise(resolve => { complete = resolve })
   done.onclick = () => {
     if (closed) return
     closed = true
@@ -1590,21 +1731,25 @@ async function revealPacks(cards, n, hadBefore, quick, destination) {
     document.body.classList.remove('in-opener')
     ov.remove()
     footer.remove()
+    complete()
     go(destination)
   }
-  sfx('deal'); await wait(400)
-  // reveal worst first, best last; Epic+ pause with an impact
-  for (let i = els.length - 1; i >= 0; i--) {
-    if (closed) return
-    const e = els[i], rk = TIER[all[i].r].rank
-    const spotlight = keepReveal(e.classList.contains('is-new'), rk, quick)
-    if (!skip && spotlight && rk >= 4) { e.scrollIntoView({ block: 'center' }); try { await walkout(ov, FXC, all[i], rk) } catch { skip = true } if (closed) return }
-    e.classList.add('up')
-    if (all[i].transformations?.length) e.append(formsButton(all[i]))
-    if (!skip && spotlight && rk >= 3) { const r = e.getBoundingClientRect(); FXC.hit(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), rk >= 5 ? 2 : rk >= 4 ? 1.5 : 1); if (rk >= 4) FXC.rays(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), 12, 500, 1); sfx('reveal', rk); await wait(rk >= 5 ? 900 : rk >= 4 ? 600 : 260) }
-    else if (!skip && spotlight) await wait(quick ? 400 : 45)
+  const animate = async () => {
+    sfx('deal'); await wait(400)
+    // reveal worst first, best last; Epic+ pause with an impact
+    for (let i = els.length - 1; i >= 0; i--) {
+      if (closed) return
+      const e = els[i], rk = TIER[all[i].r].rank
+      const spotlight = keepReveal(e.classList.contains('is-new'), rk, quick)
+      if (!skip && spotlight && rk >= 4) { e.scrollIntoView({ block: 'center' }); try { await walkout(ov, FXC, all[i], rk) } catch { skip = true } if (closed) return }
+      e.classList.add('up')
+      if (all[i].transformations?.length) e.append(formsButton(all[i]))
+      if (!skip && spotlight && rk >= 3) { const r = e.getBoundingClientRect(); FXC.hit(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), rk >= 5 ? 2 : rk >= 4 ? 1.5 : 1); if (rk >= 4) FXC.rays(r.left + r.width / 2, r.top + r.height / 2, tierCol(all[i].r), 12, 500, 1); sfx('reveal', rk); await wait(rk >= 5 ? 900 : rk >= 4 ? 600 : 260) }
+      else if (!skip && spotlight) await wait(quick ? 400 : 45)
+    }
   }
-
+  animate().catch(error => { console.warn('Pack reveal could not animate', error); done.click() })
+  return completion
 }
 
 // ================= SHARDS + CHALLENGES =================
@@ -1989,6 +2134,7 @@ const DECK_INFO = {
   transfer: ['ENERGY LINK', 'Your bench feeds you +2 Energy.', 0], heal: ['RECOVER', 'Heal your active fighter 18%.', 2], cleanse: ['CLEANSE', 'Remove burn and freeze, and Guard up.', 1],
   senzu: ['SENZU BEAN', 'Fully heals your active fighter and clears burn and freeze.', 2], cylinder: ['MAGIC CYLINDER', 'Trap: the next attack on your fighter bounces back at the attacker.', 2], rumble: ["RUMBLE BALL", "Chopper's Rumble Ball: heals your active fighter 35% and their next attack deals +25%.", 2], finger: ["CURSED FINGER", "Sukuna's finger: your next attack deals +60%, but your fighter loses 10% HP.", 1], deathnote: ["DEATH NOTE", "Write their name: the enemy's active fighter is KO'd after 3 of their turns unless they Cleanse.", 3], hogyoku: ["HOGYOKU", "The Hogyoku evolves its holder: survives the next KO and gains +15% PWR, ENG and DEF.", 2], wing: ["RAINBOW WING", "Ho-Oh's Rainbow Wing: brings back your first KO'd fighter at 40% HP.", 3], scroll: ["SEALING SCROLL", "Seals the enemy active fighter's passive ability.", 2], clock: ["TIME MAGIC CLOCK", "Julius's Time Magic: the enemy loses their next turn.", 3] }
 PAGES.deck = (el) => {
+  retryPanel(el, 'team')
   if (DK.i == null) DK.i = ST.deckOn
   const D = ST.decks[DK.i]; if (!DK.c) { DK.c = { ...D.c }; DK.name = D.name }
   const total = Object.values(DK.c).reduce((n, v) => n + (v || 0), 0), tac = ['burst', 'charge', 'transfer', 'heal', 'cleanse'].reduce((n, k) => n + (DK.c[k] || 0), 0)
@@ -2007,8 +2153,8 @@ PAGES.deck = (el) => {
   }
   el.append(g)
   const bar = h('div', 'grid2'); bar.style.marginTop = '12px'
-  const save = h('button', 'btn gold', DK.i === ST.deckOn ? 'SAVE DECK' : 'SAVE & USE THIS DECK'); save.disabled = total !== 20
-  save.onclick = async () => { const r = await act('deckSave', { i: DK.i, name: DK.name, c: DK.c, use: true }); if (!r.error) { DK.c = null; rerender() } }
+  const save = h('button', 'btn gold', 'SAVE & EQUIP FOR TEAM ' + (TTAB + 1)); save.disabled = total !== 20
+  save.onclick = async () => { const r = await act('deckSave', { i: DK.i, name: DK.name, c: DK.c, use: true, preset: TTAB }); if (!r.error) { DK.c = null; rerender() } }
   const clr = h('button', 'btn dark', 'CLEAR'); clr.onclick = () => { DK.c = {}; rerender() }
   bar.append(save, clr); el.append(bar)
   el.append(h('div', 'sec', '<h3>STARTER DECKS</h3><span class="muted" style="font-weight:700;font-size:12px">load one into this slot, then tweak it</span>'))
@@ -2186,7 +2332,7 @@ function teamBuilderPanel(el) {
   // presets
   const ps = (ST.presets || []), pr = h('div', 'tb-presets')
   for (let i = 0; i < 3; i++) { const p = ps[i], w = h('div', 'tb-pre', `<b>${p ? p.name : 'EMPTY SLOT ' + (i + 1)}</b>`)
-    if (p) { const l = h('button', 'btn green sm', 'LOAD'); l.onclick = async () => { const T = p.team.map(k => k && club()[k] ? k : null); await act('team', { team: T }); toast('Loaded ' + p.name, 'gold'); rerender() }; w.append(l) }
+    if (p) { const l = h('button', 'btn green sm', 'LOAD'); l.onclick = async () => { const result = await act('teamPresetLoad', { i }); if (!result.error) { TTAB = i; try { localStorage.setItem('aut-teamTab', i) } catch { } rerender() } }; w.append(l) }
     const sv = h('button', 'btn dark sm', p ? 'OVERWRITE' : 'SAVE CURRENT'); sv.onclick = async () => { const nm = prompt('Name this team', p ? p.name : 'Team ' + (i + 1)); if (nm == null) return; await act('teamPreset', { i, name: nm.slice(0, 18) || 'Team ' + (i + 1), team: P.team }); rerender() }; w.append(sv)
     pr.append(w) }
 

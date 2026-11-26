@@ -52,6 +52,33 @@ export function playerGrantsPage(el, { account, h, cards, items }) {
   }
   type.onchange()
   form.append(label('Player username', player), label('Reward type', type), assetLabel, label('Amount', count), submit, status)
+  const history = h('section', 'qol-hero grant-history')
+  const historyRows = h('div', 'grant-history-rows')
+  const refresh = h('button', 'btn dark sm', 'REFRESH HISTORY')
+  refresh.type = 'button'
+  async function loadHistory() {
+    refresh.disabled = true
+    historyRows.replaceChildren(h('p', 'muted', 'Loading grants…'))
+    try {
+      const rows = await account.sentPlayerGrants()
+      historyRows.replaceChildren()
+      if (!rows.length) historyRows.append(h('p', 'muted', 'No grants sent yet.'))
+      for (const grant of rows) {
+        const row = h('div','grant-history-row')
+        const who = h('b',''); who.textContent = grant.recipient
+        const reward = h('span','')
+        const asset = choices[grant.type]?.find(([key]) => key === grant.key)?.[1] || grant.type
+        reward.textContent = grant.amount.toLocaleString() + ' × ' + asset
+        row.append(who,reward,h('small',grant.pending ? 'queued' : 'claimed',grant.pending ? 'QUEUED' : 'CLAIMED'))
+        historyRows.append(row)
+      }
+    } catch (error) {
+      historyRows.replaceChildren(h('p', 'muted', error.code === 'permission-denied' ?
+        'Grant history needs sender read access in Firestore.' : 'Could not load grant history.'))
+    } finally { refresh.disabled = false }
+  }
+  refresh.onclick = loadHistory
+  history.append(h('h3','','Grant History'),refresh,historyRows)
   form.onsubmit = async event => {
     event.preventDefault()
     const grant = { type: type.value, key: asset.disabled ? '' : asset.value, amount: Number(count.value) }
@@ -65,9 +92,11 @@ export function playerGrantsPage(el, { account, h, cards, items }) {
       await account.sendPlayerGrant(recipient.uid, grant)
       status.textContent = 'Queued for ' + recipient.name + '. They receive it the next time they load the game.'
       count.value = '1'
+      loadHistory()
     } catch (error) {
       status.textContent = error.code === 'permission-denied' ? 'Grant access is unavailable.' : 'Grant could not be sent. ' + error.message
     } finally { submit.disabled = false }
   }
-  el.append(heading, form)
+  el.append(heading, form, history)
+  loadHistory()
 }

@@ -5,3 +5,32 @@
 .quick-reveal-setting { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 #arena .battle-result-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .war-pick.war-invalid { border-color: #ff8a9e; }
+
+.qol-hero {
+  margin: 12px 0;
+  padding: clamp(14px, 3vw, 25px);
+  border: 1px solid #8266bc;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #332159, #14102b 68%);
+  box-shadow: inset 0 1px 0 #ffffff24, 0 12px 28px #07051266;
+}
+.qol-hero :is(h2,h3) { margin: 0 0 8px; }
+.qol-hero .btn { margin: 5px 8px 5px 0; }
+.qol-metrics { color: #ffe096; font-weight: 800; }
+.qol-pull-grid { margin: 12px 0; }
+.qol-hero summary { color: #f1e7ff; cursor: pointer; font-weight: 800; }
+.qol-boost-row { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.qol-boost-row b { grid-column: 1/-1; }
+.qol-boost-row .gain, .grant-history-row .claimed { color: #89f5bf; }
+.qol-boost-row .loss { color: #ff9fae; }
+.grant-history-row {
+  display: grid;
+  grid-template-columns: minmax(65px,1fr) minmax(0,2fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #ffffff22;
+  overflow-wrap: anywhere;
+}
+.grant-history-row .queued { color: #ffe096; }
+#arena :is(.art2,.ar-ult,.ar-trans)[aria-disabled="true"] { opacity: .55; cursor: help; }
