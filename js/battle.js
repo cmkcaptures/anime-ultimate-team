@@ -844,7 +844,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (flicker && !def.ko) def.flickerPierce = true
   if (ea.jackpot && !att.ko && rnd(A || D) < .12) { healHP(att, Math.round(att.max * .25)); pasNote(att, 'JACKPOT ROLL · +25% HP') }
   att.attacks++
-  return { dmg, crit, mu, hpDamage, ...(piercedGuard ? { piercedGuard } : {}), ...(opening && hpDamage > 0 ? { usedOpening: true } : {}) }
+  return { dmg, crit, mu, hpDamage, blocked: !!blocked, ...(piercedGuard ? { piercedGuard } : {}), ...(opening && hpDamage > 0 ? { usedOpening: true } : {}) }
 }
 // returns a list of events for the UI to animate
 const COMBOS = [
@@ -2778,13 +2778,14 @@ export function startBattle(stage) {
   if (!youFirst && PE(act(B.ai)).stopFirst) B.you.skip = 1
 
   const AR = stage.arena && ARENAS[stage.arena] ? stage.arena : ARENA_KEYS[stage.live ? stage.live.seed % ARENA_KEYS.length : Math.floor(Math.random() * ARENA_KEYS.length)]
-  const ov = h('div', 'bc th-' + AR); ov.id = 'arena'
+  const ov = h('div', 'bc battle-redesign th-' + AR); ov.id = 'arena'
   ov.innerHTML = `<div class="bcs"><div class="bcs-wall"></div><div class="bcs-rig r1">${'<i></i>'.repeat(14)}</div><div class="bcs-rig r2">${'<i></i>'.repeat(10)}</div><i class="bcs-spot s1"></i><i class="bcs-spot s2"></i><i class="bcs-spot s3"></i><div class="bcs-crowd"></div><div class="bcs-board"><span>ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · ANIME ULTIMATE TEAM · LIVE · </span></div><div class="bcs-floor"><i class="ln"></i><i class="cc"></i><i class="ccd"></i></div><div class="bcs-haze"></div></div><div class="env"><i class="e-sky"></i><i class="e-far"></i><i class="e-near"></i><i class="e-amb"></i><i class="e-vig"></i></div><div class="stage3"><div class="st-sky"></div><div class="st-pillars"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="st-floor"><div class="st-plat"><i class="r1"></i><i class="r2"></i><i class="mid"></i><i class="pad ai"></i><i class="pad you"></i></div></div></div>
     <header class="ar-top"><button class="ar-quit">✕ QUIT</button><button class="ar-mute"></button><button class="ar-speed"></button><button class="ar-auto"${stage.live ? " hidden" : ""}>AUTO</button>${stage.live ? "<span class=\"pvp-clock\">⏳</span>" : ""}<span class="ar-stage">${stage.label ? stage.label.toUpperCase() : stage.pvp ? 'VS ' + stage.name.toUpperCase() : 'STAGE ' + stage.n + ' · ' + stage.name.toUpperCase()}</span><span class="ar-form-timer" hidden></span><span class="ar-turn"></span></header>
-    <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t"></small></div><div class="bct-s ai"></div></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><div class="ar-active"></div><div class="ar-hud"></div></div>
-    <div class="ar-mid"><div class="ar-log"></div><div class="battle-info-tools"><button type="button" class="battle-art-preview" aria-pressed="false">ART PREVIEW</button><button type="button" class="battle-history">LOG</button></div></div>
-    <div class="ar-side you"><div class="ar-hud"></div><div class="ar-active"></div><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
-    <footer class="ar-ctrl"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-trans ar-fusion-tag" hidden><b>TAG</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
+    <div class="bct"><div class="bct-s you"></div><div class="bct-vs"><b>VS</b><small class="bct-t" role="status"></small></div><div class="bct-s ai"></div></div><div class="battle-objectives"></div><div class="ar-plate ai"><span class="pe"></span><span class="pp"></span><span class="pn">${stage.pvp ? stage.name.toUpperCase() : 'ENEMY · ' + stage.name.toUpperCase()}</span><span class="pk"></span></div><div class="mat"><div class="mat-in"><i class="mat-surf"></i><i class="mat-emb"></i><div class="mat-line"></div><span class="mat-tag t-ai">ENEMY ACTIVE</span><span class="mat-tag t-you">YOUR ACTIVE</span><div class="ar-side ai"><div class="ar-bench"></div><button type="button" class="ar-active"></button><div class="ar-hud"></div></div>
+    
+    <div class="ar-side you"><div class="ar-hud"></div><button type="button" class="ar-active"></button><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
+    <div class="ar-mid"><div class="ar-log" role="status"></div><div class="battle-info-tools"><button type="button" class="battle-art-preview" aria-pressed="false">ART PREVIEW</button><button type="button" class="battle-history">BATTLE LOG</button></div></div>
+    <footer class="ar-ctrl" aria-label="Battle commands"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-trans ar-fusion-tag" hidden><b>TAG</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
   document.body.append(ov); document.body.classList.add('in-battle'); music('battle')
   for (const side of [B.you, B.ai]) for (const f of side.team) for (const form of f.card.transformations || []) {
     const image = new Image()
@@ -2796,7 +2797,7 @@ export function startBattle(stage) {
   if (dzWarning) {
     dzWarning.hidden = true
     dzWarning.setAttribute('role', 'status')
-    ov.append(dzWarning)
+    ov.querySelector('.battle-objectives').append(dzWarning)
   }
   if (mission) {
     const ribbon = h('div', 'transfer-ribbon')
@@ -2864,7 +2865,7 @@ export function startBattle(stage) {
     }
     action.onclick = () => advanceObjective()
     ribbon.append(counter, route, action)
-    ov.querySelector('.ar-top').after(ribbon)
+    ov.querySelector('.battle-objectives').append(ribbon)
   }
   const $a = s => ov.querySelector(s)
   let ST3 = null
@@ -2908,7 +2909,7 @@ export function startBattle(stage) {
     const f = act(s), el = $a('.bct-s.' + side), pct = f.hp / f.max * 100
     if (el.dataset.k !== f.card.id) {
       el.dataset.k = f.card.id
-      el.innerHTML = `<div class="bp" style="background-image:url('${f.card.url}');background-position:${Math.round((f.card.fx ?? .5) * 100)}% ${Math.round((f.card.fy ?? .22) * 100)}%"></div><div class="bi"><div class="bn"><b>${battleName(f)}</b>${side === 'you' && mastL(f.key) > 0 ? `<em class="ml">M${mastL(f.key)}</em>` : ''}<small>${f.card.ver}</small></div><div class="bh"><i class="gh"></i><i class="fg"></i><span class="bnum"></span></div><div class="bm"><span class="be"></span><span class="bk"></span></div></div>`
+      el.innerHTML = `<div class="bp" style="background-image:url('${f.card.url}');background-position:${Math.round((f.card.fx ?? .5) * 100)}% ${Math.round((f.card.fy ?? .22) * 100)}%"></div><div class="bi"><div class="bn"><b>${battleName(f)}</b>${side === 'you' && mastL(f.key) > 0 ? `<em class="ml">M${mastL(f.key)}</em>` : ''}<small>${f.card.ver}</small></div><div class="bh"><i class="gh"></i><i class="fg"></i><span class="bnum"></span></div><div class="bm"><span class="be"></span><span class="battle-ult-readout"></span><span class="bk"></span></div></div>`
       el.classList.remove('in'); void el.offsetWidth; el.classList.add('in')
       el.querySelector('.gh').style.width = el.querySelector('.fg').style.width = pct + '%'
     }
@@ -2932,11 +2933,12 @@ export function startBattle(stage) {
     }
     if (pct < was - .1) { el.classList.remove('dmgd'); void el.offsetWidth; el.classList.add('dmgd') }
     el.classList.toggle('low', pct < 30)
-    el.querySelector('.bnum').textContent = f.hp.toLocaleString()
+    el.querySelector('.bnum').textContent = f.hp.toLocaleString() + ' / ' + f.max.toLocaleString()
+    el.querySelector('.battle-ult-readout').textContent = 'ULT ' + Math.floor(s.gauge) + '%'
     el.querySelector('.be').innerHTML = `⚡ <b>${s.ki}</b>/${KI_MAX}`
     el.querySelector('.bk').innerHTML = s.team.map(g => `<i class="${g.ko ? 'ko' : ''}"></i>`).join('')
     
-    $a('.bct-t').textContent = 'TURN ' + B.turn
+    $a('.bct-t').textContent = B.over ? 'FINISHED' : B.busy ? 'RESOLVING' : 'YOUR TURN'
   }
   function hud(side, s) {
     const f = act(s), el = $a(`.ar-side.${side} .ar-hud`)
@@ -2952,6 +2954,7 @@ export function startBattle(stage) {
     updateMarkup(hb, `<b>${f.hp.toLocaleString()}</b><i><s style="width:${f.hp / f.max * 100}%"></s></i>`)
     const foeF = act(side === 'you' ? B.ai : B.you), mu = foeF ? matchup(f, foeF) : 1
     let tg = a.querySelector('.mtag'); if (!tg) { tg = document.createElement('div'); a.append(tg) } tg.className = 'mtag ' + (mu > 1 ? 'adv' : mu < 1 ? 'weak' : 'none'); tg.textContent = mu > 1 ? 'ADVANTAGE' : mu < 1 ? 'WEAKNESS' : ''
+    a.setAttribute('aria-label', (side === 'you' ? 'Your fighter: ' : 'Enemy fighter: ') + battleName(f))
     a.onclick = () => inspect(f, side)
     ov.querySelector('.ar-plate.' + side + ' .pe').innerHTML = `⚡<b>${s.ki}</b><small>/${KI_MAX}</small>`
     { const bn0 = $a(`.ar-side.${side} .ar-bench`); bn0.classList.toggle('can-swap', side === 'you' && (!B.you.switched || B.you.conjunction) && !B.busy && !B.over); bn0.classList.toggle('tag-ready', side === 'you' && !B.you.switched && !B.over && (B.you.seq.includes('special') || B.you.ultTurn === B.turn)) }
@@ -2962,7 +2965,7 @@ export function startBattle(stage) {
     bn.dataset.k = bkey; bn.innerHTML = ''
     s.team.forEach((g, i) => {
       if (i === s.active) return
-      const b = document.createElement('button'); b.className = 'bslot' + (g.ko ? ' ko' : ''); b.append(img(g, 160))
+      const b = document.createElement('button'); b.className = 'bslot' + (g.ko ? ' ko' : ''); b.title = battleName(g); b.append(img(g, 160))
       b.append(Object.assign(document.createElement('i'), { style: `width:${g.hp / g.max * 100}%` }))
       b.onclick = () => inspect(g, side, side === 'you' && !g.ko && (!B.you.switched || B.you.conjunction) && !B.busy && !B.over ? () => doSwitch(i) : null)
       bn.append(b)
@@ -3025,6 +3028,7 @@ export function startBattle(stage) {
       const unavailable = !!reason
       button.disabled = false
       button.setAttribute('aria-disabled', String(unavailable && !previewMode))
+      button.classList.toggle('art-unavailable', unavailable && !previewMode)
       button.onpointerenter = () => {
         const info = previewArt(kind, unavailable)
         button.title = [...info.lines, reason].filter(Boolean).join(' · ')
@@ -3390,16 +3394,31 @@ export function startBattle(stage) {
     if (big) { ov.classList.remove('punch'); void ov.offsetWidth; ov.classList.add('punch'); setTimeout(() => ov.classList.remove('punch'), 420); FXC.screen('#ffffff', ev.art === 'ultimate' ? .35 : .18, .25) }
     setTimeout(() => atk.classList.remove('dash', 'dashbig'), 700)
     ST3 && ST3.hit(other, big)
-    shake(ev.art === 'ultimate' ? 3 : big ? 2 : 1); if (big || ev.art === 'ultimate') { ov.classList.remove('hitstop'); void ov.offsetWidth; ov.classList.add('hitstop'); setTimeout(() => ov.classList.remove('hitstop'), 160) }
+    const impacted = ev.hits.some(hit => hit.dmg > 0)
+    if (impacted) shake(ev.art === 'ultimate' ? 3 : big ? 2 : 1); if (big && impacted) { ov.classList.remove('hitstop'); void ov.offsetWidth; ov.classList.add('hitstop'); setTimeout(() => ov.classList.remove('hitstop'), 160) }
     for (const x of ev.hits) {
       const isActive = x.t === act(B[other])
       const tgt = isActive ? tgtEl : $a(`.ar-side.${other} .ar-bench`)
+      if (!(x.dmg > 0)) {
+        if (x.miss || x.hpDamage === 0) floatTag(tgt, x.miss || 'NO HP DAMAGE', 'weak')
+        continue
+      }
       tgt.classList.remove('hurt'); void tgt.offsetWidth; tgt.classList.add('hurt')
+      const impact = h('i', 'battle-impact ' + (big ? 'signature' : ev.art === 'blast' ? 'energy' : 'strike'))
+      impact.setAttribute('aria-hidden', 'true')
+      const targetBounds = tgt.getBoundingClientRect()
+      impact.style.left = (targetBounds.left + targetBounds.width / 2) + 'px'
+      impact.style.top = (targetBounds.top + targetBounds.height / 2) + 'px'
+      impact.style.setProperty('--impact-color', x.crit ? '#ffbd6a' : col)
+      FX().append(impact)
+      setTimeout(() => impact.remove(), 520)
       { const [hx, hy] = ctr(tgt); FXC.hit(hx, hy, x.crit ? '#ff5a6a' : big ? '#ffc840' : col, !isActive ? .7 : ev.art === 'ultimate' ? 2.3 : big ? 1.6 : ev.art === 'blast' ? 1.15 : .9) }
-      const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : '') + (x.mu > 1 ? ' adv' : ''); n.innerHTML = (x.crit ? '<small>CRITICAL!</small>' : '') + `<b>${x.dmg.toLocaleString()}</b>`; if (x.crit) { const fl = document.createElement('div'); fl.className = 'critflash'; ov.append(fl); setTimeout(() => fl.remove(), 260) } n.style.animationDelay = (ev.hits.indexOf(x) * .09) + 's'
+      const n = document.createElement('div'); n.className = 'dmg' + (x.crit ? ' crit' : '') + (big ? ' big' : '') + (x.mu > 1 ? ' adv' : ''); n.innerHTML = (x.crit ? '<small>CRITICAL!</small>' : '') + `<b>${(x.hpDamage ?? x.dmg).toLocaleString()}</b>`; if (x.crit) { const fl = document.createElement('div'); fl.className = 'critflash'; ov.append(fl); setTimeout(() => fl.remove(), 260) } n.style.animationDelay = (ev.hits.indexOf(x) * .09) + 's'
       const r = tgt.getBoundingClientRect(); n.style.left = (r.left + r.width / 2) + 'px'; n.style.top = (r.top + r.height * .35) + 'px'
       ov.append(n); setTimeout(() => n.remove(), 1100)
       if (isActive && x.crit) { floatTag(tgt, 'CRITICAL!', 'crit'); sfx('crit') }
+      else if (isActive && x.blocked) floatTag(tgt, 'GUARDED', 'weak')
+      else if (isActive && x.piercedGuard) floatTag(tgt, 'GUARD PIERCED', 'adv')
       else if (isActive && x.mu > 1) floatTag(tgt, 'SUPER EFFECTIVE', 'adv')
       else if (isActive && x.mu < 1) floatTag(tgt, 'RESISTED', 'weak')
     }
