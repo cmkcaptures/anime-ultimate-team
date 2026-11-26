@@ -273,6 +273,19 @@ function surviveHogyoku(fighter) {
   return true
 }
 
+function newGenSignatureBudget(att, def, side, kind) {
+  // Specials and Ultimates share a per-target budget across their follow-up hits.
+  if (!att.newGenBoss || (kind !== 'special' && kind !== 'ult')) return null
+  if (side.newGenSignature?.action !== side.reworkAction || !side.newGenSignature) {
+    side.newGenSignature = { action: side.reworkAction, targets: new WeakMap() }
+  }
+  const { targets } = side.newGenSignature
+  const fraction = (kind === 'ult' ? .65 : .45) + (side.newGenPunished ? .15 : 0)
+  const limit = Math.max(1, Math.floor(def.max * fraction))
+  const remaining = Math.max(0, limit - (targets.get(def) || 0))
+  return { remaining, spend: damage => targets.set(def, limit - remaining + damage) }
+}
+
 function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, kind), mod = {}) {
   const pa = A ? passives(A) : {}, pd = D ? passives(D) : {}, ea = PE(att), ed = ea.antiKit || mod.sever ? {} : PE(def) // Toji: enemy defensive kit is cancelled
   const offensive = ['strike', 'blast', 'special', 'ult'].includes(kind)
@@ -556,6 +569,8 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (barrier.remaining != null) pasNote(def, barrier.remaining ? 'DESTRUCTION BARRIER · ' + barrier.remaining + '/3' : 'DESTRUCTION BARRIER BROKEN')
   const pierceAll = pierce || flickerPierce || ea.pierce || (ea.wheel && att.hitsTaken >= 4) || (kind === 'strike' && ea.pierceStrike) || (kind === 'special' && ea.pierceSpec)
   if (sealActive(def, D)) clearShinobiBuffs(def)
+  const signatureBudget = A && newGenSignatureBudget(att, def, A, kind)
+  if (signatureBudget) dmg = Math.min(dmg, signatureBudget.remaining)
   const piercedGuard = !!def.guard && !!pierceAll
   const blocked = def.guard && !pierceAll
   if (blocked && offensive && ed.crVegeta) {
@@ -578,6 +593,10 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   dmg = mod.fixedDamage ?? (Math.max(1, Math.round(dmg)) + (mod.stored || 0))
   if (def.gtSaved && def.gtSaveTurn === turnClock(D)) dmg = Math.round(dmg * .5)
   if (ed.gtForm === 1 && !def.turns) dmg = Math.round(dmg * .75)
+  if (signatureBudget) {
+    dmg = Math.min(dmg, signatureBudget.remaining)
+    signatureBudget.spend(dmg)
+  }
   const shieldBeforeHit = def.shieldHp
   if (mod.batchStrip) def.shieldHp = 0
   if (def.shieldHp > 0) { const s2 = Math.min(def.shieldHp, dmg); def.shieldHp -= s2; dmg -= s2; if (s2) { def.recapShielded = (def.recapShielded || 0) + s2; pasNote(def, 'SHIELD') } }
@@ -3650,6 +3669,7 @@ export function startBattle(stage) {
         log('OPENING · Enemy loses 25% Ultimate gauge and hits softer this round.')
       }
       B.dzIntent = null
+      if (newGen) s.newGenPunished = !!punished
       s.campaignDamage = balance.damage * (1 + escalating + (punished ? .5 : newGen && intent ? -.22 : 0))
       if (punished) {
         if (newGen && stage.newGen === 4) B.you.ki = Math.max(0, B.you.ki - 2)
