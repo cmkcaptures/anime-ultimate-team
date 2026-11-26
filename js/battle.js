@@ -445,6 +445,8 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   if (A && !suppressBuffs) {
     m += (A.teamDmg || 0) / 100
     if (A.team.some(f => f !== att && !f.ko && PE(f).batch === 'soiFon')) m += .2
+    if ((att.card.faction === 'Espada' || att.card.cat?.includes('Espada')) &&
+        A.team.some(f => f !== att && !f.ko && PE(f).nelEspada)) m += .25
     if ((A.batchResolveUntil ?? -1) >= turnClock(A)) m += .2
   }
   if (ed.vuln) m += ed.vuln / 100
@@ -1037,6 +1039,13 @@ function playArt(B, who, idx) {
     if (bench) ev.hits.push({ t: bench, ...hit(a, bench, base * .5, a.pwr, true, me, foe, 'special') })
     const landed = ev.hits.some(x => (x.hpDamage ?? x.dmg) > 0)
     if (batch === 'orihimeFinal' && !a.ko) batchSupportSpecial(me, healHP)
+    if (kit.nelEspada && !a.ko) {
+      for (const ally of alive(me)) {
+        healHP(ally, ally.max * .18)
+        ally.shieldHp = Math.max(ally.shieldHp, Math.round(ally.max * .18))
+      }
+    }
+    if (kit.resonance && landed && !d.ko) d.nobaraMark = a.key
     if (landed && batch && !a.ko) {
       if (hornet) {
         d.batchHornet = markedHornet || d.ko ? null : a.key
@@ -1591,6 +1600,13 @@ function switchFighter(B, who, index) {
   const ghost = ghostDetonation(leaving, side, foe, entering)
   const trapWho = who === 'you' ? 'ai' : 'you'
   let trap = ghost && { ...ghost, who: trapWho }
+  const nobara = !leaving.ko && leaving.nobaraMark &&
+    foe.team.find(f => f.key === leaving.nobaraMark && !f.ko && PE(f).resonance)
+  if (nobara) {
+    leaving.nobaraMark = null
+    trap = { who: trapWho, art: 'special', move: 'RESONANCE', before: trap,
+      hits: [{ t: leaving, ...hit(nobara, leaving, 690, nobara.ki, true, foe, side, 'counter') }] }
+  }
   const petals = !entering.ko && leaving.fcPetals && foe.team.find(f => f.key === leaving.fcPetals && !f.ko && PE(f).captainPetals)
   if (petals) {
     delete leaving.fcPetals
