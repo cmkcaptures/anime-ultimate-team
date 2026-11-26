@@ -45,3 +45,10 @@
   color: #f8f4ff;
   background-color: #17102b;
 }
+
+/* clarity: how it works, level panel, squad bond */
+.howbox ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; font: 600 13px var(--eUI, Inter); color: #e8e4f4 }
+.howbox b, .lvbox > b { color: #9ae4ff } .lvbox p { margin: 6px 0 0; font: 500 12.5px var(--eUI, Inter); color: #d8d2ea } .lvbox p b { color: #ffe27a }
+.tm-bond { display: grid; gap: 2px; margin: 10px 0; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,.05); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset }
+.tm-bond b { font: 800 13px var(--eUI, Inter); letter-spacing: .06em; color: #b8b0d0 } .tm-bond span { font: 600 12px var(--eUI, Inter); color: #a89cc8 }
+.tm-bond.on { background: rgba(60,200,140,.12); box-shadow: 0 0 0 1px rgba(60,220,150,.45) inset } .tm-bond.on b { color: #6affc0 } .tm-bond.on span { color: #d8fff0 }

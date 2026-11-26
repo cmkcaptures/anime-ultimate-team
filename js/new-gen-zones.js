@@ -26,10 +26,11 @@ export const NEW_GEN_ZONES = [
 
 export function newGenBalance(index, power) {
   const elite = Math.min(.9, Math.max(0, power - .94))
+  const aizen = index >= 6 // Beyond the Hōgyoku was the hardest zone by far: softer stats, players hit harder
   return {
-    hp: 2.65 + index * .14 + elite * 1.45 * .55,
-    damage: 1.45 + index * .07 + elite * .36 * .55,
-    incomingHitCap: .36 + index * .015,
+    hp: (2.65 + index * .14 + elite * 1.45 * .55) * (aizen ? .82 : 1),
+    damage: (1.45 + index * .07 + elite * .36 * .55) * (aizen ? .86 : 1),
+    incomingHitCap: .36 + index * .015 + (aizen ? .08 : 0),
   }
 }
 

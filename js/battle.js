@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=4'
-import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-2'
+import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-3'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
 import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=2'
@@ -46,6 +46,18 @@ const ROLE_TAG = { FIGHTER: 'Fighters', TANK: 'Tanks', SHOOTER: 'Shooters', ASSA
 export const AURA_PCT = { 3: 3, 4: 4, 5: 5, 6: 7, 7: 10 }, AURA_CAP = 40
 export const tagsOf = c => ['S:' + c.anime, c.faction, ...(c.cat || []), ROLE_TAG[c.role] || 'Fighters']
 export const auraHits = (src, c) => !!(src && c && src.aura && src.aura.some(t => tagsOf(c).includes(t)))
+// ---- SQUAD BOND: fighters that share a team aura tag protect each other (rewards themed favourite teams) ----
+export function squadBond(cards) {
+  const team = cards.filter(Boolean); let best = { n: 0, tag: null }
+  for (const t of new Set(team.flatMap(c => c.aura || []))) { const n = team.filter(c => tagsOf(c).includes(t) || (c.aura || []).includes(t)).length; if (n > best.n) best = { n, tag: t } }
+  const tier = best.n >= 6 ? 3 : best.n >= 5 ? 2 : best.n >= 4 ? 1 : 0
+  return { ...best, tier, dr: [0, 10, 15, 20][tier], regen: [0, 0, 2, 3][tier], save: tier === 3 }
+}
+function applySquadBond(side) {
+  const b = squadBond(side.team.map(f => f.card)); side.bond = b; if (!b.tier) return
+  for (const f of side.team) { f.pe = { ...(f.pe || {}) }; f.pe.dr = Math.min(45, (f.pe.dr || 0) + b.dr); if (b.regen) f.pe.regen = (f.pe.regen || 0) + b.regen }
+  if (b.save && side.team[0]) side.team[0].endure = (side.team[0].endure || 0) + 1
+}
 export function teamAuras(cards, defDia = 3) { return cards.map(c => { if (!c) return 0; let b = 0; for (const s of cards) if (s && auraHits(s, c)) b += AURA_PCT[Math.min(7, Math.max(3, s.dia || defDia))]; return Math.min(AURA_CAP, b) }) }
 function applyAuras(side, defDia) { const b = teamAuras(side.team.map(f => f.card), defDia); side.team.forEach((f, i) => { const x = b[i]; if (!x) return; f.max = f.hp = Math.round(f.max * (1 + x / 100)); const k = 1 + x / 200; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.auraB = x }); side.auraAvg = Math.round(b.reduce((n, v) => n + v, 0) / Math.max(1, b.length)) }
 // ---- LINK SKILLS: neighbours in the lineup (Leader → Main 1 → Main 2 → Sub 1 → Sub 2 → Sub 3) link up ----
@@ -212,6 +224,7 @@ const turnClock = side => side?.formTurn || 0
 const storyStrikeDiscount = (f, art, side) => art === 'strike' && PE(f).storyRush && f.storyStrikeClock !== turnClock(side) ? 1 : 0
 const artCost = (f, art, side, opponent) => ARTS[art].cost + (f.fcFrostTax && ATTACK_ARTS.includes(art) ? 2 : 0) - (art === 'special' && f.crDiscount ? 2 : 0) - (art === 'special' && gtForm(f) === 2 && f.gtDiscountTurn === turnClock(side) ? 2 : 0) - storyStrikeDiscount(f, art, side) + Number(!!f.gravityArts && ATTACK_ARTS.includes(art)) + Number(!!f.sageTax && ATTACK_ARTS.includes(art)) + waveArtTax(side, opponent && act(opponent), ATTACK_ARTS.includes(art), PE) + (ATTACK_ARTS.includes(art) ? batchTax(art, side, opponent, PE) : 0)
 const healHP = (f, amount) => {
+  if (f.deadZoneEnemy) return 0 // Dead Zones: enemies never heal
   const reduced = amount > 0 && f.hp < f.max && f.crHealCut
   if (reduced) f.crHealCut = false
   const gain = Math.min(f.max - f.hp, Math.round(amount * (f.curseOwner ? .5 : 1) * (reduced ? .5 : 1)))
@@ -2713,6 +2726,7 @@ export function startBattle(stage) {
   if (stage.mode === 'redzone') for (const f of B.ai.team) { f.pe = { ...(f.pe || {}) }; for (const k of ['regen', 'teamHeal', 'koHeal', 'drain', 'bigHitHeal', 'ultHeal']) delete f.pe[k] } // Dead Zones: enemies never heal
   if (stage.rules?.ultStart) B.ai.gauge = Math.max(B.ai.gauge, stage.rules.ultStart)
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
+  applySquadBond(B.you); if (LV) applySquadBond(B.ai)
   if (mission) {
     const scaling = campaignScale(B.you.team, mission.chapter, mission.mission, B.ai.team.length)
     stage = { ...stage, level: scaling.level }
@@ -3342,6 +3356,7 @@ export function startBattle(stage) {
     sfx('bcharge'); log(`${f.card.name} ${full ? 'transforms: ' + name : 'powers up'}!`); await wait(1500); draw()
   }
   async function show(ev) {
+    lockDzHp()
     if (ev.before) { await show(ev.before); if (B.over || B.closed) return }
     if (ev.swap) { log('Enemy switched fighters'); sfx('bswitch'); draw(); await wait(500); return }
     const side = ev.who, other = side === 'you' ? 'ai' : 'you'
@@ -3619,7 +3634,8 @@ export function startBattle(stage) {
   }
 
   // safety net: nobody can sit on 0 HP without being knocked out, and a KO'd active fighter is always replaced
-  function sweepKO() { for (const [side, sd] of [['you', B.you], ['ai', B.ai]]) { for (const f of sd.team) if (!f.ko && f.hp <= 0.5) { f.hp = 0; f.ko = true } if (act(sd).ko && !nextAlive(sd)) { end(side === 'ai'); return true } }
+  function lockDzHp() { for (const f of B.ai.team) { if (!f.deadZoneEnemy || f.ko) continue; if (f.dzLow == null || f.hp < f.dzLow) f.dzLow = f.hp; if (f.hp > f.dzLow) f.hp = f.dzLow } }
+  function sweepKO() { lockDzHp(); for (const [side, sd] of [['you', B.you], ['ai', B.ai]]) { for (const f of sd.team) if (!f.ko && f.hp <= 0.5) { f.hp = 0; f.ko = true } if (act(sd).ko && !nextAlive(sd)) { end(side === 'ai'); return true } }
     draw(); return false
   }
   async function aiPhase() {
