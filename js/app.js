@@ -451,7 +451,7 @@ function segmented(labels, on, pick) {
 // press-and-hold (or right-click) any card to open its full profile
 { let t = null, sx = 0, sy = 0, fired = false
   const cardAt = e => { const im = e.target.closest && e.target.closest('img[data-key]'); return im && im.dataset.key }
-  addEventListener('pointerdown', e => { const k = cardAt(e); if (!k || document.getElementById('opener') || document.querySelector('#arena')) return; fired = false; sx = e.clientX; sy = e.clientY; clearTimeout(t); t = setTimeout(() => { fired = true; if (navigator.vibrate) navigator.vibrate(15); cardDetail(k) }, 480) }, true)
+  addEventListener('pointerdown', e => { fired = false; clearTimeout(t); const k = cardAt(e); if (!k || document.getElementById('opener') || document.querySelector('#arena')) return; sx = e.clientX; sy = e.clientY; t = setTimeout(() => { fired = true; if (navigator.vibrate) navigator.vibrate(15); cardDetail(k) }, 480) }, true)
   addEventListener('pointermove', e => { if (t && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) { clearTimeout(t); t = null } }, true)
   for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, () => { clearTimeout(t); t = null }, true)
   addEventListener('click', e => { if (fired) { fired = false; e.preventDefault(); e.stopPropagation() } }, true)
@@ -1573,16 +1573,29 @@ async function revealPacks(cards, n, hadBefore, quick, destination) {
   const all = cards.slice().sort((a, b) => TIER[b.r].rank - TIER[a.r].rank || b.ovr - a.ovr)
   const urls = await Promise.all(all.map(c => thumbURL(c, 260, true)))
   const ov = h('div', 'mo'); ov.id = 'opener'
-  ov.innerHTML = `<div class="mo-bg"></div><div class="mo-head"><b>${n}× PULL</b><span>${all.length} cards</span><button class="o2-skip">REVEAL ALL</button></div><div class="mo-grid"></div><button class="btn gold mo-done">CONTINUE</button>`
+  ov.innerHTML = `<div class="mo-bg"></div><div class="mo-head"><b>${n}× PULL</b><span>${all.length} cards</span><button class="o2-skip">REVEAL ALL</button></div><div class="mo-grid"></div>`
   document.body.append(ov); document.body.classList.add('in-opener')
   const grid = ov.querySelector('.mo-grid'), FXC = createFX(ov)
   const els = all.map((c, i) => { const e = h('div', 'mo-c', `<div class="in"><div class="f"></div><div class="b"></div></div>`); e.dataset.tier = c.r; e.style.setProperty('--rc', tierCol(c.r)); if (!hadBefore.has(c.key) && !newShown.has(c.key)) { newShown.add(c.key); e.classList.add('is-new'); setTimeout(() => e.querySelector('.f').append(h('span', 'o2-new', 'NEW')), 0) } const im = new Image(); im.src = urls[i]; e.querySelector('.f').append(im); grid.append(e); return e })
   let skip = false, closed = false; ov.querySelector('.o2-skip').onclick = () => { skip = true }
-  const fin = e => { if (e) { e.preventDefault(); e.stopPropagation() } if (closed) return; closed = true; skip = true; ov.style.display = 'none'; doneB.style.display = 'none'; setTimeout(() => { try { FXC.dispose() } catch { } document.body.classList.remove('in-opener'); ov.remove(); doneB.remove(); document.querySelectorAll('#opener, body > .mo-done').forEach(o => o.remove()); go(destination) }, 20) }
-  const doneB = ov.querySelector('.mo-done'); document.body.append(doneB); doneB.onclick = fin; doneB.onpointerup = fin
+  const footer = h('div', 'mo-footer')
+  const done = h('button', 'btn gold mo-done', 'CONTINUE')
+  done.type = 'button'
+  footer.append(done)
+  document.body.append(footer)
+  done.onclick = () => {
+    if (closed) return
+    closed = true
+    try { FXC.dispose() } catch { }
+    document.body.classList.remove('in-opener')
+    ov.remove()
+    footer.remove()
+    go(destination)
+  }
   sfx('deal'); await wait(400)
   // reveal worst first, best last; Epic+ pause with an impact
   for (let i = els.length - 1; i >= 0; i--) {
+    if (closed) return
     const e = els[i], rk = TIER[all[i].r].rank
     const spotlight = keepReveal(e.classList.contains('is-new'), rk, quick)
     if (!skip && spotlight && rk >= 4) { e.scrollIntoView({ block: 'center' }); try { await walkout(ov, FXC, all[i], rk) } catch { skip = true } if (closed) return }
