@@ -254,7 +254,7 @@ function setActive(side, index) {
     leaving.storyCoverUsed = true
     entering.shieldHp = Math.max(entering.shieldHp, Math.round(entering.max * kit.storyCover))
     side.ki = Math.min(KI_MAX, side.ki + (kit.storyCoverEnergy || 0))
-    pasNote(leaving, kit.storyCoverEnergy ? 'COVER · SHIELD AND +1 ENERGY' : 'CLONE COVER · SHIELD')
+    pasNote(leaving, kit.storyCoverEnergy ? 'COVER · SHIELD AND +1 ENERGY' : 'COVER · SHIELD')
   }
   if (entering.pe.shisuiFlicker) entering.flickerEntry = side.formTurn || 0
 }

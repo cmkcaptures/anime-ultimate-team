@@ -3,6 +3,11 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
 ## 2026-11-26 · Codex
+- Added two Epic roster alternatives: Armored Titan Reiner gives an incoming ally a 25% shield on his first live tag-out, and Double Mangekyo Kakashi strips the active enemy’s shield with a 245% PWR Special. Reused the existing cover and shield-strip mechanics.
+- No changes to Dead Zone rules, top cards, card IDs, rarities or OVRs. Patch note version 2026112602 announces the two buffs. Test more roster slots before expanding this pass.
+
+---
+## 2026-11-26 · Codex
 - Added the mandatory Balance & Team Building patch notes at startup. Got It records the current numeric version in the signed-in player’s normal local and cloud save. The popup blocks navigation and Escape until dismissed.
 - For the next player-facing patch, update the notes and increase PATCH_VERSION in js/patch-notes.js. Bump its importer and entry-point cache tags. Today’s notes include Fast Training, Dead Zone briefings, the rarity audit and the seven-card balance pass.
 

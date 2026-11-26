@@ -1,7 +1,11 @@
 // Increase this number and update the notes for each player-facing patch.
-export const PATCH_VERSION = 2026112601
+export const PATCH_VERSION = 2026112602
 
 const NOTES = [
+  ['Roster Update', [
+    'Epic Reiner (Armored Titan) gives the incoming ally a 25% max-HP shield the first time he tags out alive.',
+    'Epic Kakashi (Double Mangekyo) strips the active enemy’s shield with his Special. Its power rises from 220% to 245%.',
+  ]],
   ['Battle Balance', [
     'Enemies in Campaign, Dead Zone and Daily Boss scale only partly with your team, so upgrades make a bigger difference. Campaign difficulty now comes mainly from the chapter.',
     'Dead Zone enemies can no longer recover lost HP. Sukuna’s World Cut cannot drop your maximum HP below 70% of its starting value.',
