@@ -4,7 +4,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=claude-2'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=claude-3'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=session-qol-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -274,7 +274,7 @@ setInterval(() => {
 let homeIdx = 0
 PAGES.home = (el) => {
   if (new URLSearchParams(location.search).get('pvp') && !window.__pvpGo) { window.__pvpGo = 1; try { sessionStorage.setItem('bmode', 'live') } catch { } setTimeout(() => go('battle'), 0) }
-  { const R = ST.rift; if (R && R.open && !R.done) { const inv = POOL.filter(c => c.name === R.invader).sort((a, b) => b.ovr - a.ovr)[0], b = h('button', 'rift-alert', `<i style="background-image:url('${inv ? inv.url : ''}')"></i><span><small>🌀 DIMENSIONAL RIFT · CLOSES IN ${Math.max(1, Math.ceil((R.closes - Date.now()) / 60000))} MIN</small><b>${R.title.toUpperCase()}!</b></span><em>SEAL IT ›</em>`); b.onclick = () => { try { sessionStorage.setItem('bmode', 'rift') } catch { } go('battle') }; el.append(b) } }
+  { const R = ST.rift; if (false && R && R.open && !R.done) { /* rifts paused */ const inv = POOL.filter(c => c.name === R.invader).sort((a, b) => b.ovr - a.ovr)[0], b = h('button', 'rift-alert', `<i style="background-image:url('${inv ? inv.url : ''}')"></i><span><small>🌀 DIMENSIONAL RIFT · CLOSES IN ${Math.max(1, Math.ceil((R.closes - Date.now()) / 60000))} MIN</small><b>${R.title.toUpperCase()}!</b></span><em>SEAL IT ›</em>`); b.onclick = () => { try { sessionStorage.setItem('bmode', 'rift') } catch { } go('battle') }; el.append(b) } }
   const B = ST.banner, partner = P.avatar && BYKEY[P.avatar], feat = partner || (B ? BYKEY[B.featured[0]] : POOL.slice().sort((a, b) => b.ovr - a.ovr)[0])
   const lob = h('section', 'lobby')
   // featured sticker card

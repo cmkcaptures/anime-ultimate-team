@@ -1924,9 +1924,12 @@ function eventTeam(pool, difficulty) {
   const start = Math.min(Math.max(0, distinct.length - sizes[difficulty]), [4, 2, 0][difficulty])
   return distinct.slice(start, start + sizes[difficulty]).map(card => card.key)
 }
+const MODES_ON = new Set(['transfer-campaign', 'live', 'redzone', 'arcs', 'boss', 'pass', 'story'])
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
-  for (const [k, n] of [['transfer-campaign', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['draft', 'DRAFT GAUNTLET'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']]) {
+  // Temporarily limited while core modes are being balanced. Re-add ids here to bring modes back.
+  if (!MODES_ON.has(MODE)) MODE = 'transfer-campaign'
+  for (const [k, n] of [['transfer-campaign', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['draft', 'DRAFT GAUNTLET'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']].filter(([k]) => MODES_ON.has(k))) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
