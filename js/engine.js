@@ -77,8 +77,20 @@ const PACKS = {
 }
 // weekly banner: 2 featured Legendary+ cards, rotates every Monday, same for everyone
 const BANNER_COST = 3000, PITY_MYTHIC = 80, PITY_FEATURED = 160
-function banner() {
-  const wk = Math.floor((Date.now() / 864e5 + 3) / 7), top = CARDS.filter(c => !c.season && !c.campaignUnlock && !deadZoneReward(c) && 'LMX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
+const ESPADA_START = Date.UTC(2026, 10, 26), ESPADA_END = ESPADA_START + 7 * 864e5
+const ESPADA_FEATURED = [
+  'grimmjow', 'ulquiorra', 'starrk', 'barragan', 'harribel',
+  'yammy', 'nnoitra', 'zommari', 'szayelaporro', 'aaroniero'
+].map(id => id + '_release_drop').concat('nel_gamuza')
+function banner(at = Date.now()) {
+  if (at >= ESPADA_START && at < ESPADA_END) {
+    const featured = ESPADA_FEATURED.map(id => CARDS.find(c => c.id === id)?.key).filter(Boolean)
+    if (featured.length === ESPADA_FEATURED.length) return {
+      id: 'espada-2026-11', name: 'ESPADA · RESURRECCIÓN', cost: BANNER_COST,
+      featured, ends: ESPADA_END, pityMythic: PITY_MYTHIC, pityFeatured: PITY_FEATURED
+    }
+  }
+  const wk = Math.floor((at / 864e5 + 3) / 7), top = CARDS.filter(c => !c.season && !c.campaignUnlock && !deadZoneReward(c) && 'LMX'.includes(c.r)).sort((a, b) => a.key < b.key ? -1 : 1)
   if (!top.length) return null
   const rnd = n => { let x = Math.sin(wk * 9301 + n * 49297) * 233280; return x - Math.floor(x) }
   const f1 = top[Math.floor(rnd(1) * top.length)], rest = top.filter(c => c.anime !== f1.anime), f2 = (rest.length ? rest : top)[Math.floor(rnd(2) * (rest.length || top.length))]
@@ -1305,10 +1317,13 @@ function act(a) {
       P.free.charges--; P.pending.standard = (P.pending.standard || 0) + 1; return {}
     }
     case 'buyPack': {
-      const B = a.pack === 'banner' ? banner() : null, pk = B ? { cost: B.cost } : PACKS[a.pack]; if (!pk) return { error: 'Unknown pack.' }
+      const B = a.pack === 'banner' ? banner(now) : null
+      if (B && ((a.bannerId && a.bannerId !== B.id) || (P.pending.banner > 0 && banner(P.bannerBoughtAt)?.id !== B.id))) return { error: 'The banner has changed. Open any remaining packs before pulling again.' }
+      const pk = B ? { cost: B.cost } : PACKS[a.pack]; if (!pk) return { error: 'Unknown pack.' }
       const n = a.count === 10 ? 10 : 1, cost = n === 10 ? Math.round(pk.cost * 10 * .9) : pk.cost
       if (P.coins < cost) return { error: `You need ${cost.toLocaleString()} coins.` }
       if (a.pack === 'lightning') { P.light = P.light || { n: LIGHT_MAX, at: now }; rollCharge2(P.light); if (P.light.n < n) return { error: 'Lightning Packs are sold out. More arrive soon.' }; if (P.light.n >= LIGHT_MAX) P.light.at = now; P.light.n -= n }
+      if (B) P.bannerBoughtAt = now
       P.coins -= cost; P.pending[a.pack] = (P.pending[a.pack] || 0) + n; return {}
     }
     case 'openPack': {
@@ -1317,7 +1332,7 @@ function act(a) {
       if (!(P.pending[a.pack] > 0)) return { error: 'No unopened pack of that type.' }
       P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = []; let itemMsg = ''
       if (Math.random() < (a.pack === 'bronze' || a.pack === 'silver' ? .04 : .08)) { const ks = Object.keys(ITEMS), ik = ks[Math.floor(Math.random() * ks.length)], it = itemsP(); it[ik] = (it[ik] || 0) + 1; itemMsg = 'Bonus item: ' + ITEMS[ik].name + '!' }
-      if (a.pack === 'banner') { const B = banner(), pt = P.pity || (P.pity = {}), pr = pt[B.id] || (pt[B.id] = { n: 0, m: 0, f: 0 }); pr.n++; pr.m++; pr.f++; for (const k of a.keys || []) { const c = byKey(k); if (c && 'MX'.includes(c.r)) pr.m = 0; if (B.featured.includes(k)) pr.f = 0 } } P.pp = Math.min(2500, (P.pp || 0) + PP_PER_PACK); addXP(40)
+      if (a.pack === 'banner') { const B = banner(P.bannerBoughtAt), pt = P.pity || (P.pity = {}), pr = pt[B.id] || (pt[B.id] = { n: 0, m: 0, f: 0 }); pr.n++; pr.m++; pr.f++; for (const k of a.keys || []) { const c = byKey(k); if (c && 'MX'.includes(c.r)) pr.m = 0; if (B.featured.includes(k)) pr.f = 0 } } P.pp = Math.min(2500, (P.pp || 0) + PP_PER_PACK); addXP(40)
       if (PACKS[a.pack] && PACKS[a.pack].anime) { const sp = P.spity || (P.spity = {}); sp[a.pack] = (a.keys || []).some(k => { const c = byKey(k); return c && 'LMX'.includes(c.r) }) ? 0 : (sp[a.pack] || 0) + 1 }
       const SIG = new Set(a.sig || [])
       for (const k of a.keys || []) { const c = byKey(k); if (!c) continue; giveCard(k); if (SIG.has(k)) { const o = P.club.cards[k]; o.sig = (o.sig || 0) + 1; bump('sig') } P.last.push(k); const rk = 'CURELMX'.indexOf(c.r); if (rk >= 3) bump('epic'); if (rk >= 4) bump('legend') }
@@ -1750,7 +1765,7 @@ function state() {
       enemies: run?.status === 'ready' ? draftEnemyTeam(draft, CARDS, run.round) : [],
       rewarded: P.draftRewardWeek === draft.week },
     warLanes: currentWarLanes(warState(P).week),
-    profile: P, notices: S.notices, packs: PACKS, banner: banner(), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
+    profile: P, notices: S.notices, packs: PACKS, banner: banner(P.pending.banner > 0 ? P.bannerBoughtAt : undefined), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now(),

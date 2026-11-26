@@ -93,7 +93,7 @@ const KI_PER_TURN = 3, KI_MAX = 10, HAND = 4, GAUGE_MAX = 100
 const ARTS = {
   strike: { name: 'STRIKE', cost: 1, col: '#ff4a5a', desc: 'Fast hit · PWR' },
   blast: { name: 'BLAST', cost: 2, col: '#ffc23a', desc: 'Energy blast · ENG' },
-  guard: { name: 'GUARD', cost: 1, col: '#3dffa0', desc: 'Halve the next hit' },
+  guard: { name: 'GUARD', cost: 1, col: '#3dffa0', desc: 'Block 50–75% of the next hit. Stronger against heavy damage.' },
   special: { name: 'SPECIAL', cost: 4, col: '#4aa8ff', desc: 'Signature move' },
   burst: { name: 'BURST', cost: 0, col: '#ff3b6b', desc: 'Spend ALL Energy · huge hit', tactic: 1 },
   charge: { name: 'POWER CHARGE', cost: 1, col: '#ff9a00', desc: 'Next attack +35%, stacks', tactic: 1 },
@@ -566,7 +566,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
   }
   if (def.guard) {
     if (blocked) {
-      dmg *= ed.guardStrong ? 1 - ed.guardStrong / 100 : .5
+      dmg = guardedDamage(dmg, def.max, ed.guardStrong)
       if (offensive && ed.batch === 'gyomei') def.batchCounter = true
     }
     const merlin = offensive && blocked && !ea.antiKit && !mod.sever && D?.team.find(f => !f.ko && PE(f).batch === 'merlin' && f.batchGuardTurn !== turnClock(D))
@@ -1695,12 +1695,19 @@ function nextAlive(s) { const i = s.team.findIndex(f => !f.ko); if (i >= 0) setA
 
 // ---------------- AI ----------------
 // ===== smart Auto brain (level 5): estimates damage, looks for lethal, plans energy =====
+// A heavy hit gets more mitigation, with a floor so its damage still matters.
+function guardedDamage(damage, maxHP, guardBonus = 50) {
+  const baseReduction = Math.max(.5, Math.min(.7, guardBonus / 100))
+  const heavyHitBonus = Math.min(.2, Math.max(0, damage / maxHP - .25) * .25)
+  return damage * (1 - Math.min(.75, baseReduction + heavyHitBonus))
+}
+
 function estHit(att, def, base, stat, pierce) {
   const ea = PE(att)
   let d = base * (stat / 80) * (100 / (60 + def.def * .5)) * matchup(att, def) * (1 + (ea.dmg || 0) / 100 + (att.rage || 0) / 100)
   if (att.card.tag) d *= 1.18
-  if (def.guard && !pierce) d *= .5
   if (ea.exec && def.hp / def.max < .4) d *= 1 + ea.exec / 100
+  if (def.guard && !pierce && !ea.pierce) d = guardedDamage(d, def.max, PE(def).guardStrong)
   return d
 }
 function estArt(me, foe, a, chainN) {

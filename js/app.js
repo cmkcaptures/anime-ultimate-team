@@ -4,7 +4,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=espada-drop-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks } from './battle.js?v=espada-guard-1'
 const auraTag = t => t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=session-qol-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
@@ -1221,6 +1221,7 @@ const PACKODDS = {
 }
 function rollBannerKeys(n) {
   const B = ST.banner, odds = PACKODDS.standard.odds, pr = ((P.pity || {})[B.id]) || { m: 0, f: 0 }
+  const feat = B.featured.map(k => BYKEY[k]).filter(Boolean)
   let m = pr.m, f = pr.f, out = []
   const byTier = r => PACKABLE().filter(c => c.r === r)
   for (let p = 0; p < n; p++) {
@@ -1228,7 +1229,6 @@ function rollBannerKeys(n) {
     for (let i = 0; i < 5; i++) {
       let t = Math.random() * 100, tier = 'C'; for (const k of ['X', 'M', 'L', 'E', 'R', 'U']) if ((t -= odds[k]) < 0) { tier = k; break }
       let c = null
-      const feat = B.featured.map(k => BYKEY[k]).filter(Boolean)
       if (i === 4 && f + 1 >= B.pityFeatured) c = feat[Math.floor(Math.random() * feat.length)]
       else if (i === 4 && m + 1 >= B.pityMythic && !'MX'.includes(tier)) tier = 'M'
       if (!c) { const ft = feat.filter(x => x.r === tier); if (ft.length && Math.random() < .5) c = ft[Math.floor(Math.random() * ft.length)] }
@@ -1657,32 +1657,35 @@ function packContents(t) {
 function bannerBlock(el) {
   const B = ST.banner; if (!B) return
   const feat = B.featured.map(k => BYKEY[k]).filter(Boolean), pr = ((P.pity || {})[B.id]) || { m: 0, f: 0 }, pend = P.pending.banner || 0
+  if (!feat.length) return
+  const espada = B.id === 'espada-2026-11', ended = B.ends <= now()
   const w = h('section', 'bnr')
   w.style.setProperty('--bart1', `url("${feat[0].url}")`); if (feat[1]) w.style.setProperty('--bart2', `url("${feat[1].url}")`)
   w.innerHTML = `<div class="bnr-art a1"></div><div class="bnr-art a2"></div><div class="bnr-shade"></div>
-    <div class="bnr-info"><span class="bnr-tag">LIMITED BANNER</span><h2>${feat.map(c => c.name).join(' &amp; ')}</h2>
-      <p>Featured: ${feat.map(c => '<b>' + c.name + ' · ' + c.ver + '</b>').join(' and ')}. When you hit their rarity, there's a 50% chance it's them.</p>
-      <div class="bnr-time">Ends in <b class="timer" data-until="${B.ends - SKEW}"></b></div>
+    <div class="bnr-info"><span class="bnr-tag">LIMITED BANNER</span><h2>${espada ? B.name : feat.map(c => c.name).join(' &amp; ')}</h2>
+      <p>Featured: ${feat.map(c => '<b>' + c.name + '</b>').join(', ')}. A pull that hits a featured rarity has a 50% chance to draw from its featured cards.</p>
+      <div class="bnr-time">${ended ? 'Banner ended · unopened packs can still be claimed' : `Ends in <b class="timer" data-until="${B.ends - SKEW}"></b>`}</div>
       <div class="bnr-pity"><div><span>MYTHIC+ GUARANTEED</span><i><s style="width:${Math.min(100, pr.m / B.pityMythic * 100)}%"></s></i><b>${pr.m}/${B.pityMythic}</b></div>
         <div><span>FEATURED GUARANTEED</span><i><s style="width:${Math.min(100, pr.f / B.pityFeatured * 100)}%"></s></i><b>${pr.f}/${B.pityFeatured}</b></div></div>
       <div class="bnr-buy"></div></div>
     <div class="bnr-cards"></div>`
-  const cards = w.querySelector('.bnr-cards'); feat.forEach((c, i) => { const b = h('button', 'bnr-card c' + i); b.append(cardImg(c, 360)); b.onclick = () => cardDetail(c.key); cards.append(b) })
+  const cards = w.querySelector('.bnr-cards'); feat.slice(0, 2).forEach((c, i) => { const b = h('button', 'bnr-card c' + i); b.append(cardImg(c, 360)); b.onclick = () => cardDetail(c.key); cards.append(b) })
   const bb = w.querySelector('.bnr-buy')
-  const one = h('button', 'btn gold big', `<span>PULL ×1</span><b><i class="coin-i"></i>${fmt(B.cost)}</b>`); one.disabled = P.coins < B.cost && !pend
-  one.onclick = async () => { if (pend) return openPack('banner'); const x = await act('buyPack', { pack: 'banner' }); if (!x.error) openPack('banner') }
-  const ten = h('button', 'btn gold big', `<span>PULL ×10</span><b><i class="coin-i"></i>${fmt(Math.round(B.cost * 9))}</b>`); ten.disabled = P.coins < B.cost * 9
-  ten.onclick = () => buyMulti('banner', ten)
+  const one = h('button', 'btn gold big', `${pend ? '<span>OPEN PACK</span>' : `<span>PULL ×1</span><b><i class="coin-i"></i>${fmt(B.cost)}</b>`}`); one.disabled = !pend && (ended || P.coins < B.cost)
+  one.onclick = async () => { if (pend) return openPack('banner'); const x = await act('buyPack', { pack: 'banner', bannerId: B.id }); if (!x.error) openPack('banner'); else rerender() }
+  const ten = h('button', 'btn gold big', `<span>PULL ×10</span><b><i class="coin-i"></i>${fmt(Math.round(B.cost * 9))}</b>`); ten.disabled = ended || P.coins < B.cost * 9
+  ten.onclick = () => buyMulti('banner', ten, B.id)
   bb.append(one, ten); if (pend) bb.append(h('span', 'bnr-pend', pend + ' unopened'))
   el.append(w)
 }
 let buyingPacks = false
-async function buyMulti(type, button) {
+async function buyMulti(type, button, bannerId) {
   if (buyingPacks || openingBulk || document.getElementById('opener')) return
   buyingPacks = button.disabled = true
   try {
-    const result = await act('buyPack', { pack: type, count: 10 })
+    const result = await act('buyPack', { pack: type, count: 10, bannerId })
     if (!result.error) await multiOpen(type, 10)
+    else if (bannerId) rerender()
   } finally {
     buyingPacks = false
     if (button.isConnected) {
