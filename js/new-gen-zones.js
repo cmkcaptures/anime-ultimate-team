@@ -23,14 +23,14 @@ export const NEW_GEN_ZONES = [
     stage(8, 'Hōgyoku Fusion', 'aizen_hogyoku', 'break', 'Break Aizen’s Guard to interrupt his charged attack. Save an answer for his second wind.'),
   ] },
   { id: 'ng-afo', name: 'Symbol of Evil', sub: 'New Gen · My Hero Academia', stages: [
-    stage(9, 'Stolen Quirks', 'all_for_one_symbol_of_evil', 'read', 'All For One reads your moves. Avoid the called Art or he steals your momentum and charges his Ultimate.', { pow: 0.5, hp: 2.1, dmg: 0.45, cap: 0.1 }),
-    stage(10, 'Hellflame Heir', 'dabi_final', 'rush', 'Dabi marks a fighter for his blaze. Guard, shield or switch the marked fighter before it lands.', { pow: 0.65, hp: 1.8, dmg: 0.95, cap: 0.18 }),
-    stage(11, 'Quirk Overload', 'all_for_one_quirk_overload', 'mix', 'All For One copies whatever you repeat and throws it back. Mix your Arts every turn.', { hp: 1, dmg: 1.1 }),
+    stage(9, 'Stolen Quirks', 'all_for_one_symbol_of_evil', 'read', 'All For One reads your moves. Avoid the called Art or he steals your momentum and charges his Ultimate.', { pow: 0.5, hp: 2.1, dmg: 0.6, cap: 0.1 }),
+    stage(10, 'Hellflame Heir', 'dabi_final', 'rush', 'Dabi marks a fighter for his blaze. Guard, shield or switch the marked fighter before it lands.', { pow: 0.65, hp: 1.9, dmg: 1.2, cap: 0.17 }),
+    stage(11, 'Quirk Overload', 'all_for_one_quirk_overload', 'mix', 'All For One copies whatever you repeat and throws it back. Mix your Arts every turn.', { hp: 1.2, dmg: 1.4, cap: 0.45 }),
   ] },
   { id: 'ng-dio', name: 'The World', sub: 'New Gen · JoJo', stages: [
-    stage(12, 'Space Ripper', 'dio_vampire', 'read', 'Dio reads your next move. Avoid the called Art or his Space Ripper Stingy Eyes punishes it.', { hp: 1.5, dmg: 1.5, cap: 0.42 }),
-    stage(13, 'Road Roller', 'dio_the_world', 'break', 'Dio is charging the Road Roller. Break his Guard to stop it.', { hp: 1.5, dmg: 1.7, cap: 0.34 }),
-    stage(14, 'ZA WARUDO', 'dio_the_world', 'illusion', 'Time stops. Read the warning every round: some rounds punish the wrong Art, others punish switching.', { hp: 1.5, dmg: 1.65, cap: 0.33 }),
+    stage(12, 'Space Ripper', 'dio_vampire', 'read', 'Dio reads your next move. Avoid the called Art or his Space Ripper Stingy Eyes punishes it.', { hp: 1.7, dmg: 2, cap: 0.34 }),
+    stage(13, 'Road Roller', 'dio_the_world', 'break', 'Dio is charging the Road Roller. Break his Guard to stop it.', { hp: 1.9, dmg: 2.4, cap: 0.28 }),
+    stage(14, 'ZA WARUDO', 'dio_the_world', 'illusion', 'Time stops. Read the warning every round: some rounds punish the wrong Art, others punish switching.', { hp: 1.9, dmg: 2.4, cap: 0.26 }),
   ] },
 ]
 
