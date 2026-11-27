@@ -2,6 +2,10 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · Mythic Dio
+- New card dio_za_warudo (Mythic 96 Assassin, art atg/M_dio_za_warudo.webp). Built to match giorno_gold: in 1v1 autoplay sims it went 4-4 head-to-head with Giorno, and 21/28 vs the top Mythics (Giorno 25/28).
+
+---
 ## 2026-11-27 · Claude · 2 new Dead Zones
 - js/new-gen-zones.js: ng-afo "Symbol of Evil" (stages 9-11: all_for_one_symbol_of_evil read, dabi_final rush, all_for_one_quirk_overload mix) and ng-dio "The World" (12-14: dio_vampire read, dio_the_world break, dio_the_world illusion).
 - RULE from Micke: every new Dead Zone must be slightly harder than the last ones. Index >= 9 uses Aizen-final strength x (1 + 5% per stage), then a per-stage ngAdj tune: pow = boss stat boost, hp, dmg, cap = biggest share of boss HP one hit can take.
