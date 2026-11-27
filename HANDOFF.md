@@ -2,6 +2,12 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · Baki series
+- New anime code BAKI (registered in cardkit ANIME, engine ANIME_NAMES + Baki Pack, app pack theme + cinematic). 14 cards from Downloads/ATG, art in atg/*_baki-*.jpg. Ignored Mythic/canvas.png (blank).
+- Micke wants the Bakis and Yujiros extremely good: Mythic Baki, Yujiro and Baki & Yujiro at 97 with heavy kits, Legendary Baki and Yujiro at 92. Doppo Epic (doppo_martial_god) is the support: team +15% damage, 6% team heal, 20% shield.
+- Not sim-tested yet, and art crops are default (fy .2). Check them on device.
+
+---
 ## 2026-11-27 · Claude · Mythic Dio
 - New card dio_za_warudo (Mythic 96 Assassin, art atg/M_dio_za_warudo.webp). Built to match giorno_gold: in 1v1 autoplay sims it went 4-4 head-to-head with Giorno, and 21/28 vs the top Mythics (Giorno 25/28).
 

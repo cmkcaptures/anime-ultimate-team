@@ -42,6 +42,7 @@ export const ANIME = {
   DN: { name: 'DEATH NOTE', tag: 'DN', type: 'psychic' },
   PKM: { name: 'POKÉMON', tag: 'PKM', type: 'bond' },
   AOT: { name: 'ATTACK ON TITAN', tag: 'AOT', type: 'titan' },
+  BAKI: { name: 'BAKI', tag: 'BAKI', type: 'ki' },
 }
 export const TYPE = {
   ki: { c: ['#ff7a00', '#b80018', '#ffd400'], en: 'AURA' },

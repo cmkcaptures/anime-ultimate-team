@@ -1,4 +1,4 @@
-import { PATCH_VERSION } from './patch-notes.js?v=9'
+import { PATCH_VERSION } from './patch-notes.js?v=10'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-2'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
@@ -75,6 +75,7 @@ const PACKS = {
   HXH: { name: 'Hunter x Hunter Pack', cost: 2500, anime: 'HXH' },
   FT: { name: 'Fairy Tail Pack', cost: 2500, anime: 'FT' },
   JJBA: { name: 'JoJo Pack', cost: 2500, anime: 'JJBA' },
+  BAKI: { name: 'Baki Pack', cost: 2500, anime: 'BAKI' },
   CSM: { name: 'Chainsaw Man Pack', cost: 2500, anime: 'CSM' },
 }
 // weekly banner: 2 featured Legendary+ cards, rotates every Monday, same for everyone
@@ -324,7 +325,7 @@ const LOGIN_RW = [{ coins: 3000 }, { coins: 5000 }, { pack: 'silver' }, { shards
 const STREAK_MS = { 7: { coins: 20000, msg: '1-week streak' }, 14: { coins: 40000, shards: 2000, msg: '2-week streak' }, 30: { coins: 100000, shards: 5000, premium: 3, msg: '30-day streak' }, 60: { coins: 200000, shards: 10000, premium: 5, msg: '60-day streak' } }
 function loginP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.login) P.login = { last: 0, streak: 0 }; const L = P.login; if (L.last && d - L.last > 1) L.streak = 0; return { L, d, can: L.last !== d, next: L.last !== d ? (L.streak % 7) : ((L.streak - 1) % 7) } }
 // ---------- ACHIEVEMENTS ----------
-const ANIME_NAMES = { YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', BOR: 'Boruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', JJBA: 'JoJo', HXH: 'Hunter x Hunter', BLE: 'Bleach', CSM: 'Chainsaw Man', FT: 'Fairy Tail', FF: 'Fire Force', YGO: 'Yu-Gi-Oh!', TG: 'Tokyo Ghoul' }
+const ANIME_NAMES = { BAKI: 'Baki', YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', BOR: 'Boruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', JJBA: 'JoJo', HXH: 'Hunter x Hunter', BLE: 'Bleach', CSM: 'Chainsaw Man', FT: 'Fairy Tail', FF: 'Fire Force', YGO: 'Yu-Gi-Oh!', TG: 'Tokyo Ghoul' }
 function achList() {
   const P = S.profile, own = k => !!P.club.cards[k], C = CARDS.filter(c => !c.season), B = P.battle || {}, n = Object.keys(P.club.cards).filter(k => byKey(k)).length
   const has = r => C.some(c => c.r === r && own(c.key)), cnt = r => C.filter(c => c.r === r && own(c.key)).length
