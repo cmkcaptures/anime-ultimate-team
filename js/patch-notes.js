@@ -1,7 +1,8 @@
 // Increase this number and update the notes for each player-facing patch.
-export const PATCH_VERSION = 2026112707
+export const PATCH_VERSION = 2026112708
 
 const NOTES = [
+  ['The Crucible: Stages 31-50', ['20 new stages, with bosses at 40 (Gojo) and 50 (Aizen and Yhwach together).', 'From stage 4, enemies enrage when low: +30% damage under half HP, +60% under a quarter.', 'Clearing all 50 now pays the 100,000 coin grand prize.']],
   ['NEW MODE: The Crucible', ['Our own endurance mode: 30 handmade stages in one continuous run (more coming). Find it in Battle.', 'Your 6 fighters keep their HP, knockouts and Ultimate gauge from stage to stage. Healing items only work between stages, and healing in fights is halved.', 'Every stage has rules and a weakness, so the right units matter. Save after a stage to keep your progress. If your team falls, you go back to your last save.', 'Big first-clear rewards: Premium Drops every 5 stages, a boss bundle every 10, and a huge prize for clearing all 30.']],
   ['Dual Banners + New Cards', ['Two limited banners are live at once until 4 Dec: Fusion Reborn (Dragon Ball) and Emperors & Warlords (One Piece). Switch between them at the top of the banner.', 'Emperors & Warlords: Shanks (Divine Departure), Mihawk & Crocodile (Cross Guild), Rob Lucci (CP0) and Crocodile (Sand King).', 'New: Rainbow Boruto (Two Blue Vortex), Mythic Naruto (Six Paths), Mythic Sasuke (The Last, support), Mythic Zabuza, Legendary Minato (Reaper Death Seal) and Legendary Naruto (The Last).', 'Every other Boruto card: +10% damage and 8% less damage taken.']],
   ['Limited Banner: Fusion Reborn', ['Live now until 4 Dec. Five new Dragon Ball Mythics.', 'Vegito transforms mid-battle: Base, then Super Saiyan, then Super Saiyan Blue.', 'Gogeta (Blue · Soul Punisher), Majin Vegeta (huge damage), Future Gohan (last stand that boosts the team) and Ultimate Gohan (top-tier support).', 'Fix: Specials that heal the whole team now work.']],

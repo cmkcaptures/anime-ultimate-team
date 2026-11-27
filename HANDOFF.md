@@ -9,7 +9,7 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - Battle: cruciblePage, crucibleStageObj, crucibleEnd (CONTINUE chains straight into the next stage). Mode tab crucible is in MODES_ON.
 - Micke: only stages 1-3 should be easy. The mode must be very strategic and hard but beatable, and very rewarding.
 - Tested: a top all-Mythic team on auto, with no items and no saves, falls at stage 8. Bosses at 10, 20 and 30.
-- TODO: exclusive stage-30 card (needs art), stages 31+.
+- Now 50 stages (bosses at 10, 20, 30, 40 and 50). Enemies enrage when low from stage 4 (ngEnrage). TODO: exclusive card for the final stage (needs art).
 
 ---
 ## 2026-11-27 · Claude · Story Arcs fix

@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
-import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-cru-1'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-cru-2'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-4'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
@@ -2268,7 +2268,7 @@ function deadZoneBriefing({ zone, stage, boss, enemies, reward, locked, teamRead
 }
 
 // ---------------- THE CRUCIBLE ----------------
-const CRU_RULE = { dmg: v => '+' + v + '% damage', dr: v => v + '% less damage taken', dodge: v => v + '% dodge', reflect: v => 'reflect ' + v + '%', endure: () => 'survive 1 KO', firstNull: v => 'ignore your first ' + v + ' hits', doubleStrike: () => 'Strikes hit twice', pierceSpec: () => 'Specials ignore Guard', pierceStrike: () => 'Strikes ignore Guard', pierce: () => 'every attack ignores Guard', spec: v => 'Specials +' + v + '%', burn: v => 'burn ' + v + '%', ramp: (v, r) => '+' + v + '% damage per turn (max ' + r.rampMax + ')', adapt: (v, r) => '-' + v + '% damage per hit taken (max ' + r.adaptMax + ')', regen: v => 'regen ' + v + '%' }
+const CRU_RULE = { dmg: v => '+' + v + '% damage', dr: v => v + '% less damage taken', dodge: v => v + '% dodge', reflect: v => 'reflect ' + v + '%', endure: () => 'survive 1 KO', firstNull: v => 'ignore your first ' + v + ' hits', doubleStrike: () => 'Strikes hit twice', pierceSpec: () => 'Specials ignore Guard', pierceStrike: () => 'Strikes ignore Guard', pierce: () => 'every attack ignores Guard', spec: v => 'Specials +' + v + '%', burn: v => 'burn ' + v + '%', ramp: (v, r) => '+' + v + '% damage per turn (max ' + r.rampMax + ')', adapt: (v, r) => '-' + v + '% damage per hit taken (max ' + r.adaptMax + ')', regen: v => 'regen ' + v + '%', first: () => 'always move first', nullPassive: () => 'seal your passive', drain: v => 'heal ' + v + '% of damage dealt' }
 const cruRules = st => Object.entries(st.rules).map(([k, v]) => CRU_RULE[k] && CRU_RULE[k](v, st.rules)).filter(Boolean).join(' · ') || 'No special rules'
 function crucibleStageObj(run) {
   const st = CRUCIBLE_STAGES[run.stage - 1]

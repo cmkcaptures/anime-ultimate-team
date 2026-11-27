@@ -35,7 +35,29 @@ export const CRUCIBLE_STAGES = [
   { name: 'Hōgyoku', enemy: ['AIZEN'], boost: 3.0, rules: { dodge: 20, firstNull: 2, dr: 15 }, weak: ['Blademaster'], tip: 'Since when were you under the illusion this would be easy?' },
   { name: 'Symbol of Evil', enemy: ['ALL FOR ONE', 'SHIGARAKI'], boost: 2.75, rules: { dmg: 25, endure: 1 }, weak: ['Protagonist'], tip: 'They steal and get back up. Save an item for after this.' },
   { name: 'The World', enemy: ['DIO'], boost: 3.1, rules: { dmg: 30, dr: 15, doubleStrike: 1 }, weak: ['Rival'], tip: 'Time stops for everyone but him.' },
-  { name: 'BOSS · The Almighty', enemy: ['YHWACH'], boost: 3.4, boss: 1, rules: { dmg: 30, dr: 20, endure: 1, reflect: 15, pierceSpec: 1 }, weak: ['Protagonist', 'Sovereign'], tip: 'The final wall of season one. Everything you saved was for this.' },
+  { name: 'BOSS · The Almighty', enemy: ['YHWACH'], boost: 3.4, boss: 1, rules: { dmg: 30, dr: 20, endure: 1, reflect: 15, pierceSpec: 1 }, weak: ['Protagonist', 'Sovereign'], tip: 'The Almighty sees your future. Everything you saved was for this.' },
+  // 31-40: the second climb
+  { name: 'Thousand Year War', enemy: ['YAMAMOTO', 'UNOHANA', 'KENPACHI'], boost: 2.9, rules: { dmg: 25, burn: 5 }, weak: ['Blademaster'], tip: 'Three captains, one of them on fire. Swords against swords.' },
+  { name: 'Otsutsuki', enemy: ['KAGUYA', 'MOMOSHIKI'], boost: 3.15, rules: { firstNull: 2, pierceSpec: 1, dmg: 20 }, weak: ['Protagonist'], tip: 'Celestial beings ignore your first hits and your Guard.' },
+  { name: 'Black Wizard', enemy: ['ZEREF', 'ACNOLOGIA'], boost: 3.2, rules: { dmg: 30, burn: 6, dr: 10 }, weak: ['Guardian'], tip: 'Fire and dragon slayer magic. Guardians and shields first.' },
+  { name: 'Destroyer', enemy: ['BEERUS', 'WHIS'], boost: 3.35, rules: { dodge: 25, dr: 20 }, weak: ['Tactician'], tip: 'Gods who dodge and shrug off damage. Outthink them.' },
+  { name: 'Rosé', enemy: ['GOKU BLACK', 'BROLY'], boost: 3.25, rules: { reflect: 20, ramp: 5, rampMax: 30 }, weak: ['Rival'], tip: 'One reflects, the other snowballs. Kill Broly first.' },
+  { name: 'Yonko War', enemy: ['WHITEBEARD', 'KAIDO', 'BLACKBEARD', 'SHANKS'], boost: 3.0, rules: { dr: 20, endure: 1 }, weak: ['Sovereign'], tip: 'Four Emperors, all of them get back up once. Budget your items.' },
+  { name: 'Ancient Sword', enemy: ['YORIICHI', 'KOKUSHIBO'], boost: 3.45, rules: { doubleStrike: 1, pierceStrike: 1, dodge: 15 }, weak: ['Speedster'], tip: 'The Sun and the Moon. Their Strikes hit twice and ignore Guard.' },
+  { name: 'Hero Killers', enemy: ['STAIN', 'TURBO GRANNY', 'REZE'], boost: 3.2, rules: { dmg: 35, first: 1 }, weak: ['Guardian'], tip: 'They all move first and hit hard. Lead with a tank.' },
+  { name: 'Shadow Army', enemy: ['SUNG JINWOO', 'MUSASHI MIYAMOTO'], boost: 3.5, rules: { dmg: 25, pierce: 1, ramp: 4, rampMax: 24 }, weak: ['Sovereign'], tip: 'Nothing blocks them, and they keep getting stronger.' },
+  { name: 'BOSS · Strongest of Today', enemy: ['GOJO'], boost: 3.85, boss: 1, rules: { firstNull: 4, dr: 25, endure: 1, pierceSpec: 1 }, weak: ['Tactician', 'Berserker'], tip: 'Infinity eats your first 4 hits and he gets back up. Bring your heaviest hitters.' },
+  // 41-50: the summit
+  { name: 'Disaster Level', enemy: ['BOROS', 'TATSUMAKI'], boost: 3.5, rules: { dmg: 35, regen: 4 }, weak: ['Protagonist'], tip: 'Alien regeneration and psychic power. Out-damage the healing.' },
+  { name: 'Demon Lords', enemy: ['MUZAN', 'ZELDRIS', 'MELIODAS'], boost: 3.55, rules: { dr: 20, regen: 4, endure: 1 }, weak: ['Heroine'], tip: 'They heal and get back up. A long war of attrition.' },
+  { name: 'Requiem', enemy: ['GIORNO', 'DIAVOLO'], boost: 3.6, rules: { firstNull: 3, reflect: 20 }, weak: ['Rival'], tip: 'Your first hits never happen, and the rest bounce back.' },
+  { name: 'Ten Shadows', enemy: ['SUKUNA', 'YUTA'], boost: 3.7, rules: { dmg: 30, burn: 6, endure: 1 }, weak: ['Blademaster'], tip: 'Fire and copied techniques. Bring blades.' },
+  { name: 'Hanma Blood', enemy: ['YUJIRO HANMA', 'BAKI HANMA'], boost: 3.75, rules: { dmg: 30, adapt: 6, adaptMax: 36 }, weak: ['Tactician'], tip: 'Father and son adapt to everything. Change your attacks.' },
+  { name: 'Ultimate Lifeform', enemy: ['KARS', 'PICKLE', 'MERUEM'], boost: 3.6, rules: { drain: 20, dr: 20 }, weak: ['Sovereign'], tip: 'Three apex predators that heal off every hit.' },
+  { name: 'The Father of All', enemy: ['IMU'], boost: 4.0, rules: { dmg: 35, dr: 25, nullPassive: 1 }, weak: ['Protagonist', 'Rival'], tip: 'Your passives mean nothing to the ruler of the world.' },
+  { name: 'Fusion', enemy: ['GOGETA', 'VEGITO'], boost: 3.95, rules: { dmg: 35, first: 1, dodge: 20 }, weak: ['Berserker'], tip: 'Two fusions that move first and dodge. Brute-force them.' },
+  { name: 'One Above All', enemy: ['SAITAMA'], boost: 4.15, rules: { dmg: 40, dr: 30, endure: 1 }, weak: ['Tactician'], tip: 'One punch. Make sure he never gets the chance to throw it.' },
+  { name: 'BOSS · Beyond the Hōgyoku', enemy: ['AIZEN', 'YHWACH'], boost: 4.4, boss: 1, rules: { dmg: 40, dr: 25, endure: 1, firstNull: 2, reflect: 15, pierceSpec: 1 }, weak: ['Protagonist', 'Blademaster'], tip: 'The summit. Two gods of Bleach at once. Only a perfect run gets here.' },
 ].map((s, i) => ({ ...s, n: i + 1 }))
 
 export const CRUCIBLE_ITEMS = {
