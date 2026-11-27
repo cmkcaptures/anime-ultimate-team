@@ -2898,6 +2898,7 @@ export function startBattle(stage) {
   if (stage.crucible) {
     B.you.team.forEach((f, i) => { const p = stage.crucible.hp[i]; f.crucibleHalf = 1; if (p === 0) { f.ko = true; f.hp = 0 } else if (p != null) f.hp = Math.max(1, Math.round(f.max * p)) })
     B.you.active = Math.max(0, B.you.team.findIndex(f => !f.ko)); B.you.gauge = stage.crucible.gauge || 0
+    for (const e of B.ai.team) { e.max = e.hp = Math.max(1, Math.round(e.max * .62)); e.pwr = Math.round(e.pwr * 1.08); e.ki = Math.round(e.ki * 1.08) } // Crucible: shorter fights, same threat
     if (stage.crucible.n >= 4) for (const e of B.ai.team) e.ngEnrage = true // past the tutorial stages, enemies enrage when low
   }
   if (mission) {
