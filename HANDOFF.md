@@ -2,6 +2,11 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · Crucible balance pass (best-team auto run, no items)
+- Breather: +12% per stage. Boss stages fully heal and revive KO at 30% (engine crucibleResult). Stage boosts retuned in crucible.js: 4-12 up, 21-29 up, AoE-heavy late stages down, walls 42/44/48/50 down, easy 38/41/46/47 up.
+- Result: best team on auto with no items and no saves dies around stage 23, with pressure from stage 6. Clearing 50 needs items, saves and counters, by design.
+
+---
 ## 2026-11-27 · Claude · Dead Zone balance pass (best-team autoplay sims)
 - Team used: boruto X, shanks, kokushibo_moon_eyes, goku_jiren, gogeta blue, gohan ultimate. Target: later zones win but cost fighters, and each zone is a bit harder than the last.
 - Late single-target New Gen bosses (ngEnrage 2, not AoE) get a 70% per-turn per-target budget (was 45%), so they can finish fighters.

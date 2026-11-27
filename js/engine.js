@@ -1,6 +1,6 @@
-import { PATCH_VERSION } from './patch-notes.js?v=21'
+import { PATCH_VERSION } from './patch-notes.js?v=22'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
-import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-cru-2'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-cru-3'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-7'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-4'
@@ -1505,7 +1505,7 @@ function act(a) {
         const sv = run.saved; Object.assign(run, JSON.parse(JSON.stringify(sv)))
         return { msg: 'Your team fell on stage ' + n + '. Back to your save at stage ' + sv.stage + '.', lost: true, back: sv.stage }
       }
-      run.hp = (a.hp || []).slice(0, 6).map(x => Math.max(0, Math.min(1, +x || 0))).map(x => x > 0 ? (run.stage % 10 === 0 ? 1 : Math.min(1, x + .08)) : 0); run.gauge = Math.max(0, Math.min(100, +a.gauge || 0))
+      run.hp = (a.hp || []).slice(0, 6).map(x => Math.max(0, Math.min(1, +x || 0))).map(x => run.stage % 10 === 0 ? (x > 0 ? 1 : .3) : x > 0 ? Math.min(1, x + .12) : 0); run.gauge = Math.max(0, Math.min(100, +a.gauge || 0))
       const first = !C.first[n], R = crucibleReward(n), got = first ? R : { coins: Math.round(R.coins * .2) }
       if (first) C.first[n] = now
       P.coins += got.coins || 0; if (got.shards) P.shards = (P.shards || 0) + got.shards

@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
-import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-cru-2'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-cru-3'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
@@ -2282,7 +2282,7 @@ function crucibleStageObj(run) {
 }
 function cruciblePage(el) {
   const { h } = X, C = X.ST().crucible || { best: 0, first: {} }, run = C.run, total = CRUCIBLE_STAGES.length
-  el.append(h('section', 'bhero cru-hero', '<div><span class="sh-tag">🔥 THE CRUCIBLE · ' + total + ' STAGES · ONE RUN</span><h2>THE CRUCIBLE</h2><p>One continuous run. HP, knockouts and Ultimate gauge carry from stage to stage. Items only work between stages, and healing in fights is halved. Standing fighters recover 8% after each stage and fully after each boss. From stage 4, enemies enrage when low: +30% damage under half HP, +60% under a quarter. Save after a stage to keep your progress; if your team falls, you go back to your last save.</p><small>Best: stage ' + (C.best || 0) + ' / ' + total + '</small></div>'))
+  el.append(h('section', 'bhero cru-hero', '<div><span class="sh-tag">🔥 THE CRUCIBLE · ' + total + ' STAGES · ONE RUN</span><h2>THE CRUCIBLE</h2><p>One continuous run. HP, knockouts and Ultimate gauge carry from stage to stage. Items only work between stages, and healing in fights is halved. Standing fighters recover 12% after each stage. Boss stages fully heal your team and revive knocked-out fighters at 30%. From stage 4, enemies enrage when low: +30% damage under half HP, +60% under a quarter. Save after a stage to keep your progress; if your team falls, you go back to your last save.</p><small>Best: stage ' + (C.best || 0) + ' / ' + total + '</small></div>'))
   const after = () => X.go('battle')
   if (!run) {
     const team = (X.P.team || []).filter(Boolean)
