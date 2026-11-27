@@ -4,6 +4,8 @@ const REWARD_IDS = {
   db1: 'broly_lssj_untamed',
   pk1: 'ash_pikachu_world_monarch',
   'court-unwritten': 'yhwach_the_almighty_futur',
+  'ng-afo': 'all_for_one_quirk_overload',
+  'ng-dio': 'diavolo_king_crimson',
 }
 
 export function deadZoneReward(card) {

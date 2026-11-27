@@ -1,7 +1,7 @@
 import { showPatchNotes } from './patch-notes.js?v=7'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
-import { deadZoneReward } from './deadzone-rewards.js?v=1'
+import { deadZoneReward } from './deadzone-rewards.js?v=claude-2'
 import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
