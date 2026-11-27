@@ -3,7 +3,7 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
 ## 2026-11-27 · Claude · Demon Slayer wave
-- pair can now be an array, and {all:true} requires every listed id on the team. Kamaboko trio: tanjiro_sun_breathing, inosuke_beast_breathing and zenitsu_thunder_god (NOT ADDED YET: art came through blank, waiting for Micke to resend).
+- pair can now be an array, and {all:true} requires every listed id on the team. Kamaboko trio: tanjiro_sun_breathing, inosuke_beast_breathing and zenitsu_thunder_god (added).
 - New: gojo_infinity_red (L), goku_jiren_mui_clash, kokushibo_moon_eyes, rui_spider_threads (tank).
 
 ---
