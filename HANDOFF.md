@@ -2,6 +2,10 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude
+- How It Works (kitBreakdown in js/app.js) is a SHORT plain-words summary. Micke wants it simplified, not the full kit text. It shows a role line, a simplified Special (specialSimple), a simplified passive (passiveSimple + KIT_WORDS numbers), then a tip (kitTip). New passive effect keys need a plain-words entry in KIT_WORDS.
+
+---
 ## 2026-11-26 · Codex
 - Veteran wave two updated 24 existing kits: 12 Legendaries, 9 Mythics and 3 Rainbows. Retained card identities and OVRs, excluded Dead Zone enemy cards, and reused combat effects. Full roster in patch notes 2026112605.
 

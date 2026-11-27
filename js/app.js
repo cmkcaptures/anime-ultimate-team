@@ -657,29 +657,43 @@ const KIT_WORDS = {
   vsHigh: v => '+' + v + '% damage against higher-rated cards', opener: v => 'First attack deals +' + v + '% damage', ultStart: v => 'Starts the fight with ' + v + '% Ultimate gauge',
   koHeal: v => 'Heals ' + v + '% HP after knocking out an enemy', spd: v => '+' + v + ' Speed', energy: v => 'Starts with +' + v + ' Energy',
 }
-const ROLE_WORDS = { FIGHTER: 'Fighter: all-round damage dealer', TANK: 'Tank: built to soak up hits for the team', SUPPORT: 'Support: keeps the team alive and boosted',
-  ASSASSIN: 'Assassin: fast, hits hard, finishes weakened enemies', SHOOTER: 'Shooter: ranged Blasts and big Specials' }
+const ROLE_WORDS = { FIGHTER: 'All-round damage dealer', TANK: 'Soaks up hits for the team', SUPPORT: 'Keeps the team alive and boosted',
+  ASSASSIN: 'Fast finisher for weakened enemies', SHOOTER: 'Ranged attacker with big Specials' }
+// one short line for the Special: what it hits + its key extras
+function specialSimple(c) {
+  const t = (c.tx || []).join(' '), out = []
+  out.push(/all enemies|every enemy/i.test(t) ? 'hits every enemy' : /bench/i.test(t) ? 'hits the target and the bench' : 'one big hit')
+  if (/ignores guard/i.test(t)) out.push('ignores Guard')
+  const en = t.match(/gain (\d+) energy/i); if (en) out.push('+' + en[1] + ' Energy')
+  if (/ultimate gauge/i.test(t)) out.push('charges your Ultimate')
+  if (/heal/i.test(t)) out.push('heals')
+  if (/shield/i.test(t)) out.push(/strip|remove|break/i.test(t) ? 'breaks shields' : 'shields')
+  if (/stun|freeze|seal/i.test(t)) out.push('disables the enemy')
+  return out.join(', ')
+}
 function kitBullets(c) {
-  const e = c.pas?.e || {}, d = c.pas?.d || '', out = []
-  for (const [k, v] of Object.entries(e)) {
-    const f = KIT_WORDS[k]; if (!f || v === 0 || v === false) continue
-    if (typeof v === 'number' && v > 1 && d.includes(v + '%')) continue // already spelled out in the passive text
-    out.push(f(v, e))
-  }
+  const e = c.pas?.e || {}, out = []
+  for (const [k, v] of Object.entries(e)) { const f = KIT_WORDS[k]; if (f && v !== 0 && v !== false) out.push(f(v, e)) }
   return out
 }
+// short version of a unique passive: first clause of its text, without the flavour lead-in
+function passiveSimple(c) {
+  let d = (c.pas?.d || '').split(/(?<=\.)\s/)[0].replace(/^[^:]{0,40}:\s*/, '').replace(/\.$/, '')
+  return d.length > 110 ? d.slice(0, d.lastIndexOf(' ', 107)) + '…' : d
+}
 function kitBreakdown(card) {
-  const panel = h('div', 'movebox howbox', '<b>🔍 HOW IT WORKS</b>')
-  const row = (label, text) => { const p = h('p'); const b = h('b'); b.textContent = label + ' '; p.append(b, document.createTextNode(text)); panel.append(p) }
-  if (ROLE_WORDS[card.role]) row('🎭 Role', ROLE_WORDS[card.role] + (card.tag ? ' · Tag unit (two fighters, swaps partner mid-fight)' : '') + '.')
-  if (card.mv) row('⚡ Special · ' + card.mv + ':', (card.tx || []).join(' ') || 'Signature attack.')
-  if (card.pas) {
-    row('🧬 Passive · ' + (card.pas.n || '') + ':', card.pas.d || '')
-    const extra = kitBullets(card)
-    if (extra.length) { const ul = h('ul'); for (const t of extra) { const li = h('li'); li.textContent = t; ul.append(li) } const p = h('p'); const b = h('b'); b.textContent = 'Hidden numbers:'; p.append(b); panel.append(p, ul) }
-  }
-  if (card.lead?.cats?.length) row('👑 Leader skill:', 'As leader, ' + card.lead.cats.map(x => ANAME(x) || x).join(' / ') + ' teammates get +' + card.lead.pct + '% stats' + (card.lead.ki ? ' and +' + card.lead.ki + ' Energy' : '') + '.')
-  row('💡 Tip:', kitTip(card))
+  const panel = h('div', 'movebox howbox', '<b>🔍 HOW IT WORKS</b>'), ul = h('ul')
+  const li = t => { const x = h('li'); x.textContent = t; ul.append(x) }
+  if (ROLE_WORDS[card.role]) li(ROLE_WORDS[card.role] + (card.tag ? ' (tag unit: swaps partners mid-fight)' : ''))
+  if (card.mv) li('Special: ' + specialSimple(card))
+  const e = card.pas?.e || {}, known = kitBullets(card)
+  const unique = Object.keys(e).some(k => !KIT_WORDS[k] && !['rampMax', 'adaptMax', 'stackMax', 'lowAt'].includes(k))
+  let shown = ''
+  if (unique || !known.length) { shown = passiveSimple(card); if (shown) li(shown[0].toUpperCase() + shown.slice(1)) }
+  const nums = t => (t.match(/[0-9]+(?=%| Energy)/g) || [])
+  for (const t of known.filter(t => !nums(t).length || !nums(t).every(n => shown.includes(n))).slice(0, 4)) li(t)
+  panel.append(ul)
+  const tip = h('p'); tip.textContent = '💡 ' + kitTip(card); panel.append(tip)
   return panel
 }
 async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
