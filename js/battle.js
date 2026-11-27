@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
-import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-3'
+import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-2'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
 import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=2'
@@ -2286,7 +2286,7 @@ function redzonePage(el, ok) {
     brief.onclick = () => deadZoneBriefing({
       zone: Z, stage: st, boss, enemies: team.map(key => X.BYKEY[key]).filter(Boolean),
       reward: rw, locked: !open, teamReady: ok, cleared: clr,
-      fight: () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, pveFloor: st.n, pveFinal: st.final, newGen: st.newGen, mechanic: st.mechanic, encounter: st.encounter, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) }),
+      fight: () => go2({ mode: 'redzone', id: Z.id + ':' + st.n, label: 'Dead Zone · ' + st.name, name: st.name, level: 5, boost: st.boost, team, pveFloor: st.n, pveFinal: st.final, newGen: st.newGen, ngAdj: st.ngAdj, mechanic: st.mechanic, encounter: st.encounter, chapterRule: st.rule, rules: Object.assign({ weakTo: st.weak, weakB: st.weakB, resist: st.resist }, ...st.rules.map(r => r[2])) }),
     })
     acts.append(brief, cxBtn(() => team.map(k => X.BYKEY[k]), 'DZ-' + st.n + ' · ' + st.name)); box.querySelector('.rz-body').append(acts); el.append(box)
   }
@@ -2850,7 +2850,7 @@ export function startBattle(stage) {
     floor: stage.pveFloor, enemies: B.ai.team.length, finale: stage.pveFinal,
     progression: stage.pveProgress ?? (stage.mode === 'rivalry' ? Number(stage.id === 'mastery') : stage.war ? (stage.level - 1) / 4 : ((stage.n || 1) - 1) / 9),
   })
-  if (newGen) Object.assign(balance, newGenBalance(stage.newGen, pveSquadPower(B.you.team)))
+  if (newGen) Object.assign(balance, newGenBalance(stage.newGen, pveSquadPower(B.you.team), stage.ngAdj))
   if (balance) {
     if (deadZone) for (const enemy of B.ai.team) {
       enemy.deadZoneEnemy = true

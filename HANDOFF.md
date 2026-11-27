@@ -2,6 +2,15 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · 2 new Dead Zones
+- js/new-gen-zones.js: ng-afo "Symbol of Evil" (stages 9-11: all_for_one_symbol_of_evil read, dabi_final rush, all_for_one_quirk_overload mix) and ng-dio "The World" (12-14: dio_vampire read, dio_the_world break, dio_the_world illusion).
+- RULE from Micke: every new Dead Zone must be slightly harder than the last ones. Index >= 9 uses Aizen-final strength x (1 + 5% per stage), then a per-stage ngAdj tune: pow = boss stat boost, hp, dmg, cap = biggest share of boss HP one hit can take.
+- Tuned with simulated fights (6 Mythics at 94 OVR or lower, autoplay): Aizen final wins every time. New stages are roughly 50/50 for autoplay, harder towards ZA WARUDO. Real players who answer the warnings do better.
+- AoE bosses (AFO Epic, Dabi) hit the whole bench every turn, so they need low dmg plus low pow, or they wipe 6 fighters in 4-6 turns.
+- No full-clear Mythic reward for these zones yet (deadzone-rewards.js REWARD_IDS). Ask Micke which cards.
+- Patch notes 2026112702.
+
+---
 ## 2026-11-27 · Claude · save backups + error reporting
 - Backups (engine.js snapshot() inside save): one snapshot per day on the device (last 7, localStorage key <save>-backups) and in the cloud (users/{uid}/backups/{YYYY-MM-DD}, last 14). Players restore from Players → SAVE BACKUPS. A restore keeps a "before-restore" copy and keeps playerGrantRevision so grants don't loop.
 - Errors: window error and unhandledrejection go to the Firestore errors collection (max 10/session, deduped). If that fails, the last 20 stay in localStorage aut-errors.
