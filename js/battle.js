@@ -1932,7 +1932,7 @@ const STAGES = [
 ]
 function enemyTeam(stage) {
   if (stage.live) return stage.live.oppTeam
-  if (stage.enemy?.length) return campTeam(stage.enemy).map(key => X.BYKEY[key]).filter(Boolean)
+  if (stage.enemy?.length) return campTeam([stage.enemy].flat()).map(key => X.BYKEY[key]).filter(Boolean)
   if (stage.team && stage.team.length) { const t = stage.team.map(k => X.BYKEY[k]).filter(Boolean); if (t.length) return t.slice(0, 6) }
   const pool = X.POOL.slice().sort((a, b) => Math.abs(a.ovr - stage.rating) - Math.abs(b.ovr - stage.rating))
   const near = pool.slice(0, Math.max(14, Math.round(pool.length * .25)))
@@ -3206,7 +3206,7 @@ export function startBattle(stage) {
       tb.classList.toggle('form-step', !!next)
       tb.classList.toggle('form-ready', !!next && ok && my)
       tb.title = next?.requirement || ''
-      const label = next?.buttonLabel || (next?.ver.startsWith('BARYON') ? 'BARYON' : 'KURAMA')
+      const label = next?.buttonLabel || (next?.ver?.startsWith('BARYON') ? 'BARYON' : next?.ver ? 'KURAMA' : 'FORM')
       const status = !next ? '' : next.buttonLabel ? (ok ? 'READY' : next.shortRequirement) : ok ? next.gaugeCost + '% ULT' :
         B.turn < (next.minTurn || 1) ? 'TURN ' + next.minTurn :
           next.fullTurns && (s.formTurn || 0) - f.formEntered <= next.fullTurns ? 'WAIT 1 TURN' :

@@ -2,6 +2,10 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · Story Arcs fix
+- Story Arc fights never started. Arc chapters pass chapter.enemy as one id string, and enemyTeam() (changed in cb4bedf) did campTeam(stage.enemy), which looped over the letters and gave an empty enemy team, then crashed in syncReworkMatchup. Fixed with campTeam([stage.enemy].flat()). Also guarded next?.ver?.startsWith in the form button label.
+
+---
 ## 2026-11-27 · Claude · dual banner + 10 cards
 - DUAL BANNER: engine bannerList() returns every live limited banner. Fusion Reborn (DB) and Emperors & Warlords (OP: Shanks, Mihawk & Crocodile, Lucci, Crocodile) both run now until 4 Dec (SAIYAN_START/END). Players pick with act bannerSelect (P.bannerSel). Pending packs stay tied via P.bannerBoughtSel. ST.banners powers the .bnr-switch tabs. The Espada code is still there but unreachable while these run.
 - New cards: boruto_two_blue_vortex (X99), minato_reaper_death_seal (L), lucci_cp0_leopard, sasuke_the_last_rinnegan (support), crocodile_sand_king (L), mihawk_crocodile_cross_guild, shanks_divine_departure, naruto_the_last (L), naruto_six_paths_truth and zabuza_demon_of_the_mist.
