@@ -163,9 +163,9 @@ export function drawCard(x, d) {
     x.fillStyle = stops(x.createLinearGradient(0, 0, W, H), ['#ff3d9a', '#ffcf2d', '#2dff9a', '#2db4ff', '#9a4dff', '#ff3d9a'])
     x.globalCompositeOperation = 'color'; x.fillRect(0, 0, W, H); x.globalCompositeOperation = 'soft-light'; x.fillRect(0, 0, W, H)
   } else {
-    x.globalCompositeOperation = 'hard-light'; x.globalAlpha = low ? .3 : .55
-    let g = x.createRadialGradient(0, H, 0, 0, H, 620); g.addColorStop(0, c3); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H)
-    g = x.createRadialGradient(W, 0, 0, W, 0, 560); g.addColorStop(0, c1); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H)
+    x.globalCompositeOperation = 'soft-light'; x.globalAlpha = low ? .12 : .18 // type colour: faint edge glow only, never covers the art
+    let g = x.createRadialGradient(0, H, 0, 0, H, 260); g.addColorStop(0, c3); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H)
+    g = x.createRadialGradient(W, 0, 0, W, 0, 220); g.addColorStop(0, c1); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H)
     x.globalAlpha = 1
   }
   x.globalCompositeOperation = 'source-over'
@@ -286,7 +286,7 @@ const sig = c => ['g1', c.key, c.url, c.dia || 0, c.lv || 0, c.maxed || 0, c.ovr
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340, prio) {
-  const bw = bucket(w), art = c.transformations ? '|' + c.url : '', k = 't13|' + sig(c) + art + '|' + bw
+  const bw = bucket(w), art = c.transformations ? '|' + c.url : '', k = 't14|' + sig(c) + art + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)

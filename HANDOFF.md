@@ -2,6 +2,10 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · card art tint
+- cardkit.js: the type-colour hard-light glow over non-cutout art (alpha .55, radius 560-620) was tinting art, e.g. orange on One Piece cards. Now soft-light alpha .18, radius 220-260 (edges only). Thumbnail cache key bumped to t14 so cards re-render. Micke rule: never cover the art.
+
+---
 ## 2026-11-27 · Claude · Luffy Gear 5 + flash duo
 - luffy_joyboy_dawn (transforms to Gear 5 for 35% gauge from turn 2), kisuke_yoruichi_shunko, soifon_yoruichi_onmitsukido (L). Both duos pair with every SOI FON / YORUICHI card id (list built when they were added, so new Soi Fon or Yoruichi cards need adding to their pair.ids).
 
