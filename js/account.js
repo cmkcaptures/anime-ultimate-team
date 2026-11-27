@@ -93,6 +93,13 @@ export async function storeSave(S) {
     tx.set(ref, data)
   })
 }
+// ---- save backups: one per day in users/{uid}/backups/{day} ----
+export async function backupSave(S, day) { if (!USER) return false; try { await F.setDoc(F.doc(db, 'users', USER.uid, 'backups', day), { data: JSON.stringify(S), savedAt: Date.now() }); return true } catch { return false } }
+export async function listBackups() { if (!USER) return []; try { return (await F.getDocs(F.collection(db, 'users', USER.uid, 'backups'))).docs.map(d => ({ id: d.id, savedAt: d.data().savedAt, src: 'cloud' })) } catch { return [] } }
+export async function loadBackup(day) { try { const d = await F.getDoc(F.doc(db, 'users', USER.uid, 'backups', day)); return d.exists() ? JSON.parse(d.data().data) : null } catch { return null } }
+export async function deleteBackup(day) { try { await F.deleteDoc(F.doc(db, 'users', USER.uid, 'backups', day)) } catch { } }
+// ---- error reports ----
+export async function reportError(rec) { if (!USER) return false; try { await F.addDoc(F.collection(db, 'errors'), { ...rec, uid: USER.uid, name: (PROFILE && PROFILE.name) || '' }); return true } catch { return false } }
 export async function canSendPlayerGrants() {
   if (!USER || PROFILE?.nameLower !== 'aspext') return false
   const owner = await F.getDoc(F.doc(db, 'usernames', 'aspext'))

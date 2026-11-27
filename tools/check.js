@@ -20,6 +20,12 @@ const L = JSON.parse(fs.readFileSync('cards-list.json', 'utf8')), seen = {}
 for (const c of L) { if (!c.id) fail('card without id: ' + c.name); else if (seen[c.id]) fail('duplicate id ' + c.id + ' (' + seen[c.id] + ' / ' + c.name + ')'); seen[c.id] = c.name }
 console.log('   ' + L.length + ' cards')
 
+console.log('3b. Same module imported with one tag everywhere')
+{ const tags = {}
+  for (const f of ['index.html', ...fs.readdirSync('js').filter(f => f.endsWith('.js')).map(f => 'js/' + f)])
+    for (const m of fs.readFileSync(f, 'utf8').matchAll(/([\w.-]+\.(?:js|css))\?v=([\w.-]+)/g)) (tags[m[1]] = tags[m[1]] || new Set()).add(m[2])
+  for (const [mod, set] of Object.entries(tags)) if (set.size > 1) fail(mod + ' is imported with different ?v= tags (' + [...set].join(', ') + '): that loads two separate copies') }
+
 console.log('4. Cache tags bumped for changed files')
 let base = 'origin/main'
 try { execSync('git fetch -q origin main', { stdio: 'pipe' }) } catch { }

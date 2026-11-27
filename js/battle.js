@@ -9,7 +9,7 @@ import { pveSquadPower, pveBalance, deadZoneIntent, deadZonePunishment } from '.
 import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missionId } from './transfer-campaign.js?v=claude-1'
 import { RESCUE_NAMES } from './last-door.js?v=3'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
-import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=encounter-1'
+import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=claude-backup-1'
 import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=claude-2'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'

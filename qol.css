@@ -66,3 +66,5 @@
 .todo-i:hover { background: rgba(154,228,255,.12) }
 .dupe-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); font: 500 12.5px var(--eUI, Inter); color: #d8d2ea }
 .dupe-bar span { flex: 1 1 220px } .dupe-bar b { color: #ffe27a }
+
+.bak-list { display: grid; gap: 6px; margin-top: 10px } .bak-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); font: 600 12.5px var(--eUI, Inter); color: #e8e4f4 }

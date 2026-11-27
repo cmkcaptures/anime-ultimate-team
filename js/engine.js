@@ -5,14 +5,14 @@ import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, fin
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=1'
 import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=claude-1'
 import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=3'
-import { RIVALRY_TITLE } from './rivalry.js?v=last-door-1'
+import { RIVALRY_TITLE } from './rivalry.js?v=claude-backup-1'
 import { spendableCopies } from './qol.js?v=qol-1'
 import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war.js?v=qol-1'
 // Anime Ultimate Team — in-browser game engine.
 // Replaces serve.js: same rules, same actions. The save lives in Supabase (one row), with a localStorage copy.
 // It answers the app's existing fetch('/api/...') calls, so app.js did not need rewriting.
 const CFG = window.AUT_CONFIG || {}
-import { initAccount, loadSave, storeSave, claimCoinGrant, claimPlayerGrants, publish, me } from './account.js?v=session-qol-1'
+import { initAccount, loadSave, storeSave, claimCoinGrant, claimPlayerGrants, publish, me, backupSave, listBackups, loadBackup, deleteBackup, reportError } from './account.js?v=claude-backup-1'
 let LS_SAVE = 'aut-save-v3'
 // the old single-player key (from the ?key= link era), used once to move that save onto your account
 let OLDKEY = null; try { OLDKEY = localStorage.getItem('aut-key') } catch { }
@@ -132,9 +132,57 @@ function fresh() {
 }
 let S = null
 let saveTimer = null
+// ---- SAVE BACKUPS: a snapshot per day on this device (last 7) and in the cloud (last 14) ----
+const dayId = () => new Date().toISOString().slice(0, 10)
+const LS_BAK = () => LS_SAVE + '-backups'
+function localBackups() { try { return JSON.parse(localStorage.getItem(LS_BAK())) || {} } catch { return {} } }
+function snapshot(force = false, id = dayId()) {
+  if (!S) return
+  const all = localBackups()
+  if (!force && all[id]) return
+  all[id] = JSON.stringify(S)
+  for (const k of Object.keys(all).sort().slice(0, -7)) delete all[k]
+  try { localStorage.setItem(LS_BAK(), JSON.stringify(all)) } catch { try { const ks = Object.keys(all).sort(); delete all[ks[0]]; localStorage.setItem(LS_BAK(), JSON.stringify(all)) } catch { } }
+  if (!S.lastCloudBak || S.lastCloudBak !== id) backupSave(S, id).then(ok => { if (ok) { S.lastCloudBak = id; listBackups().then(l => { for (const b of l.sort((a, b) => a.id < b.id ? -1 : 1).slice(0, -14)) deleteBackup(b.id) }) } })
+}
+window.AUT_BACKUPS = {
+  async list() {
+    const loc = Object.entries(localBackups()).map(([id, d]) => { let at = 0, lv = 0, cards = 0; try { const x = JSON.parse(d); at = x.savedAt; lv = levelOf(x.profile.xp || 0).lv; cards = Object.keys(x.profile.club.cards).length } catch { } return { id, savedAt: at, src: 'device', lv, cards } })
+    const cl = await listBackups()
+    const seen = new Set(loc.map(b => b.id))
+    return [...loc, ...cl.filter(b => !seen.has(b.id))].sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))
+  },
+  async restore(id, src) {
+    const data = src === 'cloud' ? await loadBackup(id) : (() => { try { return JSON.parse(localBackups()[id]) } catch { return null } })()
+    if (!data || !data.profile) return false
+    snapshot(true, 'before-restore')
+    data.playerGrantRevision = Math.max(data.playerGrantRevision || 0, S.playerGrantRevision || 0)
+    data.savedAt = Date.now(); data.lastCloudBak = S.lastCloudBak
+    S = data
+    try { localStorage.setItem(LS_SAVE, JSON.stringify(S)) } catch { }
+    try { await storeSave(S) } catch { }
+    location.reload(); return true
+  },
+}
+// ---- ERROR REPORTING: uncaught errors go to Firestore 'errors' (kept on the device if that fails) ----
+{
+  const sent = new Set(); let count = 0
+  const ver = () => (document.querySelector('script[src*="app.js"]')?.getAttribute('src') || '').split('v=')[1] || ''
+  const send = (msg, stack) => {
+    msg = String(msg || 'Unknown error').slice(0, 500); const sig = msg + (stack || '').slice(0, 120)
+    if (sent.has(sig) || count >= 10 || /ResizeObserver|Script error\.?$|extension:\/\//.test(msg + stack)) return
+    sent.add(sig); count++
+    const rec = { msg, stack: String(stack || '').slice(0, 1500), ver: ver(), page: location.hash || '#home', ua: navigator.userAgent.slice(0, 200), at: Date.now() }
+    const keep = () => { try { const q = JSON.parse(localStorage.getItem('aut-errors') || '[]'); q.push(rec); localStorage.setItem('aut-errors', JSON.stringify(q.slice(-20))) } catch { } }
+    reportError(rec).then(ok => { if (!ok) keep() }, keep)
+  }
+  window.addEventListener('error', e => send(e.message, e.error && e.error.stack || (e.filename + ':' + e.lineno)))
+  window.addEventListener('unhandledrejection', e => send(e.reason && e.reason.message || e.reason, e.reason && e.reason.stack))
+  window.AUT_REPORT = send
+}
 function save(immediate = false) {
   clearTimeout(saveTimer)
-  const persist = () => { S.savedAt = Date.now(); try { localStorage.setItem(LS_SAVE, JSON.stringify(S)) } catch { } cloudSave() }
+  const persist = () => { S.savedAt = Date.now(); try { localStorage.setItem(LS_SAVE, JSON.stringify(S)) } catch { } cloudSave(); snapshot() }
   if (immediate) persist()
   else saveTimer = setTimeout(persist, 600)
 }

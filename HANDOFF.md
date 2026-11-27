@@ -2,6 +2,13 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · save backups + error reporting
+- Backups (engine.js snapshot() inside save): one snapshot per day on the device (last 7, localStorage key <save>-backups) and in the cloud (users/{uid}/backups/{YYYY-MM-DD}, last 14). Players restore from Players → SAVE BACKUPS. A restore keeps a "before-restore" copy and keeps playerGrantRevision so grants don't loop.
+- Errors: window error and unhandledrejection go to the Firestore errors collection (max 10/session, deduped). If that fails, the last 20 stay in localStorage aut-errors.
+- Cloud parts need the rules in FIRESTORE-RULES-ADD.md pasted into the Firebase console. Until then they fail silently and the device-only parts still work.
+- tools/check.js now also fails if one module is imported with two different ?v= tags (that loads 2 copies). It caught rivalry.js (fixed). account.js must keep the same tag in app.js and engine.js.
+
+---
 ## 2026-11-27 · Claude · passive text audit
 - 47 Epic+ passive descriptions now show their real numbers: a "Base: ..." sentence lists stats from pas.e the text didn't mention (dmg, dr, burn, shield, etc). Outdated "Awakened: +N% damage" lines now read "Total: +X% damage". Netero skipped (2.5× already matches). Check: every numeric pas.e value for those keys appears in pas.d. Keep this true when editing kits.
 - Echo Hollow and Unstable Seal are campaign-only enemies with no passive. Left as is on purpose.

@@ -6,10 +6,10 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=roster-roles-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-backup-1'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
-import * as ACC from './account.js?v=session-qol-1'
+import * as ACC from './account.js?v=claude-backup-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
 import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=shrine-wave-1'
@@ -1683,11 +1683,28 @@ initBattle({ ACC, openModal, closeModal, cardDetail, matchesCard, raidPost: (rid
 // ================= PLAYERS (accounts, leaderboard, friends, PvP) =================
 const PS = { tab: 0, sort: 'level' }
 TITLES.players = 'PLAYERS'
+async function backupsSheet() {
+  const list = window.AUT_BACKUPS ? await window.AUT_BACKUPS.list() : []
+  openModal(sh => {
+    sh.append(h('h2', '', 'Save backups'), h('p', 'muted', 'Your game is backed up once a day, on this device (last 7 days) and in the cloud (last 14 days). Restoring replaces your current progress; a copy of it is kept as "before-restore".'))
+    if (!list.length) sh.append(h('div', 'empty', '<b>No backups yet</b>The first one is made the next time the game saves.'))
+    const box = h('div', 'bak-list')
+    for (const b of list) {
+      const row = h('div', 'bak-row'), info = h('span')
+      info.textContent = (b.id === 'before-restore' ? 'Before last restore' : b.id) + ' · ' + (b.src === 'cloud' ? '☁ cloud' : '📱 this device') + (b.lv ? ' · Lv ' + b.lv + ' · ' + b.cards + ' cards' : '') + (b.savedAt ? ' · ' + new Date(b.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')
+      const go = h('button', 'btn gold sm', 'RESTORE')
+      go.onclick = async () => { if (!confirm('Restore the backup from ' + b.id + '? Your current progress will be replaced (a copy is kept).')) return; go.disabled = true; if (!(await window.AUT_BACKUPS.restore(b.id, b.src))) { toast('That backup could not be read.'); go.disabled = false } }
+      row.append(info, go); box.append(row)
+    }
+    sh.append(box)
+  })
+}
 PAGES.players = async el => {
   const meP = ACC.me()
   const head = h('div', 'phead')
   { const me = myPub(); head.innerHTML = `${avatarHTML(me)}<div class="pme"><span class="eyebrow">SIGNED IN AS</span><b>${me.name}</b>${titleHTML(me)}</div>` }
   { const ed = h('button', 'btn gold sm', 'EDIT PROFILE'); ed.onclick = profileEdit; head.append(ed); const ab = h('button', 'btn violet sm', 'ACHIEVEMENTS'); ab.onclick = () => go('achieve'); head.append(ab) }
+  const bk = h('button', 'btn dark sm', 'SAVE BACKUPS'); bk.onclick = backupsSheet; head.append(bk)
   const so = h('button', 'btn dark sm', 'SIGN OUT'); so.onclick = () => { if (confirm('Sign out of this device?')) ACC.signOut() }; head.append(so)
   el.append(head)
   if (window.AUT_CONFIG?.playerGrantsEnabled && meP.profile?.nameLower === 'aspext') {
