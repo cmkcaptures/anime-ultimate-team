@@ -2,6 +2,11 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · 2 Dead Zones + 3 Story Arcs
+- New Gen zones ng-uchiha (stages 15-17: obito_ten_tails, obito_six_paths, madara_ten_tails) and ng-dragon (18-20: zeref_black_wizard, acnologia_dragon_king, zeref_ankhseram). Tuned above the Dio zone, and enrage applies. Full-clear rewards: obito_six_paths and acnologia_dragon_king (now Dead Zone exclusives).
+- Story arcs (engine ARCS, existingReward): shibuya (JJK, reward gojo_is_back), infinity-castle (DS, reward ds_trio), blood-war (BLE, reward toshiro_daiguren_frozen_field). Not sim-tuned. Boosts follow the older arcs.
+
+---
 ## 2026-11-27 · Claude · Demon Slayer wave
 - pair can now be an array, and {all:true} requires every listed id on the team. Kamaboko trio: tanjiro_sun_breathing, inosuke_beast_breathing and zenitsu_thunder_god (added).
 - New: gojo_infinity_red (L), goku_jiren_mui_clash, kokushibo_moon_eyes, rui_spider_threads (tank).

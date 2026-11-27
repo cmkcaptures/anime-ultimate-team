@@ -32,6 +32,16 @@ export const NEW_GEN_ZONES = [
     stage(13, 'Road Roller', 'dio_the_world', 'break', 'Dio is charging the Road Roller. Break his Guard to stop it. Below half HP he enrages and hits much harder.', { hp: 1.9, dmg: 2.4, cap: 0.28 }),
     stage(14, 'ZA WARUDO', 'dio_the_world', 'illusion', 'Time stops. Read the warning every round: some rounds punish the wrong Art, others punish switching.', { hp: 1.9, dmg: 2.4, cap: 0.26 }),
   ] },
+  { id: 'ng-uchiha', name: 'Eye of the Moon', sub: 'New Gen · Naruto', stages: [
+    stage(15, 'The Masked Man', 'obito_ten_tails', 'rotate', 'Obito marks your lead with the Ten-Tails. Switch the marked fighter out before he strikes.', { hp: 2.2, dmg: 2.7, cap: 0.26 }),
+    stage(16, 'Six Paths', 'obito_six_paths', 'read', 'Obito reads your next move. Avoid the called Art or his Truth-Seeking Balls punish it.', { hp: 2, dmg: 2.55, cap: 0.25 }),
+    stage(17, 'Infinite Tsukuyomi', 'madara_ten_tails', 'break', 'Madara is charging the Infinite Tsukuyomi. Break his Guard before it lands. Below half HP he enrages.', { hp: 2.05, dmg: 2.6, cap: 0.24 }),
+  ] },
+  { id: 'ng-dragon', name: 'Dragon King Festival', sub: 'New Gen · Fairy Tail', stages: [
+    stage(18, 'The Black Wizard', 'zeref_black_wizard', 'mix', 'Zeref\u2019s Death Magic punishes repetition. Change your Art every turn.', { hp: 2.35, dmg: 2.85, cap: 0.25 }),
+    stage(19, 'Dragon King', 'acnologia_dragon_king', 'rush', 'Acnologia marks a fighter for his breath. Guard, shield or switch them before it lands.', { hp: 2.1, dmg: 2.7, cap: 0.23 }),
+    stage(20, 'Ankhseram', 'zeref_ankhseram', 'illusion', 'Read the warning every round: some rounds punish the wrong Art, others punish switching. He enrages when low.', { hp: 2.15, dmg: 2.75, cap: 0.22 }),
+  ] },
 ]
 
 export function newGenBalance(index, power, ngAdj = { hp: 1, dmg: 1 }) {

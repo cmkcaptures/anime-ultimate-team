@@ -6,6 +6,8 @@ const REWARD_IDS = {
   'court-unwritten': 'yhwach_the_almighty_futur',
   'ng-afo': 'all_for_one_quirk_overload',
   'ng-dio': 'dio_za_warudo',
+  'ng-uchiha': 'obito_six_paths',
+  'ng-dragon': 'acnologia_dragon_king',
 }
 
 export function deadZoneReward(card) {

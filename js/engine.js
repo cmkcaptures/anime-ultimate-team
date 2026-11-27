@@ -1,9 +1,9 @@
-import { PATCH_VERSION } from './patch-notes.js?v=16'
+import { PATCH_VERSION } from './patch-notes.js?v=17'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-cru-2'
-import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-4'
+import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-5'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
-import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-3'
+import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-4'
 import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=claude-1'
 import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=3'
 import { RIVALRY_TITLE } from './rivalry.js?v=claude-backup-1'
@@ -1236,6 +1236,136 @@ const ARCS = [
           ['Narrator', 'Saitama’s punch splits the beam and leaves the ship falling. Boros is still alive long enough to speak.'],
           ['boros_meteoric_burst', 'You had plenty left. I was the only one who had to use everything.'],
           ['saitama_serious', 'You made it a good fight.'],
+        ],
+      },
+    ],
+  },
+  { id: 'shibuya', anime: 'JJK', name: 'Shibuya Incident', rewardCard: 'gojo_is_back', existingReward: true,
+    synopsis: 'Halloween night. A curtain falls over Shibuya, the strongest sorcerer walks into a trap, and the King of Curses wakes inside a boy who never asked for him.',
+    chapters: [
+      { name: 'The Curtain Falls', encounter: 'hold-out', player: 'gojo_red', enemy: 'geto_curse_manip', level: 4, boost: 1.05, playerBoost: 1.5,
+        matchup: 'Gojo is boxed in on a crowded platform. Hold the line.',
+        scene: [
+          ['geto_curse_manip', 'A station full of civilians, Satoru. You can\u2019t go all out here, and you know it.'],
+          ['gojo_red', 'Funny. You sound exactly like him, but he never smiled like that.'],
+          ['geto_curse_manip', 'Then you won\u2019t mind spending a little time with an old friend.'],
+          ['gojo_red', 'One minute. That\u2019s all you\u2019re getting.'],
+        ],
+        outro: [
+          ['gojo_red', 'Who are you, really?'],
+          ['Narrator', 'The Prison Realm opens. The strongest sorcerer is sealed away, and Shibuya is left without its guardian.'],
+        ],
+      },
+      { name: 'Brothers in Blood', encounter: 'break-guard', player: 'yuji_soul_strike', enemy: 'choso_death_painting', level: 5, boost: 1.8,
+        matchup: 'Choso keeps his blood armour up every turn. Break through it.',
+        scene: [
+          ['choso_death_painting', 'You killed two of my brothers. I don\u2019t need a reason beyond that.'],
+          ['yuji_soul_strike', 'I didn\u2019t want to. I still don\u2019t. But I\u2019m not stopping here.'],
+          ['choso_death_painting', 'Then stand up. I\u2019ll knock you down as many times as it takes.'],
+        ],
+        outro: [
+          ['choso_death_painting', 'Why... do I see you as my little brother?'],
+          ['Narrator', 'Choso walks away from the fight. Moments later, Yuji is forced to swallow the last of Sukuna\u2019s fingers.'],
+        ],
+      },
+      { name: 'The King Wakes', encounter: 'second-phase', player: ['megumi_mahoraga_summon', 'yuta_rika'], enemy: 'sukuna_vessel_heian_shrine', level: 5, boost: 2.05,
+        matchup: 'Sukuna comes back once with a full Ultimate gauge. Save something for it.',
+        scene: [
+          ['sukuna_vessel_heian_shrine', 'Twenty fingers. Do you understand what you\u2019re standing in front of?'],
+          ['megumi_mahoraga_summon', 'If I can\u2019t win, I\u2019ll take you with me.'],
+          ['yuta_rika', 'Not alone, Fushiguro. Rika, it\u2019s time.'],
+          ['sukuna_vessel_heian_shrine', 'Good. At least the end of this world will be entertaining.'],
+        ],
+        outro: [
+          ['sukuna_vessel_heian_shrine', 'The boy will wake up to what he did. I look forward to it.'],
+          ['Narrator', 'Shibuya falls. When Yuji wakes, the city is in ruins, and the world blames him for it.'],
+        ],
+      },
+    ],
+  },
+  { id: 'infinity-castle', anime: 'DS', name: 'Infinity Castle', rewardCard: 'ds_trio', existingReward: true,
+    synopsis: 'Muzan drags the Demon Slayer Corps into his shifting fortress. The Upper Moons wait in its halls, and dawn is the only thing that can end the night.',
+    chapters: [
+      { name: 'Frozen Lotus', encounter: 'pressure', player: 'kanao_vermilion_eye', enemy: 'doma_frozen_lotus', level: 4, boost: 1.1, playerBoost: 1.45,
+        matchup: 'Doma charges his Ultimate faster on even rounds. Strike before he blooms.',
+        scene: [
+          ['doma_frozen_lotus', 'Oh, the little girl Shinobu raised. She was delicious, you know.'],
+          ['kanao_vermilion_eye', 'She knew you would say that. She planned for it.'],
+          ['doma_frozen_lotus', 'Planned? How sweet. Come here and cry for her.'],
+          ['kanao_vermilion_eye', 'I\u2019m done crying. I\u2019m here to cut off your head.'],
+        ],
+        outro: [
+          ['doma_frozen_lotus', 'This feeling... is this what it\u2019s like to fall in love?'],
+          ['Narrator', 'Shinobu\u2019s poison does its work. Upper Moon Two crumbles to dust in the halls of the castle.'],
+        ],
+      },
+      { name: 'Moon Breathing', encounter: 'second-phase', player: ['gyomei_first_batch', 'sanemi_first_batch', 'muichiro_first_batch'], enemy: 'kokushibo_moon_eyes', level: 5, boost: 1.85,
+        matchup: 'Kokushibo returns once with a full gauge. Three Hashira, one Upper Moon.',
+        scene: [
+          ['kokushibo_moon_eyes', 'Descendant of my own blood. You wield the mist with my clan\u2019s hands.'],
+          ['muichiro_first_batch', 'Then I\u2019m the one who gets to end you.'],
+          ['sanemi_first_batch', 'Stop talking to him. Just cut.'],
+          ['gyomei_first_batch', 'Namu Amida Butsu. We will not leave this room until he falls.'],
+        ],
+        outro: [
+          ['kokushibo_moon_eyes', 'All I ever wanted... was to become you, brother.'],
+          ['Narrator', 'Upper Moon One dies chasing the shadow of Yoriichi. The cost is two Hashira who will never leave the castle.'],
+        ],
+      },
+      { name: 'Until Dawn', encounter: 'hold-out', player: ['tanjiro_sun_breathing', 'zenitsu_thunder_god', 'inosuke_beast_breathing'], enemy: 'muzan_demon_king', level: 5, boost: 2.15,
+        matchup: 'Survive three enemy turns until the sun rises, or kill him first.',
+        scene: [
+          ['muzan_demon_king', 'You people are a disease. Why won\u2019t you simply accept your deaths like the rest?'],
+          ['tanjiro_sun_breathing', 'Because you took everything. My family. Nezuko. We\u2019re ending this tonight.'],
+          ['zenitsu_thunder_god', 'Tanjiro, I\u2019m right behind you. Don\u2019t you dare go down first.'],
+          ['inosuke_beast_breathing', 'The King of the Mountain doesn\u2019t run from anyone!'],
+        ],
+        outro: [
+          ['muzan_demon_king', 'The sun... no. Not yet. Not like this!'],
+          ['Narrator', 'Dawn breaks over the city. The Demon King burns away, and for the first time in a thousand years, the night is over.'],
+        ],
+      },
+    ],
+  },
+  { id: 'blood-war', anime: 'BLE', name: 'Thousand-Year Blood War', rewardCard: 'toshiro_daiguren_frozen_field', existingReward: true,
+    synopsis: 'The Quincy return after a thousand years. Their king steals Bankai, burns the Soul Society, and sees every future but one.',
+    chapters: [
+      { name: 'The Old Man\u2019s Flame', encounter: 'break-guard', player: 'yamamoto_zanka_no_tachi', enemy: 'yhwach', level: 4, boost: 1.15, playerBoost: 1.4,
+        matchup: 'Yhwach renews his guard every turn. Burn through it.',
+        scene: [
+          ['yhwach', 'A thousand years ago you were a monster, Yamamoto. Now you guard your peace like a tired dog.'],
+          ['yamamoto_zanka_no_tachi', 'I have carried every death of this war on my back. I will carry yours as well.'],
+          ['yhwach', 'Then show me the flame that once burned my people.'],
+          ['yamamoto_zanka_no_tachi', 'Zanka no Tachi. Everything ends here.'],
+        ],
+        outro: [
+          ['yhwach', 'That was not me you burned, old man.'],
+          ['Narrator', 'The Captain-Commander falls to the real Yhwach. The Gotei 13 has lost its pillar.'],
+        ],
+      },
+      { name: 'The Chosen Successor', encounter: 'spar', player: 'ichigo_tensa_zangetsu', enemy: 'uryu_keeper_of_names', level: 5, boost: 1.8,
+        matchup: 'Lower Uryu to half HP. Ichigo doesn\u2019t want to kill his friend.',
+        scene: [
+          ['ichigo_tensa_zangetsu', 'Uryu. Tell me you\u2019ve got a reason for standing next to him.'],
+          ['uryu_keeper_of_names', 'I do. I just can\u2019t tell you what it is yet.'],
+          ['ichigo_tensa_zangetsu', 'Then I\u2019ll get it out of you the hard way.'],
+        ],
+        outro: [
+          ['uryu_keeper_of_names', 'Trust me a little longer, Kurosaki. I\u2019m still on your side.'],
+          ['Narrator', 'Uryu carries a silver arrowhead meant for one moment only: the instant Yhwach\u2019s power falters.'],
+        ],
+      },
+      { name: 'The Almighty', encounter: 'second-phase', player: ['ichigo_true_bankai_anime', 'aizen_captain'], enemy: 'yhwach_the_almighty_futur', level: 5, boost: 2.2,
+        matchup: 'Yhwach returns once with a full gauge. Ichigo and Aizen, side by side.',
+        scene: [
+          ['yhwach_the_almighty_futur', 'I have already seen how this ends, Ichigo. Every road leads to my world.'],
+          ['aizen_captain', 'Then let me show you one road you failed to see.'],
+          ['ichigo_true_bankai_anime', 'I don\u2019t care what you\u2019ve seen. I\u2019m cutting you down anyway.'],
+          ['yhwach_the_almighty_futur', 'Then come, my son. Let me take everything from you one last time.'],
+        ],
+        outro: [
+          ['yhwach_the_almighty_futur', 'The arrow... so this was your future, Uryu.'],
+          ['Narrator', 'The Almighty falls. Ichigo\u2019s blade ends a thousand years of war, and the three worlds remain.'],
         ],
       },
     ],
