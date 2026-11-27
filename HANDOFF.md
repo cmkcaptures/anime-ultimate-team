@@ -3,7 +3,7 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
 ## 2026-11-27 · Claude · Veteran wave three (40 cards)
-- 40 older M/L kits got role-based additions (only keys they lacked, so existing numbers and text stay true) plus a "Veteran refresh:" line in pas.d and c.vet=1. Skipped Dead Zone bosses, rewards and today's new cards. FIGHTER: drain/endure/pierceSpec/firstNull. ASSASSIN: first/exec/firstNull. TANK: shield/reflect/endure/regen. SUPPORT: teamDmg/teamHeal/endure. SHOOTER: spec/pierceSpec/gaugeBoost. Mythics also get ultDodge. Legendary numbers are x0.8.
+- 40 older M/L kits got role-based additions (Giorno and Gogeta SSJ4 reverted after a quick sim: 4/4 vs the top new Mythics, so 38 remain) (only keys they lacked, so existing numbers and text stay true) plus a "Veteran refresh:" line in pas.d and c.vet=1. Skipped Dead Zone bosses, rewards and today's new cards. FIGHTER: drain/endure/pierceSpec/firstNull. ASSASSIN: first/exec/firstNull. TANK: shield/reflect/endure/regen. SUPPORT: teamDmg/teamHeal/endure. SHOOTER: spec/pierceSpec/gaugeBoost. Mythics also get ultDodge. Legendary numbers are x0.8.
 
 ---
 ## 2026-11-27 · Claude · card art tint
