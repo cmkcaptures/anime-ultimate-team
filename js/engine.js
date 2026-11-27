@@ -1698,6 +1698,19 @@ function act(a) {
       if (q.rw.shards) P.shards = (P.shards || 0) + q.rw.shards
       return { msg: `${q.name} complete!`, rw: q.rw }
     }
+    case 'ascend': {
+      const e = own(a.key), c = byKey(a.key)
+      if (!e || !c) return { error: 'You do not own that card.' }
+      if (!c.ascension) return { error: 'This card has no Ascension yet.' }
+      if (e.asc) return { error: 'Already ascended.' }
+      if ((e.dia || 3) < 7) return { error: 'Limit Break this card (7◆) first.' }
+      if ((e.n || 1) < 3) return { error: 'You need 2 extra copies of this card.' }
+      const cost = c.r === 'M' || c.r === 'X' ? 15000 : 8000
+      if ((P.shards || 0) < cost) return { error: 'You need ◆' + cost.toLocaleString() + ' shards.' }
+      if (spare(a.key) < 2) return { error: 'Take this card out of your team first, or get more copies.' }
+      P.shards -= cost; e.n -= 2; e.asc = 1
+      return { msg: c.name + ' has ASCENDED!' }
+    }
     case 'awaken': {
       const e = own(a.key); if (!e) return { error: 'You do not own that card.' }
       if ((e.lvl || 0) >= 5) return { error: 'Already fully awakened.' }

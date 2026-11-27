@@ -29,8 +29,8 @@ console.log('3b. Same module imported with one tag everywhere')
 console.log('4. Cache tags bumped for changed files')
 let base = 'origin/main'
 try { execSync('git fetch -q origin main', { stdio: 'pipe' }) } catch { }
-const changed = execSync(`git diff --name-only ${base}`).toString().split('\n').filter(f => /\.(js|css)$/.test(f) && !f.startsWith('tools/') && f !== 'sw.js' && f !== 'config.js')
-const diff = execSync(`git diff ${base}`).toString().split('\n').filter(l => l.startsWith('+') && !l.startsWith('+++')).join('\n')
+const changed = execSync(`git diff --name-only ${base}`, { maxBuffer: 1 << 28 }).toString().split('\n').filter(f => /\.(js|css)$/.test(f) && !f.startsWith('tools/') && f !== 'sw.js' && f !== 'config.js')
+const diff = execSync(`git diff ${base} -- "*.js" "*.css" "*.html"`, { maxBuffer: 1 << 28 }).toString().split('\n').filter(l => l.startsWith('+') && !l.startsWith('+++')).join('\n')
 for (const f of changed) {
   const name = path.basename(f).replace(/\./g, '\\.')
   if (!new RegExp(name + '\\?v=').test(diff)) fail(f + ' changed but no importer bumped "' + path.basename(f) + '?v=..." (also bump each file up the import chain to index.html)')

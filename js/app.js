@@ -6,13 +6,13 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-dz-10'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-asc-1'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=claude-backup-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=claude-tint-1'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=claude-asc-2'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -29,7 +29,17 @@ const effSig = c => { const o = club()[c.key]; if (!o) return c
   const dia = Math.min(7, o.dia || 3), lv = o.lv || 1, mult = 1 + (dia - 3) * .04 + (lv - 1) * .0015
   const st = (c.st || [70, 70, 70, 70, 70, 70]).map(v => Math.min(99, Math.round(v * mult)))
   let pas = c.pas; if (dia >= 7 && pas && pas.e) { const e = { ...pas.e }; for (const k of LB_KEYS) if (typeof e[k] === 'number') e[k] = Math.round(e[k] * 1.25); pas = { ...pas, e } }
-  return { ...c, st, pas, ovr: Math.min(99, c.ovr + (dia - 3) + Math.floor((lv - 1) / 25)), dia, lv, asc: o.asc || 0, maxed: dia >= 7 ? 1 : 0, sig: o.sig ? 1 : 0 } }
+  let out = { ...c, st, pas, ovr: Math.min(99, c.ovr + (dia - 3) + Math.floor((lv - 1) / 25)), dia, lv, asc: o.asc || 0, maxed: dia >= 7 ? 1 : 0, sig: o.sig ? 1 : 0 }
+  if (o.asc && c.ascension) out = ascendCard(out)
+  return out }
+// ASCENSION: a hand-designed kit for chosen veteran cards. z.e adds to (or with z.replace, replaces) the passive.
+function ascendCard(x) {
+  const z = x.ascension, base = (x.pas && x.pas.e) || {}
+  const e = z.replace ? { ...z.e } : { ...base, ...z.e }
+  return { ...x, ascended: 1, ver: z.ver || x.ver, mv: z.mv || x.mv, tx: z.tx || x.tx, url: z.url || x.url, fy: z.fy ?? x.fy,
+    st: x.st.map(v => Math.min(99, Math.round(v * 1.04))), ovr: Math.min(99, x.ovr + 2),
+    pas: { n: z.n || (x.pas && x.pas.n), d: z.d || (x.pas && x.pas.d), e } }
+}
 const eff = c => { const x = effSig(c), w = []; if (!w.length) return x
   const st = (x.st || [70, 70, 70, 70, 70, 70]).slice(), up = (i, v) => st[i] = Math.min(99, st[i] + v); let ovr = x.ovr
   if (w.includes('pwr')) up(0, 4); if (w.includes('spd')) up(1, 4); if (w.includes('def')) up(4, 4)
@@ -2629,11 +2639,49 @@ function trainingSheet(key, initialTarget) {
   })
 }
 
+// ---------------- ASCENSION UI ----------------
+function ascensionPanel(key, c, z, o, dia) {
+  const cost = c.r === 'M' || c.r === 'X' ? 15000 : 8000, okDia = dia >= 7, okCopies = (o.n || 1) >= 3, okShards = (P.shards || 0) >= cost, ready = okDia && okCopies && okShards
+  const box = h('section', 'asc-panel' + (ready ? ' ready' : ''))
+  box.innerHTML = '<i class="asc-sheen"></i><header><small>昇格 · ASCENSION</small><b></b><em></em></header><div class="asc-cmp"><div class="asc-col now"><small>NOW</small><b></b><p></p></div><div class="asc-arrow">➜</div><div class="asc-col next"><small>ASCENDED</small><b></b><p></p></div></div><div class="asc-req"></div>'
+  box.querySelector('header b').textContent = c.name
+  box.querySelector('header em').textContent = z.ver || c.ver
+  const now = box.querySelector('.now'), next = box.querySelector('.next')
+  now.querySelector('b').textContent = c.pas?.n || 'Passive'; now.querySelector('p').textContent = c.pas?.d || ''
+  next.querySelector('b').textContent = z.n || c.pas?.n || 'Passive'; next.querySelector('p').textContent = (z.replace ? '' : 'Keeps the current kit, plus: ') + (z.d || '')
+  const req = box.querySelector('.asc-req'), chip = (ok, t) => { const x = h('span', 'asc-chip' + (ok ? ' ok' : '')); x.textContent = (ok ? '✓ ' : '✗ ') + t; req.append(x) }
+  chip(okDia, 'Limit Break 7◆'); chip(okCopies, '2 extra copies'); chip(okShards, '◆' + cost.toLocaleString() + ' shards')
+  const plus = h('span', 'asc-chip gold'); plus.textContent = '+2 OVR · +4% STATS'; req.append(plus)
+  const btn = h('button', 'asc-btn', '<span>⬆ ASCEND</span>'); btn.disabled = !ready
+  btn.onclick = async () => {
+    if (!confirm('Ascend ' + c.name + '? This uses 2 copies and ◆' + cost.toLocaleString() + ' shards.')) return
+    const before = eff(c), r = await act('ascend', { key }); if (r.error) return
+    closeModal?.(); ascendFX(before, eff(BYKEY[key]), () => cardDetail(key))
+  }
+  box.append(btn)
+  return box
+}
+function ascendFX(before, after, done) {
+  const ov = h('div', 'ascfx'); ov.innerHTML = '<i class="ax-vig"></i><i class="ax-pillar"></i><i class="ax-rays"></i><i class="ax-ring"></i><i class="ax-ring r2"></i><i class="ax-ring r3"></i><div class="ax-card"></div><i class="ax-flash"></i><div class="ax-plate"><small>昇格 · ASCENSION COMPLETE</small><b></b><span></span></div><div class="ax-tap">TAP TO CONTINUE</div>'
+  for (let i = 0; i < 28; i++) { const p = h('i', 'ax-p'); p.style.cssText = '--x:' + (Math.random() * 100) + '%;--d:' + (Math.random() * 1.6).toFixed(2) + 's;--s:' + (2 + Math.random() * 4).toFixed(1) + 'px'; ov.append(p) }
+  const slot = ov.querySelector('.ax-card'), img1 = cardImg(before, 420); slot.append(img1)
+  ov.querySelector('.ax-plate b').textContent = after.name; ov.querySelector('.ax-plate span').textContent = after.ver + ' · ' + after.ovr + ' OVR'
+  document.body.append(ov)
+  try { sfx && sfx('bcharge') } catch { }
+  setTimeout(() => { ov.classList.add('charge') }, 80)
+  setTimeout(() => { ov.classList.add('flip') }, 1500)
+  setTimeout(() => { slot.innerHTML = ''; slot.append(cardImg(after, 420)); ov.classList.add('burst'); try { sfx && sfx('reveal', 5) } catch { } }, 1750)
+  setTimeout(() => { ov.classList.add('plate'); ov.onclick = () => { ov.classList.add('out'); setTimeout(() => { ov.remove(); done && done() }, 350) } }, 2400)
+}
+
 function progBox(key) {
   const o = club()[key], dia = o.dia || 3, lv = o.lv || 1, need = (ST.lvNeed || [])[lv] || 1, xp = o.xp || 0
   const w = h('div', 'prog' + (dia >= 7 ? ' maxed' : ''), `<div class="pg-d"><b>${diaStr(dia)}</b><span>${dia >= 7 ? 'LIMIT BREAK · passive 25% stronger' : (7 - dia) + ' more duplicate' + (7 - dia > 1 ? 's' : '') + ' to max'}</span></div>
     <div class="pg-l"><b>Lv ${lv}</b><i><s style="width:${lv >= 100 ? 100 : Math.round(xp / need * 100)}%"></s></i><span>${lv >= 100 ? 'MAX LEVEL' : xp + ' / ' + need + ' XP'}</span></div>
-    <div class="pg-a"><b>A${o.asc || 0}</b><span>ASCENSION · coming soon</span></div>`)
+    ${BYKEY[key]?.ascension ? `<div class="pg-a${o.asc ? ' on' : ''}"><b>${o.asc ? '⬆ ASCENDED' : '⬆ ASCENSION'}</b><span>${o.asc ? 'New kit active' : 'Available for this card'}</span></div>` : ''}`)
+  { const c = BYKEY[key], z = c && c.ascension
+    if (z && !o.asc) w.append(ascensionPanel(key, c, z, o, dia))
+  }
   if (lv < LV_MAX) {
     const actions = h('div', 'pg-train')
     const train = h('button', 'btn green sm', 'TRAIN TO LEVEL')

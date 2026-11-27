@@ -2,6 +2,14 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · ASCENSION system
+- Micke picks 1-2 veteran cards each week and we hand-design each kit. To make a card ascendable, add card.ascension = { ver, n, d, e, replace?, mv?, tx?, url?, fy? } in cards-list.json. e adds to (or, with replace:true, replaces) the passive. d is the full new description shown when ascended.
+- Requirements (engine act ascend): 7 diamonds, 2 extra copies (e.n>=3), shards (L 8000, M/X 15000). Sets club entry asc=1. app effSig then applies ascendCard(): +2 OVR, +4% stats, kit swap. This uses the old asc field (was a placeholder).
+- UI: ascensionPanel (NOW vs ASCENDED compare, requirement chips, gold ASCEND button), ascendFX cinematic, and a cardkit gold frame with an ASCENDED mark (d.ascended, included in sig).
+- tools/check.js: diff now only covers js/css/html with a big maxBuffer (the giant cards-list diff crashed it).
+- No card has an ascension kit yet. Waiting on Micke's first picks.
+
+---
 ## 2026-11-27 · Claude · Veteran wave three (40 cards)
 - 40 older M/L kits got role-based additions (Giorno and Gogeta SSJ4 reverted after a quick sim: 4/4 vs the top new Mythics, so 38 remain) (only keys they lacked, so existing numbers and text stay true) plus a "Veteran refresh:" line in pas.d and c.vet=1. Skipped Dead Zone bosses, rewards and today's new cards. FIGHTER: drain/endure/pierceSpec/firstNull. ASSASSIN: first/exec/firstNull. TANK: shield/reflect/endure/regen. SUPPORT: teamDmg/teamHeal/endure. SHOOTER: spec/pierceSpec/gaugeBoost. Mythics also get ultDodge. Legendary numbers are x0.8.
 
