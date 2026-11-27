@@ -5,7 +5,7 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 ## 2026-11-27 · Claude · save backups + error reporting
 - Backups (engine.js snapshot() inside save): one snapshot per day on the device (last 7, localStorage key <save>-backups) and in the cloud (users/{uid}/backups/{YYYY-MM-DD}, last 14). Players restore from Players → SAVE BACKUPS. A restore keeps a "before-restore" copy and keeps playerGrantRevision so grants don't loop.
 - Errors: window error and unhandledrejection go to the Firestore errors collection (max 10/session, deduped). If that fails, the last 20 stay in localStorage aut-errors.
-- Cloud parts need the rules in FIRESTORE-RULES-ADD.md pasted into the Firebase console. Until then they fail silently and the device-only parts still work.
+- Firestore rules for backups + errors were PUBLISHED by Micke on 2026-11-27, so cloud backups and the errors collection are live. When changing rules, start from the live rules in the console, not the old firestore.rules file.
 - tools/check.js now also fails if one module is imported with two different ?v= tags (that loads 2 copies). It caught rivalry.js (fixed). account.js must keep the same tag in app.js and engine.js.
 
 ---
