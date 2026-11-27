@@ -1698,7 +1698,7 @@ function act(a) {
       if (q.rw.shards) P.shards = (P.shards || 0) + q.rw.shards
       return { msg: `${q.name} complete!`, rw: q.rw }
     }
-    case 'seenCards': { P.seenCardsAt = Math.max(P.seenCardsAt || 0, +a.at || 0); return {} }
+    case 'seenCards': { P.seenCardsAt = P.arrivalsV === 1 ? Math.max(P.seenCardsAt || 0, +a.at || 0) : +a.at || 0; P.arrivalsV = 1; return {} }
     case 'ascend': {
       const e = own(a.key), c = byKey(a.key)
       if (!e || !c) return { error: 'You do not own that card.' }

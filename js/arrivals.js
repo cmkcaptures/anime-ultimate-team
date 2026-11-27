@@ -6,7 +6,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms))
 
 export async function showArrivals({ P, POOL, cardImg, eff, ANAME, act, ascPreview }) {
   // players who have never seen a reveal start from the first batch that shipped with this feature
-  const since = P.seenCardsAt ?? 1795787583151
+  const since = P.arrivalsV === 1 && P.seenCardsAt != null ? P.seenCardsAt : 1795787583151 // v1 reset: everyone sees the first batch once
   const cards = POOL.filter(c => (c.added || 0) > since && !c.campaignEnemy && !c.campaignUnlock).sort((a, b) => 'XMLERUC'.indexOf(a.r) - 'XMLERUC'.indexOf(b.r) || b.ovr - a.ovr).map(c => ({ c, at: c.added }))
   const ascs = POOL.filter(c => c.ascension && (c.ascension.added || 0) > since).map(c => ({ c, at: c.ascension.added, asc: true }))
   const items = [...ascs, ...cards]
