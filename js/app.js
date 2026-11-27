@@ -1,4 +1,4 @@
-import { showPatchNotes } from './patch-notes.js?v=22'
+import { showPatchNotes } from './patch-notes.js?v=23'
 import { showArrivals } from './arrivals.js?v=claude-arv-4'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'

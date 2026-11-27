@@ -16,7 +16,7 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 ---
 ## 2026-11-27 · Claude · New Arrivals cinematic + first Ascension
 - js/arrivals.js showArrivals(): runs after the patch notes. It shows cards with added > P.seenCardsAt plus cards whose ascension.added > P.seenCardsAt, then act seenCards. Players with no seenCardsAt start from the first batch that shipped with this feature (hardcoded timestamp in arrivals.js). ALWAYS set added: Date.now() on new cards and ascension.added on new kits so they show up.
-- First Ascension: jotaro_starplatinum (timeStop 25, dmg 40, doubleStrike 35, pierce, +30% vs JJBA, endure, dodge, new Special).
+- Ascensions so far: shigaraki_final (CATASTROPHE: shred, burn, nullPassive, energyBurn, dmg 40, dr 20, endure 1, 300% AoE). First was jotaro_starplatinum (timeStop 25, dmg 40, doubleStrike 35, pierce, +30% vs JJBA, endure, dodge, new Special).
 - New: jonathan_hamon_overdrive, bucciarati_sticky_fingers, kakyoin_hierophant_green (pairs with Jotaros).
 
 ---
