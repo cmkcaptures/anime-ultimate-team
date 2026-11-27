@@ -1,6 +1,6 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-cru-1'
-import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-3'
+import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-4'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
 import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=2'
@@ -526,7 +526,7 @@ function hit(att, def, base, stat, pierce, A, D, kind, ranged = rangedHit(att, k
     pasNote(att, 'BLOOD SICKLE · MARK CONSUMED')
   }
   if (ea.wheel) m += Math.min(32, 8 * att.hitsTaken) / 100
-  dmg *= m * (att.embersSpent ? .75 : 1) * (A?.campaignDamage || 1)
+  dmg *= m * (att.embersSpent ? .75 : 1) * (A?.campaignDamage || 1) * (att.ngEnrage && att.hp < att.max * .5 ? (att.hp < att.max * .25 ? 1.6 : 1.3) : 1) // late New Gen bosses enrage when low
   if (sharinganRead) dmg *= .6
   if (useMark && mark.kind === 'dogs') dmg *= 1.15
   if (pa.dmg) dmg *= 1 + pa.dmg / 100
@@ -2923,6 +2923,7 @@ export function startBattle(stage) {
     if (deadZone) for (const enemy of B.ai.team) {
       enemy.deadZoneEnemy = true
       enemy.newGenBoss = newGen
+      if (newGen && stage.newGen >= 9) enemy.ngEnrage = true
       if (newGen) enemy.newGenIncomingHitCap = balance.incomingHitCap
     }
     B.ai.campaignDamage = balance.damage

@@ -1,7 +1,7 @@
 import { PATCH_VERSION } from './patch-notes.js?v=13'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-cru-1'
-import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-3'
+import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-4'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-3'
 import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=claude-1'

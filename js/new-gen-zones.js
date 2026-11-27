@@ -29,7 +29,7 @@ export const NEW_GEN_ZONES = [
   ] },
   { id: 'ng-dio', name: 'The World', sub: 'New Gen · JoJo', stages: [
     stage(12, 'Space Ripper', 'dio_vampire', 'read', 'Dio reads your next move. Avoid the called Art or his Space Ripper Stingy Eyes punishes it.', { hp: 1.7, dmg: 2, cap: 0.34 }),
-    stage(13, 'Road Roller', 'dio_the_world', 'break', 'Dio is charging the Road Roller. Break his Guard to stop it.', { hp: 1.9, dmg: 2.4, cap: 0.28 }),
+    stage(13, 'Road Roller', 'dio_the_world', 'break', 'Dio is charging the Road Roller. Break his Guard to stop it. Below half HP he enrages and hits much harder.', { hp: 1.9, dmg: 2.4, cap: 0.28 }),
     stage(14, 'ZA WARUDO', 'dio_the_world', 'illusion', 'Time stops. Read the warning every round: some rounds punish the wrong Art, others punish switching.', { hp: 1.9, dmg: 2.4, cap: 0.26 }),
   ] },
 ]
