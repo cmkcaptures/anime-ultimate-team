@@ -142,6 +142,10 @@ const kitNum = (c, re) => { const m = re.exec(kitTxt(c)); return m ? +m[1] : 0 }
 // applies a card's kit bonuses after its Special / Ultimate lands
 function kitEffects(me, a) {
   const c = a.card, notes = []
+  if (PE(a).zerefRevive && (a.zerefUsed || 0) < 2 && me.team.some(f => f.ko && f !== a)) {
+    const marked = me.team[me.reviveMark], f = marked && marked.ko ? marked : me.team.filter(x => x.ko && x !== a).sort((x, y) => y.card.ovr - x.card.ovr)[0]
+    if (f) { f.ko = false; f.hp = 0; healHP(f, f.max * .5); a.zerefUsed = (a.zerefUsed || 0) + 1; me.reviveMark = null; notes.push('ANKHSERAM · ' + f.card.name + ' REVIVED') }
+  }
   const th = kitNum(c, /Heal the whole team (\d+)% max HP/); if (th) { for (const f of me.team) if (!f.ko) healHP(f, f.max * th / 100); notes.push('TEAM +' + th + '%') }
   const heal = kitNum(c, /Heal (\d+)% max HP/); if (heal) { const h = healHP(a, a.max * heal / 100); notes.push('+' + h.toLocaleString() + ' HP') }
   const ki = kitNum(c, /Gain (\d+) Energy/); if (ki) { me.ki = Math.min(KI_MAX, me.ki + ki); notes.push('+' + ki + ' ENERGY') }
@@ -2893,6 +2897,14 @@ export function startBattle(stage) {
   if (stage.mode === 'redzone') for (const f of B.ai.team) { f.pe = { ...(f.pe || {}) }; for (const k of ['regen', 'teamHeal', 'koHeal', 'drain', 'bigHitHeal', 'ultHeal']) delete f.pe[k] } // Dead Zones: enemies never heal
   if (stage.rules?.ultStart) B.ai.gauge = Math.max(B.ai.gauge, stage.rules.ultStart)
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
+  for (const side of [B.you, B.ai]) {
+    const add = (f, dmg, dr) => { f.pe = { ...(f.pe || {}), dmg: ((f.pe || {}).dmg || 0) + dmg, dr: Math.min(70, ((f.pe || {}).dr || 0) + dr) } }
+    for (const src of side.team) {
+      const e = src.pe || {}
+      if (e.allyAnime) for (const f of side.team) if (f !== src && f.card.anime === e.allyAnime.anime) add(f, e.allyAnime.dmg || 0, e.allyAnime.dr || 0)
+      if (e.pair && side.team.some(f => f !== src && e.pair.ids.includes(f.card.id))) add(src, e.pair.dmg || 0, e.pair.dr || 0)
+    }
+  }
   applySquadBond(B.you); if (LV) applySquadBond(B.ai)
   applyMultiverse(B.you); if (LV) applyMultiverse(B.ai)
   if (stage.crucible) {
@@ -3186,6 +3198,7 @@ export function startBattle(stage) {
       if (i === s.active) return
       const b = document.createElement('button'); b.className = 'bslot' + (g.ko ? ' ko' : ''); b.title = battleName(g); b.append(img(g, 160))
       b.append(Object.assign(document.createElement('i'), { style: `width:${g.hp / g.max * 100}%` }))
+      if (side === 'you' && g.ko && s.team.some(z => !z.ko && PE(z).zerefRevive && (z.zerefUsed || 0) < 2)) { b.classList.toggle('revive-mark', s.reviveMark === i); b.onclick = () => { s.reviveMark = i; log('Zeref will revive ' + g.card.name + ' with his next Special.'); bn.dataset.k = ''; draw() }; bn.append(b); return }
       b.onclick = () => inspect(g, side, side === 'you' && !g.ko && (!B.you.switched || B.you.conjunction) && !B.busy && !B.over ? () => doSwitch(i) : null)
       bn.append(b)
     })

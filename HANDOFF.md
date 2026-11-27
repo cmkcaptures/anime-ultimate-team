@@ -2,6 +2,12 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · Zeref/Mavis/Joker/Charon/Shinra Aegis + new kit keys
+- New generic passive keys (battle.js startBattle): allyAnime {anime, dmg, dr} boosts every teammate from that series. pair {ids:[...], dmg, dr} gives the card a bonus when a listed card is on its team.
+- zerefRevive (kitEffects): Special or Ultimate revives a KO'd ally at 50%, twice per battle. The player taps a KO'd bench slot to mark who (side.reviveMark), otherwise the highest OVR is revived.
+- Cards: zeref_ankhseram (zeref_black_wizard already existed), mavis_fairy_heart, joker_trump_card (L), charon_great_wall (L), shinra_bansho_aegis (uses batch piccolo cover, revive 60). shinra_bansho got a pair back to Aegis.
+
+---
 ## 2026-11-27 · Claude · THE CRUCIBLE (new signature mode)
 - js/crucible.js: CRUCIBLE_STAGES (30 rows: enemy names/ids, boost, rules, weak, tip, boss), items, rewards. To add a stage, append a row. To make one harder, raise its boost.
 - One continuous run: 6 fighters from My Team. HP, KOs and gauge carry over (stage.crucible to startBattle). Fighters heal 8% after each stage and fully after bosses. Healing in fights is halved (f.crucibleHalf). Items (senzu, revive, team heal) only work between stages, +1 per boss (cap 5).
