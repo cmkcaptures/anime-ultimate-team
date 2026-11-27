@@ -11,7 +11,7 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - RULE from Micke: every new Dead Zone must be slightly harder than the last ones. Index >= 9 uses Aizen-final strength x (1 + 5% per stage), then a per-stage ngAdj tune: pow = boss stat boost, hp, dmg, cap = biggest share of boss HP one hit can take.
 - Tuned with simulated fights (6 Mythics at 94 OVR or lower, autoplay): Aizen final wins every time. New stages are roughly 50/50 for autoplay, harder towards ZA WARUDO. Real players who answer the warnings do better.
 - AoE bosses (AFO Epic, Dabi) hit the whole bench every turn, so they need low dmg plus low pow, or they wipe 6 fighters in 4-6 turns.
-- Full-clear rewards (deadzone-rewards.js): ng-afo gives all_for_one_quirk_overload and ng-dio gives diavolo_king_crimson. Reward cards are removed from packs and evolutions automatically.
+- Full-clear rewards (deadzone-rewards.js): ng-afo gives all_for_one_quirk_overload and ng-dio gives dio_za_warudo (Diavolo is back in packs). Reward cards are removed from packs and evolutions automatically.
 - Patch notes 2026112702.
 
 ---

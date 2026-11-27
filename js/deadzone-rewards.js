@@ -5,7 +5,7 @@ const REWARD_IDS = {
   pk1: 'ash_pikachu_world_monarch',
   'court-unwritten': 'yhwach_the_almighty_futur',
   'ng-afo': 'all_for_one_quirk_overload',
-  'ng-dio': 'diavolo_king_crimson',
+  'ng-dio': 'dio_za_warudo',
 }
 
 export function deadZoneReward(card) {
