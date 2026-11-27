@@ -2,6 +2,11 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · Demon Slayer wave
+- pair can now be an array, and {all:true} requires every listed id on the team. Kamaboko trio: tanjiro_sun_breathing, inosuke_beast_breathing and zenitsu_thunder_god (NOT ADDED YET: art came through blank, waiting for Micke to resend).
+- New: gojo_infinity_red (L), goku_jiren_mui_clash, kokushibo_moon_eyes, rui_spider_threads (tank).
+
+---
 ## 2026-11-27 · Claude · bench splash fix
 - Sukuna Final (ultAoe) was KO-ing benched cards in the Dead Zone. In the H() hit helper, splash on non-active targets from deadZoneEnemy or ngEnrage attackers is now x0.3. The active target still takes the full hit.
 

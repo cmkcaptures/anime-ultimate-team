@@ -1,4 +1,4 @@
-import { PATCH_VERSION } from './patch-notes.js?v=15'
+import { PATCH_VERSION } from './patch-notes.js?v=16'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-cru-2'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-4'

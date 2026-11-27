@@ -2903,7 +2903,7 @@ export function startBattle(stage) {
     for (const src of side.team) {
       const e = src.pe || {}
       if (e.allyAnime) for (const f of side.team) if (f !== src && f.card.anime === e.allyAnime.anime) add(f, e.allyAnime.dmg || 0, e.allyAnime.dr || 0)
-      if (e.pair && side.team.some(f => f !== src && e.pair.ids.includes(f.card.id))) add(src, e.pair.dmg || 0, e.pair.dr || 0)
+      for (const p of [e.pair].flat().filter(Boolean)) { const has = id => side.team.some(f => f !== src && f.card.id === id); if (p.all ? p.ids.every(has) : p.ids.some(has)) add(src, p.dmg || 0, p.dr || 0) }
     }
   }
   applySquadBond(B.you); if (LV) applySquadBond(B.ai)
