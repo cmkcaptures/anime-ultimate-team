@@ -2277,7 +2277,7 @@ function crucibleStageObj(run) {
 }
 function cruciblePage(el) {
   const { h } = X, C = X.ST().crucible || { best: 0, first: {} }, run = C.run, total = CRUCIBLE_STAGES.length
-  el.append(h('section', 'bhero cru-hero', '<div><span class="sh-tag">🔥 THE CRUCIBLE · ' + total + ' STAGES · ONE RUN</span><h2>THE CRUCIBLE</h2><p>One continuous run. HP, knockouts and Ultimate gauge carry from stage to stage. Items only work between stages, and healing in fights is halved. Standing fighters recover 8% after each stage and fully after each boss. Save after a stage to keep your progress; if your team falls, you go back to your last save.</p><small>Best: stage ' + (C.best || 0) + ' / ' + total + '</small></div>'))
+  el.append(h('section', 'bhero cru-hero', '<div><span class="sh-tag">🔥 THE CRUCIBLE · ' + total + ' STAGES · ONE RUN</span><h2>THE CRUCIBLE</h2><p>One continuous run. HP, knockouts and Ultimate gauge carry from stage to stage. Items only work between stages, and healing in fights is halved. Standing fighters recover 8% after each stage and fully after each boss. From stage 4, enemies enrage when low: +30% damage under half HP, +60% under a quarter. Save after a stage to keep your progress; if your team falls, you go back to your last save.</p><small>Best: stage ' + (C.best || 0) + ' / ' + total + '</small></div>'))
   const after = () => X.go('battle')
   if (!run) {
     const team = (X.P.team || []).filter(Boolean)
@@ -2898,6 +2898,7 @@ export function startBattle(stage) {
   if (stage.crucible) {
     B.you.team.forEach((f, i) => { const p = stage.crucible.hp[i]; f.crucibleHalf = 1; if (p === 0) { f.ko = true; f.hp = 0 } else if (p != null) f.hp = Math.max(1, Math.round(f.max * p)) })
     B.you.active = Math.max(0, B.you.team.findIndex(f => !f.ko)); B.you.gauge = stage.crucible.gauge || 0
+    if (stage.crucible.n >= 4) for (const e of B.ai.team) e.ngEnrage = true // past the tutorial stages, enemies enrage when low
   }
   if (mission) {
     const scaling = campaignScale(B.you.team, mission.chapter, mission.mission, B.ai.team.length)
