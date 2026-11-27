@@ -1,5 +1,5 @@
 import { showPatchNotes } from './patch-notes.js?v=21'
-import { showArrivals } from './arrivals.js?v=claude-arv-2'
+import { showArrivals } from './arrivals.js?v=claude-arv-3'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
 import { deadZoneReward } from './deadzone-rewards.js?v=claude-4'
