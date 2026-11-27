@@ -1,4 +1,4 @@
-import { showPatchNotes } from './patch-notes.js?v=11'
+import { showPatchNotes } from './patch-notes.js?v=12'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
 import { deadZoneReward } from './deadzone-rewards.js?v=claude-3'
@@ -1803,7 +1803,12 @@ function bannerBlock(el) {
   const B = ST.banner; if (!B) return
   const feat = B.featured.map(k => BYKEY[k]).filter(Boolean), pr = ((P.pity || {})[B.id]) || { m: 0, f: 0 }, pend = P.pending.banner || 0
   if (!feat.length) return
-  const releaseBanner = ['espada-2026-11', 'saiyan-2026-11'].includes(B.id), ended = B.ends <= now()
+  if ((ST.banners || []).length > 1) {
+    const sw = h('div', 'mtabs bnr-switch')
+    for (const b of ST.banners) { const x = h('button', 'mtab' + (b.id === B.id ? ' on' : ''), b.name); x.onclick = async () => { if (b.id === B.id) return; const r = await act('bannerSelect', { id: b.id }); if (!r.error) rerender() }; sw.append(x) }
+    el.append(sw)
+  }
+  const releaseBanner = ['espada-2026-11', 'saiyan-2026-11', 'pirate-2026-11'].includes(B.id), ended = B.ends <= now()
   const w = h('section', 'bnr')
   w.style.setProperty('--bart1', `url("${feat[0].url}")`); if (feat[1]) w.style.setProperty('--bart2', `url("${feat[1].url}")`)
   w.innerHTML = `<div class="bnr-art a1"></div><div class="bnr-art a2"></div><div class="bnr-shade"></div>

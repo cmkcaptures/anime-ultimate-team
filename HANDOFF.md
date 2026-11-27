@@ -2,6 +2,13 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · dual banner + 10 cards
+- DUAL BANNER: engine bannerList() returns every live limited banner. Fusion Reborn (DB) and Emperors & Warlords (OP: Shanks, Mihawk & Crocodile, Lucci, Crocodile) both run now until 4 Dec (SAIYAN_START/END). Players pick with act bannerSelect (P.bannerSel). Pending packs stay tied via P.bannerBoughtSel. ST.banners powers the .bnr-switch tabs. The Espada code is still there but unreachable while these run.
+- New cards: boruto_two_blue_vortex (X99), minato_reaper_death_seal (L), lucci_cp0_leopard, sasuke_the_last_rinnegan (support), crocodile_sand_king (L), mihawk_crocodile_cross_guild, shanks_divine_departure, naruto_the_last (L), naruto_six_paths_truth and zabuza_demon_of_the_mist.
+- All 19 other BOR cards got +10% dmg and +8% dr, noted as "Boruto bonus" in their pas.d.
+- Minato art (atg/L_minato_reaper_death_seal.webp) has a phone-number ad at the bottom, so the card is cropped to the top. Re-crop the art file if possible.
+
+---
 ## 2026-11-27 · Claude · Fusion Reborn banner
 - 5 new DBZ Mythics: vegito_potara (transforms: SSJ for 25% gauge from turn 2, then Blue for 40% gauge after one full turn), gogeta_blue_soul_punisher, vegeta_majin_pride, gohan_future_final_stand and gohan_ultimate_awakened (support).
 - Limited banner "FUSION REBORN" (engine.js SAIYAN_START/END) runs 28 Nov to 4 Dec and starts right after Resurrección. Featured cards are not exclusive.

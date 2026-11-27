@@ -1,4 +1,4 @@
-import { PATCH_VERSION } from './patch-notes.js?v=11'
+import { PATCH_VERSION } from './patch-notes.js?v=12'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-2'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
@@ -85,10 +85,18 @@ const RESURRECCION_FEATURED = ['nel_gamuza', 'ichigo_release_drop', ...[
   'grimmjow', 'ulquiorra', 'starrk', 'barragan', 'harribel',
   'yammy', 'nnoitra', 'zommari', 'szayelaporro', 'aaroniero'
 ].map(id => id + '_release_drop')]
-const SAIYAN_START = Date.UTC(2026, 10, 28), SAIYAN_END = Date.UTC(2026, 11, 5) // Fusion Reborn: 28 Nov to end of 4 Dec
+const SAIYAN_START = Date.UTC(2026, 10, 27), SAIYAN_END = Date.UTC(2026, 11, 5) // Fusion Reborn: 28 Nov to end of 4 Dec
 const SAIYAN_FEATURED = ['vegito_potara', 'gogeta_blue_soul_punisher', 'vegeta_majin_pride', 'gohan_ultimate_awakened', 'gohan_future_final_stand']
-function banner(at = Date.now()) {
-  if (at >= SAIYAN_START && at < SAIYAN_END) {
+const PIRATE_FEATURED = ['shanks_divine_departure', 'mihawk_crocodile_cross_guild', 'lucci_cp0_leopard', 'crocodile_sand_king']
+// two limited banners at once: the player picks one (P.bannerSel); pending packs stay tied to the one they bought from
+function bannerList(at = Date.now()) {
+  if (at < SAIYAN_START || at >= SAIYAN_END) return []
+  const mk = (id, name, ids) => { const featured = ids.map(i => CARDS.find(c => c.id === i)?.key).filter(Boolean); return featured.length === ids.length ? { id, name, cost: BANNER_COST, featured, ends: SAIYAN_END, pityMythic: PITY_MYTHIC, pityFeatured: PITY_FEATURED } : null }
+  return [mk('saiyan-2026-11', 'FUSION REBORN', SAIYAN_FEATURED), mk('pirate-2026-11', 'EMPERORS & WARLORDS', PIRATE_FEATURED)].filter(Boolean)
+}
+function banner(at = Date.now(), sel = S && S.profile && S.profile.bannerSel) {
+  { const list = bannerList(at); if (list.length) return list.find(b => b.id === sel) || list[0] }
+  if (false) {
     const featured = SAIYAN_FEATURED.map(id => CARDS.find(c => c.id === id)?.key).filter(Boolean)
     if (featured.length === SAIYAN_FEATURED.length) return { id: 'saiyan-2026-11', name: 'FUSION REBORN', cost: BANNER_COST, featured, ends: SAIYAN_END, pityMythic: PITY_MYTHIC, pityFeatured: PITY_FEATURED }
   }
@@ -1342,6 +1350,11 @@ function act(a) {
   if (a.type === 'awk' && own(a.key)?.locked && AWK.find(n => n.id === a.node)?.dup > 0) return protectedCard
   if ((a.type === 'sbc' || a.type === 'tradeEscrow' || a.type === 'tradeEscrow_') && ((a.type === 'sbc' ? a.keys : a.offer) || []).some(k => own(k)?.locked)) return protectedCard
   switch (a.type) {
+    case 'bannerSelect': {
+      if (!bannerList().some(b => b.id === a.id)) return { error: 'That banner is not live.' }
+      if (P.pending.banner > 0) return { error: 'Open your remaining banner packs first.' }
+      P.bannerSel = a.id; return {}
+    }
     case 'ackPatchNotes':
       if (a.version !== PATCH_VERSION) return { error: 'The patch version changed. Reload to see the latest notes.' }
       P.seenPatchVersion = Math.max(P.seenPatchVersion || 0, a.version)
@@ -1380,12 +1393,12 @@ function act(a) {
     }
     case 'buyPack': {
       const B = a.pack === 'banner' ? banner(now) : null
-      if (B && ((a.bannerId && a.bannerId !== B.id) || (P.pending.banner > 0 && banner(P.bannerBoughtAt)?.id !== B.id))) return { error: 'The banner has changed. Open any remaining packs before pulling again.' }
+      if (B && ((a.bannerId && a.bannerId !== B.id) || (P.pending.banner > 0 && banner(P.bannerBoughtAt, P.bannerBoughtSel)?.id !== B.id))) return { error: 'The banner has changed. Open any remaining packs before pulling again.' }
       const pk = B ? { cost: B.cost } : PACKS[a.pack]; if (!pk) return { error: 'Unknown pack.' }
       const n = a.count === 10 ? 10 : 1, cost = n === 10 ? Math.round(pk.cost * 10 * .9) : pk.cost
       if (P.coins < cost) return { error: `You need ${cost.toLocaleString()} coins.` }
       if (a.pack === 'lightning') { P.light = P.light || { n: LIGHT_MAX, at: now }; rollCharge2(P.light); if (P.light.n < n) return { error: 'Lightning Packs are sold out. More arrive soon.' }; if (P.light.n >= LIGHT_MAX) P.light.at = now; P.light.n -= n }
-      if (B) P.bannerBoughtAt = now
+      if (B) { P.bannerBoughtAt = now; P.bannerBoughtSel = B.id }
       P.coins -= cost; P.pending[a.pack] = (P.pending[a.pack] || 0) + n; return {}
     }
     case 'openPack': {
@@ -1394,7 +1407,7 @@ function act(a) {
       if (!(P.pending[a.pack] > 0)) return { error: 'No unopened pack of that type.' }
       P.pending[a.pack]--; P.club.packs++; bump('opened'); P.last = []; let itemMsg = ''
       if (Math.random() < (a.pack === 'bronze' || a.pack === 'silver' ? .04 : .08)) { const ks = Object.keys(ITEMS), ik = ks[Math.floor(Math.random() * ks.length)], it = itemsP(); it[ik] = (it[ik] || 0) + 1; itemMsg = 'Bonus item: ' + ITEMS[ik].name + '!' }
-      if (a.pack === 'banner') { const B = banner(P.bannerBoughtAt), pt = P.pity || (P.pity = {}), pr = pt[B.id] || (pt[B.id] = { n: 0, m: 0, f: 0 }); pr.n++; pr.m++; pr.f++; for (const k of a.keys || []) { const c = byKey(k); if (c && 'MX'.includes(c.r)) pr.m = 0; if (B.featured.includes(k)) pr.f = 0 } } P.pp = Math.min(2500, (P.pp || 0) + PP_PER_PACK); addXP(40)
+      if (a.pack === 'banner') { const B = banner(P.bannerBoughtAt, P.bannerBoughtSel), pt = P.pity || (P.pity = {}), pr = pt[B.id] || (pt[B.id] = { n: 0, m: 0, f: 0 }); pr.n++; pr.m++; pr.f++; for (const k of a.keys || []) { const c = byKey(k); if (c && 'MX'.includes(c.r)) pr.m = 0; if (B.featured.includes(k)) pr.f = 0 } } P.pp = Math.min(2500, (P.pp || 0) + PP_PER_PACK); addXP(40)
       if (PACKS[a.pack] && PACKS[a.pack].anime) { const sp = P.spity || (P.spity = {}); sp[a.pack] = (a.keys || []).some(k => { const c = byKey(k); return c && 'LMX'.includes(c.r) }) ? 0 : (sp[a.pack] || 0) + 1 }
       const SIG = new Set(a.sig || [])
       for (const k of a.keys || []) { const c = byKey(k); if (!c) continue; giveCard(k); if (SIG.has(k)) { const o = P.club.cards[k]; o.sig = (o.sig || 0) + 1; bump('sig') } P.last.push(k); const rk = 'CURELMX'.indexOf(c.r); if (rk >= 3) bump('epic'); if (rk >= 4) bump('legend') }
@@ -1859,7 +1872,7 @@ function state() {
       enemies: run?.status === 'ready' ? draftEnemyTeam(draft, CARDS, run.round) : [],
       rewarded: P.draftRewardWeek === draft.week },
     warLanes: currentWarLanes(warState(P).week),
-    profile: P, notices: S.notices, packs: PACKS, banner: banner(P.pending.banner > 0 ? P.bannerBoughtAt : undefined), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
+    profile: P, notices: S.notices, packs: PACKS, banner: P.pending.banner > 0 ? banner(P.bannerBoughtAt, P.bannerBoughtSel) : banner(), banners: bannerList().map(b => ({ id: b.id, name: b.name, featured: b.featured })), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now(),
