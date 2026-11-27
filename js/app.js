@@ -635,11 +635,51 @@ function kitTip(card) {
     SHOOTER: 'Build a hand with Blasts and save Energy for the Special when you have a clean opening.',
   }[card.role] || 'Build Energy with cheaper Arts and save your Special for a clean opening.'
 }
+const KIT_WORDS = {
+  dmg: v => '+' + v + '% damage', teamDmg: v => 'Whole team deals +' + v + '% damage', dodge: v => v + '% chance to dodge attacks',
+  dr: v => 'Takes ' + v + '% less damage', reflect: v => 'Reflects ' + v + '% of damage taken back at the attacker', regen: v => 'Heals ' + v + '% HP every turn',
+  teamHeal: v => 'Heals the whole team ' + v + '% every turn', endure: v => 'Survives ' + (v > 1 ? v + ' knockouts' : 'the first knockout') + ' on 1 HP',
+  revive: () => 'Comes back once after being knocked out', first: () => 'Always moves first', pierce: () => 'Every attack ignores Guard',
+  pierceStrike: () => 'Strikes ignore Guard', pierceSpec: () => 'Specials ignore Guard', firstNull: v => 'The first ' + (v > 1 ? v + ' hits' : 'hit') + ' on this fighter deal no damage',
+  ultDodge: v => 'Erases the first ' + (v > 1 ? v + ' Ultimates' : 'Ultimate') + ' fired at it', nullPassive: () => 'Switches off the enemy passive',
+  burn: v => 'Attacks burn the enemy for ' + v + '% each turn', drain: v => 'Heals for ' + v + '% of damage dealt', exec: v => '+' + v + '% damage to enemies under 40% HP',
+  ramp: (v, e) => '+' + v + '% damage every turn it stays in' + (e.rampMax ? ' (up to +' + e.rampMax + '%)' : ''), crit: v => '+' + v + '% critical hit chance',
+  spec: v => 'Specials deal +' + v + '% damage', strikeBoost: v => 'Strikes deal +' + v + '% damage', ultBoost: v => 'Ultimate deals +' + v + '% damage',
+  slow: v => 'Enemy starts with ' + v + ' less Energy', energyBurn: v => 'Each hit removes ' + v + ' enemy Energy', energyTurn: v => '+' + v + ' Energy every turn',
+  doubleUlt: () => 'Ultimate fires twice', twinUlt: () => 'Ultimate fires twice', ultAoe: () => 'Ultimate hits every enemy', doubleStrike: v => v + '% chance for Strikes to hit twice',
+  tripleStrike: () => 'Strikes hit 3 times', adapt: (v, e) => 'Takes ' + v + '% less damage after each hit it takes' + (e.adaptMax ? ' (up to ' + e.adaptMax + '%)' : ''),
+  shield: v => 'Starts with a shield worth ' + v + '% HP', bleed: v => 'Loses ' + v + '% HP every turn (the price of its power)', allStats: v => '+' + v + '% to all stats',
+  timeStop: v => v + '% chance each turn to stop the enemy turn', trueDmg: () => 'Ignores enemy damage reduction', antiKit: () => 'Cancels enemy defensive passives',
+  blackflash: v => v + '% chance for a 2.5× Black Flash hit', guardStrong: () => 'Guard blocks more damage than normal', aoeBoost: v => 'Splash damage to the bench is +' + v + '% stronger',
+  avenge: v => '+' + v + '% damage once a teammate has been knocked out', dmgLow: (v, e) => '+' + v + '% damage while under ' + (e.lowAt || 50) + '% HP',
+  stack: (v, e) => '+' + v + '% damage for every hit it takes' + (e.stackMax ? ' (up to +' + e.stackMax + '%)' : ''), benchChip: v => 'Strikes also chip the next enemy on the bench',
+  freeze: v => v + '% chance to freeze the target', shred: v => 'Each hit cuts the target\'s defence by ' + v + '% (up to 30%)', gaugeBoost: v => 'Ultimate gauge fills ' + v + '% faster',
+  vsHigh: v => '+' + v + '% damage against higher-rated cards', opener: v => 'First attack deals +' + v + '% damage', ultStart: v => 'Starts the fight with ' + v + '% Ultimate gauge',
+  koHeal: v => 'Heals ' + v + '% HP after knocking out an enemy', spd: v => '+' + v + ' Speed', energy: v => 'Starts with +' + v + ' Energy',
+}
+const ROLE_WORDS = { FIGHTER: 'Fighter: all-round damage dealer', TANK: 'Tank: built to soak up hits for the team', SUPPORT: 'Support: keeps the team alive and boosted',
+  ASSASSIN: 'Assassin: fast, hits hard, finishes weakened enemies', SHOOTER: 'Shooter: ranged Blasts and big Specials' }
+function kitBullets(c) {
+  const e = c.pas?.e || {}, d = c.pas?.d || '', out = []
+  for (const [k, v] of Object.entries(e)) {
+    const f = KIT_WORDS[k]; if (!f || v === 0 || v === false) continue
+    if (typeof v === 'number' && v > 1 && d.includes(v + '%')) continue // already spelled out in the passive text
+    out.push(f(v, e))
+  }
+  return out
+}
 function kitBreakdown(card) {
   const panel = h('div', 'movebox howbox', '<b>🔍 HOW IT WORKS</b>')
-  const tip = h('p')
-  tip.textContent = kitTip(card)
-  panel.append(tip)
+  const row = (label, text) => { const p = h('p'); const b = h('b'); b.textContent = label + ' '; p.append(b, document.createTextNode(text)); panel.append(p) }
+  if (ROLE_WORDS[card.role]) row('🎭 Role', ROLE_WORDS[card.role] + (card.tag ? ' · Tag unit (two fighters, swaps partner mid-fight)' : '') + '.')
+  if (card.mv) row('⚡ Special · ' + card.mv + ':', (card.tx || []).join(' ') || 'Signature attack.')
+  if (card.pas) {
+    row('🧬 Passive · ' + (card.pas.n || '') + ':', card.pas.d || '')
+    const extra = kitBullets(card)
+    if (extra.length) { const ul = h('ul'); for (const t of extra) { const li = h('li'); li.textContent = t; ul.append(li) } const p = h('p'); const b = h('b'); b.textContent = 'Hidden numbers:'; p.append(b); panel.append(p, ul) }
+  }
+  if (card.lead?.cats?.length) row('👑 Leader skill:', 'As leader, ' + card.lead.cats.map(x => ANAME(x) || x).join(' / ') + ' teammates get +' + card.lead.pct + '% stats' + (card.lead.ki ? ' and +' + card.lead.ki + ' Energy' : '') + '.')
+  row('💡 Tip:', kitTip(card))
   return panel
 }
 async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
