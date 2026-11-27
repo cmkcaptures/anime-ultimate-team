@@ -2,6 +2,13 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · Fusion Reborn banner
+- 5 new DBZ Mythics: vegito_potara (transforms: SSJ for 25% gauge from turn 2, then Blue for 40% gauge after one full turn), gogeta_blue_soul_punisher, vegeta_majin_pride, gohan_future_final_stand and gohan_ultimate_awakened (support).
+- Limited banner "FUSION REBORN" (engine.js SAIYAN_START/END) runs 28 Nov to 4 Dec and starts right after Resurrección. Featured cards are not exclusive.
+- battle.js kitEffects now parses "Heal the whole team X% max HP" in Specials. It was silently ignored before, e.g. Doppo.
+- Quick 1v1 sim vs the top 8 Mythics: Gogeta 8/8, both Gohans 7/8, Vegito 6/8, Majin Vegeta 5/8 (then buffed).
+
+---
 ## 2026-11-27 · Claude · Baki series
 - New anime code BAKI (registered in cardkit ANIME, engine ANIME_NAMES + Baki Pack, app pack theme + cinematic). 14 cards from Downloads/ATG, art in atg/*_baki-*.jpg. Ignored Mythic/canvas.png (blank).
 - Micke wants the Bakis and Yujiros extremely good: Mythic Baki, Yujiro and Baki & Yujiro at 97 with heavy kits, Legendary Baki and Yujiro at 92. Doppo Epic (doppo_martial_god) is the support: team +15% damage, 6% team heal, 20% shield.

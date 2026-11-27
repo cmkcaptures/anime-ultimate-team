@@ -141,6 +141,7 @@ const kitNum = (c, re) => { const m = re.exec(kitTxt(c)); return m ? +m[1] : 0 }
 // applies a card's kit bonuses after its Special / Ultimate lands
 function kitEffects(me, a) {
   const c = a.card, notes = []
+  const th = kitNum(c, /Heal the whole team (\d+)% max HP/); if (th) { for (const f of me.team) if (!f.ko) healHP(f, f.max * th / 100); notes.push('TEAM +' + th + '%') }
   const heal = kitNum(c, /Heal (\d+)% max HP/); if (heal) { const h = healHP(a, a.max * heal / 100); notes.push('+' + h.toLocaleString() + ' HP') }
   const ki = kitNum(c, /Gain (\d+) Energy/); if (ki) { me.ki = Math.min(KI_MAX, me.ki + ki); notes.push('+' + ki + ' ENERGY') }
   const g = kitNum(c, /Ultimate gauge by (\d+)%/); if (g) { me.gauge = Math.min(GAUGE_MAX, me.gauge + g); notes.push('+' + g + '% ULT') }

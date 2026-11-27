@@ -1,4 +1,4 @@
-import { PATCH_VERSION } from './patch-notes.js?v=10'
+import { PATCH_VERSION } from './patch-notes.js?v=11'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-2'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
@@ -85,7 +85,13 @@ const RESURRECCION_FEATURED = ['nel_gamuza', 'ichigo_release_drop', ...[
   'grimmjow', 'ulquiorra', 'starrk', 'barragan', 'harribel',
   'yammy', 'nnoitra', 'zommari', 'szayelaporro', 'aaroniero'
 ].map(id => id + '_release_drop')]
+const SAIYAN_START = Date.UTC(2026, 10, 28), SAIYAN_END = Date.UTC(2026, 11, 5) // Fusion Reborn: 28 Nov to end of 4 Dec
+const SAIYAN_FEATURED = ['vegito_potara', 'gogeta_blue_soul_punisher', 'vegeta_majin_pride', 'gohan_ultimate_awakened', 'gohan_future_final_stand']
 function banner(at = Date.now()) {
+  if (at >= SAIYAN_START && at < SAIYAN_END) {
+    const featured = SAIYAN_FEATURED.map(id => CARDS.find(c => c.id === id)?.key).filter(Boolean)
+    if (featured.length === SAIYAN_FEATURED.length) return { id: 'saiyan-2026-11', name: 'FUSION REBORN', cost: BANNER_COST, featured, ends: SAIYAN_END, pityMythic: PITY_MYTHIC, pityFeatured: PITY_FEATURED }
+  }
   if (at >= ESPADA_START && at < ESPADA_END) {
     const featured = RESURRECCION_FEATURED.map(id => CARDS.find(c => c.id === id)?.key).filter(Boolean)
     if (featured.length === RESURRECCION_FEATURED.length) return {
