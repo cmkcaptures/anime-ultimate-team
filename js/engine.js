@@ -1,4 +1,4 @@
-import { PATCH_VERSION } from './patch-notes.js?v=20'
+import { PATCH_VERSION } from './patch-notes.js?v=21'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-cru-2'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-6'
@@ -1698,6 +1698,7 @@ function act(a) {
       if (q.rw.shards) P.shards = (P.shards || 0) + q.rw.shards
       return { msg: `${q.name} complete!`, rw: q.rw }
     }
+    case 'seenCards': { P.seenCardsAt = Math.max(P.seenCardsAt || 0, +a.at || 0); return {} }
     case 'ascend': {
       const e = own(a.key), c = byKey(a.key)
       if (!e || !c) return { error: 'You do not own that card.' }

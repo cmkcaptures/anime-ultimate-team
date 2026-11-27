@@ -2,6 +2,12 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · New Arrivals cinematic + first Ascension
+- js/arrivals.js showArrivals(): runs after the patch notes. It shows cards with added > P.seenCardsAt plus cards whose ascension.added > P.seenCardsAt, then act seenCards. New accounts are marked caught up without playing it. ALWAYS set added: Date.now() on new cards and ascension.added on new kits so they show up.
+- First Ascension: jotaro_starplatinum (timeStop 25, dmg 40, doubleStrike 35, pierce, +30% vs JJBA, endure, dodge, new Special).
+- New: jonathan_hamon_overdrive, bucciarati_sticky_fingers, kakyoin_hierophant_green (pairs with Jotaros).
+
+---
 ## 2026-11-27 · Claude · ASCENSION system
 - Micke picks 1-2 veteran cards each week and we hand-design each kit. To make a card ascendable, add card.ascension = { ver, n, d, e, replace?, mv?, tx?, url?, fy? } in cards-list.json. e adds to (or, with replace:true, replaces) the passive. d is the full new description shown when ascended.
 - Requirements (engine act ascend): 7 diamonds, 2 extra copies (e.n>=3), shards (L 8000, M/X 15000). Sets club entry asc=1. app effSig then applies ascendCard(): +2 OVR, +4% stats, kit swap. This uses the old asc field (was a placeholder).
