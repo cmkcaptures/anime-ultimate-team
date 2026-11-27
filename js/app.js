@@ -1,4 +1,5 @@
-import { showPatchNotes } from './patch-notes.js?v=23'
+import { showPatchNotes } from './patch-notes.js?v=24'
+import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear } from './gear.js?v=claude-gear-1'
 import { showArrivals } from './arrivals.js?v=claude-arv-4'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
@@ -7,7 +8,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-stats-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-gear-1'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=claude-backup-1'
@@ -32,6 +33,7 @@ const effSig = c => { const o = club()[c.key]; if (!o) return c
   let pas = c.pas; if (dia >= 7 && pas && pas.e) { const e = { ...pas.e }; for (const k of LB_KEYS) if (typeof e[k] === 'number') e[k] = Math.round(e[k] * 1.25); pas = { ...pas, e } }
   let out = { ...c, st, pas, ovr: Math.min(99, c.ovr + (dia - 3) + Math.floor((lv - 1) / 25)), dia, lv, asc: o.asc || 0, maxed: dia >= 7 ? 1 : 0, sig: o.sig ? 1 : 0 }
   if (o.asc && c.ascension) out = ascendCard(out)
+  { const G = ST && ST.gear; const eq = G && G.eq[c.key]; if (eq && eq.some(Boolean)) out = applyGear(out, eq.map(u => G.items[u])) }
   return out }
 // ASCENSION: a hand-designed kit for chosen veteran cards. z.e adds to (or with z.replace, replaces) the passive.
 function ascendCard(x) {
@@ -234,7 +236,7 @@ const packEl = (type, w) => { const cv = document.createElement('canvas'); packC
 
 // ================= router + transitions =================
 const TABS = ['home', 'cards', 'team', 'battle', 'shop']
-const TITLES = { guide: 'HOW TO PLAY',  deck: 'ARTS DECK',  museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
+const TITLES = { armory: 'ARMORY', guide: 'HOW TO PLAY',  deck: 'ARTS DECK',  museum: 'MUSEUM',  achieve: 'ACHIEVEMENTS',  home: '', cards: 'MY CARDS', team: 'MY TEAM', shop: 'SHOP', pack: 'BOOSTER PACKS', results: '', wonder: 'WONDER PICK', missions: 'MISSIONS' }
 let CUR = null, CURARG = null, curEl = null
 const PAGES = {}
 const NAVTOP = new Map(); addEventListener('resize', () => NAVTOP.clear())
@@ -319,6 +321,7 @@ PAGES.home = (el) => {
     q('WONDER PICK', 'ワンダー', W.charges + '/' + W.max + ' energy', () => go('wonder'), W.charges > 0),
     q('SEASON PASS', 'パス', ST.pass ? 'Tier ' + ST.pass.tier : '', () => go('pass')),
     q('HOW TO PLAY', '遊び方', 'Guide for new players', () => go('guide'), !ST.profile.guideSeen),
+    q('ARMORY', '武器庫', Object.keys(ST.gear?.items || {}).length + ' gear', () => go('armory')),
     q('🔥 ' + (ST.login.streak || 0) + '-DAY STREAK', 'ログイン', ST.login.can ? 'Day ' + (ST.login.next + 1) + ' reward ready!' : ST.login.nextM ? (ST.login.nextM - ST.login.streak) + ' days to the ' + ST.login.nextM + '-day bonus' : 'Come back tomorrow', () => loginSheet(), ST.login.can),
     q('PLAYERS', 'ランキング', 'Leaderboard', () => go('players')),
   )
@@ -773,6 +776,7 @@ async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
     if (e && e.ser) d.append(h('span', 'serial' + (e.ser <= 100 ? ' low' : ''), `SERIAL #${String(e.ser).padStart(4, '0')}${e.ser <= 10 ? ' · ULTRA LOW' : e.ser <= 100 ? ' · LOW SERIAL' : ''}`))
     d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${kitOnly ? ' · OPPONENT' : e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}`))
     d.append(battleStatsPanel(c))
+    if (!kitOnly && club()[key]) d.append(loadoutRig(key, c))
     d.append(h('div', 'movebox', `<b style="color:${TYPE[c.t].c[2]}">${TYPE[c.t].en} · ${c.mv}</b><p>${c.tx.join(' ')}</p>`))
     if (e) d.append(progBox(key))
     if (false) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
@@ -2698,6 +2702,96 @@ function battleStatsPanel(c) {
   }
   box.append(grid)
   return box
+}
+// ================= GEAR UI =================
+function gearTile(it, opts = {}) {
+  const B = GEAR_BASES[it.b], t = h('button', 'gtile g-' + B.t + (opts.sel ? ' sel' : ''))
+  t.innerHTML = '<i class="gt-frame"></i><img alt=""><b class="gt-lv"></b><span class="gt-gl"></span>'
+  t.querySelector('img').src = gearIcon(it.b); t.querySelector('.gt-lv').textContent = '+' + (it.lvl || 0)
+  t.title = B.name; return t
+}
+function gearLines(it) {
+  const B = GEAR_BASES[it.b], out = []
+  for (const [k, v] of Object.entries(mainStats(it))) out.push(['main', '+' + v.toLocaleString() + ' ' + MAIN_LABEL[k]])
+  for (const s of it.subs || []) out.push(['sub', subText(s, it.lvl)])
+  if (B.fxText) out.push(['fx', '★ ' + B.fxText])
+  return out
+}
+function loadoutRig(key, c) {
+  const G = ST.gear, eq = G.eq[key] || [null, null, null], box = h('section', 'rig')
+  box.innerHTML = '<header><small>装備 · LOADOUT RIG</small><button class="rig-arm">ARMORY ›</button></header><div class="rig-stage"><svg class="rig-lines" viewBox="0 0 300 260"><path d="M150 130 L150 34"/><path d="M150 130 L44 222"/><path d="M150 130 L256 222"/></svg><div class="rig-core"></div></div><div class="rig-tot"></div>'
+  box.querySelector('.rig-arm').onclick = () => { closeModal(); go('armory') }
+  const core = box.querySelector('.rig-core'); core.append(cardImg(c, 220))
+  const stage = box.querySelector('.rig-stage')
+  ;['top', 'bl', 'br'].forEach((pos, slot) => {
+    const uid = eq[slot], it = uid && G.items[uid], t = SLOT_TIER[slot], s = h('div', 'rig-sock ' + pos + ' g-' + t + (it ? ' full' : ''))
+    if (it) s.append(gearTile(it)); else s.innerHTML = '<span class="rig-empty"><b>+</b><small>' + GEAR_TIERS[t].name + '</small></span>'
+    s.onclick = () => gearPicker(key, slot)
+    stage.append(s)
+    if (it) stage.querySelectorAll('.rig-lines path')[slot].classList.add('on')
+  })
+  const tot = c.gearTot, tt = box.querySelector('.rig-tot')
+  if (tot) for (const [k, v] of Object.entries(tot)) if (v) { const x = h('span'); x.textContent = '+' + v.toLocaleString() + ' ' + MAIN_LABEL[k]; tt.append(x) }
+  if (!tt.children.length) tt.innerHTML = '<em>Tap a socket to equip gear</em>'
+  return box
+}
+function gearPicker(key, slot) {
+  const G = ST.gear, t = SLOT_TIER[slot], cur = (G.eq[key] || [])[slot]
+  const owner = uid => Object.entries(G.eq).find(([k, arr]) => arr.includes(uid))?.[0]
+  const list = Object.entries(G.items).filter(([u, it]) => GEAR_BASES[it.b].t === t).sort((x, y) => (y[1].lvl || 0) - (x[1].lvl || 0))
+  openModal(sh => {
+    sh.append(h('h2', '', GEAR_TIERS[t].name + ' SOCKET'))
+    if (!list.length) sh.append(h('div', 'empty', '<b>No ' + GEAR_TIERS[t].name.toLowerCase() + ' gear yet</b>Earn gear in the Crucible, Dead Zones and Daily Boss, or open a box in the Armory.'))
+    const grid = h('div', 'gpick')
+    for (const [uid, it] of list) {
+      const row = h('div', 'gp-row' + (uid === cur ? ' on' : '')), info = h('div', 'gp-info'), nm = h('b')
+      nm.textContent = GEAR_BASES[it.b].name + ' +' + (it.lvl || 0); info.append(nm)
+      for (const [k, txt] of gearLines(it)) { const l = h('span', 'gl-' + k); l.textContent = txt; info.append(l) }
+      const ow = owner(uid); if (ow && ow !== key) { const n = h('small', 'gp-own'); n.textContent = 'Equipped on ' + (BYKEY[ow]?.name || 'another card'); info.append(n) }
+      const btn = h('button', 'btn ' + (uid === cur ? 'dark' : 'gold') + ' sm', uid === cur ? 'UNEQUIP' : 'EQUIP')
+      btn.onclick = async () => { const r = await act('gearEquip', { key, slot, uid: uid === cur ? null : uid }); if (r.error) return; closeModal(); cardDetail(key); setTimeout(() => document.querySelector('.rig')?.classList.add('zap'), 60) }
+      row.append(gearTile(it), info, btn); grid.append(row)
+    }
+    sh.append(grid)
+  })
+}
+PAGES.armory = el => {
+  const G = ST.gear, items = Object.entries(G.items)
+  const head = h('section', 'arm-head', '<div><small>武器庫 · ARMORY</small><h2>THE ARMORY</h2><p>Gear earned in the Crucible, Dead Zones and Daily Boss. Upgrade it, reforge its substats, or salvage spares into gear shards.</p></div><div class="arm-cur"><b></b><span>GEAR SHARDS</span></div>')
+  head.querySelector('.arm-cur b').textContent = (G.shards || 0).toLocaleString(); el.append(head)
+  const tabs = h('div', 'mtabs'); let f = window.__armF || 'ALL'
+  for (const k of ['ALL', 'G', 'S', 'B']) { const b = h('button', 'mtab' + (f === k ? ' on' : ''), k === 'ALL' ? 'ALL' : GEAR_TIERS[k].name); b.onclick = () => { window.__armF = k; rerender() }; tabs.append(b) }
+  el.append(tabs)
+  const grid = h('div', 'arm-grid')
+  const owner = uid => Object.entries(G.eq).find(([k, arr]) => arr.includes(uid))?.[0]
+  for (const [uid, it] of items.filter(([u, it]) => f === 'ALL' || GEAR_BASES[it.b].t === f).sort((x, y) => 'GSB'.indexOf(GEAR_BASES[x[1].b].t) - 'GSB'.indexOf(GEAR_BASES[y[1].b].t) || (y[1].lvl || 0) - (x[1].lvl || 0))) {
+    const t = gearTile(it); if (owner(uid)) t.classList.add('eqd'); t.onclick = () => gearDetail(uid); grid.append(t)
+  }
+  if (!grid.children.length) grid.append(h('div', 'empty', '<b>No gear here yet</b>'))
+  el.append(grid)
+  const ex = h('section', 'arm-ex', '<header><small>交換所 · GEAR EXCHANGE</small><b>Spend gear shards on a random piece</b></header><div class="ex-row"></div>')
+  for (const t of ['B', 'S', 'G']) { const b = h('button', 'ex-box g-' + t, '<i class="gt-frame"></i><b>' + GEAR_TIERS[t].name + ' BOX</b><span>◈ ' + GEAR_TIERS[t].box + '</span>'); b.disabled = (G.shards || 0) < GEAR_TIERS[t].box; b.onclick = async () => { const r = await act('gearBuy', { tier: t }); if (!r.error) { rerender(); r.gear && gearDetail(r.gear) } }; ex.querySelector('.ex-row').append(b) }
+  el.append(ex)
+}
+function gearDetail(uid) {
+  const G = ST.gear, it = G.items[uid]; if (!it) return
+  const B = GEAR_BASES[it.b], T = GEAR_TIERS[B.t]
+  openModal(sh => {
+    const top = h('div', 'gd-top'), ring = h('div', 'gd-ring g-' + B.t), lvl = it.lvl || 0
+    ring.innerHTML = '<svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" class="bg"/><circle cx="60" cy="60" r="54" class="fg" style="stroke-dasharray:' + (339 * lvl / 10).toFixed(1) + ' 339"/></svg>'
+    ring.append(gearTile(it))
+    const info = h('div', 'gd-info'), nm = h('h2'); nm.textContent = B.name; info.append(h('small', 'gd-tier', T.name + ' GEAR · +' + lvl + ' / 10'), nm)
+    for (const [k, txt] of gearLines(it)) { const l = h('p', 'gl-' + k); l.textContent = txt; info.append(l) }
+    top.append(ring, info); sh.append(top)
+    const acts = h('div', 'gd-acts')
+    const up = h('button', 'btn gold', lvl >= 10 ? 'MAX +10' : 'UPGRADE · ' + ((lvl + 1) * T.up).toLocaleString() + ' coins'); up.disabled = lvl >= 10
+    up.onclick = async () => { const r = await act('gearUpgrade', { uid }); if (!r.error) { gearDetail(uid); document.querySelector('.gd-ring')?.classList.add('pulse') } }
+    const rf = h('button', 'btn violet', 'REFORGE · ◈ ' + T.ref)
+    rf.onclick = async () => { const r = await act('gearReforge', { uid }); if (!r.error) { gearDetail(uid); document.querySelectorAll('.gd-info .gl-sub').forEach(e => e.classList.add('roll')) } }
+    const sv = h('button', 'btn dark', 'SALVAGE · +◈ ' + (T.salv + lvl * 5))
+    sv.onclick = async () => { if (!confirm('Salvage ' + B.name + '?')) return; const r = await act('gearSalvage', { uid }); if (!r.error) { closeModal(); rerender() } }
+    acts.append(up, rf, sv); sh.append(acts)
+  })
 }
 function progBox(key) {
   const o = club()[key], dia = o.dia || 3, lv = o.lv || 1, need = (ST.lvNeed || [])[lv] || 1, xp = o.xp || 0

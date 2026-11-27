@@ -2,6 +2,14 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · GEAR v1
+- js/gear.js: GEAR_BASES (8 items, icons in items/gear/*.webp), TIERS, rollGear/rollSub, mainStats (big-number scale), applyGear (folds gear into card st, gearHp, pas.e). 3 slots per fighter: 0 Gold, 1 Silver, 2 Bronze. Signature gear goes in Gold later.
+- Engine: P.gear {items, eq{cardKey:[g,s,b]}, shards}, starter kit of 4 pieces. Actions gearEquip/Upgrade/Reforge/Salvage/Buy. Drops on Dead Zone clears and replays, Daily Boss and Crucible clears.
+- Battle: fighter() HP += gearHp/100. senzuGear heals 25% once at turn start below 30% HP.
+- App: effSig applies gear from ST.gear. loadoutRig on card pages, gearPicker, PAGES.armory with Gear Exchange, gearDetail (upgrade ring, reforge, salvage). Rarity frames in qol.css (.g-B/.g-S/.g-G).
+- TODO: Signature gear, a better turtle_shell crop, more items.
+
+---
 ## 2026-11-27 · Claude · stats beyond 99 + big-number Battle Stats
 - Real card stats are no longer capped at 99 (effSig, ascendCard, awakening in app.js), so levels, diamonds and Ascension keep adding. OVR is still capped at 99. The card FACE still shows min(99) (cardkit). Battle uses the real uncapped stats.
 - Card page shows battleStatsPanel(): HP = battle HP formula x100, STRIKE/BLAST ATK and DEFENSE = stat x420, SPEED/TECHNIQUE/IQ = stat x100 (STAT_SCALE). Gear (next, DBL-style) should add bonuses on this scale.

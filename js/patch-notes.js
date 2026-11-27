@@ -1,7 +1,8 @@
 // Increase this number and update the notes for each player-facing patch.
-export const PATCH_VERSION = 2026112716
+export const PATCH_VERSION = 2026112717
 
 const NOTES = [
+  ['NEW: Gear', ['Every fighter has 3 gear sockets: Gold, Silver and Bronze. Open any card and use the Loadout Rig to equip gear.', 'Gear adds big stats (Strike ATK, Blast ATK, Defense, HP) plus random substats. Some substats only work on certain tags, like Saiyans or Swordsmen.', 'Gold gear: Senzu Pouch (heals you once when low) and Stand Arrow (bonus damage vs stronger enemies).', 'Earn gear in the Crucible, Dead Zones and Daily Boss. Upgrade to +10, reforge substats or salvage spares in the new ARMORY (on Home). Everyone starts with 4 pieces.']],
   ['Ascension: Shigaraki', ['Mythic Shigaraki (All For One Awakened) can now Ascend into ALL FOR ONE · CATASTROPHE: Decay shreds defence and burns, Stolen Quirk seals passives and drains Energy, and Decay Wave hits all enemies for 300%.']],
   ['Balance: Dead Zones + Crucible', ['Dead Zones were retuned with test runs: Onigashima is harder, Dio is deadlier but shorter, Eye of the Moon and Dragon King Festival are beatable now (still the hardest), and Pokémon League is fairer to non-Pokémon teams.', 'The Crucible: the real fights start at stage 4, area-attack walls were smoothed out, standing fighters now recover 12% after each stage, and boss stages also revive knocked-out fighters at 30%.']],
   ['Ascension + New Arrivals', ['NEW: Ascension. Hand-picked veteran cards get a brand-new kit, +2 OVR, +4% stats and a gold Ascended frame. Needs Limit Break (7◆), 2 extra copies and shards. First up: Legendary Jotaro (Star Platinum · The World).', 'NEW: whenever new cards or Ascensions arrive, a New Arrivals cinematic plays when you load in.', 'Mythic Jonathan Joestar (Sunlight Yellow Overdrive), Mythic Bucciarati (Sticky Fingers) and Mythic Kakyoin (Hierophant Green).']],

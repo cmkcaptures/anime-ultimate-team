@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
-import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-cru-3'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-gear-1'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
@@ -155,7 +155,7 @@ function kitEffects(me, a) {
 }
 function fighter(card, lvl = 0) {
   const [pwr, spd, ki, tec, def, iq] = card.st || [70, 70, 70, 70, 70, 70]
-  const hp = Math.round((card.ovr * 40 + def * 12 + (card.tag ? 600 : 0)) * (card.awoke ? 1.1 : 1))
+  const hp = Math.round((card.ovr * 40 + def * 12 + (card.tag ? 600 : 0)) * (card.awoke ? 1.1 : 1)) + Math.round((card.gearHp || 0) / 100)
   const e = (card.pas && card.pas.e) || {}, boost = 1 + (e.allStats || 0) / 100
   const f = { card, key: card.key, hp, max: hp, pwr: Math.round(pwr * boost), spd: Math.round(spd * boost) + (e.spd || 0), ki: Math.round(ki * boost), tec: Math.round(tec * boost), def: Math.round(def * boost), iq, guard: 0, ko: false, lvl, dealt: 0, kos: 0, fort: 0,
     pe: e, endure: e.endure || 0, revive: e.revive || 0, firstNull: e.firstNull || 0, hitsTaken: 0, turns: 0, rage: 0, shieldHp: e.shield ? Math.round(hp * e.shield / 100) : 0, burn: 0, burnT: 0, attacks: 0, ultFired: 0, ultDodge: e.ultDodge || 0, sealed: 0, opened: 0, arise: 0 }
@@ -4133,6 +4133,7 @@ export function startBattle(stage) {
     if (e.hellfire) a0.heat = Math.min(4, (a0.heat || 0) + 1)
     if (e.igneelFlame && !a0.ko && foe.flameTarget === a0.key) addFlame(a0)
     { const tags = []; if (e.regen && !e.noHeal) tags.push('REGEN +' + e.regen + '%'); if (e.teamHeal) tags.push('TEAM HEAL +' + e.teamHeal + '%'); if (e.ramp) tags.push('POWER +' + Math.min(e.rampMax || 99, e.ramp * a0.turns) + '%'); if (e.energyTurn) tags.push('+' + e.energyTurn + ' ENERGY'); if (tags.length) pasNote(a0, tags.join(' · ')) }
+    if (e.senzuGear && !a0.senzuUsed && !a0.ko && a0.hp < a0.max * .3) { a0.senzuUsed = 1; healHP(a0, a0.max * .25); pasNote(a0, 'SENZU POUCH · +25% HP') }
     if (e.regen && !e.noHeal) healHP(a0, Math.round(Math.min(a0.max, a0.deadZoneRegenBase ?? a0.max) * e.regen / 100))
     if (e.bleed) a0.hp = Math.max(1, a0.hp - Math.round(a0.max * e.bleed / 100))
     if (e.emperor) a0.hp = Math.max(1, a0.hp - Math.round(a0.max * .03))

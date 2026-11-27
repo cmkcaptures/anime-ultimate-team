@@ -75,4 +75,4 @@ export function crucibleReward(n) {
   if (n === CRUCIBLE_STAGES.length) { r.coins += 100000; r.shards += 10000; r.premium += 3 }
   return r
 }
-export const crucibleRewardText = r => [r.coins && r.coins.toLocaleString() + ' coins', r.shards && '◆' + r.shards.toLocaleString(), r.premium && r.premium + '× Premium', r.tickets && r.tickets + ' Tickets', r.item && '+1 item'].filter(Boolean).join(' · ')
+export const crucibleRewardText = r => [r.coins && r.coins.toLocaleString() + ' coins', r.shards && '◆' + r.shards.toLocaleString(), r.premium && r.premium + '× Premium', r.tickets && r.tickets + ' Tickets', r.item && '+1 item', r.gear && r.gear + ' (gear)'].filter(Boolean).join(' · ')

@@ -189,3 +189,59 @@ img[data-asc] { animation: ascAura 2.8s ease-in-out infinite; border-radius: 10p
 .bs-row i { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.07) } .bs-row i::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: var(--w); background: linear-gradient(90deg, #6fc8ff, #9ae4ff) }
 .bs-row.bs-hp i::after { background: linear-gradient(90deg, #3ddc84, #b7ff6a) } .bs-row.bs-hp b { color: #b7ff6a; font-size: 18px } .bs-row.bs-atk i::after { background: linear-gradient(90deg, #ff6a3d, #ffd36a) } .bs-row.bs-def i::after { background: linear-gradient(90deg, #6f8cff, #9ae4ff) }
 .bs-row small em { margin-left: 7px; padding: 1px 5px; border-radius: 3px; background: rgba(255,211,106,.14); font: 900 8.5px var(--eUI, Inter); font-style: normal; letter-spacing: .12em; color: #ffd36a }
+
+/* ================= GEAR ================= */
+.gtile { position: relative; width: 86px; aspect-ratio: 1; padding: 0; border: 0; border-radius: 12px; background: #0c0818; cursor: pointer; isolation: isolate; overflow: visible }
+.gtile img { position: absolute; inset: 9px; width: calc(100% - 18px); height: calc(100% - 18px); object-fit: cover; border-radius: 7px; z-index: 1 }
+.gt-frame { position: absolute; inset: 0; border-radius: 12px; z-index: 2; pointer-events: none }
+.gt-lv { position: absolute; right: 4px; bottom: 3px; z-index: 3; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,.78); font: 900 11px 'JetBrains Mono', monospace; color: #fff }
+.gt-gl { position: absolute; inset: 0; z-index: 2; border-radius: 12px; pointer-events: none }
+/* Bronze: hammered warm bevel */
+.g-B .gt-frame { border: 6px solid transparent; background: linear-gradient(#0000,#0000) padding-box, conic-gradient(from 210deg, #6b3a17, #d08a4d, #8a4f23, #f0b47a, #6b3a17) border-box; -webkit-mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); box-shadow: inset 0 0 0 1px rgba(255,210,170,.25) }
+.g-B.gtile { box-shadow: 0 6px 16px rgba(0,0,0,.5), 0 0 0 1px #3a1f0c }
+/* Silver: chrome with a travelling sheen */
+.g-S .gt-frame { border: 6px solid transparent; background: linear-gradient(#0000,#0000) padding-box, linear-gradient(135deg, #8e9bb0, #f4f8ff 30%, #9aa6bb 50%, #ffffff 70%, #7d889c) border-box; -webkit-mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0) }
+.g-S .gt-gl { background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.45) 50%, transparent 65%); background-size: 260% 100%; animation: gSheen 3.4s ease-in-out infinite; mix-blend-mode: screen }
+.g-S.gtile { box-shadow: 0 6px 18px rgba(0,0,0,.5), 0 0 14px rgba(190,210,255,.18) }
+/* Gold: ornate filigree, inner glow, sparkles */
+.g-G .gt-frame { border: 7px solid transparent; background: linear-gradient(#0000,#0000) padding-box, linear-gradient(135deg, #7a4a08, #ffe08a 25%, #c8871a 45%, #fff3c4 60%, #b8780f 80%, #ffd36a) border-box; -webkit-mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0) }
+.g-G .gt-gl { box-shadow: inset 0 0 18px rgba(255,190,60,.55); background: radial-gradient(circle at 20% 15%, rgba(255,246,216,.9) 0 1.5px, transparent 2.5px), radial-gradient(circle at 80% 30%, rgba(255,246,216,.9) 0 1.2px, transparent 2.2px), radial-gradient(circle at 65% 85%, rgba(255,246,216,.9) 0 1.5px, transparent 2.5px); animation: gTwinkle 2.6s ease-in-out infinite }
+.g-G.gtile { box-shadow: 0 6px 20px rgba(0,0,0,.55), 0 0 22px rgba(255,180,40,.35) }
+.g-G.gtile::before, .g-G.gtile::after { content: ''; position: absolute; z-index: 3; width: 14px; height: 14px; background: linear-gradient(135deg, #fff3c4, #d79a26); transform: rotate(45deg); box-shadow: 0 0 10px #ffb020 }
+.g-G.gtile::before { top: -6px; left: calc(50% - 7px) } .g-G.gtile::after { bottom: -6px; left: calc(50% - 7px) }
+@keyframes gSheen { 0% { background-position: 130% 0 } 100% { background-position: -130% 0 } } @keyframes gTwinkle { 0%, 100% { opacity: .55 } 50% { opacity: 1 } }
+.gtile.eqd::after { content: 'EQUIPPED'; position: absolute; left: 50%; top: -8px; transform: translateX(-50%); z-index: 4; padding: 1px 6px; border-radius: 3px; background: #9ae4ff; color: #071018; font: 900 8.5px var(--eUI, Inter); letter-spacing: .1em; width: auto; height: auto; box-shadow: none }
+/* LOADOUT RIG */
+.rig { position: relative; margin: 10px 0; padding: 12px 12px 10px; border-radius: 8px; overflow: hidden; background: radial-gradient(70% 60% at 50% 55%, rgba(80,50,160,.35), transparent 70%), linear-gradient(160deg, #120b26, #07050f); border: 1px solid rgba(154,228,255,.18) }
+.rig::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 22px, rgba(154,228,255,.04) 22px 23px), repeating-linear-gradient(90deg, transparent 0 22px, rgba(154,228,255,.04) 22px 23px); pointer-events: none }
+.rig header { position: relative; display: flex; justify-content: space-between; align-items: center } .rig header small { font: 800 10px var(--eUI, Inter); letter-spacing: .3em; color: #9ae4ff } .rig-arm { border: 1px solid rgba(255,211,106,.4); background: transparent; color: #ffd36a; font: 900 10.5px var(--eUI, Inter); letter-spacing: .12em; padding: 4px 10px; border-radius: 4px; cursor: pointer }
+.rig-stage { position: relative; width: min(300px, 100%); aspect-ratio: 300 / 260; margin: 6px auto 0 }
+.rig-lines { position: absolute; inset: 0; width: 100%; height: 100% } .rig-lines path { stroke: rgba(154,228,255,.18); stroke-width: 2; stroke-dasharray: 4 6; fill: none }
+.rig-lines path.on { stroke: #9ae4ff; stroke-dasharray: none; filter: drop-shadow(0 0 4px #9ae4ff); animation: rigFlow 1.6s linear infinite; stroke-dasharray: 10 6 }
+.rig-core { position: absolute; left: 50%; top: 50%; width: 30%; transform: translate(-50%, -50%); filter: drop-shadow(0 0 18px rgba(154,228,255,.35)) } .rig-core img { width: 100%; height: auto; display: block; border-radius: 6px }
+.rig-sock { position: absolute; width: 27%; transform: translate(-50%, -50%); cursor: pointer } .rig-sock.top { left: 50%; top: 13% } .rig-sock.bl { left: 14.7%; top: 85% } .rig-sock.br { left: 85.3%; top: 85% }
+.rig-sock .gtile { width: 100% }
+.rig-empty { display: grid; place-items: center; aspect-ratio: 1; border-radius: 12px; border: 2px dashed rgba(154,228,255,.35); background: rgba(154,228,255,.05); color: #9ae4ff } .rig-empty b { font: 300 28px/1 var(--eUI, Inter) } .rig-empty small { font: 900 9px var(--eUI, Inter); letter-spacing: .16em }
+.rig-sock.g-G .rig-empty { border-color: rgba(255,211,106,.5); color: #ffd36a } .rig-sock.g-B .rig-empty { border-color: rgba(208,138,77,.5); color: #f0b47a } .rig-sock.g-S .rig-empty { border-color: rgba(220,230,255,.5); color: #e6ecff }
+.rig-tot { position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px } .rig-tot span { padding: 3px 8px; border-radius: 3px; background: rgba(154,228,255,.08); border: 1px solid rgba(154,228,255,.22); font: 800 11px 'JetBrains Mono', monospace; color: #c9f1ff } .rig-tot em { font: 600 11px var(--eUI, Inter); color: #8f86b0 }
+.rig.zap .rig-core { animation: rigZap .7s ease-out } .rig.zap .rig-lines path.on { animation: rigFlow .4s linear 3 }
+@keyframes rigFlow { to { stroke-dashoffset: -32 } } @keyframes rigZap { 0% { filter: drop-shadow(0 0 0 #9ae4ff) brightness(2) } 100% { filter: drop-shadow(0 0 18px rgba(154,228,255,.35)) } }
+/* picker */
+.gpick { display: grid; gap: 8px; margin-top: 10px } .gp-row { display: grid; grid-template-columns: 74px 1fr auto; gap: 10px; align-items: center; padding: 8px; border-radius: 8px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08) } .gp-row.on { border-color: #9ae4ff }
+.gp-row .gtile { width: 74px } .gp-info { display: grid; gap: 2px } .gp-info b { font: 900 13px var(--eUI, Inter); color: #fff }
+.gl-main { font: 800 12px 'JetBrains Mono', monospace; color: #ffd36a } .gl-sub { font: 600 11.5px var(--eUI, Inter); color: #c9f1ff } .gl-fx { font: 700 11.5px var(--eUI, Inter); color: #ffb0e0 } .gp-own { font: 700 10.5px var(--eUI, Inter); color: #ff9aa6 }
+/* armory */
+.arm-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-end; padding: 16px; margin-bottom: 10px; border-radius: 8px; background: linear-gradient(120deg, rgba(255,176,32,.14), rgba(20,12,40,.9) 45%); border: 1px solid rgba(255,211,106,.25) }
+.arm-head small { font: 800 10px var(--eUI, Inter); letter-spacing: .3em; color: #ffd36a } .arm-head h2 { margin: 2px 0 4px; font: italic 900 34px/1 var(--eD, 'Barlow Condensed') } .arm-head p { margin: 0; max-width: 460px; font: 500 12.5px var(--eUI, Inter); color: #cfc6ee }
+.arm-cur { text-align: right } .arm-cur b { display: block; font: 900 26px 'JetBrains Mono', monospace; color: #9ae4ff } .arm-cur span { font: 800 9.5px var(--eUI, Inter); letter-spacing: .2em; color: #8f86b0 }
+.arm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 14px; margin: 14px 0 }
+.arm-ex { margin-top: 8px; padding: 12px; border-radius: 8px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08) } .arm-ex header { display: grid; gap: 2px; margin-bottom: 10px } .arm-ex header small { font: 800 10px var(--eUI, Inter); letter-spacing: .3em; color: #9ae4ff } .arm-ex header b { font: 700 13px var(--eUI, Inter); color: #e6dff7 }
+.ex-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px } .ex-box { position: relative; padding: 18px 8px 12px; border: 0; border-radius: 12px; background: #0c0818; color: #fff; cursor: pointer; display: grid; gap: 4px; justify-items: center; overflow: visible } .ex-box b { font: italic 900 15px var(--eD, 'Barlow Condensed'); letter-spacing: .08em; z-index: 3 } .ex-box span { font: 800 12px 'JetBrains Mono', monospace; color: #9ae4ff; z-index: 3 } .ex-box:disabled { filter: grayscale(.8) brightness(.6); cursor: not-allowed }
+/* detail */
+.gd-top { display: grid; grid-template-columns: 140px 1fr; gap: 14px; align-items: center }
+.gd-ring { position: relative; width: 140px; aspect-ratio: 1; display: grid; place-items: center } .gd-ring svg { position: absolute; inset: 0; transform: rotate(-90deg) } .gd-ring circle { fill: none; stroke-width: 6 } .gd-ring .bg { stroke: rgba(255,255,255,.08) } .gd-ring .fg { stroke: #9ae4ff; stroke-linecap: round; filter: drop-shadow(0 0 6px #9ae4ff); transition: stroke-dasharray .6s } .gd-ring.g-G .fg { stroke: #ffd36a; filter: drop-shadow(0 0 6px #ffb020) } .gd-ring.g-B .fg { stroke: #f0b47a }
+.gd-ring .gtile { width: 92px } .gd-ring.pulse { animation: gdPulse .6s ease-out } @keyframes gdPulse { 0% { transform: scale(1.12); filter: brightness(1.6) } 100% { transform: none } }
+.gd-info h2 { margin: 2px 0 6px } .gd-tier { font: 800 10px var(--eUI, Inter); letter-spacing: .24em; color: #9ae4ff } .gd-info p { margin: 3px 0 }
+.gl-sub.roll { animation: gdRoll .5s ease-out } @keyframes gdRoll { 0% { opacity: 0; transform: translateY(-8px); filter: blur(3px) } }
+.gd-acts { display: grid; gap: 8px; margin-top: 14px }
+@media (prefers-reduced-motion: reduce) { .gtile *, .rig * { animation: none !important } }

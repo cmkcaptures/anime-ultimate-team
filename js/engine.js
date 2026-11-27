@@ -1,6 +1,7 @@
-import { PATCH_VERSION } from './patch-notes.js?v=23'
+import { PATCH_VERSION } from './patch-notes.js?v=24'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
-import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-cru-3'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-gear-1'
+import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, rollGear, rollSub } from './gear.js?v=claude-gear-1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-7'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-4'
@@ -1469,6 +1470,16 @@ function refreshWonder(noSave) {
 }
 
 // ---------------- actions ----------------
+function gearP() {
+  const P = S.profile, G = P.gear || (P.gear = { items: {}, eq: {}, shards: 0 })
+  if (!G.starter) { G.starter = 1; for (const b of ['turtle_shell', 'dragon_radar', 'power_pole', 'scouter']) giveGear(null, b) }
+  return G
+}
+function giveGear(tier, base) {
+  const G = S.profile.gear || (S.profile.gear = { items: {}, eq: {}, shards: 0 })
+  const pool = Object.keys(GEAR_BASES).filter(b => !tier || GEAR_BASES[b].t === tier), b = base || pool[Math.floor(Math.random() * pool.length)]
+  const uid = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), it = rollGear(b); G.items[uid] = it; it.uid = uid; return it
+}
 function act(a) {
   rollDay(); rollFree()
   const P = S.profile, now = Date.now()
@@ -1508,6 +1519,7 @@ function act(a) {
       run.hp = (a.hp || []).slice(0, 6).map(x => Math.max(0, Math.min(1, +x || 0))).map(x => run.stage % 10 === 0 ? (x > 0 ? 1 : .3) : x > 0 ? Math.min(1, x + .12) : 0); run.gauge = Math.max(0, Math.min(100, +a.gauge || 0))
       const first = !C.first[n], R = crucibleReward(n), got = first ? R : { coins: Math.round(R.coins * .2) }
       if (first) C.first[n] = now
+      if (first || Math.random() < .2) { const g = giveGear(n % 10 === 0 || n >= 35 ? 'G' : n >= 15 ? 'S' : 'B'); got.gear = GEAR_BASES[g.b].name }
       P.coins += got.coins || 0; if (got.shards) P.shards = (P.shards || 0) + got.shards
       if (got.premium) P.pending.premium = (P.pending.premium || 0) + got.premium
       if (got.tickets) P.tickets = (P.tickets || 0) + got.tickets
@@ -1698,6 +1710,39 @@ function act(a) {
       if (q.rw.shards) P.shards = (P.shards || 0) + q.rw.shards
       return { msg: `${q.name} complete!`, rw: q.rw }
     }
+    // ---- GEAR ----
+    case 'gearEquip': {
+      const G = gearP(), e = own(a.key); if (!e) return { error: 'You do not own that card.' }
+      const slot = +a.slot; if (!(slot >= 0 && slot < 3)) return { error: 'Bad slot.' }
+      const eq = G.eq[a.key] || (G.eq[a.key] = [null, null, null])
+      if (a.uid == null) { eq[slot] = null; return {} }
+      const it = G.items[a.uid]; if (!it) return { error: 'Gear not found.' }
+      if (GEAR_BASES[it.b].t !== SLOT_TIER[slot]) return { error: 'Wrong slot for this gear.' }
+      for (const [k, arr] of Object.entries(G.eq)) arr.forEach((u, i) => { if (u === a.uid) arr[i] = null })
+      eq[slot] = a.uid; return {}
+    }
+    case 'gearUpgrade': {
+      const G = gearP(), it = G.items[a.uid]; if (!it) return { error: 'Gear not found.' }
+      if ((it.lvl || 0) >= 10) return { error: 'Already +10.' }
+      const cost = ((it.lvl || 0) + 1) * GEAR_TIERS[GEAR_BASES[it.b].t].up; if (P.coins < cost) return { error: 'You need ' + cost.toLocaleString() + ' coins.' }
+      P.coins -= cost; it.lvl = (it.lvl || 0) + 1; return { msg: GEAR_BASES[it.b].name + ' is now +' + it.lvl + '.' }
+    }
+    case 'gearReforge': {
+      const G = gearP(), it = G.items[a.uid]; if (!it) return { error: 'Gear not found.' }
+      const cost = GEAR_TIERS[GEAR_BASES[it.b].t].ref; if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }
+      G.shards -= cost; it.subs = it.subs.map(() => rollSub()); return { msg: 'Substats reforged.' }
+    }
+    case 'gearSalvage': {
+      const G = gearP(), it = G.items[a.uid]; if (!it) return { error: 'Gear not found.' }
+      for (const arr of Object.values(G.eq)) if (arr.includes(a.uid)) return { error: 'Unequip it first.' }
+      const got = GEAR_TIERS[GEAR_BASES[it.b].t].salv + (it.lvl || 0) * 5; G.shards = (G.shards || 0) + got; delete G.items[a.uid]
+      return { msg: 'Salvaged for ' + got + ' gear shards.' }
+    }
+    case 'gearBuy': {
+      const G = gearP(), t = a.tier; if (!GEAR_TIERS[t]) return { error: 'Bad box.' }
+      const cost = GEAR_TIERS[t].box; if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }
+      G.shards -= cost; const it = giveGear(t); return { msg: 'Got ' + GEAR_BASES[it.b].name + '!', gear: it.uid }
+    }
     case 'seenCards': { P.seenCardsAt = P.arrivalsV === 1 ? Math.max(P.seenCardsAt || 0, +a.at || 0) : +a.at || 0; P.arrivalsV = 1; return {} }
     case 'ascend': {
       const e = own(a.key), c = byKey(a.key)
@@ -1832,6 +1877,7 @@ function act(a) {
         const Bo = bossP(), BD = bossToday(); if (Bo.tries >= BOSS_TRIES) return { error: 'No boss attempts left today.' }
         Bo.tries++; const dmg = Math.max(0, Math.min(2e6, Math.round(+a.dmg || 0))); Bo.total += dmg; const prev = Bo.best; Bo.best = Math.max(Bo.best, dmg); P.bossBestEver = Math.max(P.bossBestEver || 0, dmg); addXP(30)
         const got = []; for (let i = 0; i < BOSS_RW.length; i++) { const r = BOSS_RW[i]; if (Bo.best >= r.at && !Bo.got.includes(i)) { Bo.got.push(i); if (r.coins) P.coins += r.coins; if (r.shards) P.shards = (P.shards || 0) + r.shards; if (r.pack) P.pending[r.pack] = (P.pending[r.pack] || 0) + 1; got.push(r.label) } }
+        if (Math.random() < .5) { const g = giveGear(Math.random() < .25 ? 'S' : 'B'); got.push(GEAR_BASES[g.b].name + ' (gear)') }
         return { msg: `${dmg.toLocaleString()} damage to the boss${dmg > prev ? ' · NEW BEST' : ''}${got.length ? ' · Unlocked: ' + got.join(', ') : ''}` }
       }
       if (a.mode === 'ranked') {
@@ -1854,7 +1900,7 @@ function act(a) {
         const R = (P.rz = P.rz || {}), done = R[Z.id] || (R[Z.id] = [])
         if (n > 1 && !done.includes(n - 1)) return { error: 'Clear the previous Dead Zone stage first.' }
         if (!a.won) { addXP(20); return {} }
-        if (done.includes(n)) { P.coins += 1500; addXP(30); return { msg: 'Dead Zone stage replayed. +1,500 coins.' } }
+        if (done.includes(n)) { P.coins += 1500; addXP(30); let extra = ''; if (Math.random() < .25) { const g = giveGear(Math.random() < .3 ? 'S' : 'B'); extra = ' + ' + GEAR_BASES[g.b].name + ' (gear)' } return { msg: 'Dead Zone stage replayed. +1,500 coins' + extra + '.' } }
         done.push(n); addXP(250); const w = st.reward, got = []
         P.coins += w.coins; got.push(w.coins.toLocaleString() + ' coins')
         if (w.premium) { P.pending.premium = (P.pending.premium || 0) + w.premium; got.push(w.premium + ' Premium Drop' + (w.premium > 1 ? 's' : '')) }
@@ -1862,6 +1908,7 @@ function act(a) {
         if (w.tickets) { P.tickets = (P.tickets || 0) + w.tickets; got.push(w.tickets + ' Training Tickets') }
         const clearReward = grantDeadZoneCard(Z)
         if (clearReward) got.push(clearReward.name + ' · ' + clearReward.ver)
+        { const g = giveGear(st.final && Math.random() < .5 ? 'G' : Math.random() < .55 ? 'S' : 'B'); got.push(GEAR_BASES[g.b].name + ' (gear)') }
         return { reward: clearReward?.key, msg: `💀 DEAD ZONE ${st.final ? 'CONQUERED' : 'CLEARED'}: ${st.name}! +${got.join(', ')}.` }
       }
       if (a.mode === 'villain') return { error: 'The previous Campaign has retired.' }
@@ -2073,7 +2120,7 @@ function state() {
       enemies: run?.status === 'ready' ? draftEnemyTeam(draft, CARDS, run.round) : [],
       rewarded: P.draftRewardWeek === draft.week },
     warLanes: currentWarLanes(warState(P).week),
-    crucible: P.crucible || { best: 0, first: {} }, profile: P, notices: S.notices, packs: PACKS, banner: P.pending.banner > 0 ? banner(P.bannerBoughtAt, P.bannerBoughtSel) : banner(), banners: bannerList().map(b => ({ id: b.id, name: b.name, featured: b.featured })), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
+    crucible: P.crucible || { best: 0, first: {} }, gear: gearP(), profile: P, notices: S.notices, packs: PACKS, banner: P.pending.banner > 0 ? banner(P.bannerBoughtAt, P.bannerBoughtSel) : banner(), banners: bannerList().map(b => ({ id: b.id, name: b.name, featured: b.featured })), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now(),
