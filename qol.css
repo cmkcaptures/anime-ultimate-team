@@ -68,3 +68,11 @@
 .dupe-bar span { flex: 1 1 220px } .dupe-bar b { color: #ffe27a }
 
 .bak-list { display: grid; gap: 6px; margin-top: 10px } .bak-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); font: 600 12.5px var(--eUI, Inter); color: #e8e4f4 }
+
+.cru-hp { display: grid; gap: 5px; margin: 10px 0 } .cru-hpr { display: grid; grid-template-columns: 120px 1fr 44px auto auto; align-items: center; gap: 8px; font: 700 12px var(--eUI, Inter); color: #eee8ff }
+.cru-hpr b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis } .cru-hpr i { height: 8px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden } .cru-hpr u { display: block; height: 100%; background: linear-gradient(90deg, #3ddc84, #b7ff6a) }
+.cru-hpr.ko { opacity: .55 } .cru-hpr.ko u { background: #ff4d5a } .cru-hpr small { text-align: right; color: #cfc6ee }
+.cru-items { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0 10px } .cru-item { padding: 4px 9px; border-radius: 8px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); font: 700 12px var(--eUI, Inter); color: #ffe27a }
+.cru-acts { display: flex; gap: 8px; flex-wrap: wrap } .cru-team { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 } .cru-team img, .cru-team canvas { width: 70px; height: auto }
+.cru-st .r { color: #ffb0b8 } .cru-st .t { color: #9ae4ff } .cru-st.boss { border-color: rgba(255,90,90,.6) }
+.cru-result .cru-hp { max-width: 420px; margin: 10px auto } .cru-next { margin: 6px auto 10px; font: 700 12.5px var(--eUI, Inter); color: #ffd36a; text-align: center }

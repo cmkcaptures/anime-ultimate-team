@@ -2,6 +2,16 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · THE CRUCIBLE (new signature mode)
+- js/crucible.js: CRUCIBLE_STAGES (30 rows: enemy names/ids, boost, rules, weak, tip, boss), items, rewards. To add a stage, append a row. To make one harder, raise its boost.
+- One continuous run: 6 fighters from My Team. HP, KOs and gauge carry over (stage.crucible to startBattle). Fighters heal 8% after each stage and fully after bosses. Healing in fights is halved (f.crucibleHalf). Items (senzu, revive, team heal) only work between stages, +1 per boss (cap 5).
+- Engine actions: crucibleStart, crucibleEnter (leaving mid-fight counts as a loss and reverts to the save), crucibleResult (first clear gives the full reward, replays give 20% coins), crucibleSave, crucibleItem, crucibleAbandon. State is in P.crucible.
+- Battle: cruciblePage, crucibleStageObj, crucibleEnd (CONTINUE chains straight into the next stage). Mode tab crucible is in MODES_ON.
+- Micke: only stages 1-3 should be easy. The mode must be very strategic and hard but beatable, and very rewarding.
+- Tested: a top all-Mythic team on auto, with no items and no saves, falls at stage 8. Bosses at 10, 20 and 30.
+- TODO: exclusive stage-30 card (needs art), stages 31+.
+
+---
 ## 2026-11-27 · Claude · Story Arcs fix
 - Story Arc fights never started. Arc chapters pass chapter.enemy as one id string, and enemyTeam() (changed in cb4bedf) did campTeam(stage.enemy), which looped over the letters and gave an empty enemy team, then crashed in syncReworkMatchup. Fixed with campTeam([stage.enemy].flat()). Also guarded next?.ver?.startsWith in the form button label.
 

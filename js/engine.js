@@ -1,5 +1,6 @@
-import { PATCH_VERSION } from './patch-notes.js?v=12'
+import { PATCH_VERSION } from './patch-notes.js?v=13'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-cru-1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-2'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-3'
@@ -1355,6 +1356,62 @@ function act(a) {
       if (P.pending.banner > 0) return { error: 'Open your remaining banner packs first.' }
       P.bannerSel = a.id; return {}
     }
+    // ---- THE CRUCIBLE ----
+    case 'crucibleStart': {
+      const C = P.crucible || (P.crucible = { best: 0, first: {} })
+      if (C.run) return { error: 'You already have a run. Continue it or abandon it first.' }
+      const team = (a.team || []).filter((k, i, arr) => k && own(k) && arr.indexOf(k) === i)
+      if (team.length !== 6) return { error: 'Pick 6 different fighters you own.' }
+      const run = { team, stage: 1, hp: team.map(() => 1), gauge: 0, items: { senzu: 1, revive: 1, heal: 1 }, startedAt: now }
+      run.saved = JSON.parse(JSON.stringify({ stage: 1, hp: run.hp, gauge: 0, items: run.items }))
+      C.run = run; return { msg: 'The Crucible begins.' }
+    }
+    case 'crucibleResult': {
+      const C = P.crucible, run = C?.run
+      if (!run || a.stage !== run.stage) return { error: 'That stage is not the one you are on.' }
+      run.inFight = 0
+      const n = run.stage
+      if (!a.won) {
+        const sv = run.saved; Object.assign(run, JSON.parse(JSON.stringify(sv)))
+        return { msg: 'Your team fell on stage ' + n + '. Back to your save at stage ' + sv.stage + '.', lost: true, back: sv.stage }
+      }
+      run.hp = (a.hp || []).slice(0, 6).map(x => Math.max(0, Math.min(1, +x || 0))).map(x => x > 0 ? (run.stage % 10 === 0 ? 1 : Math.min(1, x + .08)) : 0); run.gauge = Math.max(0, Math.min(100, +a.gauge || 0))
+      const first = !C.first[n], R = crucibleReward(n), got = first ? R : { coins: Math.round(R.coins * .2) }
+      if (first) C.first[n] = now
+      P.coins += got.coins || 0; if (got.shards) P.shards = (P.shards || 0) + got.shards
+      if (got.premium) P.pending.premium = (P.pending.premium || 0) + got.premium
+      if (got.tickets) P.tickets = (P.tickets || 0) + got.tickets
+      if (R.item) { const it = run.items, total = it.senzu + it.revive + it.heal; if (total < CRUCIBLE_ITEM_CAP) { const k = ['senzu', 'revive', 'heal'][n / 10 % 3]; it[k]++ } }
+      C.best = Math.max(C.best || 0, n)
+      if (n >= CRUCIBLE_STAGES.length) { C.run = null; C.cleared = (C.cleared || 0) + 1; return { msg: 'THE CRUCIBLE CLEARED!', done: true, got, first } }
+      run.stage = n + 1
+      return { msg: 'Stage ' + n + ' cleared.', got, first }
+    }
+    case 'crucibleEnter': {
+      const run = P.crucible?.run; if (!run) return { error: 'No run.' }
+      if (run.inFight) { const st = run.inFight; Object.assign(run, JSON.parse(JSON.stringify(run.saved))); run.inFight = 0; return { error: 'You left stage ' + st + ' mid-fight, so it counts as a loss. Back to your save at stage ' + run.stage + '.', reverted: true } }
+      if (a.stage !== run.stage) return { error: 'Wrong stage.' }
+      run.inFight = run.stage; return {}
+    }
+    case 'crucibleSave': {
+      const run = P.crucible?.run; if (!run) return { error: 'No run.' }
+      if (run.inFight) return { error: 'Finish the fight first.' }
+      run.saved = JSON.parse(JSON.stringify({ stage: run.stage, hp: run.hp, gauge: run.gauge, items: run.items }))
+      return { msg: 'Progress saved at stage ' + run.stage + '.' }
+    }
+    case 'crucibleItem': {
+      const run = P.crucible?.run; if (!run) return { error: 'No run.' }
+      const it = run.items, k = a.item, i = +a.idx
+      if (!(it[k] > 0)) return { error: 'You have none of that item.' }
+      if (k === 'senzu') { if (!(run.hp[i] > 0) || run.hp[i] >= 1) return { error: 'Pick a hurt fighter who is still standing.' }; run.hp[i] = 1 }
+      else if (k === 'revive') { if (run.hp[i] !== 0) return { error: 'Pick a knocked-out fighter.' }; run.hp[i] = .4 }
+      else if (k === 'heal') { if (!run.hp.some(x => x > 0 && x < 1)) return { error: 'Nobody needs healing.' }; run.hp = run.hp.map(x => x > 0 ? Math.min(1, x + .25) : 0) }
+      else return { error: 'Unknown item.' }
+      it[k]--; return { msg: 'Item used.' }
+    }
+    case 'crucibleAbandon': {
+      if (P.crucible) P.crucible.run = null; return { msg: 'Run abandoned.' }
+    }
     case 'ackPatchNotes':
       if (a.version !== PATCH_VERSION) return { error: 'The patch version changed. Reload to see the latest notes.' }
       P.seenPatchVersion = Math.max(P.seenPatchVersion || 0, a.version)
@@ -1872,7 +1929,7 @@ function state() {
       enemies: run?.status === 'ready' ? draftEnemyTeam(draft, CARDS, run.round) : [],
       rewarded: P.draftRewardWeek === draft.week },
     warLanes: currentWarLanes(warState(P).week),
-    profile: P, notices: S.notices, packs: PACKS, banner: P.pending.banner > 0 ? banner(P.bannerBoughtAt, P.bannerBoughtSel) : banner(), banners: bannerList().map(b => ({ id: b.id, name: b.name, featured: b.featured })), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
+    crucible: P.crucible || { best: 0, first: {} }, profile: P, notices: S.notices, packs: PACKS, banner: P.pending.banner > 0 ? banner(P.bannerBoughtAt, P.bannerBoughtSel) : banner(), banners: bannerList().map(b => ({ id: b.id, name: b.name, featured: b.featured })), light: (() => { P.light = P.light || { n: LIGHT_MAX, at: Date.now() }; rollCharge2(P.light); return { n: P.light.n, max: LIGHT_MAX, next: P.light.n >= LIGHT_MAX ? 0 : P.light.at + LIGHT_EVERY } })(), rewards: rewards(), quick: {}, values: {}, level: levelOf(P.xp || 0), ppCost: PP_COST, shardGet: SHARD_GET, shardCost: SHARD_COST, sbcs: SBCS.map(q => ({ ...q, left: q.per - (P.sbc && P.sbc.day === Math.floor(Date.now() / 864e5) ? P.sbc.done[q.id] || 0 : 0) })),
     free: { charges: P.free.charges, max: FREE_MAX, next: P.free.charges >= FREE_MAX ? 0 : P.free.at + FREE_EVERY, every: FREE_EVERY },
     wonderE: { charges: P.wonder.charges, max: WONDER_MAX, next: P.wonder.charges >= WONDER_MAX ? 0 : P.wonder.at + WONDER_EVERY },
     wonder: S.wonder, now: Date.now(),

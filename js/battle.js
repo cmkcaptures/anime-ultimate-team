@@ -1,4 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-cru-1'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-2'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
@@ -235,7 +236,7 @@ const healHP = (f, amount) => {
   if (f.deadZoneEnemy) return 0 // Dead Zones: enemies never heal
   const reduced = amount > 0 && f.hp < f.max && f.crHealCut
   if (reduced) f.crHealCut = false
-  const gain = Math.min(f.max - f.hp, Math.round(amount * (f.curseOwner ? .5 : 1) * (reduced ? .5 : 1)))
+  const gain = Math.min(f.max - f.hp, Math.round(amount * (f.curseOwner ? .5 : 1) * (reduced ? .5 : 1) * (f.crucibleHalf ? .5 : 1)))
   f.hp += gain
   if (gain > 0) f.recapHealing = (f.recapHealing || 0) + gain
   return gain
@@ -1948,12 +1949,12 @@ function eventTeam(pool, difficulty) {
   const start = Math.min(Math.max(0, distinct.length - sizes[difficulty]), [4, 2, 0][difficulty])
   return distinct.slice(start, start + sizes[difficulty]).map(card => card.key)
 }
-const MODES_ON = new Set(['transfer-campaign', 'live', 'redzone', 'arcs', 'boss', 'pass', 'story'])
+const MODES_ON = new Set(['transfer-campaign', 'crucible', 'live', 'redzone', 'arcs', 'boss', 'pass', 'story'])
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
   // Temporarily limited while core modes are being balanced. Re-add ids here to bring modes back.
   if (!MODES_ON.has(MODE)) MODE = 'transfer-campaign'
-  for (const [k, n] of [['transfer-campaign', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['draft', 'DRAFT GAUNTLET'], ['live', '⚔️ LIVE PVP'], ['redzone', '💀 DEAD ZONE'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']].filter(([k]) => MODES_ON.has(k))) {
+  for (const [k, n] of [['transfer-campaign', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['draft', 'DRAFT GAUNTLET'], ['live', '⚔️ LIVE PVP'], ['crucible', '🔥 THE CRUCIBLE'], ['redzone', '💀 DEAD ZONE'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']].filter(([k]) => MODES_ON.has(k))) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -2264,6 +2265,68 @@ function deadZoneBriefing({ zone, stage, boss, enemies, reward, locked, teamRead
   document.body.append(dialog)
   dialog.showModal()
   back.focus()
+}
+
+// ---------------- THE CRUCIBLE ----------------
+const CRU_RULE = { dmg: v => '+' + v + '% damage', dr: v => v + '% less damage taken', dodge: v => v + '% dodge', reflect: v => 'reflect ' + v + '%', endure: () => 'survive 1 KO', firstNull: v => 'ignore your first ' + v + ' hits', doubleStrike: () => 'Strikes hit twice', pierceSpec: () => 'Specials ignore Guard', pierceStrike: () => 'Strikes ignore Guard', pierce: () => 'every attack ignores Guard', spec: v => 'Specials +' + v + '%', burn: v => 'burn ' + v + '%', ramp: (v, r) => '+' + v + '% damage per turn (max ' + r.rampMax + ')', adapt: (v, r) => '-' + v + '% damage per hit taken (max ' + r.adaptMax + ')', regen: v => 'regen ' + v + '%' }
+const cruRules = st => Object.entries(st.rules).map(([k, v]) => CRU_RULE[k] && CRU_RULE[k](v, st.rules)).filter(Boolean).join(' · ') || 'No special rules'
+function crucibleStageObj(run) {
+  const st = CRUCIBLE_STAGES[run.stage - 1]
+  return { mode: 'crucible', id: 'crucible:' + st.n, label: 'Crucible · Stage ' + st.n, name: st.name, n: st.n, level: 5, boost: st.boost, team: campTeam(st.enemy), playerTeam: run.team, pveFloor: st.n, pveFinal: st.boss,
+    crucible: { n: st.n, hp: run.hp, gauge: run.gauge }, rules: Object.assign({ weakTo: st.weak, weakB: 50, resist: 35 }, st.rules) }
+}
+function cruciblePage(el) {
+  const { h } = X, C = X.ST().crucible || { best: 0, first: {} }, run = C.run, total = CRUCIBLE_STAGES.length
+  el.append(h('section', 'bhero cru-hero', '<div><span class="sh-tag">🔥 THE CRUCIBLE · ' + total + ' STAGES · ONE RUN</span><h2>THE CRUCIBLE</h2><p>One continuous run. HP, knockouts and Ultimate gauge carry from stage to stage. Items only work between stages, and healing in fights is halved. Standing fighters recover 8% after each stage and fully after each boss. Save after a stage to keep your progress; if your team falls, you go back to your last save.</p><small>Best: stage ' + (C.best || 0) + ' / ' + total + '</small></div>'))
+  const after = () => X.go('battle')
+  if (!run) {
+    const team = (X.P.team || []).filter(Boolean)
+    const box = h('section', 'panel pad cru-start')
+    box.append(h('b', '', 'Your run team (from My Team)'))
+    const row = h('div', 'cru-team'); team.forEach(k => { const c = X.BYKEY[k]; if (c) row.append(X.cardImg(X.eff(c), 120)) }); box.append(row)
+    const go = h('button', 'btn gold', team.length === 6 ? 'START RUN' : 'SET 6 FIGHTERS IN MY TEAM FIRST')
+    go.disabled = team.length !== 6
+    go.onclick = async () => { const r = await X.act('crucibleStart', { team }); if (!r.error) after() }
+    box.append(go)
+    const rw = h('p', 'muted'); rw.textContent = 'Rewards: every stage pays coins and shards on first clear. Every 5th stage adds Premium Drops. Every 10th stage is a boss with a big bundle and +1 item. Clearing all ' + total + ' pays 100,000 coins, ◆10,000 and 3 extra Premium Drops.'
+    box.append(rw); el.append(box); return
+  }
+  const st = CRUCIBLE_STAGES[run.stage - 1]
+  const top = h('section', 'panel pad cru-run')
+  top.append(h('b', '', 'STAGE ' + run.stage + ' / ' + total + (run.saved ? ' · saved at stage ' + run.saved.stage : '')))
+  const team = h('div', 'cru-hp')
+  run.team.forEach((k, i) => {
+    const c = X.BYKEY[k], x = run.hp[i], r = h('div', 'cru-hpr' + (x === 0 ? ' ko' : ''))
+    r.innerHTML = '<b></b><i><u style="width:' + Math.round(x * 100) + '%"></u></i><small>' + (x === 0 ? 'KO' : Math.round(x * 100) + '%') + '</small>'
+    r.querySelector('b').textContent = c ? c.name : k
+    const use = (item, label) => { const b = h('button', 'btn dark sm', label); b.onclick = async () => { const res = await X.act('crucibleItem', { item, idx: i }); if (!res.error) after() }; r.append(b) }
+    if (x > 0 && x < 1 && run.items.senzu > 0) use('senzu', CRUCIBLE_ITEMS.senzu.icon)
+    if (x === 0 && run.items.revive > 0) use('revive', CRUCIBLE_ITEMS.revive.icon)
+    team.append(r)
+  })
+  top.append(team)
+  const items = h('div', 'cru-items')
+  for (const [k, it] of Object.entries(CRUCIBLE_ITEMS)) { const s2 = h('span', 'cru-item'); s2.textContent = it.icon + ' ' + it.name + ' ×' + run.items[k]; s2.title = it.d; items.append(s2) }
+  if (run.items.heal > 0) { const b = h('button', 'btn dark sm', '💚 USE TEAM HEAL'); b.onclick = async () => { const res = await X.act('crucibleItem', { item: 'heal' }); if (!res.error) after() }; items.append(b) }
+  top.append(items)
+  const acts = h('div', 'cru-acts')
+  const fight = h('button', 'btn gold', 'FIGHT STAGE ' + run.stage)
+  fight.onclick = async () => { const e = await X.act('crucibleEnter', { stage: run.stage }); if (e.error) return after(); go2(crucibleStageObj(X.ST().crucible.run)) }
+  const save = h('button', 'btn dark sm', 'SAVE'); save.onclick = async () => { await X.act('crucibleSave'); after() }
+  const quit = h('button', 'btn dark sm', 'ABANDON RUN'); quit.onclick = async () => { if (!confirm('Abandon this run? Your stage progress resets (first-clear rewards stay claimed).')) return; await X.act('crucibleAbandon'); after() }
+  acts.append(fight, save, quit); top.append(acts); el.append(top)
+  const list = h('div', 'camp-list')
+  for (const s2 of CRUCIBLE_STAGES.slice(run.stage - 1, run.stage + 2)) {
+    const row = h('div', 'camp-st cru-st' + (s2.boss ? ' boss' : ''))
+    const boss = X.BYKEY[campTeam([s2.enemy[0]])[0]]
+    row.innerHTML = '<span class="cs-art" style="background-image:url(\'' + (boss ? boss.url : '') + '\')"></span><span class="cs-tx"><small></small><b></b><small class="r"></small><small class="t"></small></span>'
+    row.querySelector('small').textContent = 'Stage ' + s2.n + (s2.boss ? ' · BOSS' : '') + ' · ' + s2.name + ' · ' + crucibleRewardText(C.first[s2.n] ? { coins: Math.round(crucibleReward(s2.n).coins * .2) } : crucibleReward(s2.n))
+    row.querySelector('b').textContent = s2.enemy.map(e => cardById(e)?.name || e).join(', ')
+    row.querySelector('.r').textContent = 'Rules: ' + cruRules(s2) + ' · Weak to: ' + s2.weak.join(', ')
+    row.querySelector('.t').textContent = s2.tip
+    list.append(row)
+  }
+  el.append(list)
 }
 function redzonePage(el, ok) {
   const { h } = X, ST = X.ST(), ZS = ST.deadzones || []; if (!ZS.length) return
@@ -2731,7 +2794,7 @@ export function battlePage(el) {
   })
   if (MODE !== 'story') {
     if (team.length < 6 && MODE !== 'arcs') { const w = h('div', 'panel pad', `<b>Your team needs 6 fighters.</b>`); const b = h('button', 'btn gold', 'GO TO MY TEAM'); b.onclick = () => X.go('team'); w.append(b); el.append(w) }
-    return (MODE === 'live' ? livePage : MODE === 'redzone' ? redzonePage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
+    return (MODE === 'live' ? livePage : MODE === 'crucible' ? cruciblePage : MODE === 'redzone' ? redzonePage : MODE === 'rift' ? riftPage : MODE === 'raid' ? raidPage : MODE === 'boss' ? bossPage : MODE === 'ranked' ? rankedPage : MODE === 'tower' ? towerPage : MODE === 'arcs' ? arcsPage : eventPage)(el, team.length >= 6)
   }
   const hero = h('section', 'bhero', `<div><span class="sh-tag">STORY MODE</span><h2>BATTLE</h2><p>Turn-based fights with Arts cards. Build Energy, play Strikes, Blasts and Specials, fill your gauge for an Ultimate, and knock out all 6 enemy fighters.</p></div><div class="bstat"><b>${prog}</b><span>/ ${STAGES.length} CLEARED</span></div>`)
   el.append(hero)
@@ -2832,6 +2895,10 @@ export function startBattle(stage) {
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
   applySquadBond(B.you); if (LV) applySquadBond(B.ai)
   applyMultiverse(B.you); if (LV) applyMultiverse(B.ai)
+  if (stage.crucible) {
+    B.you.team.forEach((f, i) => { const p = stage.crucible.hp[i]; f.crucibleHalf = 1; if (p === 0) { f.ko = true; f.hp = 0 } else if (p != null) f.hp = Math.max(1, Math.round(f.max * p)) })
+    B.you.active = Math.max(0, B.you.team.findIndex(f => !f.ko)); B.you.gauge = stage.crucible.gauge || 0
+  }
   if (mission) {
     const scaling = campaignScale(B.you.team, mission.chapter, mission.mission, B.ai.team.length)
     stage = { ...stage, level: scaling.level }
@@ -4088,9 +4155,32 @@ export function startBattle(stage) {
   { const sb = $a('.ar-speed'), sd = () => { sb.textContent = SPEED + '×'; sb.classList.toggle('on', SPEED > 1) }; sb.onclick = () => { SPEED = SPEED === 1 ? 2 : SPEED === 2 ? 3 : 1; try { localStorage.setItem('aut-bspeed', SPEED) } catch { } ov.style.setProperty('--spd', SPEED); sd() }; ov.style.setProperty('--spd', SPEED); sd()
     const ab = $a('.ar-auto'); ab.onclick = () => { AUTO = !AUTO; ab.classList.toggle('on', AUTO); ab.textContent = AUTO ? 'AUTO ON' : 'AUTO'; if (AUTO && !B.busy && !B.over) autoTurn() } }
 
+  async function crucibleEnd(won) {
+    await wait(600)
+    const n = stage.crucible.n, hp = B.you.team.map(f => f.ko ? 0 : Math.min(1, f.hp / f.max))
+    const r = await X.act('crucibleResult', { stage: n, won, hp, gauge: B.you.gauge })
+    sfx(won ? 'win' : 'lose')
+    const box = h('div', 'ar-result cru-result ' + (won ? 'win' : 'lose'))
+    const run = X.ST().crucible?.run
+    box.innerHTML = '<div class="rs-burst"></div><h2>' + (r.done ? 'CRUCIBLE CLEARED' : won ? 'STAGE ' + n + ' CLEARED' : 'DEFEATED') + '</h2>'
+    const p = h('p'); p.textContent = (r.msg || r.error || '') + (r.got ? ' ' + (r.first ? 'First clear: ' : 'Replay: ') + crucibleRewardText(r.got) : ''); box.append(p)
+    if (won && run && !r.done) {
+      const team = h('div', 'cru-hp'); B.you.team.forEach((f, i) => { const x = run.hp[i], row = h('div', 'cru-hpr' + (x === 0 ? ' ko' : '')); row.innerHTML = '<b></b><i><u style="width:' + Math.round(x * 100) + '%"></u></i><small>' + (x === 0 ? 'KO' : Math.round(x * 100) + '%') + '</small>'; row.querySelector('b').textContent = f.card.name; team.append(row) }); box.append(team)
+      const nx = CRUCIBLE_STAGES[run.stage - 1]; if (nx) { const pv = h('div', 'cru-next'); pv.textContent = 'NEXT · Stage ' + nx.n + ' · ' + nx.name + ' · ' + nx.enemy.map(e => cardById(e)?.name || e).join(', '); box.append(pv) }
+    }
+    const actions = h('div', 'battle-result-actions')
+    const btn = (label, cls, fn) => { const b = h('button', 'btn ' + cls, label); b.onclick = fn; actions.append(b) }
+    if (won && run && !r.done) {
+      btn('CONTINUE', 'gold', async () => { const e = await X.act('crucibleEnter', { stage: run.stage }); if (e.error) return; close({ immediate: true, route: false }); startBattle(crucibleStageObj(X.ST().crucible.run)) })
+      btn('SAVE & QUIT', 'dark', async () => { await X.act('crucibleSave'); close() })
+      btn('ITEMS & PREVIEW', 'dark', () => close())
+    } else btn('BACK', 'gold', () => close())
+    box.append(actions); ov.append(box)
+  }
   async function end(won) {
     if (B.over) return
     B.over = true; controls()
+    if (stage.crucible) return crucibleEnd(won)
     await wait(500)
     if (LV) { try { lvUnsub && lvUnsub(); clearInterval(lvTimer) } catch { } X.ACC.pvpFinish(LV.code, won ? LV.me : LV.oppUid) }
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0]
