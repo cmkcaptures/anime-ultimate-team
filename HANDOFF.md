@@ -2,6 +2,10 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · Veteran wave three (40 cards)
+- 40 older M/L kits got role-based additions (only keys they lacked, so existing numbers and text stay true) plus a "Veteran refresh:" line in pas.d and c.vet=1. Skipped Dead Zone bosses, rewards and today's new cards. FIGHTER: drain/endure/pierceSpec/firstNull. ASSASSIN: first/exec/firstNull. TANK: shield/reflect/endure/regen. SUPPORT: teamDmg/teamHeal/endure. SHOOTER: spec/pierceSpec/gaugeBoost. Mythics also get ultDodge. Legendary numbers are x0.8.
+
+---
 ## 2026-11-27 · Claude · card art tint
 - cardkit.js: the type-colour hard-light glow over non-cutout art (alpha .55, radius 560-620) was tinting art, e.g. orange on One Piece cards. Now soft-light alpha .18, radius 220-260 (edges only). Thumbnail cache key bumped to t14 so cards re-render. Micke rule: never cover the art.
 
