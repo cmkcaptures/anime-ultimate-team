@@ -2,6 +2,11 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · passive text audit
+- 47 Epic+ passive descriptions now show their real numbers: a "Base: ..." sentence lists stats from pas.e the text didn't mention (dmg, dr, burn, shield, etc). Outdated "Awakened: +N% damage" lines now read "Total: +X% damage". Netero skipped (2.5× already matches). Check: every numeric pas.e value for those keys appears in pas.d. Keep this true when editing kits.
+- Echo Hollow and Unstable Seal are campaign-only enemies with no passive. Left as is on purpose.
+
+---
 ## 2026-11-27 · Claude · QoL pack
 - New engine actions: sellDupes (sells spare copies for coins, keeps 1, skips locked/favourite) and claimAll (login, missions, achievements, Pass free/premium tiers; skips pick tiers; repeats up to 3 sweeps). Shred all now skips locked cards.
 - Home: todoStrip() + claimableCount() in app.js, a TO DO box with a Claim All button above the quick strip. Banner countdown on the home featured tile and Summon button.
