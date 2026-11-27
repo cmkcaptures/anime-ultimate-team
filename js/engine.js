@@ -1,12 +1,12 @@
 import { PATCH_VERSION } from './patch-notes.js?v=21'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-cru-2'
-import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-6'
+import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-7'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-4'
 import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=claude-1'
-import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=3'
-import { RIVALRY_TITLE } from './rivalry.js?v=claude-backup-1'
+import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=claude-dzbal-1'
+import { RIVALRY_TITLE } from './rivalry.js?v=claude-dzbal-1'
 import { spendableCopies } from './qol.js?v=qol-1'
 import { WAR_REWARD, WAR_TITLE, warLanes, warLineupError, warScore } from './war.js?v=qol-1'
 // Anime Ultimate Team — in-browser game engine.
@@ -904,25 +904,25 @@ const DBZONE = { id: 'db1', name: 'Dragon Ball Villain Gauntlet', sub: 'Dead Zon
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
 const PKZONE = { id: 'pk1', name: 'League Gauntlet', sub: 'Dead Zone · Pokémon · HARDEST', stages: [
-  { n: 1, name: 'Gym Challenge', boss: 'LT. SURGE & RAICHU', enemy: ['MISTY & GYARADOS', 'LT. SURGE & RAICHU', 'BEA & MACHAMP', 'KABU & CENTISKORCH', 'BLAINE & RAPIDASH', 'RAIHAN & DURALUDON'], boost: 3.1,
+  { n: 1, name: 'Gym Challenge', boss: 'LT. SURGE & RAICHU', enemy: ['MISTY & GYARADOS', 'LT. SURGE & RAICHU', 'BEA & MACHAMP', 'KABU & CENTISKORCH', 'BLAINE & RAPIDASH', 'RAIHAN & DURALUDON'], boost: 2.48,
     rules: [['Gym Badges', 'Enemies deal +20% damage', { dmg: 20 }], ['Home Turf', 'Enemies endure', {}]],
-    weak: ['S:PKM', 'Rivals'], weakB: 60, resist: 60, tip: 'Six Gym Leaders back to back. Pokémon trainers know their game: bring your own trainers and rival cards.',
+    weak: ['S:PKM', 'Rivals'], weakB: 60, resist: 35, tip: 'Six Gym Leaders back to back. Pokémon trainers know their game: bring your own trainers and rival cards.',
     reward: { coins: 15000, premium: 1 } },
-  { n: 2, name: 'Villain Teams', boss: 'GIOVANNI & MEWTWO', enemy: ['GIOVANNI & MEWTWO', 'GIOVANNI & NIDOKING', 'TEAM AQUA', 'TEAM MAGMA', 'VOLO & GIRATINA'], boost: 2.8,
+  { n: 2, name: 'Villain Teams', boss: 'GIOVANNI & MEWTWO', enemy: ['GIOVANNI & MEWTWO', 'GIOVANNI & NIDOKING', 'TEAM AQUA', 'TEAM MAGMA', 'VOLO & GIRATINA'], boost: 1.84,
     rules: [['Psychic Barrier', 'Every enemy blocks the first 2 hits it takes', { firstNull: 2 }], ['Team Rocket Tricks', 'Enemies dodge 15%', { dodge: 15 }]],
-    weak: ['Tag Teams', 'Rivals'], weakB: 60, resist: 60, tip: "Mewtwo's barrier eats your first 2 hits on every enemy. Tag teams hit twice: use cheap Strikes to pop barriers, then go big.",
+    weak: ['Tag Teams', 'Rivals'], weakB: 60, resist: 35, tip: "Mewtwo's barrier eats your first 2 hits on every enemy. Tag teams hit twice: use cheap Strikes to pop barriers, then go big.",
     reward: { coins: 20000, premium: 1 } },
-  { n: 3, name: 'Legendary Dragons', boss: 'N & RESHIRAM', enemy: ['N & RESHIRAM', 'N & ZEKROM', 'WHITE & ZEKROM', 'VOLO & GIRATINA', 'CYNTHIA & GARCHOMP'], boost: 2.7,
+  { n: 3, name: 'Legendary Dragons', boss: 'N & RESHIRAM', enemy: ['N & RESHIRAM', 'N & ZEKROM', 'WHITE & ZEKROM', 'VOLO & GIRATINA', 'CYNTHIA & GARCHOMP'], boost: 1.77,
     rules: [['Dragon Force', 'Enemies deal +25% damage and dodge 10%', { dmg: 25, dodge: 10 }], ['Blue Flare', 'Enemy Strikes burn 5%', { burn: 5 }]],
-    weak: ['Dragons'], weakB: 75, resist: 60, tip: 'Dragons are weak to dragons. Charizards, Garchomp, Natsu, Shenron: anything with the Dragons tag shreds this stage.',
+    weak: ['Dragons'], weakB: 75, resist: 35, tip: 'Dragons are weak to dragons. Charizards, Garchomp, Natsu, Shenron: anything with the Dragons tag shreds this stage.',
     reward: { coins: 25000, premium: 1, shards: 2000 } },
-  { n: 4, name: 'Mega Evolution', boss: 'ALAIN & CHARIZARD X', enemy: ['ALAIN & CHARIZARD X', 'STEVEN & METAGROSS', 'ASH, MISTY & BROCK', 'LEON & CHARIZARD', 'PAUL & ELECTIVIRE'], boost: 2.6,
+  { n: 4, name: 'Mega Evolution', boss: 'ALAIN & CHARIZARD X', enemy: ['ALAIN & CHARIZARD X', 'STEVEN & METAGROSS', 'ASH, MISTY & BROCK', 'LEON & CHARIZARD', 'PAUL & ELECTIVIRE'], boost: 1.71,
     rules: [['Key Stone', 'Enemies survive their first KO', { endure: 1 }], ['Mega Power', 'Enemies deal +20% damage', { dmg: 20 }]],
-    weak: ['Transformations', 'Rivals'], weakB: 60, resist: 60, tip: 'Everyone Mega Evolves and gets back up once. Fight power with power: transformations and rivals.',
+    weak: ['Transformations', 'Rivals'], weakB: 60, resist: 35, tip: 'Everyone Mega Evolves and gets back up once. Fight power with power: transformations and rivals.',
     reward: { coins: 30000, premium: 2, shards: 3000 } },
-  { n: 5, name: 'Champion of Champions', boss: 'ASH & HIS TEAM', enemy: ['ASH & HIS TEAM', 'ASH & PIKACHU', 'RED & CHARIZARD', 'LEON & CHARIZARD', 'CYNTHIA & GARCHOMP', 'ASH & GRENINJA'], boost: 2.3, final: 1,
+  { n: 5, name: 'Champion of Champions', boss: 'ASH & HIS TEAM', enemy: ['ASH & HIS TEAM', 'ASH & PIKACHU', 'RED & CHARIZARD', 'LEON & CHARIZARD', 'CYNTHIA & GARCHOMP', 'ASH & GRENINJA'], boost: 1.51, final: 1,
     rules: [['Bond Phenomenon', 'Enemies reflect 15% damage', { reflect: 15, championWeakness: 1 }], ['World Monarch', 'Enemies deal +20% damage', { dmg: 20, worldMonarch: 20 }]],
-    weak: ['S:PKM', 'Rivals', 'Dragons'], weakB: 55, resist: 65, tip: 'Every champion, led by Ash at his peak. Your best trainers, rivals like Paul and Gary, and dragons. Kizaru and Aokiji hit this weakness with Specials and Ultimates. Aokiji cancels World Monarch’s bonus against himself. Save Awakened Ultimates for Ash.',
+    weak: ['S:PKM', 'Rivals', 'Dragons'], weakB: 55, resist: 35, tip: 'Every champion, led by Ash at his peak. Your best trainers, rivals like Paul and Gary, and dragons. Kizaru and Aokiji hit this weakness with Specials and Ultimates. Aokiji cancels World Monarch’s bonus against himself. Save Awakened Ultimates for Ash.',
     reward: { coins: 50000, premium: 3, shards: 5000, tickets: 10 } },
 ] }
 const DEADZONES = [REDZONE, DARKT, DBZONE, PKZONE, ...LAST_DOOR_ZONES, ...NEW_GEN_ZONES]

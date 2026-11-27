@@ -1,4 +1,4 @@
-import { LAST_DOOR_RIVALS } from './last-door.js?v=3'
+import { LAST_DOOR_RIVALS } from './last-door.js?v=claude-dzbal-1'
 
 export const VEGETA = 'vegeta_ssb_evolved'
 export const TOPPO = 'toppo_god_of_destruction'

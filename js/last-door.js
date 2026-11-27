@@ -82,6 +82,8 @@ export const LAST_DOOR_ZONES = [
     { ...floor(5, 'Kaido at Dawn', ['kaido_dragon_form'], null, 'Kaido gets back up once and comes back with his Ultimate ready.', ['S:OP', 'Rivals']), encounter: 'second-phase' },
   ] },
 ]
+// Onigashima was far too easy for strong teams: extra boost on its stages only
+for (const st of LAST_DOOR_ZONES.find(z => z.id === 'onigashima-siege')?.stages || []) st.boost += [1.5, 1.5, 1.3, .15, 1.7][st.n - 1]
 const episode = (name, player, enemy, matchup, line, ending, opts = {}) => ({
   name, player, enemy, matchup, level: 4, boost: 1.4, playerBoost: 1.15,
   scene: [[Array.isArray(player) ? player[0] : player, line]], outro: [['Narrator', ending]], ...opts,

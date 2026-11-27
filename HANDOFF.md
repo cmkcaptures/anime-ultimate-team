@@ -2,6 +2,13 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · Dead Zone balance pass (best-team autoplay sims)
+- Team used: boruto X, shanks, kokushibo_moon_eyes, goku_jiren, gogeta blue, gohan ultimate. Target: later zones win but cost fighters, and each zone is a bit harder than the last.
+- Late single-target New Gen bosses (ngEnrage 2, not AoE) get a 70% per-turn per-target budget (was 45%), so they can finish fighters.
+- Uchiha/Zeref zones (AoE bosses) use the AFO recipe (low pow, low dmg, low cap). Dio and Ankhseram have less HP and more damage. Onigashima stages get extra boost (last-door.js, stage 4 untouched). Pokemon League: resist 35 (was 60/65), boosts x0.8 then x0.82 on stages 2-5. Still hard without Pokemon cards, by design.
+- Results after tuning: classic zones and Court are wins with 0-5 lost. Onigashima 0-2 lost. Dio 0/0/2 lost. Uchiha 0/0/1. Dragon 5/3/1. Pokemon mostly losses without PKM cards.
+
+---
 ## 2026-11-27 · Claude · New Arrivals cinematic + first Ascension
 - js/arrivals.js showArrivals(): runs after the patch notes. It shows cards with added > P.seenCardsAt plus cards whose ascension.added > P.seenCardsAt, then act seenCards. Players with no seenCardsAt start from the first batch that shipped with this feature (hardcoded timestamp in arrivals.js). ALWAYS set added: Date.now() on new cards and ascension.added on new kits so they show up.
 - First Ascension: jotaro_starplatinum (timeStop 25, dmg 40, doubleStrike 35, pierce, +30% vs JJBA, endure, dodge, new Special).

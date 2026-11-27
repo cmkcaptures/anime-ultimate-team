@@ -1,6 +1,6 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-cru-2'
-import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-6'
+import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
 import { shrineWaveSurvive, shrineActive, tojiLink } from './shrine-wave.js?v=2'
@@ -8,9 +8,9 @@ import { fairyTag, fairySurvive, fairyCharge, fairyAfterArt } from './fairy-tail
 import { gtForm, gtSurvive, gtArt } from './gt-goku.js?v=1'
 import { pveSquadPower, pveBalance, deadZoneIntent, deadZonePunishment } from './pve-balance.js?v=claude-2'
 import { TRANSFER_CAMPAIGN, CAMPAIGN_ART, campaignMission, campaignScale, missionId } from './transfer-campaign.js?v=claude-1'
-import { RESCUE_NAMES } from './last-door.js?v=3'
+import { RESCUE_NAMES } from './last-door.js?v=claude-dzbal-1'
 import { recordWaveArt, waveArtTax } from './wave.js?v=wave-1'
-import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=claude-backup-1'
+import { rivalryLead, chargeBarrier, hakaiStep, VEGETA } from './rivalry.js?v=claude-dzbal-1'
 import { artPreview, battleInfo, fighterStatuses } from './battle-tools.js?v=claude-2'
 import { addBattleRecap, addTurningPoints, createTurningPoints, recordWarMvp, warRecap } from './battle-recap.js?v=turning-1'
 import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR_TITLE } from './war.js?v=qol-1'
@@ -306,7 +306,7 @@ function newGenSignatureBudget(att, def, side, kind) {
     side.newGenSignature = { turn: side.formTurn || 0, targets: new WeakMap() }
   }
   const { targets } = side.newGenSignature
-  const fraction = .45 + (side.newGenPunished ? .15 : 0)
+  const fraction = (att.ngEnrage === 2 && !isAoe(att.card) ? .7 : .45) + (side.newGenPunished ? .15 : 0) // late single-target bosses can finish fighters
   const limit = Math.max(1, Math.floor(def.max * fraction))
   const remaining = Math.max(0, limit - (targets.get(def) || 0))
   return { remaining, spend: damage => targets.set(def, limit - remaining + damage) }
