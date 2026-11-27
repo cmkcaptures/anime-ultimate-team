@@ -2,6 +2,10 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · bench splash fix
+- Sukuna Final (ultAoe) was KO-ing benched cards in the Dead Zone. In the H() hit helper, splash on non-active targets from deadZoneEnemy or ngEnrage attackers is now x0.3. The active target still takes the full hit.
+
+---
 ## 2026-11-27 · Claude · Zeref/Mavis/Joker/Charon/Shinra Aegis + new kit keys
 - New generic passive keys (battle.js startBattle): allyAnime {anime, dmg, dr} boosts every teammate from that series. pair {ids:[...], dmg, dr} gives the card a bonus when a listed card is on its team.
 - zerefRevive (kitEffects): Special or Ultimate revives a KO'd ally at 50%, twice per battle. The player taps a KO'd bench slot to mark who (side.reviveMark), otherwise the highest OVR is revived.

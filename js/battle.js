@@ -1450,6 +1450,7 @@ function ultimate(B, who, choice) {
       reduction = .5
     }
     if (t === d && isshiki) { reduction = .3; d.isshikiUsed = true }
+    if (t !== d && (a.deadZoneEnemy || a.ngEnrage)) reduction *= .3 // Dead Zone / Crucible bosses: bench splash is much weaker
     if (a.ko || t.ko) return
     if (!sever && !PE(a).antiKit && PE(t).villain === 'overload') {
       if (!t.quirkGuardUsed) {
