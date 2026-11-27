@@ -1,7 +1,8 @@
 // Increase this number and update the notes for each player-facing patch.
-export const PATCH_VERSION = 2026112605
+export const PATCH_VERSION = 2026112701
 
 const NOTES = [
+  ['Quality of Life', ['Home now has a To Do list: Daily Boss tries, Pass rewards, achievements, finished missions, free packs and spare duplicates. Tap any item to go straight there.', 'Claim All collects your daily login, missions, achievements and Season Pass rewards in one tap. Pick rewards still need to be chosen on the Pass page.', 'My Cards has Sell All Dupes (coins) and Shred All (shards). One copy of every card is always kept, and locked or favourite cards are skipped.', 'The banner countdown now shows on Home.', 'How It Works is now a short, simple summary of each card.']],
   ['Veteran Roster · Wave Two', ["24 older cards gained new roles or stronger specialties, including tag-out cover, shield removal, Defense shred and reflection counters.","Legendary: WHITEBEARD (WORLD'S STRONGEST MAN), LEVI (HUMANITY'S STRONGEST), EREN (MARLEY RAID), KARS (ULTIMATE THING), LUFFY (EMPEROR OF THE SEA), GOHAN (FUTURE · LAST HOPE), KING (FAIRY KING), KIRA (A QUIET LIFE), MELIODAS (ASSAULT MODE), JOTARO (STONE OCEAN), VEGETA (SUPER SAIYAN), YAMATO (GUARDIAN OF WANO).","Mythic: BOROS (METEORIC BURST), YUTA (RIKA MANIFESTED), DEKU (ONE FOR ALL · UNLEASHED), SUPER GOGETA (SUPER SAIYAN), RENGOKU (VS AKAZA), ESCANOR (THE ONE), EREN (THE RUMBLING), YAMAMOTO (ZANKA NO TACHI), KANEKI (CENTIPEDE KAKUJA).","Rainbow: NATSU (DRAGON FORCE), NARUTO & SASUKE (TEAM 7 · BONDS), ICHIGO (FALSE TRUE BANKAI · VS YHWACH)."]],
   ['Card Clarity', ['Every card now has a How It Works panel with a Special summary and an explanation of its passive, including unique kits.']],
   ['Veteran Roster Update', [

@@ -1,4 +1,4 @@
-import { PATCH_VERSION } from './patch-notes.js?v=5'
+import { PATCH_VERSION } from './patch-notes.js?v=6'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-3'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
@@ -1395,9 +1395,27 @@ function act(a) {
     }
     case 'shred': {
       const list = a.all ? Object.keys(P.club.cards) : [a.key]; let got = 0, cnt = 0
-      for (const k of list) { const e = own(k), c = byKey(k); if (!e || !c) continue; const x = Math.min(e.n - 1, spare(k)); if (x < 1) continue; e.n -= x; got += x * SHARD_GET[c.r]; cnt += x }
+      for (const k of list) { const e = own(k), c = byKey(k); if (!e || !c || (a.all && e.locked)) continue; const x = Math.min(e.n - 1, spare(k)); if (x < 1) continue; e.n -= x; got += x * SHARD_GET[c.r]; cnt += x }
       if (!cnt) return { error: 'No spare duplicates to shred.' }
       P.shards = (P.shards || 0) + got; return { msg: `Shredded ${cnt} duplicate${cnt > 1 ? 's' : ''} for ${got.toLocaleString()} shards.` }
+    }
+    case 'sellDupes': {
+      let got = 0, cnt = 0
+      for (const k of Object.keys(P.club.cards)) { const e = own(k), c = byKey(k); if (!e || !c || e.locked || e.favorite) continue; const x = Math.min(e.n - 1, spare(k)); if (x < 1) continue; e.n -= x; got += x * quickSell(c, 0); cnt += x }
+      if (!cnt) return { error: 'No spare duplicates to sell.' }
+      P.coins += got; return { msg: `Sold ${cnt} duplicate${cnt > 1 ? 's' : ''} for ${got.toLocaleString()} coins. One copy of each card was kept.` }
+    }
+    case 'claimAll': {
+      let n = 0; const run = x => { const r = act(x); if (r && !r.error) n++ }
+      for (let pass = 0; pass < 3; pass++) { const before = n
+      if (loginP().can) run({ type: 'loginClaim' })
+      for (const r of rewards()) if (r.done && !r.claimed) run({ type: 'claim', id: r.id })
+      for (const x of achList()) if (x.done && !x.claimed) run({ type: 'achClaim', id: x.id })
+      const S2 = passP(), tier = Math.min(PASS_TIERS, Math.floor(S2.xp / PASS_TIER))
+      for (let t = 1; t <= tier; t++) for (const tr of S2.prem ? ['f', 'p'] : ['f']) if (!S2[tr].includes(t) && !passReward(tr, t).pick) run({ type: 'passClaim', tier: t, track: tr })
+      if (n === before) break }
+      if (!n) return { error: 'Nothing to claim right now.' }
+      return { msg: `Claimed ${n} reward${n > 1 ? 's' : ''}.` }
     }
     case 'craft': {
       const c = byKey(a.key); if (!c) return { error: 'Unknown card.' }

@@ -2,6 +2,13 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · QoL pack
+- New engine actions: sellDupes (sells spare copies for coins, keeps 1, skips locked/favourite) and claimAll (login, missions, achievements, Pass free/premium tiers; skips pick tiers; repeats up to 3 sweeps). Shred all now skips locked cards.
+- Home: todoStrip() + claimableCount() in app.js, a TO DO box with a Claim All button above the quick strip. Banner countdown on the home featured tile and Summon button.
+- My Cards: .dupe-bar with SELL ALL DUPES / SHRED ALL (confirm prompts).
+- Patch notes 2026112701 (Quality of Life). Tested locally with the stubbed-login QA copy: claim all, sell dupes (locked kept) and the to-do strip all worked.
+
+---
 ## 2026-11-27 · Claude
 - How It Works (kitBreakdown in js/app.js) is a SHORT plain-words summary. Micke wants it simplified, not the full kit text. It shows a role line, a simplified Special (specialSimple), a simplified passive (passiveSimple + KIT_WORDS numbers), then a tip (kitTip). New passive effect keys need a plain-words entry in KIT_WORDS.
 

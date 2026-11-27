@@ -1,4 +1,4 @@
-import { showPatchNotes } from './patch-notes.js?v=5'
+import { showPatchNotes } from './patch-notes.js?v=6'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
 import { deadZoneReward } from './deadzone-rewards.js?v=1'
@@ -283,7 +283,7 @@ PAGES.home = (el) => {
   // featured sticker card
   const fc = h('button', 'lb-feat')
   fc.style.setProperty('--art', `url("${feat.url}")`); fc.style.setProperty('--fx', Math.round((feat.fx ?? .5) * 100) + '%'); fc.style.setProperty('--fy', Math.round((feat.fy ?? .22) * 100) + '%')
-  fc.innerHTML = `<i class="lb-art"></i><span class="lb-tag"><small>${partner ? 'YOUR PARTNER · 相棒' : B ? 'LIMITED BANNER · 限定' : 'FEATURED · 注目'}</small><b>${feat.name}</b><em>${feat.ver}</em></span>${partner ? `<span class="lb-say">${partnerLine(feat)}</span>` : ''}`
+  fc.innerHTML = `<i class="lb-art"></i><span class="lb-tag"><small>${partner ? 'YOUR PARTNER · 相棒' : B ? 'LIMITED BANNER · 限定' : 'FEATURED · 注目'}</small><b>${feat.name}</b><em>${feat.ver}</em>${B && B.ends > now() ? `<em class="lb-ends">⏳ Banner ends in <span data-until="${B.ends - SKEW}" data-done="Ended"></span></em>` : ''}</span>${partner ? `<span class="lb-say">${partnerLine(feat)}</span>` : ''}`
   fc.onclick = () => { if (!partner) return go('shop'); const sy = fc.querySelector('.lb-say'); sy.textContent = partnerLine(feat); sy.classList.remove('pop'); void sy.offsetWidth; sy.classList.add('pop') }
   // menu
   const mn = h('div', 'lb-menu')
@@ -293,7 +293,7 @@ PAGES.home = (el) => {
   const owned1 = (P.team || []).map(k => BYKEY[k]).find(Boolean)
   mn.append(
     mb('main', 'バトル', 'BATTLE', 'Story · Tower · Arcs · Event', pick(c => c.anime === 'DBZ') || feat, () => go('battle'), ST.event ? 'EVENT LIVE' : ''),
-    mb('c-sum', '召喚', 'SUMMON', B ? 'Limited banner' : 'Packs', feat, () => go('shop'), 'NEW'),
+    mb('c-sum', '召喚', 'SUMMON', B && B.ends > now() ? `Banner · <span data-until="${B.ends - SKEW}" data-done="Ended"></span>` : 'Packs', feat, () => go('shop'), 'NEW'),
     mb('c-team', 'チーム', 'TEAM', teamSub(), owned1 || pick(c => c.anime === 'FT'), () => go('team')),
     mb('c-cards', 'コレクション', 'CARDS', Object.keys(club()).length + ' owned', pick(c => c.anime === 'BLE'), () => go('cards')),
   )
@@ -310,6 +310,7 @@ PAGES.home = (el) => {
     q('🔥 ' + (ST.login.streak || 0) + '-DAY STREAK', 'ログイン', ST.login.can ? 'Day ' + (ST.login.next + 1) + ' reward ready!' : ST.login.nextM ? (ST.login.nextM - ST.login.streak) + ' days to the ' + ST.login.nextM + '-day bonus' : 'Come back tomorrow', () => loginSheet(), ST.login.can),
     q('PLAYERS', 'ランキング', 'Leaderboard', () => go('players')),
   )
+  el.append(todoStrip())
   el.append(qs)
   if (ST.login.can && !window.__loginShown) { window.__loginShown = 1; setTimeout(loginSheet, 700) }
   el.append(showcaseBlock())
@@ -317,6 +318,28 @@ PAGES.home = (el) => {
   const sec = h('div', 'sec', `<h3>LAST PULLS</h3><button class="link">MY CARDS ›</button>`); sec.querySelector('button').onclick = () => go('cards'); el.append(sec)
   const rs = h('div', 'recent'); if (recent.length) recent.forEach(c => { const im = cardImg(c, 220); im.onclick = () => cardDetail(c.key); im.className = 'tap'; rs.append(im) }); else rs.innerHTML = '<span class="muted" style="font-weight:700">Open a pack to see your pulls here.</span>'
   el.append(rs)
+}
+function claimableCount() {
+  let n = ST.login.can ? 1 : 0
+  n += (ST.rewards || []).filter(r => r.done && !r.claimed).length + (ST.ach || []).filter(x => x.done && !x.claimed).length
+  const PS = ST.pass; if (PS) for (let t = 1; t <= PS.tier; t++) { if (!PS.f.includes(t)) n++; if (PS.prem && !PS.p.includes(t) && !PS.rw[t - 1][1].pick) n++ }
+  return n
+}
+function todoStrip() {
+  const items = [], wrap = h('div', 'todo-strip')
+  const add = (icon, text, fn) => { const b = h('button', 'todo-i'); b.textContent = icon + ' ' + text; b.onclick = fn; items.push(b) }
+  const BO = ST.boss; if (BO && BO.me.tries < BO.tries) add('👹', 'Daily Boss · ' + (BO.tries - BO.me.tries) + ' tries left', () => { try { sessionStorage.setItem('bmode', 'boss') } catch { } go('battle') })
+  const PS = ST.pass; if (PS) { let p = 0; for (let t = 1; t <= PS.tier; t++) { if (!PS.f.includes(t)) p++; if (PS.prem && !PS.p.includes(t)) p++ } if (p) add('🎫', p + ' Pass reward' + (p > 1 ? 's' : ''), () => go('pass')) }
+  const ach = (ST.ach || []).filter(x => x.done && !x.claimed).length; if (ach) add('🏆', ach + ' achievement' + (ach > 1 ? 's' : '') + ' ready', () => go('achieve'))
+  const ms = (ST.rewards || []).filter(r => r.done && !r.claimed).length; if (ms) add('📋', ms + ' mission' + (ms > 1 ? 's' : '') + ' done', () => go('missions'))
+  if (ST.free.charges) add('📦', ST.free.charges + ' free pack' + (ST.free.charges > 1 ? 's' : ''), async () => { const r = await act('freePack'); if (!r.error) openPack('standard') })
+  const dupes = dupCount().n; if (dupes >= 5) add('♻️', dupes + ' spare duplicates', () => go('cards'))
+  if (!items.length) return wrap
+  wrap.append(h('div', 'todo-h', '<b>TO DO</b>'))
+  const n = claimableCount()
+  if (n) { const ca = h('button', 'btn gold sm todo-all', 'CLAIM ALL (' + n + ')'); ca.onclick = async () => { const r = await act('claimAll'); if (!r.error) rerender() }; wrap.firstChild.append(ca) }
+  const row = h('div', 'todo-row'); row.append(...items); wrap.append(row)
+  return wrap
 }
 function teamSub() { const n = P.team.filter(Boolean).length; return n ? `${n}/6 · rating ${teamStats().rating}` : 'Build your squad' }
 
@@ -447,6 +470,12 @@ PAGES.cards = (el, view) => {
   counter.style.margin = '4px 0 0 8px'
   counter.onclick = () => go('cards', 'counter')
   el.append(counter)
+  { const dc = dupCount(); if (dc.n) {
+    const bar = h('div', 'dupe-bar', '<span><b>' + dc.n + ' spare duplicates</b> · one copy of each card is always kept. Locked and favourite cards are skipped.</span>')
+    const sell = h('button', 'btn dark sm', 'SELL ALL DUPES'), shred = h('button', 'btn gold sm', 'SHRED ALL → ◆' + fmt(dc.s))
+    sell.onclick = async () => { if (!confirm('Sell ' + dc.n + ' spare duplicates for coins? One copy of each card is kept.')) return; const r = await act('sellDupes'); if (!r.error) rerender() }
+    shred.onclick = async () => { if (!confirm('Shred ' + dc.n + ' spare duplicates into shards? One copy of each card is kept.')) return; const r = await act('shred', { all: 1 }); if (!r.error) rerender() }
+    bar.append(sell, shred); el.append(bar) } }
   const tools = h('div', ''); tools.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-top:14px'
   const MODES = ['OWNED', 'UNOWNED', 'ALL', 'BINDER', 'WATCHLIST']; const seg = segmented(MODES, Math.max(0, MODES.indexOf(CF.mode)), i => { CF.mode = MODES[i]; draw() })
   const q = h('input', 'field'); q.type = 'search'; q.placeholder = 'Search cards or abilities, e.g. shield break'; q.value = CF.q; q.oninput = () => { CF.q = q.value.trim().toLowerCase(); draw() }
@@ -1882,7 +1911,7 @@ async function revealPacks(cards, n, hadBefore, quick, destination) {
 // ================= SHARDS + CHALLENGES =================
 const RKA = r => 'CURELMX'.indexOf(r)
 function rwText(rw) { return [rw.pack && (ST.packs[rw.pack] || {}).name, rw.coins && fmt(rw.coins) + ' coins', rw.shards && '◆' + fmt(rw.shards) + ' shards'].filter(Boolean).join(' + ') }
-function dupCount() { let n = 0, s = 0; for (const k in club()) { const c = BYKEY[k], e = club()[k]; if (!c) continue; const x = Math.min(e.n - 1, spendableCopies(e, P.team.includes(k))); if (x > 0) { n += x; s += x * ST.shardGet[c.r] } } return { n, s } }
+function dupCount() { let n = 0, s = 0; for (const k in club()) { const c = BYKEY[k], e = club()[k]; if (!c || e.locked) continue; const x = Math.min(e.n - 1, spendableCopies(e, P.team.includes(k))); if (x > 0) { n += x; s += x * ST.shardGet[c.r] } } return { n, s } }
 function sbcBlock(el) {
   const dc = dupCount()
   el.append(h('div', 'sec', `<h3>CHALLENGES</h3><span class="cur shard-c">◆ ${fmt(P.shards || 0)}</span>`))

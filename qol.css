@@ -56,3 +56,13 @@
 .archrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px } .archrow span { padding: 3px 10px; border-radius: 999px; background: rgba(240,207,114,.14); box-shadow: 0 0 0 1px rgba(240,207,114,.45) inset; font: 800 12px var(--eUI, Inter); color: #f6e2a8 }
 .tm-bond.mv { background: rgba(120,90,255,.14); box-shadow: 0 0 0 1px rgba(160,130,255,.5) inset } .tm-bond.mv b { color: #c8b8ff } .tm-bond.mv span { color: #e8e0ff }
 .howbox p { margin: 7px 0 0; font: 500 12.5px/1.45 var(--eUI, Inter); color: #d8d2ea } .howbox p b { color: #ffe27a; margin-right: 2px }
+
+.lb-ends { display: block; margin-top: 3px; font: 800 11px var(--eUI, Inter) !important; color: #ffd36a !important; letter-spacing: .04em }
+.todo-strip { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: linear-gradient(135deg, rgba(30,22,60,.9), rgba(14,10,30,.9)); border: 1px solid rgba(154,228,255,.18) }
+.todo-strip:empty { display: none }
+.todo-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px } .todo-h b { font: 900 12px var(--eUI, Inter); letter-spacing: .2em; color: #9ae4ff }
+.todo-row { display: flex; flex-wrap: wrap; gap: 6px }
+.todo-i { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05); color: #eee8ff; font: 700 12px var(--eUI, Inter); cursor: pointer }
+.todo-i:hover { background: rgba(154,228,255,.12) }
+.dupe-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); font: 500 12.5px var(--eUI, Inter); color: #d8d2ea }
+.dupe-bar span { flex: 1 1 220px } .dupe-bar b { color: #ffe27a }
