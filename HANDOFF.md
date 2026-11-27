@@ -2,6 +2,11 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-27 · Claude · stats beyond 99 + big-number Battle Stats
+- Real card stats are no longer capped at 99 (effSig, ascendCard, awakening in app.js), so levels, diamonds and Ascension keep adding. OVR is still capped at 99. The card FACE still shows min(99) (cardkit). Battle uses the real uncapped stats.
+- Card page shows battleStatsPanel(): HP = battle HP formula x100, STRIKE/BLAST ATK and DEFENSE = stat x420, SPEED/TECHNIQUE/IQ = stat x100 (STAT_SCALE). Gear (next, DBL-style) should add bonuses on this scale.
+
+---
 ## 2026-11-27 · Claude · Crucible balance pass (best-team auto run, no items)
 - Breather: +12% per stage. Boss stages fully heal and revive KO at 30% (engine crucibleResult). Stage boosts retuned in crucible.js: 4-12 up, 21-29 up, AoE-heavy late stages down, walls 42/44/48/50 down, easy 38/41/46/47 up.
 - Result: best team on auto with no items and no saves dies around stage 23, with pressure from stage 6. Clearing 50 needs items, saves and counters, by design.

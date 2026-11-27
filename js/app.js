@@ -7,13 +7,13 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-crubal-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-stats-1'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=claude-backup-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=claude-asc-4'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=claude-stats-1'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -28,7 +28,7 @@ const club = () => P.club.cards
 const LB_KEYS = ['dmg', 'dodge', 'dr', 'regen', 'teamHeal', 'spec', 'strikeBoost', 'exec', 'aoeBoost', 'vsAnimeB', 'vsTypeB', 'teamDmg', 'avenge', 'crit', 'spd', 'ultBoost']
 const effSig = c => { const o = club()[c.key]; if (!o) return c
   const dia = Math.min(7, o.dia || 3), lv = o.lv || 1, mult = 1 + (dia - 3) * .04 + (lv - 1) * .0015
-  const st = (c.st || [70, 70, 70, 70, 70, 70]).map(v => Math.min(99, Math.round(v * mult)))
+  const st = (c.st || [70, 70, 70, 70, 70, 70]).map(v => Math.round(v * mult))
   let pas = c.pas; if (dia >= 7 && pas && pas.e) { const e = { ...pas.e }; for (const k of LB_KEYS) if (typeof e[k] === 'number') e[k] = Math.round(e[k] * 1.25); pas = { ...pas, e } }
   let out = { ...c, st, pas, ovr: Math.min(99, c.ovr + (dia - 3) + Math.floor((lv - 1) / 25)), dia, lv, asc: o.asc || 0, maxed: dia >= 7 ? 1 : 0, sig: o.sig ? 1 : 0 }
   if (o.asc && c.ascension) out = ascendCard(out)
@@ -38,11 +38,11 @@ function ascendCard(x) {
   const z = x.ascension, base = (x.pas && x.pas.e) || {}
   const e = z.replace ? { ...z.e } : { ...base, ...z.e }
   return { ...x, ascended: 1, ver: z.ver || x.ver, mv: z.mv || x.mv, tx: z.tx || x.tx, url: z.url || x.url, fy: z.fy ?? x.fy,
-    st: x.st.map(v => Math.min(99, Math.round(v * 1.04))), ovr: Math.min(99, x.ovr + 2),
+    st: x.st.map(v => Math.round(v * 1.04)), ovr: Math.min(99, x.ovr + 2),
     pas: { n: z.n || (x.pas && x.pas.n), d: z.d || (x.pas && x.pas.d), e } }
 }
 const eff = c => { const x = effSig(c), w = []; if (!w.length) return x
-  const st = (x.st || [70, 70, 70, 70, 70, 70]).slice(), up = (i, v) => st[i] = Math.min(99, st[i] + v); let ovr = x.ovr
+  const st = (x.st || [70, 70, 70, 70, 70, 70]).slice(), up = (i, v) => st[i] = st[i] + v; let ovr = x.ovr
   if (w.includes('pwr')) up(0, 4); if (w.includes('spd')) up(1, 4); if (w.includes('def')) up(4, 4)
   if (w.includes('ovr')) { ovr += 3; for (let i = 0; i < 6; i++) up(i, 2) } if (w.includes('aw')) ovr += 2
   const pe = { ...((x.pas && x.pas.e) || {}) }; if (w.includes('dodge')) pe.dodge = (pe.dodge || 0) + 5; if (w.includes('dmg')) pe.dmg = (pe.dmg || 0) + 8
@@ -772,7 +772,7 @@ async function cardDetail(key, { kitOnly = false, auraDiamonds = 4 } = {}) {
     }
     if (e && e.ser) d.append(h('span', 'serial' + (e.ser <= 100 ? ' low' : ''), `SERIAL #${String(e.ser).padStart(4, '0')}${e.ser <= 10 ? ' · ULTRA LOW' : e.ser <= 100 ? ' · LOW SERIAL' : ''}`))
     d.append(h('span', 'eyebrow', `${ANAME(c.anime)} · ${c.faction} · ${c.role}${kitOnly ? ' · OPPONENT' : e ? ` · OWNED ×${e.n}` : ' · NOT OWNED'}`))
-    d.append(h('div', 'kv', c.st.map((v, i) => `<div><small>${['PWR', 'SPD', 'ENG', 'TEC', 'DEF', 'IQ'][i]}</small>${v}</div>`).join('')))
+    d.append(battleStatsPanel(c))
     d.append(h('div', 'movebox', `<b style="color:${TYPE[c.t].c[2]}">${TYPE[c.t].en} · ${c.mv}</b><p>${c.tx.join(' ')}</p>`))
     if (e) d.append(progBox(key))
     if (false) { const x = (P.mast || {})[key] || 0, T = ST.mastT, l = T.filter(t => x >= t).length - 1, nx = T[l + 1]; d.append(h('div', 'mastbox', `<b>MASTERY ${l ? 'M' + l : '—'}${l >= 4 ? ' · MASTERED' : ''}</b><i><s style="width:${nx ? Math.min(100, (x - T[l]) / (nx - T[l]) * 100) : 100}%"></s></i><small>${nx ? `${x} / ${nx} XP · win battles with this card in your team` : 'Max mastery reached'}</small>`)) }
@@ -2676,6 +2676,29 @@ function ascendFX(before, after, done) {
   setTimeout(() => { ov.classList.add('plate'); ov.onclick = () => { ov.classList.add('out'); setTimeout(() => { ov.remove(); done && done() }, 350) } }, 2400)
 }
 
+// ---- BATTLE STATS: the real (uncapped) stats as big numbers. Card faces keep the 0-99 rating look. ----
+const STAT_SCALE = { atk: 420, minor: 100, hp: 100 }
+function bigStats(c) {
+  const [pwr, spd, ki, tec, def, iq] = c.st || [70, 70, 70, 70, 70, 70]
+  const hp = Math.round((c.ovr * 40 + def * 12 + (c.tag ? 600 : 0)) * (c.awoke ? 1.1 : 1)) * STAT_SCALE.hp
+  return [['HP', hp, 'hp'], ['STRIKE ATK', pwr * STAT_SCALE.atk, 'atk', pwr], ['BLAST ATK', ki * STAT_SCALE.atk, 'atk', ki], ['DEFENSE', def * STAT_SCALE.atk, 'def', def],
+    ['SPEED', spd * STAT_SCALE.minor, 'minor', spd], ['TECHNIQUE', tec * STAT_SCALE.minor, 'minor', tec], ['INTELLIGENCE', iq * STAT_SCALE.minor, 'minor', iq]]
+}
+function battleStatsPanel(c) {
+  const box = h('section', 'bstats')
+  const head = h('header', '', '<small>戦闘力 · BATTLE STATS</small><b></b>'); head.querySelector('b').textContent = (c.ovr || 0) + ' OVR'
+  box.append(head)
+  const grid = h('div', 'bs-grid')
+  for (const [label, val, kind, raw] of bigStats(c)) {
+    const row = h('div', 'bs-row bs-' + kind), l = h('small'), v = h('b'), bar = h('i')
+    l.textContent = label; v.textContent = val.toLocaleString()
+    const ref = kind === 'hp' ? 600000 : 130; bar.style.setProperty('--w', Math.min(100, Math.round((kind === 'hp' ? val : raw) / ref * 100)) + '%')
+    if (raw > 99) { const up = h('em'); up.textContent = 'BEYOND 99'; l.append(up) }
+    row.prepend(l); row.append(v, bar); grid.append(row)
+  }
+  box.append(grid)
+  return box
+}
 function progBox(key) {
   const o = club()[key], dia = o.dia || 3, lv = o.lv || 1, need = (ST.lvNeed || [])[lv] || 1, xp = o.xp || 0
   const w = h('div', 'prog' + (dia >= 7 ? ' maxed' : ''), `<div class="pg-d"><b>${diaStr(dia)}</b><span>${dia >= 7 ? 'LIMIT BREAK · passive 25% stronger' : (7 - dia) + ' more duplicate' + (7 - dia > 1 ? 's' : '') + ' to max'}</span></div>
