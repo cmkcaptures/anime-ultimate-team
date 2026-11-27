@@ -1,5 +1,5 @@
 // Increase this number and update the notes for each player-facing patch.
-export const PATCH_VERSION = 2026112702
+export const PATCH_VERSION = 2026112703
 
 const NOTES = [
   ['New Dead Zones', ['Symbol of Evil (All For One): Stolen Quirks, Hellflame Heir and Quirk Overload. All For One and Dabi hit your whole team, so bring healing and damage reduction.', 'The World (Dio): Space Ripper, Road Roller and ZA WARUDO. The hardest Dead Zone yet. Each stage is a step up from the last.', 'Both use New Gen warnings: read the warning every round and answer it.', 'Full-clear rewards: Symbol of Evil gives All For One (Quirk Overload) and The World gives Diavolo (King Crimson). Both are now Dead Zone exclusives and no longer drop from packs.']],
