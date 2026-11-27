@@ -6,13 +6,13 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-asc-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-asc-4'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=claude-backup-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=claude-asc-2'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=claude-asc-4'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -103,7 +103,7 @@ if (LAZY) new MutationObserver(records => {
 }).observe(document.body, { childList: true, subtree: true })
 function cardImg(c, w = 340) {
   const im = new Image(); im.alt = `${c.name} ${c.ver}, ${TIER[c.r].name}, grade ${gradeOf(c.ovr)}`; im.decoding = 'async'; im.draggable = false
-  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r; if (c.key) im.dataset.key = c.key; if (c.sig) im.dataset.sig = 1; if (c.maxed) im.dataset.max = 1
+  im.width = 680; im.height = 952; im.style.aspectRatio = '680 / 952'; im.dataset.r = c.r; if (c.key) im.dataset.key = c.key; if (c.sig) im.dataset.sig = 1; if (c.maxed) im.dataset.max = 1; if (c.ascended) im.dataset.asc = 1
   im._draw = () => { delete im._draw; thumbURL(c, w).then(u => { im.src = u }, () => {}) }
   if (LAZY) { pendingCardImages.add(im); LAZY.observe(im) }
   else im._draw()

@@ -122,3 +122,8 @@
 @keyframes axFlash { 0% { opacity: 0 } 25% { opacity: .95 } 100% { opacity: 0 } } @keyframes axRise { 0% { opacity: 0; transform: translateY(0) } 15% { opacity: 1 } 100% { opacity: 0; transform: translateY(-105vh) } }
 @keyframes axPlate { to { opacity: 1; transform: translateY(0) } }
 @media (prefers-reduced-motion: reduce) { .ascfx *, .asc-panel *, .asc-panel::before { animation: none !important } }
+
+/* ascended cards: live gold aura wherever the card appears */
+img[data-asc] { animation: ascAura 2.8s ease-in-out infinite; border-radius: 10px }
+@keyframes ascAura { 0%, 100% { filter: drop-shadow(0 0 6px rgba(255,190,60,.55)) drop-shadow(0 0 16px rgba(255,160,30,.25)) } 50% { filter: drop-shadow(0 0 12px rgba(255,214,110,.9)) drop-shadow(0 0 30px rgba(255,170,30,.45)) brightness(1.06) } }
+@media (prefers-reduced-motion: reduce) { img[data-asc] { animation: none; filter: drop-shadow(0 0 8px rgba(255,190,60,.6)) } }

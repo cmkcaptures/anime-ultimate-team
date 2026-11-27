@@ -207,7 +207,6 @@ export function drawCard(x, d) {
   x.shadowOffsetY = 3; x.font = DISP(32); x.fillStyle = '#fff'; x.fillText(d.role, 76, 202);
   if (d.dia) { x.save(); x.shadowColor = 'rgba(0,0,0,.85)'; x.shadowOffsetY = 2; x.font = '900 26px sans-serif'; const s = '◆'.repeat(d.dia) + '◇'.repeat(7 - d.dia), y = d.tag ? 282 : 240; if (d.maxed) { const g = x.createLinearGradient(30, 0, 230, 0); ['#ff5ab0', '#ffd95a', '#5affb0', '#5ac8ff', '#b88cff'].forEach((cc, i) => g.addColorStop(i / 4, cc)); x.fillStyle = g } else x.fillStyle = '#ffd23a'; x.fillText(s, 30, y); x.restore() }
   if (d.maxed) { x.save(); const g = x.createLinearGradient(0, 0, W, H); ['#ff5ab0', '#ffd95a', '#5affb0', '#5ac8ff', '#b88cff', '#ff5ab0'].forEach((cc, i, L) => g.addColorStop(i / (L.length - 1), cc)); x.strokeStyle = g; x.lineWidth = 14; x.shadowColor = '#fff'; x.shadowBlur = 24; x.strokeRect(16, 16, W - 32, H - 32); x.globalCompositeOperation = 'overlay'; x.globalAlpha = .28; x.fillStyle = g; x.fillRect(0, 0, W, H); x.restore() }
-  if (d.ascended) { x.save(); x.lineWidth = 12; x.strokeStyle = '#ffd36a'; x.shadowColor = '#ffb020'; x.shadowBlur = 30; x.strokeRect(10, 10, W - 20, H - 20); x.lineWidth = 2; x.strokeStyle = '#fff3c4'; x.shadowBlur = 0; x.strokeRect(22, 22, W - 44, H - 44); x.font = 'italic 900 26px sans-serif'; x.textAlign = 'right'; x.fillStyle = '#ffd36a'; x.shadowColor = 'rgba(0,0,0,.9)'; x.shadowBlur = 6; x.fillText('⬆ ASCENDED', W - 34, H * .42); x.restore() }
   if (d.tag) { x.save(); x.shadowColor = 'transparent'; const tg = x.createLinearGradient(30, 0, 150, 0); if (d.r === 'X') RB.forEach((c, i) => tg.addColorStop(i / 4, c)); else { tg.addColorStop(0, '#fff'); tg.addColorStop(1, c3) } x.fillStyle = tg; x.beginPath(); x.moveTo(38, 216); x.lineTo(158, 216); x.lineTo(150, 246); x.lineTo(30, 246); x.fill(); x.font = DISP(24); x.fillStyle = '#0a0612'; x.fillText('TAG UNIT', 46, 240); x.restore() } x.fillStyle = d.r === 'X' ? '#fff' : c3; x.fillRect(30, 188, 36, 6)
   x.shadowColor = 'transparent'; x.shadowOffsetY = 0
   x.save(); x.translate(W - 64, 66); const eg = x.createLinearGradient(0, -40, 0, 40); if (d.r === 'X') RB.forEach((c, i) => eg.addColorStop(i / 4, c)); else { eg.addColorStop(0, c3); eg.addColorStop(.6, c1); eg.addColorStop(1, c2) }
@@ -276,6 +275,31 @@ export function drawCard(x, d) {
     }
     x.restore()
   }
+  if (d.ascended) { // ASCENDED frame: ornate gold edges only, the art stays clear
+    x.save()
+    const gold = x.createLinearGradient(0, 0, W, H); ['#8a5a12', '#ffd36a', '#fff3c4', '#ffb020', '#7a4a08', '#ffd36a', '#fff3c4'].forEach((cc, i, L) => gold.addColorStop(i / (L.length - 1), cc))
+    // inner edge glow
+    x.globalCompositeOperation = 'screen'
+    for (const [gx, gy, r] of [[0, 0, 260], [W, 0, 260], [0, H, 300], [W, H, 300]]) { const g = x.createRadialGradient(gx, gy, 0, gx, gy, r); g.addColorStop(0, 'rgba(255,190,70,.35)'); g.addColorStop(1, 'rgba(255,190,70,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H) }
+    x.globalCompositeOperation = 'source-over'
+    // double border
+    x.shadowColor = '#ffb020'; x.shadowBlur = 26; x.lineWidth = 9; x.strokeStyle = gold; x.strokeRect(9, 9, W - 18, H - 18)
+    x.shadowBlur = 0; x.lineWidth = 2; x.strokeStyle = 'rgba(255,243,196,.9)'; x.strokeRect(21, 21, W - 42, H - 42)
+    // corner crests
+    const corner = (cx, cy, sx, sy) => { x.beginPath(); x.moveTo(cx, cy + sy * 92); x.lineTo(cx, cy); x.lineTo(cx + sx * 92, cy); x.lineWidth = 7; x.strokeStyle = gold; x.shadowColor = '#ffb020'; x.shadowBlur = 16; x.stroke(); x.shadowBlur = 0
+      x.beginPath(); x.moveTo(cx + sx * 14, cy + sy * 14); x.lineTo(cx + sx * 34, cy + sy * 14); x.lineTo(cx + sx * 14, cy + sy * 34); x.closePath(); x.fillStyle = '#fff3c4'; x.fill() }
+    corner(16, 16, 1, 1); corner(W - 16, 16, -1, 1); corner(16, H - 16, 1, -1); corner(W - 16, H - 16, -1, -1)
+    // top crest
+    x.beginPath(); x.moveTo(W / 2, 2); x.lineTo(W / 2 + 34, 26); x.lineTo(W / 2, 50); x.lineTo(W / 2 - 34, 26); x.closePath(); x.fillStyle = gold; x.shadowColor = '#ffb020'; x.shadowBlur = 20; x.fill(); x.shadowBlur = 0
+    x.font = '900 22px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#2a1600'; x.fillText('⬆', W / 2, 27)
+    // sparkles along the frame
+    const star = (sx, sy, s) => { x.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, r = i % 2 ? s * .28 : s; x.lineTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r) } x.closePath(); x.fillStyle = '#fff6d8'; x.shadowColor = '#ffd36a'; x.shadowBlur = 12; x.fill(); x.shadowBlur = 0 }
+    let seed = (d.id || 'x').split('').reduce((a, ch) => a + ch.charCodeAt(0), 7); const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280
+    for (let i = 0; i < 14; i++) { const side = i % 4, t = .1 + rnd() * .8, s = 7 + rnd() * 9; const sx = side === 0 ? W * t : side === 1 ? W - 14 : side === 2 ? W * t : 14, sy = side === 0 ? 14 : side === 1 ? H * t : side === 2 ? H - 14 : H * t; star(sx, sy, s) }
+    // ribbon
+    x.font = 'italic 900 24px sans-serif'; x.textAlign = 'right'; x.textBaseline = 'alphabetic'; x.fillStyle = '#ffd36a'; x.shadowColor = 'rgba(0,0,0,.95)'; x.shadowBlur = 8; x.fillText('ASCENDED', W - 40, H * .42)
+    x.restore()
+  }
 }
 
 // ---- small card images for menus, cached per card + awakening level ----
@@ -287,7 +311,7 @@ const sig = c => ['g1', c.ascended || 0, c.key, c.url, c.dia || 0, c.lv || 0, c.
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340, prio) {
-  const bw = bucket(w), art = c.transformations ? '|' + c.url : '', k = 't14|' + sig(c) + art + '|' + bw
+  const bw = bucket(w), art = c.transformations ? '|' + c.url : '', k = 't16|' + sig(c) + art + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
