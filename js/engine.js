@@ -1,7 +1,7 @@
 import { PATCH_VERSION } from './patch-notes.js?v=24'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-guts-1'
-import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, rollGear, rollSub, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear120b'
+import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, rollGear, rollSub, gearReqOk, GEAR_REQ } from './gear.js?v=claude-unique-1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-7'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-guts-1'
@@ -1477,7 +1477,7 @@ function gearP() {
 }
 function giveGear(tier, base) {
   const G = S.profile.gear || (S.profile.gear = { items: {}, eq: {}, shards: 0 })
-  const pool = Object.keys(GEAR_BASES).filter(b => !tier || GEAR_BASES[b].t === tier), b = base || pool[Math.floor(Math.random() * pool.length)]
+  const pool = Object.keys(GEAR_BASES).filter(b => GEAR_BASES[b].t !== 'U' && (!tier || GEAR_BASES[b].t === tier)), b = base || pool[Math.floor(Math.random() * pool.length)]
   const uid = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), it = rollGear(b); G.items[uid] = it; it.uid = uid; return it
 }
 function act(a) {
@@ -1718,7 +1718,7 @@ function act(a) {
       const eq = G.eq[a.key] || (G.eq[a.key] = [null, null, null])
       if (a.uid == null) { eq[slot] = null; return {} }
       const it = G.items[a.uid]; if (!it) return { error: 'Gear not found.' }
-      if (!gearReqOk(byKey(a.key), it)) return { error: GEAR_BASES[it.b].name + ' needs a ' + GEAR_REQ[GEAR_BASES[it.b].t].text + ' fighter.' }
+      if (!gearReqOk(byKey(a.key), it)) return { error: GEAR_BASES[it.b].only ? GEAR_BASES[it.b].name + ' only fits ' + GEAR_BASES[it.b].onlyName + '.' : GEAR_BASES[it.b].name + ' needs a ' + GEAR_REQ[GEAR_BASES[it.b].t].text + ' fighter.' }
       for (const [k, arr] of Object.entries(G.eq)) arr.forEach((u, i) => { if (u === a.uid) arr[i] = null })
       eq[slot] = a.uid; return {}
     }
@@ -1740,7 +1740,7 @@ function act(a) {
       return { msg: 'Salvaged for ' + got + ' gear shards.' }
     }
     case 'gearBuy': {
-      if (a.base) { const G = gearP(), B = GEAR_BASES[a.base]; if (!B) return { error: 'Unknown gear.' }; const cost = GEAR_TIERS[B.t].box * 4; if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }; G.shards -= cost; const it = giveGear(B.t, a.base); return { msg: 'Got ' + B.name + '!', gear: it.uid } }
+      if (a.base) { const G = gearP(), B = GEAR_BASES[a.base]; if (!B) return { error: 'Unknown gear.' }; const cost = GEAR_TIERS[B.t].box * (B.t === 'U' ? 4 : 4); if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }; G.shards -= cost; const it = giveGear(B.t, a.base); return { msg: 'Got ' + B.name + '!', gear: it.uid } }
       const G = gearP(), t = a.tier; if (!GEAR_TIERS[t]) return { error: 'Bad box.' }
       const cost = GEAR_TIERS[t].box; if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }
       G.shards -= cost; const it = giveGear(t); return { msg: 'Got ' + GEAR_BASES[it.b].name + '!', gear: it.uid }

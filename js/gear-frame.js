@@ -4,6 +4,7 @@ const CACHE = {}
 const METAL = {
   B: { stops: ['#3a1c08', '#a85f2c', '#ffcf9a', '#c27a3e', '#5a2e10', '#e8a066', '#3a1c08'], edge: '#1c0c02', gem: ['#fff1dc', '#e08a3c', '#7a3810'], stars: 1 },
   S: { stops: ['#2a3446', '#8e9fbb', '#ffffff', '#b3c2dc', '#4c5a74', '#e8f0ff', '#2a3446'], edge: '#0b1220', gem: ['#ffffff', '#7fc4ff', '#1f4f9a'], stars: 2 },
+  U: { stops: ['#2a0a3a', '#ff4fd8', '#fff4ff', '#7fe7ff', '#6a2bd6', '#ffe08a', '#2a0a3a'], edge: '#12001c', gem: ['#ffffff', '#b98cff', '#3a0a6a'], stars: 4 },
   G: { stops: ['#4a2a02', '#c8871a', '#fff6d8', '#ffd36a', '#8a5408', '#ffe9a8', '#4a2a02'], edge: '#1e1000', gem: ['#ffffff', '#ff6ad0', '#7a1060'], stars: 3 },
 }
 const S = 256, C = 40 // size, chamfer

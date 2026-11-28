@@ -1,10 +1,14 @@
 // GEAR: 3 slots per fighter (0 Gold, 1 Silver, 2 Bronze). Main stat on the big-number scale + substats.
-export const TIERS = { G: { name: 'GOLD', subs: 3, up: 2500, ref: 120, salv: 80, box: 600 }, S: { name: 'SILVER', subs: 2, up: 1500, ref: 50, salv: 30, box: 180 }, B: { name: 'BRONZE', subs: 1, up: 800, ref: 20, salv: 10, box: 60 } }
+export const TIERS = { U: { name: 'UNIQUE', subs: 3, up: 3000, ref: 150, salv: 0, box: 1500 }, G: { name: 'GOLD', subs: 3, up: 2500, ref: 120, salv: 80, box: 600 }, S: { name: 'SILVER', subs: 2, up: 1500, ref: 50, salv: 30, box: 180 }, B: { name: 'BRONZE', subs: 1, up: 800, ref: 20, salv: 10, box: 60 } }
 export const SLOT_TIER = ['G', 'S', 'B'] // legacy labels only: any gear fits any slot now
 // requirements: minimum card rarity per gear tier (C<U<R<E<L<M<X)
-export const GEAR_REQ = { G: { minR: 'L', text: 'Legendary or higher' }, S: { minR: 'E', text: 'Epic or higher' }, B: null }
-export function gearReqOk(card, it) { const q = GEAR_REQ[GEAR_BASES[it.b].t]; return !q || 'CURELMX'.indexOf(card.r) >= 'CURELMX'.indexOf(q.minR) }
+export const GEAR_REQ = { U: null, G: { minR: 'L', text: 'Legendary or higher' }, S: { minR: 'E', text: 'Epic or higher' }, B: null }
+export function gearReqOk(card, it) { const only = GEAR_BASES[it.b].only; if (only) return !!card && card.id === only; const q = GEAR_REQ[GEAR_BASES[it.b].t]; return !q || 'CURELMX'.indexOf(card.r) >= 'CURELMX'.indexOf(q.minR) }
 export const GEAR_BASES = {
+  // UNIQUE: one exact card only. Built to make an older unit meta-relevant again.
+  u_gojo_sukuna: { name: 'Six Eyes Blindfold', t: 'U', main: 'both', only: 'gojo_vs_sukuna', onlyName: 'Gojo & Sukuna (Strongest vs King of Curses)', fx: { dmg: 30, first: 1, typeNeutral: 1, dr: 15 }, fxText: 'Gojo & Sukuna only. +30% damage, always moves first, no type disadvantage, takes 15% less damage.' },
+  u_gojo_geto: { name: 'Blue Spring Bond', t: 'U', main: 'hp', only: 'gojo_geto_prison', onlyName: 'Gojo & Geto (Shibuya · Prison Realm)', fx: { teamDmg: 12, teamHeal: 3, dr: 20, typeNeutral: 1, endure: 1 }, fxText: 'Gojo & Geto only. Whole team deals +12% damage, team heal +3% a turn, takes 20% less damage, no type disadvantage, survives 1 KO.' },
+  u_deku_ofa: { name: 'Ninth Vestige Gauntlets', t: 'U', main: 'str', only: 'deku_ofa_unleashed', onlyName: 'Deku (One For All · Unleashed)', fx: { dmg: 25, first: 1, recoil: -3, typeNeutral: 1, crit: 10 }, fxText: 'Deku only. +25% damage, always moves first, no more recoil, no type disadvantage, +10% crit chance.' },
   turtle_shell: { name: 'Turtle Shell', t: 'B', main: 'str' }, dragon_radar: { name: 'Dragon Radar', t: 'B', main: 'bla' }, power_pole: { name: 'Power Pole', t: 'B', main: 'def' },
   scouter: { name: 'Scouter', t: 'S', main: 'bla' }, headband: { name: 'Ninja Headband', t: 'S', main: 'str' }, hunter_license: { name: 'Hunter License', t: 'S', main: 'hp' },
   senzu: { name: 'Senzu Pouch', t: 'G', main: 'hp', fx: { senzuGear: 1 }, fxText: 'Once per battle, heals 25% HP when this fighter starts a turn below 30% HP.' },
@@ -130,7 +134,7 @@ export const GEAR_BASES = {
   angel_halo: { name: "Angel Halo", t: 'G', main: 'both', fx: {revive: 1}, fxText: "Comes back once after being knocked out." },
   rokakaka: { name: "Rokakaka Fruit", t: 'G', main: 'hp', fx: {teamHeal: 2,regen: 2}, fxText: "Heals the team 2% and itself 2% every turn." },
 }
-const MAIN = { B: { str: 1200, bla: 1200, def: 1200, hp: 9000 }, S: { str: 2400, bla: 2400, def: 2400, hp: 18000 }, G: { str: 4000, bla: 4000, def: 4000, hp: 30000 } }
+const MAIN = { U: { str: 5000, bla: 5000, def: 5000, hp: 38000 }, B: { str: 1200, bla: 1200, def: 1200, hp: 9000 }, S: { str: 2400, bla: 2400, def: 2400, hp: 18000 }, G: { str: 4000, bla: 4000, def: 4000, hp: 30000 } }
 export const MAIN_LABEL = { str: 'STRIKE ATK', bla: 'BLAST ATK', def: 'DEFENSE', hp: 'HP' }
 const TAGS = ['Saiyans', 'Swordsmen', 'Heroes', 'Villains', 'Females', 'Demons', 'Monsters', 'Gods & Kings', 'Mentors', 'Protagonist', 'Rival', 'Speedster', 'Berserker', 'Guardian', 'Tactician', 'Blademaster', 'Sovereign', 'Heroine']
 const SUBS = [['dmg', 2, 5, 'Damage'], ['dr', 2, 4, 'Damage taken'], ['crit', 2, 5, 'Crit chance'], ['spec', 3, 7, 'Special damage'], ['strikeBoost', 3, 7, 'Strike damage'], ['tagDmg', 4, 9, 'Damage'], ['tagDr', 3, 7, 'Damage taken']]

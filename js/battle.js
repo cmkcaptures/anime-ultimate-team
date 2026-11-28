@@ -102,7 +102,7 @@ function applyLeader(side) { const L = side.team[0] && side.team[0].card, lead =
   for (const f of side.team) if (leadHits(lead, f.card)) { n++; f.max = f.hp = Math.round(f.max * (1 + lead.pct / 100)); const k = 1 + lead.pct / 200; f.pwr = Math.round(f.pwr * k); f.ki = Math.round(f.ki * k); f.def = Math.round(f.def * k); f.boosted = 1 }
   side.leadN = n }
 export function synergy(cards) { const n = {}; for (const c of cards) if (c) n[c.anime] = (n[c.anime] || 0) + 1; let best = null; for (const a in n) if (!best || n[a] > n[best]) best = a; const k = best ? n[best] : 0; return { anime: best, n: k, bonus: SYN[Math.min(6, k)] || 0 } }
-const matchup = (att, def) => beats(tOf(att.card), tOf(def.card)) ? 1.3 : beats(tOf(def.card), tOf(att.card)) ? .8 : 1
+const matchup = (att, def) => { const m = beats(tOf(att.card), tOf(def.card)) ? 1.3 : beats(tOf(def.card), tOf(att.card)) ? .8 : 1; if (m < 1 && att.pe && att.pe.typeNeutral) return 1; if (m > 1 && def.pe && def.pe.typeNeutral) return 1; return m }
 const tcol = c => (TYPE[tOf(c)] || TYPE.ki).c[0]
 const tname = c => (TYPE[tOf(c)] || TYPE.ki).en
 const weakTo = t => RING[(RING.indexOf(t) - 1 + RING.length) % RING.length]

@@ -1,7 +1,7 @@
 import { showPatchNotes } from './patch-notes.js?v=24'
-import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear120b'
+import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-unique-1'
 import { homeLife } from './home-life.js?v=claude-home-1'
-import { gearFrameURL, GEAR_CLIP } from './gear-frame.js?v=claude-frame-1'
+import { gearFrameURL, GEAR_CLIP } from './gear-frame.js?v=claude-unique-1'
 import { showArrivals } from './arrivals.js?v=claude-guts-2'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
@@ -10,7 +10,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-guts-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-unique-1'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=claude-backup-1'
@@ -2788,8 +2788,8 @@ function gearPicker(key, slot) {
       nm.textContent = GEAR_BASES[it.b].name + ' +' + (it.lvl || 0); info.append(nm)
       for (const [k, txt] of gearLines(it)) { const l = h('span', 'gl-' + k); l.textContent = txt; info.append(l) }
       const ow = owner(uid); if (ow && ow !== key) { const n = h('small', 'gp-own'); n.textContent = 'Equipped on ' + (BYKEY[ow]?.name || 'another card'); info.append(n) }
-      const ok = gearReqOk(card, it), q = GEAR_REQ[GEAR_BASES[it.b].t]
-      if (q) { const rq = h('small', 'gp-req' + (ok ? '' : ' no')); rq.textContent = (ok ? '✓ ' : '✗ ') + 'Requires ' + q.text; info.append(rq) }
+      const ok = gearReqOk(card, it), q = GEAR_BASES[it.b].only ? { text: 'EXCLUSIVE · ' + GEAR_BASES[it.b].onlyName } : GEAR_REQ[GEAR_BASES[it.b].t]
+      if (q) { const rq = h('small', 'gp-req' + (ok ? '' : ' no')); rq.textContent = (ok ? '✓ ' : '✗ ') + (GEAR_BASES[it.b].only ? '' : 'Requires ') + q.text; info.append(rq) }
       const btn = h('button', 'btn ' + (uid === cur ? 'dark' : 'gold') + ' sm', uid === cur ? 'UNEQUIP' : 'EQUIP'); if (!ok && uid !== cur) { btn.disabled = true; row.classList.add('locked') }
       btn.onclick = async () => { const r = await act('gearEquip', { key, slot, uid: uid === cur ? null : uid }); if (r.error) return; closeModal(); if (CUR === 'team') rerender(); else { cardDetail(key); setTimeout(() => document.querySelector('.rig')?.classList.add('zap'), 60) } }
       row.append(gearTile(it), info, btn); grid.append(row)
@@ -2802,7 +2802,7 @@ PAGES.armory = el => {
   const head = h('section', 'arm-head', '<div><small>武器庫 · ARMORY</small><h2>THE ARMORY</h2><p>Gear earned in the Crucible, Dead Zones and Daily Boss. Upgrade it, reforge its substats, or salvage spares into gear shards.</p></div><div class="arm-cur"><b></b><span>GEAR SHARDS</span></div>')
   head.querySelector('.arm-cur b').textContent = (G.shards || 0).toLocaleString(); el.append(head)
   const tabs = h('div', 'mtabs'); let f = window.__armF || 'ALL'
-  for (const k of ['ALL', 'G', 'S', 'B']) { const b = h('button', 'mtab' + (f === k ? ' on' : ''), k === 'ALL' ? 'ALL' : GEAR_TIERS[k].name); b.onclick = () => { window.__armF = k; rerender() }; tabs.append(b) }
+  for (const k of ['ALL', 'U', 'G', 'S', 'B']) { const b = h('button', 'mtab' + (f === k ? ' on' : ''), k === 'ALL' ? 'ALL' : GEAR_TIERS[k].name); b.onclick = () => { window.__armF = k; rerender() }; tabs.append(b) }
   el.append(tabs)
   const grid = h('div', 'arm-grid')
   const owner = uid => Object.entries(G.eq).find(([k, arr]) => arr.includes(uid))?.[0]
@@ -2820,13 +2820,13 @@ function gearCatalog(tf = 'G') {
   const G = ST.gear
   openModal(sh => {
     sh.append(h('h2', '', '🎯 GEAR CATALOG'), h('p', 'muted', 'Buy the exact piece you want with gear shards. You have ◈ ' + (G.shards || 0).toLocaleString() + '. Salvage spare gear for more shards.'))
-    const tabs = h('div', 'mtabs'); for (const t of ['G', 'S', 'B']) { const b = h('button', 'mtab' + (t === tf ? ' on' : ''), GEAR_TIERS[t].name); b.onclick = () => { closeModal(); gearCatalog(t) }; tabs.append(b) } sh.append(tabs)
+    const tabs = h('div', 'mtabs'); for (const t of ['U', 'G', 'S', 'B']) { const b = h('button', 'mtab' + (t === tf ? ' on' : ''), GEAR_TIERS[t].name); b.onclick = () => { closeModal(); gearCatalog(t) }; tabs.append(b) } sh.append(tabs)
     const cost = GEAR_TIERS[tf].box * 4, q = GEAR_REQ[tf], list = h('div', 'gcat')
     for (const [id, B] of Object.entries(GEAR_BASES).filter(([, B]) => B.t === tf).sort((x, y) => x[1].name.localeCompare(y[1].name))) {
       const row = h('div', 'gcat-r'), info = h('div', 'gcat-i'), ms = mainStats({ b: id, lvl: 0 })
       info.append(h('b', '', B.name), h('small', '', Object.entries(ms).map(([k, v]) => '+' + v.toLocaleString() + ' ' + MAIN_LABEL[k]).join(' · ')))
       if (B.fxText) info.append(h('span', 'gcat-fx', '✦ ' + B.fxText))
-      if (q) info.append(h('em', '', 'Needs a ' + q.text + ' fighter'))
+      if (B.only) info.append(h('em', 'gcat-only', '★ EXCLUSIVE · ' + B.onlyName)); else if (q) info.append(h('em', '', 'Needs a ' + q.text + ' fighter'))
       const buy = h('button', 'btn gold sm', '◈ ' + cost.toLocaleString()); buy.disabled = (G.shards || 0) < cost
       buy.onclick = async () => { const r = await act('gearBuy', { base: id }); if (r.error) return; closeModal(); rerender(); r.gear && gearDetail(r.gear) }
       row.append(gearTile({ b: id, lvl: 0, subs: [] }), info, buy); list.append(row)
