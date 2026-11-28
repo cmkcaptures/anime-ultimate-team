@@ -1,6 +1,6 @@
-import { PATCH_VERSION } from './patch-notes.js?v=24'
+import { PATCH_VERSION } from './patch-notes.js?v=claude-pn28'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
-import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-guts-1'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-gshard'
 import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, rollGear, rollSub, gearReqOk, GEAR_REQ } from './gear.js?v=claude-unique-1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-7'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
@@ -1519,6 +1519,7 @@ function act(a) {
       run.hp = (a.hp || []).slice(0, 6).map(x => Math.max(0, Math.min(1, +x || 0))).map(x => run.stage % 10 === 0 ? (x > 0 ? 1 : .3) : x > 0 ? Math.min(1, x + .12) : 0); run.gauge = Math.max(0, Math.min(100, +a.gauge || 0))
       const first = !C.first[n], R = crucibleReward(n), got = first ? R : { coins: Math.round(R.coins * .2) }
       if (first) C.first[n] = now
+      if (R.gearShards) { const gs = first ? R.gearShards : Math.round(R.gearShards * .3), GG = gearP(); GG.shards = (GG.shards || 0) + gs; got.gearShards = gs }
       if (first || Math.random() < .2) { const g = giveGear(n % 10 === 0 || n >= 35 ? 'G' : n >= 15 ? 'S' : 'B'); got.gear = GEAR_BASES[g.b].name }
       P.coins += got.coins || 0; if (got.shards) P.shards = (P.shards || 0) + got.shards
       if (got.premium) P.pending.premium = (P.pending.premium || 0) + got.premium
@@ -1885,6 +1886,7 @@ function act(a) {
         Bo.tries++; const dmg = Math.max(0, Math.min(2e6, Math.round(+a.dmg || 0))); Bo.total += dmg; const prev = Bo.best; Bo.best = Math.max(Bo.best, dmg); P.bossBestEver = Math.max(P.bossBestEver || 0, dmg); addXP(30)
         const got = []; for (let i = 0; i < BOSS_RW.length; i++) { const r = BOSS_RW[i]; if (Bo.best >= r.at && !Bo.got.includes(i)) { Bo.got.push(i); if (r.coins) P.coins += r.coins; if (r.shards) P.shards = (P.shards || 0) + r.shards; if (r.pack) P.pending[r.pack] = (P.pending[r.pack] || 0) + 1; got.push(r.label) } }
         if (Math.random() < .5) { const g = giveGear(Math.random() < .25 ? 'S' : 'B'); got.push(GEAR_BASES[g.b].name + ' (gear)') }
+        { const gs = 60 + Math.min(240, Math.round(dmg / 5000)), G = gearP(); G.shards = (G.shards || 0) + gs; got.push('◈' + gs + ' gear shards') }
         return { msg: `${dmg.toLocaleString()} damage to the boss${dmg > prev ? ' · NEW BEST' : ''}${got.length ? ' · Unlocked: ' + got.join(', ') : ''}` }
       }
       if (a.mode === 'ranked') {
@@ -1907,7 +1909,7 @@ function act(a) {
         const R = (P.rz = P.rz || {}), done = R[Z.id] || (R[Z.id] = [])
         if (n > 1 && !done.includes(n - 1)) return { error: 'Clear the previous Dead Zone stage first.' }
         if (!a.won) { addXP(20); return {} }
-        if (done.includes(n)) { P.coins += 1500; addXP(30); let extra = ''; if (Math.random() < .25) { const g = giveGear(Math.random() < .3 ? 'S' : 'B'); extra = ' + ' + GEAR_BASES[g.b].name + ' (gear)' } return { msg: 'Dead Zone stage replayed. +1,500 coins' + extra + '.' } }
+        if (done.includes(n)) { P.coins += 1500; addXP(30); let extra = ' + ◈60 gear shards'; { const G = gearP(); G.shards = (G.shards || 0) + 60 } if (Math.random() < .25) { const g = giveGear(Math.random() < .3 ? 'S' : 'B'); extra = ' + ' + GEAR_BASES[g.b].name + ' (gear)' } return { msg: 'Dead Zone stage replayed. +1,500 coins' + extra + '.' } }
         done.push(n); addXP(250); const w = st.reward, got = []
         P.coins += w.coins; got.push(w.coins.toLocaleString() + ' coins')
         if (w.premium) { P.pending.premium = (P.pending.premium || 0) + w.premium; got.push(w.premium + ' Premium Drop' + (w.premium > 1 ? 's' : '')) }
@@ -1915,6 +1917,7 @@ function act(a) {
         if (w.tickets) { P.tickets = (P.tickets || 0) + w.tickets; got.push(w.tickets + ' Training Tickets') }
         const clearReward = grantDeadZoneCard(Z)
         if (clearReward) got.push(clearReward.name + ' · ' + clearReward.ver)
+        { const gs = 200 + n * 25 + (st.final ? 300 : 0), G = gearP(); G.shards = (G.shards || 0) + gs; got.push('◈' + gs + ' gear shards') }
         { const g = giveGear(st.final && Math.random() < .5 ? 'G' : Math.random() < .55 ? 'S' : 'B'); got.push(GEAR_BASES[g.b].name + ' (gear)') }
         return { reward: clearReward?.key, msg: `💀 DEAD ZONE ${st.final ? 'CONQUERED' : 'CLEARED'}: ${st.name}! +${got.join(', ')}.` }
       }

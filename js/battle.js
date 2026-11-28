@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
-import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-guts-1'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-gshard'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
 import { draftPage } from './draft-page.js?v=1'
