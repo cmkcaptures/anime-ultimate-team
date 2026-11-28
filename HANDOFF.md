@@ -2,6 +2,11 @@
 Every AI adds an entry here at the end of a session (see AGENTS.md).
 
 ---
+## 2026-11-28 · Claude · gear: open slots + team strip
+- Any gear fits any of the 3 slots (SLOT_TIER is now just a legacy label). Requirements live in gear.js GEAR_REQ: Gold needs a Legendary+ card, Silver Epic+, Bronze none. gearReqOk() is checked in engine gearEquip and shown in the picker.
+- Team page: gearStrip(key) shows a 3-slot mini gear row under every card. Tapping opens gearPicker and the page re-renders in place.
+
+---
 ## 2026-11-27 · Claude · GEAR v1
 - js/gear.js: GEAR_BASES (8 items, icons in items/gear/*.webp), TIERS, rollGear/rollSub, mainStats (big-number scale), applyGear (folds gear into card st, gearHp, pas.e). 3 slots per fighter: 0 Gold, 1 Silver, 2 Bronze. Signature gear goes in Gold later.
 - Engine: P.gear {items, eq{cardKey:[g,s,b]}, shards}, starter kit of 4 pieces. Actions gearEquip/Upgrade/Reforge/Salvage/Buy. Drops on Dead Zone clears and replays, Daily Boss and Crucible clears.

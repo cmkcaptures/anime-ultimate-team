@@ -1,7 +1,7 @@
 import { PATCH_VERSION } from './patch-notes.js?v=24'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-gear-1'
-import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, rollGear, rollSub } from './gear.js?v=claude-gear-1'
+import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, rollGear, rollSub, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear-2'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-7'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
 import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-4'
@@ -1717,7 +1717,7 @@ function act(a) {
       const eq = G.eq[a.key] || (G.eq[a.key] = [null, null, null])
       if (a.uid == null) { eq[slot] = null; return {} }
       const it = G.items[a.uid]; if (!it) return { error: 'Gear not found.' }
-      if (GEAR_BASES[it.b].t !== SLOT_TIER[slot]) return { error: 'Wrong slot for this gear.' }
+      if (!gearReqOk(byKey(a.key), it)) return { error: GEAR_BASES[it.b].name + ' needs a ' + GEAR_REQ[GEAR_BASES[it.b].t].text + ' fighter.' }
       for (const [k, arr] of Object.entries(G.eq)) arr.forEach((u, i) => { if (u === a.uid) arr[i] = null })
       eq[slot] = a.uid; return {}
     }

@@ -1,5 +1,5 @@
 import { showPatchNotes } from './patch-notes.js?v=24'
-import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear } from './gear.js?v=claude-gear-1'
+import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear-2'
 import { showArrivals } from './arrivals.js?v=claude-arv-4'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
@@ -8,7 +8,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-gear-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-gear-5'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=claude-backup-1'
@@ -902,6 +902,16 @@ PAGES.team = (el) => {
   const lb = h('button', 'tm-lead tap' + (L ? '' : ' empty')); lb.append(h('span', 'tm-tag', 'LEADER'))
   if (L) { lb.append(cardImg(L, 420), h('div', 'tm-meta', `<b>${L.name}</b><span>${diaStr(L.dia || 3)} · Lv ${L.lv || 1}</span>`)) } else lb.append(h('div', 'tm-plus', '+<small>PICK A LEADER</small>'))
   if (L && SB[0]) { const b = SB[0], k = weakI === 0 ? 'r' : b.total >= Math.max(15, avgB * .8) ? 'g' : 'y'; lb.classList.add('fit-' + k); lb.append(h('span', 'tm-badge fb-' + k, (k === 'g' ? '🟢 ' : k === 'y' ? '🟡 ' : '🔴 ') + '+' + b.total + '%')) }
+  const gearStrip = key => {
+    const G = ST.gear, eq = (G && G.eq[key]) || [null, null, null], s = h('div', 'tm-gear')
+    eq.slice(0, 3).concat([null, null, null]).slice(0, 3).forEach((uid, slot) => {
+      const it = uid && G.items[uid], b = h('button', 'tg-slot' + (it ? ' g-' + GEAR_BASES[it.b].t : ''))
+      if (it) { const im = h('img'); im.src = gearIcon(it.b); im.alt = GEAR_BASES[it.b].name; b.append(im, h('b', '', '+' + (it.lvl || 0))) } else b.textContent = '+'
+      b.onclick = e => { e.stopPropagation(); gearPicker(key, slot) }
+      s.append(b)
+    })
+    return s
+  }
   const auraButton = i => {
     const button = h('button', 'aura-slot-button', '+' + SB[i].aura + '% AURA · FIND TEAMMATES')
     button.onclick = () => auraPlanner(TC, i)
@@ -909,7 +919,7 @@ PAGES.team = (el) => {
   }
   lb.onclick = () => teamPicker(0)
   const leaderSlot = h('div', 'aura-team-slot'); leaderSlot.append(lb)
-  if (L) leaderSlot.append(auraButton(0))
+  if (L) leaderSlot.append(gearStrip(L.key), auraButton(0))
   main.append(leaderSlot)
   const right = h('div', 'tm-right')
   right.append(h('div', 'tm-skill', LI.lead ? `<b>👑 LEADER SKILL</b><span>${leadText(LI.lead)}</span><em>${LI.n}/${count} BOOSTED</em>` : '<b>👑 NO LEADER</b><span>Put a card in the Leader slot. Its skill boosts every fighter that shares a category with it.</span>'))
@@ -918,7 +928,7 @@ PAGES.team = (el) => {
     btn.onclick = () => teamPicker(i)
     if (c) {
       const w = h('div', 'tm-slotwrap aura-team-slot')
-      w.append(btn, auraButton(i))
+      w.append(btn, gearStrip(TC[i].key), auraButton(i))
       return w
     }
     return btn }
@@ -2724,8 +2734,8 @@ function loadoutRig(key, c) {
   const core = box.querySelector('.rig-core'); core.append(cardImg(c, 220))
   const stage = box.querySelector('.rig-stage')
   ;['top', 'bl', 'br'].forEach((pos, slot) => {
-    const uid = eq[slot], it = uid && G.items[uid], t = SLOT_TIER[slot], s = h('div', 'rig-sock ' + pos + ' g-' + t + (it ? ' full' : ''))
-    if (it) s.append(gearTile(it)); else s.innerHTML = '<span class="rig-empty"><b>+</b><small>' + GEAR_TIERS[t].name + '</small></span>'
+    const uid = eq[slot], it = uid && G.items[uid], s = h('div', 'rig-sock ' + pos + (it ? ' full g-' + GEAR_BASES[it.b].t : ''))
+    if (it) s.append(gearTile(it)); else s.innerHTML = '<span class="rig-empty"><b>+</b><small>SLOT ' + (slot + 1) + '</small></span>'
     s.onclick = () => gearPicker(key, slot)
     stage.append(s)
     if (it) stage.querySelectorAll('.rig-lines path')[slot].classList.add('on')
@@ -2736,20 +2746,22 @@ function loadoutRig(key, c) {
   return box
 }
 function gearPicker(key, slot) {
-  const G = ST.gear, t = SLOT_TIER[slot], cur = (G.eq[key] || [])[slot]
+  const G = ST.gear, cur = (G.eq[key] || [])[slot], card = BYKEY[key]
   const owner = uid => Object.entries(G.eq).find(([k, arr]) => arr.includes(uid))?.[0]
-  const list = Object.entries(G.items).filter(([u, it]) => GEAR_BASES[it.b].t === t).sort((x, y) => (y[1].lvl || 0) - (x[1].lvl || 0))
+  const list = Object.entries(G.items).sort((x, y) => 'GSB'.indexOf(GEAR_BASES[x[1].b].t) - 'GSB'.indexOf(GEAR_BASES[y[1].b].t) || (y[1].lvl || 0) - (x[1].lvl || 0))
   openModal(sh => {
-    sh.append(h('h2', '', GEAR_TIERS[t].name + ' SOCKET'))
-    if (!list.length) sh.append(h('div', 'empty', '<b>No ' + GEAR_TIERS[t].name.toLowerCase() + ' gear yet</b>Earn gear in the Crucible, Dead Zones and Daily Boss, or open a box in the Armory.'))
+    sh.append(h('h2', '', 'GEAR SLOT ' + (slot + 1)))
+    if (!list.length) sh.append(h('div', 'empty', '<b>No gear yet</b>Earn gear in the Crucible, Dead Zones and Daily Boss, or open a box in the Armory.'))
     const grid = h('div', 'gpick')
     for (const [uid, it] of list) {
       const row = h('div', 'gp-row' + (uid === cur ? ' on' : '')), info = h('div', 'gp-info'), nm = h('b')
       nm.textContent = GEAR_BASES[it.b].name + ' +' + (it.lvl || 0); info.append(nm)
       for (const [k, txt] of gearLines(it)) { const l = h('span', 'gl-' + k); l.textContent = txt; info.append(l) }
       const ow = owner(uid); if (ow && ow !== key) { const n = h('small', 'gp-own'); n.textContent = 'Equipped on ' + (BYKEY[ow]?.name || 'another card'); info.append(n) }
-      const btn = h('button', 'btn ' + (uid === cur ? 'dark' : 'gold') + ' sm', uid === cur ? 'UNEQUIP' : 'EQUIP')
-      btn.onclick = async () => { const r = await act('gearEquip', { key, slot, uid: uid === cur ? null : uid }); if (r.error) return; closeModal(); cardDetail(key); setTimeout(() => document.querySelector('.rig')?.classList.add('zap'), 60) }
+      const ok = gearReqOk(card, it), q = GEAR_REQ[GEAR_BASES[it.b].t]
+      if (q) { const rq = h('small', 'gp-req' + (ok ? '' : ' no')); rq.textContent = (ok ? '✓ ' : '✗ ') + 'Requires ' + q.text; info.append(rq) }
+      const btn = h('button', 'btn ' + (uid === cur ? 'dark' : 'gold') + ' sm', uid === cur ? 'UNEQUIP' : 'EQUIP'); if (!ok && uid !== cur) { btn.disabled = true; row.classList.add('locked') }
+      btn.onclick = async () => { const r = await act('gearEquip', { key, slot, uid: uid === cur ? null : uid }); if (r.error) return; closeModal(); if (CUR === 'team') rerender(); else { cardDetail(key); setTimeout(() => document.querySelector('.rig')?.classList.add('zap'), 60) } }
       row.append(gearTile(it), info, btn); grid.append(row)
     }
     sh.append(grid)
