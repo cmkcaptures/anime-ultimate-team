@@ -100,6 +100,8 @@ const S = {
 
 // ================= MUSIC (generative, Web Audio) =================
 let MUS = true; try { MUS = localStorage.getItem('aut-music') !== 'off' } catch { }
+let DUCK = false
+export function musicDuck(v) { DUCK = !!v; music() }
 let MG = null, mTimer = null, mTrack = null, mStep = 0, mNext = 0
 const TRACKS = {
   // chill lobby: Am - F - C - G, laid-back lo-fi groove
@@ -125,7 +127,7 @@ function mTick() {
 }
 export function music(track) {
   mTrack = track || mTrack
-  if (!MUS || !mTrack) { if (MG) MG.gain.setTargetAtTime(0, A.currentTime, .3); clearInterval(mTimer); mTimer = null; return }
+  if (!MUS || !mTrack || DUCK) { if (MG) MG.gain.setTargetAtTime(0, A.currentTime, .3); clearInterval(mTimer); mTimer = null; return }
   const a = ctx(); if (!a) return
   if (a.state === 'suspended') a.resume()
   mBus(); MG.gain.cancelScheduledValues(a.currentTime); MG.gain.setTargetAtTime(.0001, a.currentTime, .05)
@@ -134,7 +136,7 @@ export function music(track) {
 }
 export function musicOn(v) { if (v !== undefined) { MUS = !!v; try { localStorage.setItem('aut-music', MUS ? 'on' : 'off') } catch { } music() } return MUS }
 // start the menu music on the first tap (browsers block audio before that)
-addEventListener('pointerdown', () => { if (!mTimer && MUS) music(document.body.classList.contains('in-battle') ? 'battle' : 'menu') }, { once: true, capture: true })
+addEventListener('pointerdown', () => { if (!mTimer && MUS && !DUCK) music(document.body.classList.contains('in-battle') ? 'battle' : 'menu') }, { once: true, capture: true })
 
 export function sfx(name, ...args) {
   if (!ON) return 0

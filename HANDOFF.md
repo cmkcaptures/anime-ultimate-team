@@ -243,3 +243,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): UNIQUE gear tier (t:"U") = DBL-style exclusive gear for ONE exact card (base.only = card id, onlyName). gearReqOk checks id; never drops (giveGear excludes U); buy in Armory catalog UNIQUE tab for 6000 shards. New fx typeNeutral (battle.js matchup: no 0.8x when attacking, no 1.3x taken when defending). First 3: u_gojo_sukuna, u_gojo_geto, u_deku_ofa. Prismatic frame METAL.U in gear-frame.js. Icons cropped from card art.
 
 - 2026-11-28 (Claude): Gear shards can be bought with coins in the Armory exchange (engine gearShardBuy {i}): 100=2,500c, 500=11,000c, 2000=40,000c.
+
+- 2026-11-28 (Claude): ANIME RADIO (js/radio.js): 📻 button next to music toggle; streams YouTube playlists/videos via the official IFrame API (no audio hosted). Stations saved in localStorage aut-radio; users paste links to add. While radio plays, generated music is ducked (sfx.js musicDuck).

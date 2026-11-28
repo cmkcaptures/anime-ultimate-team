@@ -17,7 +17,7 @@ import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
 import { TIER, TYPE, thumbURL } from './cardkit.js?v=claude-guts-1'
-import { sfx, sfxOn, music } from './sfx.js?v=form-control'
+import { sfx, sfxOn, music } from './sfx.js?v=claude-radio-1'
 import { createFX } from './fx2d.js?v=mobile-render'
 import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=fusion-captains-1'
 
