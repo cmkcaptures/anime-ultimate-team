@@ -1,5 +1,5 @@
 // CHRONICLE BREAK UI: hub -> moment -> scene -> choice -> fight briefing -> ending.
-import { CHRONICLES, COMING, chronById, ENDING_COUNT, BOSS_AB } from './chronicle.js?v=claude-chron-4'
+import { CHRONICLES, COMING, chronById, ENDING_COUNT, BOSS_AB } from './chronicle.js?v=claude-chron-5'
 let SEL = null
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 export function chroniclePage(el, ctx) {

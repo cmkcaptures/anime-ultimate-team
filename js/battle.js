@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
-import { chroniclePage } from './chronicle-ui.js?v=claude-chron-4'
+import { chroniclePage } from './chronicle-ui.js?v=claude-chron-5'
 import { ultraCut, victoryPose } from './ult-fx.js?v=claude-ult-1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-gshard'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'

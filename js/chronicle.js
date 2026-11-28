@@ -96,7 +96,7 @@ CHRONICLES.push({
     s2: { type: 'fight', name: 'THE EIGHT TRIGRAMS SEAL', enemy: ['kurama_unleashed_night', 'obito_masked_night'], boost: 3.4, rules: { dmg: 32, dr: 12 }, bossAb: 'tbb', turnLimit: 12, limitText: 'THE SEAL FAILS', fury: 1, final: 1,
       brief: ['The seal completes in 12 turns. Defeat them before it fails.', 'Every 3rd turn: TAILED BEAST BOMB hits your bench for 35%. Guard to cut it.', 'When your first fighter falls, your team gets the Will of Fire: +25% damage and no type disadvantage.'],
       scene: [['obito_masked_night', 'I won’t let you rewrite this night.'], ['kurama_unleashed_night', 'You insects will not seal me again!']], next: 'end_parents' },
-    h1: { type: 'fight', name: 'NINE-TAILS RAMPAGE', enemy: ['kurama_unleashed_night'], boost: 4.4, rules: { dmg: 42, dr: 18 }, bossAb: 'tbb', turnLimit: 14, limitText: 'KONOHA FALLS', final: 1,
+    h1: { type: 'fight', name: 'NINE-TAILS RAMPAGE', enemy: ['kurama_unleashed_night'], boost: 5.4, rules: { dmg: 55, dr: 22 }, bossAb: 'tbb', turnLimit: 14, limitText: 'KONOHA FALLS', final: 1,
       brief: ['A raid boss with huge HP. The village falls after 14 turns.', 'Every 3rd turn: TAILED BEAST BOMB smashes your bench.'],
       scene: [['kurama_unleashed_night', 'Small creatures. You will burn with the rest of them.'], ['Narrator', 'Ten thousand shinobi couldn’t stop it. You have to.']], next: 'end_beast' },
     end_mask: { type: 'ending', id: 'mask', name: 'THE MASK BREAKS', text: 'The masked man never reaches Kushina. The Nine-Tails stays sealed, and the night of October 10th becomes just another birthday.', reward: { coins: 30000, gearShards: 2000, card: 'obito_masked_night' } },
