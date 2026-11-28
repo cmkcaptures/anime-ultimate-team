@@ -345,3 +345,6 @@ img[data-asc] { animation: ascAura 2.8s ease-in-out infinite; border-radius: 10p
 .g-U .gt-gl { background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.6) 48%, rgba(127,231,255,.4) 52%, transparent 65%) !important; background-size: 280% 100% !important; animation: gSheen 2.6s ease-in-out infinite !important; mix-blend-mode: screen }
 .gcat-only { color: #ff9af0 !important; font-weight: 900 !important }
 .tg-slot.g-U { filter: drop-shadow(0 3px 5px rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(255,79,216,.7)) }
+/* coins -> gear shards */
+.ex-coins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px } .ex-coins small { grid-column: 1 / -1; font: 800 9.5px var(--eUI, Inter); letter-spacing: .2em; color: #9ae4ff }
+.ex-cb { display: grid; gap: 2px; padding: 10px 6px; border-radius: 6px; border: 1px solid rgba(255,211,106,.35); background: linear-gradient(180deg, rgba(255,211,106,.1), rgba(255,211,106,.02)); color: #fff; cursor: pointer } .ex-cb b { font: 900 15px 'JetBrains Mono', monospace; color: #9ae4ff } .ex-cb span { font: 800 11px var(--eUI, Inter); color: #ffd36a } .ex-cb:disabled { opacity: .45; cursor: default }

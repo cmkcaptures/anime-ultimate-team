@@ -1739,6 +1739,11 @@ function act(a) {
       const got = GEAR_TIERS[GEAR_BASES[it.b].t].salv + (it.lvl || 0) * 5; G.shards = (G.shards || 0) + got; delete G.items[a.uid]
       return { msg: 'Salvaged for ' + got + ' gear shards.' }
     }
+    case 'gearShardBuy': {
+      const OFFERS = [[100, 2500], [500, 11000], [2000, 40000]], O = OFFERS[a.i]; if (!O) return { error: 'Bad offer.' }
+      if (P.coins < O[1]) return { error: 'You need ' + O[1].toLocaleString() + ' coins.' }
+      const G = gearP(); P.coins -= O[1]; G.shards = (G.shards || 0) + O[0]; return { msg: '+' + O[0] + ' gear shards!' }
+    }
     case 'gearBuy': {
       if (a.base) { const G = gearP(), B = GEAR_BASES[a.base]; if (!B) return { error: 'Unknown gear.' }; const cost = GEAR_TIERS[B.t].box * (B.t === 'U' ? 4 : 4); if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }; G.shards -= cost; const it = giveGear(B.t, a.base); return { msg: 'Got ' + B.name + '!', gear: it.uid } }
       const G = gearP(), t = a.tier; if (!GEAR_TIERS[t]) return { error: 'Bad box.' }

@@ -241,3 +241,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Too many Devil Fruits: 8 fruit gear renamed + new icons, SAME ids kept so owned items survive: ito_fruit=Lostvayne, goro_fruit=Herritt, hana_fruit=Sharingan, mochi_fruit=Aldan, suna_fruit=Chastiefol, nikyu_fruit=Gideon, hobi_fruit=Rhitta, bomu_fruit=Nidai Kitetsu. gearIcon now adds ?v=2 (bump it when icons change).
 
 - 2026-11-28 (Claude): UNIQUE gear tier (t:"U") = DBL-style exclusive gear for ONE exact card (base.only = card id, onlyName). gearReqOk checks id; never drops (giveGear excludes U); buy in Armory catalog UNIQUE tab for 6000 shards. New fx typeNeutral (battle.js matchup: no 0.8x when attacking, no 1.3x taken when defending). First 3: u_gojo_sukuna, u_gojo_geto, u_deku_ofa. Prismatic frame METAL.U in gear-frame.js. Icons cropped from card art.
+
+- 2026-11-28 (Claude): Gear shards can be bought with coins in the Armory exchange (engine gearShardBuy {i}): 100=2,500c, 500=11,000c, 2000=40,000c.

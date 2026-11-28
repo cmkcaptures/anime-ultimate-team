@@ -2813,6 +2813,7 @@ PAGES.armory = el => {
   el.append(grid)
   const ex = h('section', 'arm-ex', '<header><small>交換所 · GEAR EXCHANGE</small><b>Spend gear shards on a random piece</b></header><div class="ex-row"></div>')
   for (const t of ['B', 'S', 'G']) { const b = h('button', 'ex-box g-' + t, '<i class="gt-frame"></i><b>' + GEAR_TIERS[t].name + ' BOX</b><span>◈ ' + GEAR_TIERS[t].box + '</span>'); b.disabled = (G.shards || 0) < GEAR_TIERS[t].box; b.onclick = async () => { const r = await act('gearBuy', { tier: t }); if (!r.error) { rerender(); r.gear && gearDetail(r.gear) } }; ex.querySelector('.ex-row').append(b) }
+  { const sr = h('div', 'ex-coins', '<small>BUY GEAR SHARDS WITH COINS</small>'); for (const [i, [n, c]] of [[100, 2500], [500, 11000], [2000, 40000]].entries()) { const b = h('button', 'ex-cb', '<b>◈ ' + n.toLocaleString() + '</b><span>🪙 ' + c.toLocaleString() + '</span>'); b.disabled = P.coins < c; b.onclick = async () => { const r = await act('gearShardBuy', { i }); if (!r.error) rerender() }; sr.append(b) } ex.append(sr) }
   { const pk = h('button', 'btn violet block ex-pick', '🎯 PICK EXACT GEAR<small>Choose any piece · 4× box price</small>'); pk.onclick = () => gearCatalog(); ex.append(pk) }
   el.append(ex)
 }
