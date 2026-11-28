@@ -1,7 +1,8 @@
 // Increase this number and update the notes for each player-facing patch.
-export const PATCH_VERSION = 2026112828
+export const PATCH_VERSION = 2026112829
 
 const NOTES = [
+  ['Chronicle Break: Marineford', ['New moment: the Summit War. Shield Ace from the magma fist, take on all three Admirals, or stop the Blackbeard ambush beside Whitebeard.', 'New boss skill: Magma Fist burns your whole team unless you Guard.', 'Rewards: Mythic Ace (Fire Fist), Legendary Akainu (Magma Fist), and Mythic Whitebeard (The Last Stand) for the true ending.']],
   ['New Unique Gear', ['Sasuke’s Sword · Wanderer (Boruto, Two Blue Vortex only): +30% damage, always moves first, ignores Guard, +12% crit, no type disadvantage.', 'Divine Tree Seed (Shibai Ōtsutsuki only): 10% less damage taken, team heal 3% a turn, no type disadvantage.', 'Find them in Armory > Pick Exact Gear > UNIQUE.']],
   ['Ascension: Naruto & Sasuke', ['Mythic Naruto & Sasuke (vs Fused Momoshiki) can now Ascend into THE FINAL BOND.', 'Amenotejikara: the first 2 hits on them never land. The Rinnegan seals the enemy passive. +55% damage, every attack ignores Guard, +20% Special damage, +20% against higher-rated cards, 18% less damage taken, and Shinobi allies hit harder.', 'New Ultimate: Rasengan × Amenotejikara (350%, ignores Guard).']],
   ['50 New Gear', ['Solo Leveling weapons, the Death Note, Shenron and Porunga, Going Merry and Thousand Sunny, Berserk’s Dragon Slayer and Behelit, Pokémon stones and berries, and more.', 'Six new TOP TIER Gold pieces: Demon King’s Daggers, Demon King’s Longsword, Kamish’s Wrath, Orb of Avarice, Black Heart and Super Shenron.', 'The Armory now has 181 pieces. Buy any of them exactly in Pick Exact Gear.']],
