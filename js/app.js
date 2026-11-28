@@ -1,5 +1,5 @@
-import { showPatchNotes } from './patch-notes.js?v=claude-pn32'
-import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-unique-1'
+import { showPatchNotes } from './patch-notes.js?v=claude-pn33'
+import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear-rw'
 import { radioButton } from './radio.js?v=claude-music-2'
 import { homeLife } from './home-life.js?v=claude-home-1'
 import { gearFrameURL, GEAR_CLIP } from './gear-frame.js?v=claude-unique-1'
