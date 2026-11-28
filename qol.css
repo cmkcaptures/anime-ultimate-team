@@ -272,3 +272,15 @@ img[data-asc] { animation: ascAura 2.8s ease-in-out infinite; border-radius: 10p
 .tg-slot b { position: absolute; right: 2px; bottom: 2px; padding: 0 4px; border-radius: 3px; background: rgba(0,0,0,.78); font: 900 9.5px 'JetBrains Mono', monospace; color: #fff }
 .tg-slot.g-B { border: 2px solid #c47a3e; box-shadow: inset 0 0 0 1px #5a2e10 } .tg-slot.g-S { border: 2px solid #dfe7f5; box-shadow: 0 0 8px rgba(190,210,255,.35) } .tg-slot.g-G { border: 2px solid #ffd36a; box-shadow: 0 0 10px rgba(255,180,40,.55) }
 .gp-req { font: 800 10.5px var(--eUI, Inter); color: #9dffc8 } .gp-req.no { color: #ff9aa6 } .gp-row.locked { opacity: .55 }
+/* ---- gear frames v3: drawn frame images ---- */
+.gtile { background: none !important; box-shadow: none !important; border-radius: 0 !important; filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)) }
+.gtile::before, .gtile::after, .gtile .gt-gl::before, .gtile .gt-gl::after { display: none !important }
+.gtile .gt-frame { display: none !important }
+.gtile .gt-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; border-radius: 0 !important; box-shadow: none !important }
+.gtile .gt-fimg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none }
+.gtile .gt-lv { left: auto; right: 13%; bottom: 13%; transform: none; z-index: 3; padding: 1px 5px; border-radius: 3px; background: rgba(0,0,0,.8); font-size: 10px }
+.gtile .gt-gl { z-index: 3; inset: 0; border-radius: 0; box-shadow: none; background: none; clip-path: polygon(23% 10%, 77% 10%, 90% 23%, 90% 77%, 77% 90%, 23% 90%, 10% 77%, 10% 23%) }
+.g-S .gt-gl, .g-G .gt-gl { background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.5) 50%, transparent 62%) !important; background-size: 280% 100% !important; animation: gSheen 3.2s ease-in-out infinite !important; mix-blend-mode: screen }
+.g-G.gtile { animation: gAura2 2.6s ease-in-out infinite !important } @keyframes gAura2 { 0%, 100% { filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(255,190,60,.45)) } 50% { filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)) drop-shadow(0 0 18px rgba(255,210,90,.85)) } }
+.g-S.gtile { filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)) drop-shadow(0 0 7px rgba(170,200,255,.35)) }
+.gtile.eqd::after { display: block !important; content: 'EQUIPPED'; position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 4; padding: 1px 6px; border-radius: 3px; background: #9ae4ff; color: #071018; font: 900 8.5px var(--eUI, Inter); letter-spacing: .1em; width: auto; height: auto }

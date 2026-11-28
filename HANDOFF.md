@@ -219,3 +219,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - Card audit: 83 cards rated outside their rarity band (Epic 80–87, Legendary 86–92, Mythic 92–97, Rainbow 96–99).
   35 passive descriptions don't show their real +damage number. Micke wants to do this soon.
 - Later: Christmas event (mid-Dec), What-If Arcs (needs art), re-enable the paused modes.
+
+- 2026-11-28 (Claude): Gear frames v3 — canvas-drawn tier frames in js/gear-frame.js (gearFrameURL, GEAR_CLIP), used by gearTile in app.js; CSS block "gear frames v3" in qol.css.

@@ -1,5 +1,6 @@
 import { showPatchNotes } from './patch-notes.js?v=24'
 import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear-2'
+import { gearFrameURL, GEAR_CLIP } from './gear-frame.js?v=claude-frame-1'
 import { showArrivals } from './arrivals.js?v=claude-arv-4'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
@@ -8,7 +9,7 @@ import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-gear-5'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-frame-1'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=claude-backup-1'
@@ -2716,8 +2717,8 @@ function battleStatsPanel(c) {
 // ================= GEAR UI =================
 function gearTile(it, opts = {}) {
   const B = GEAR_BASES[it.b], t = h('button', 'gtile g-' + B.t + (opts.sel ? ' sel' : ''))
-  t.innerHTML = '<i class="gt-frame"></i><img alt=""><b class="gt-lv"></b><span class="gt-gl"></span>'
-  t.querySelector('img').src = gearIcon(it.b); t.querySelector('.gt-lv').textContent = '+' + (it.lvl || 0)
+  t.innerHTML = '<img class="gt-art" alt=""><img class="gt-fimg" alt=""><b class="gt-lv"></b><span class="gt-gl"></span>'
+  t.querySelector('.gt-art').src = gearIcon(it.b); t.querySelector('.gt-art').style.clipPath = GEAR_CLIP; t.querySelector('.gt-fimg').src = gearFrameURL(B.t); t.querySelector('.gt-lv').textContent = '+' + (it.lvl || 0)
   t.title = B.name; return t
 }
 function gearLines(it) {
