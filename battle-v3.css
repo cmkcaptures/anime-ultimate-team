@@ -210,3 +210,80 @@
   html body #arena#arena.v3 .ar-trans { max-width: 112px !important; flex: 0 0 auto !important }
   html body #arena#arena.v3 .ar-ult { flex: 0 0 84px !important; width: 84px !important; height: 84px !important }
 }
+/* ================= v3.2: floating, alive controls (no background strips) ================= */
+html body #arena#arena.v3 .ar-mid, html body #arena#arena.v3 .ar-ctrl { background: none !important; box-shadow: none !important; border: 0 !important; backdrop-filter: none !important }
+html body #arena#arena.v3 .ar-ctrl::after, html body #arena#arena.v3 .ar-ctrl::before, html body #arena#arena.v3 .ar-mid::before, html body #arena#arena.v3 .ar-mid::after { display: none !important }
+html body #arena#arena.v3 .ar-ki, html body #arena#arena.v3 .ar-btns { background: none !important; box-shadow: none !important; clip-path: none !important }
+html body #arena#arena.v3 .ar-ki::before, html body #arena#arena.v3 .ar-btns::before { display: none !important }
+html body #arena#arena.v3 .ar-log { background: none !important; box-shadow: none !important; border: 0 !important }
+/* energy: glowing ring + pips that pulse */
+html body #arena#arena.v3 .ar-ki .kring { filter: drop-shadow(0 0 14px rgba(95,208,255,.55)); animation: v3Breath 2.4s ease-in-out infinite }
+html body #arena#arena.v3 .ar-ki .kpips i.on { animation: v3Pip 1.8s ease-in-out infinite }
+html body #arena#arena.v3 .ar-ki .kpips i.on:nth-child(2n) { animation-delay: .2s } html body #arena#arena.v3 .ar-ki .kpips i.on:nth-child(3n) { animation-delay: .4s }
+@keyframes v3Pip { 50% { filter: brightness(1.5); box-shadow: 0 0 16px rgba(95,208,255,1) } }
+@keyframes v3Breath { 50% { transform: scale(.86) } }
+/* art cards: idle bob, staggered */
+html body #arena#arena.v3 .ar-hand .art2:not(:disabled) { animation: v3Bob 3s ease-in-out infinite }
+html body #arena#arena.v3 .ar-hand .art2:nth-child(2) { animation-delay: .4s } html body #arena#arena.v3 .ar-hand .art2:nth-child(3) { animation-delay: .8s } html body #arena#arena.v3 .ar-hand .art2:nth-child(4) { animation-delay: 1.2s }
+html body #arena#arena.v3 .ar-hand .art2:not(:disabled):hover { animation: none }
+@keyframes v3Bob { 50% { translate: 0 -5px } }
+/* END TURN: breathing glow, sheen, hover punch */
+html body #arena#arena.v3 .ar-end:not(:disabled) { animation: v3EndGlow 2s ease-in-out infinite }
+@keyframes v3EndGlow { 0%, 100% { box-shadow: 0 0 0 1px rgba(255,255,255,.35) inset, 0 8px 20px rgba(200,154,69,.35) } 50% { box-shadow: 0 0 0 1px rgba(255,255,255,.55) inset, 0 0 34px rgba(255,210,122,.75), 0 8px 24px rgba(200,154,69,.5) } }
+html body #arena#arena.v3 .ar-end:not(:disabled):hover { transform: translateY(-3px) scale(1.06) !important; filter: brightness(1.15) }
+html body #arena#arena.v3 .ar-end:not(:disabled):active { transform: translateY(1px) scale(.95) !important }
+/* ULTIMATE: dim until ready, then a spinning energy halo + pulse */
+html body #arena#arena.v3 .ar-ult { position: relative; border-radius: 50% !important }
+html body #arena#arena.v3 .ar-ult.ready { animation: v3UltPulse 1.2s ease-in-out infinite }
+html body #arena#arena.v3 .ar-ult.ready::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; background: conic-gradient(from 0deg, transparent, #ffd27a, #ff4fd8, #5fd0ff, transparent 70%); animation: v3Spin 1.6s linear infinite; z-index: -1; filter: blur(2px) }
+html body #arena#arena.v3 .ar-ult.ready b { color: #fff !important; text-shadow: 0 0 12px #ffd27a !important }
+@keyframes v3UltPulse { 50% { transform: scale(1.08); filter: drop-shadow(0 0 22px rgba(255,210,122,.95)) } }
+@keyframes v3Spin { to { transform: rotate(360deg) } }
+html body #arena#arena.v3 .ar-ult:not(.ready) { opacity: .7 }
+/* TRANSFORM: shimmer when available */
+html body #arena#arena.v3 .ar-trans:not([hidden]):not(:disabled) { animation: v3Shim 2.2s ease-in-out infinite }
+@keyframes v3Shim { 50% { filter: brightness(1.3) drop-shadow(0 0 14px rgba(185,140,255,.8)) } }
+/* top + info buttons get a hover lift */
+html body #arena#arena.v3 .ar-top button:hover, html body #arena#arena.v3 .battle-info-tools button:hover { transform: translateY(-2px) }
+/* click ripple */
+html body #arena#arena.v3 .v3-rip { position: fixed; width: 10px; height: 10px; border-radius: 50%; pointer-events: none; z-index: 99; border: 2px solid #ffd27a; transform: translate(-50%, -50%); animation: v3Rip .5s ease-out forwards }
+@keyframes v3Rip { to { width: 90px; height: 90px; opacity: 0 } }
+@media (prefers-reduced-motion: reduce) { html body #arena#arena.v3 * { animation: none !important } }
+/* ================= v3.3: bottom dock = exact mockup, alive ================= */
+@media (min-width: 900px) {
+  html body #arena#arena.v3 .ar-ctrl { grid-template-columns: 200px minmax(0, 1fr) 300px !important; gap: 18px !important; padding: 0 24px 18px !important; align-items: stretch !important; height: 176px !important }
+  html body #arena#arena.v3 .ar-ki, html body #arena#arena.v3 .ar-btns { width: auto !important; height: auto !important; padding: 14px !important; border-radius: 6px !important; clip-path: none !important; background: rgba(10,12,24,.62) !important; box-shadow: 0 0 0 1px rgba(255,255,255,.09), 0 20px 40px rgba(0,0,0,.4) !important; backdrop-filter: blur(10px) }
+  html body #arena#arena.v3 .ar-ki { display: grid !important; place-items: center !important; align-content: center; gap: 8px !important }
+  html body #arena#arena.v3 .ar-ki .kring { transform: scale(1.05) !important; animation: none !important; filter: drop-shadow(0 0 10px rgba(95,208,255,.45)) }
+  html body #arena#arena.v3 .ar-ki .kpips { display: none !important }
+  html body #arena#arena.v3 .ar-ki::after { content: "+3 NEXT TURN"; display: block !important; font: 800 10px Inter, sans-serif; letter-spacing: .16em; color: #8f97b8 }
+  html body #arena#arena.v3 .ar-hand { align-self: end; align-items: end !important; gap: 12px !important; padding: 0 !important }
+  html body #arena#arena.v3 .ar-hand .art2 { position: relative !important; width: 150px !important; height: 158px !important; padding: 12px !important; border: 0 !important; border-radius: 6px !important; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015)) !important; box-shadow: 0 0 0 1px rgba(255,255,255,.09) !important; display: flex !important; flex-direction: column !important; justify-content: flex-end !important; text-align: left !important; overflow: hidden; --ac: #5fd0ff }
+  html body #arena#arena.v3 .ar-hand .art2.guard { --ac: #9dffc8 }
+  html body #arena#arena.v3 .ar-hand .art2.blast, html body #arena#arena.v3 .ar-hand .art2.special, html body #arena#arena.v3 .ar-hand .art2.sig { --ac: #b98cff }
+  html body #arena#arena.v3 .ar-hand .art2 .fr, html body #arena#arena.v3 .ar-hand .art2 .pic, html body #arena#arena.v3 .ar-hand .art2 .holo, html body #arena#arena.v3 .ar-hand .art2 .glints, html body #arena#arena.v3 .ar-hand .art2 .sym { display: none !important }
+  html body #arena#arena.v3 .ar-hand .art2::before { content: ""; position: absolute; top: 44px; left: 12px; right: 12px; height: 46px; border-radius: 4px; background: linear-gradient(135deg, color-mix(in srgb, var(--ac) 32%, transparent), color-mix(in srgb, var(--ac) 3%, transparent)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ac) 35%, transparent); transition: filter .2s }
+  html body #arena#arena.v3 .ar-hand .art2 .gem { position: absolute !important; top: 10px !important; left: 10px !important; width: 28px !important; height: 28px !important; border-radius: 50% !important; display: grid !important; place-items: center !important; background: #0b0e1c !important; box-shadow: 0 0 0 1.5px var(--ac) !important; transform: none !important; clip-path: none !important }
+  html body #arena#arena.v3 .ar-hand .art2 .gem b { font: 600 20px/1 Teko, Inter, sans-serif !important; color: #fff !important; text-shadow: none !important }
+  html body #arena#arena.v3 .ar-hand .art2 .kind { position: absolute !important; top: 15px !important; right: 10px !important; left: auto !important; padding: 0 !important; background: none !important; box-shadow: none !important; font: 800 9px Inter, sans-serif !important; letter-spacing: .18em !important; color: #8f97b8 !important; transform: none !important; clip-path: none !important }
+  html body #arena#arena.v3 .ar-hand .art2 .plate { position: relative !important; inset: auto !important; padding: 0 !important; background: none !important; box-shadow: none !important; clip-path: none !important; transform: none !important; text-align: left !important }
+  html body #arena#arena.v3 .ar-hand .art2 .plate b { display: block; font: 600 22px/1 Teko, Inter, sans-serif !important; letter-spacing: .03em !important; color: #eef2ff !important; text-shadow: none !important; white-space: normal !important; overflow: visible !important }
+  html body #arena#arena.v3 .ar-hand .art2 .plate small { display: block; margin-top: 3px; font: 600 10.5px/1.35 Inter, sans-serif !important; color: #8f97b8 !important; letter-spacing: 0 !important; text-transform: none !important }
+  html body #arena#arena.v3 .ar-hand .art2::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 40%, rgba(255,255,255,.12) 50%, transparent 60%); background-size: 260% 100%; animation: gSheen 4s ease-in-out infinite; pointer-events: none }
+  html body #arena#arena.v3 .ar-hand .art2:not(:disabled):hover { transform: translateY(-10px) !important; box-shadow: 0 0 0 1px var(--ac), 0 12px 30px color-mix(in srgb, var(--ac) 30%, transparent) !important; filter: none !important }
+  html body #arena#arena.v3 .ar-hand .art2:not(:disabled):hover::before { filter: brightness(1.5) }
+  html body #arena#arena.v3 .ar-hand .art2.sel, html body #arena#arena.v3 .ar-hand .art2.on, html body #arena#arena.v3 .ar-hand .art2[aria-pressed="true"] { transform: translateY(-12px) !important; box-shadow: 0 0 0 2px var(--ac), 0 0 30px color-mix(in srgb, var(--ac) 40%, transparent) !important }
+  html body #arena#arena.v3 .ar-btns { display: grid !important; grid-template-columns: 1fr 1fr !important; grid-template-rows: auto 1fr !important; gap: 10px !important; justify-content: stretch !important; align-items: stretch !important }
+  html body #arena#arena.v3 .ar-ult { grid-column: 1 / -1 !important; grid-row: 1 !important; width: auto !important; height: 52px !important; flex: none !important; border-radius: 5px !important; display: flex !important; align-items: center !important; gap: 12px !important; padding: 6px 12px !important; background: linear-gradient(90deg, rgba(185,140,255,.16), rgba(255,210,122,.08)) !important; box-shadow: 0 0 0 1px rgba(217,180,106,.45) !important; opacity: 1 !important; transform: none !important }
+  html body #arena#arena.v3 .ar-ult svg { position: relative !important; inset: auto !important; width: 40px !important; height: 40px !important; flex: 0 0 40px }
+  html body #arena#arena.v3 .ar-ult b { position: static !important; font: 600 24px/1 Teko, Inter, sans-serif !important; letter-spacing: .04em !important; color: #ffe2a6 !important; transform: none !important }
+  html body #arena#arena.v3 .ar-ult small { position: static !important; font: 700 10px Inter, sans-serif !important; color: #8f97b8 !important; transform: none !important }
+  html body #arena#arena.v3 .ar-ult.ready { animation: v3UltRow 1.2s ease-in-out infinite !important; background: linear-gradient(90deg, rgba(185,140,255,.35), rgba(255,210,122,.25)) !important }
+  html body #arena#arena.v3 .ar-ult.ready::before { inset: -2px !important; border-radius: 6px !important; filter: blur(6px) !important }
+  html body #arena#arena.v3 .ar-trans { max-width: none !important; height: auto !important; border-radius: 5px !important; clip-path: none !important; background: rgba(255,255,255,.05) !important; box-shadow: 0 0 0 1px rgba(255,255,255,.1) !important; color: #eef2ff !important; grid-row: 2 }
+  html body #arena#arena.v3 .ar-trans b { font: 600 20px/1 Teko, Inter, sans-serif !important; letter-spacing: .06em !important }
+  html body #arena#arena.v3 .ar-trans:not([hidden]):hover { background: rgba(185,140,255,.16) !important; transform: translateY(-2px) }
+  html body #arena#arena.v3 .ar-end { height: auto !important; min-width: 0 !important; border-radius: 5px !important; clip-path: none !important; grid-row: 2; grid-column: 2 }
+  html body #arena#arena.v3 .ar-end b { font-size: 22px !important }
+}
+@keyframes v3UltRow { 50% { box-shadow: 0 0 0 1px #ffd27a, 0 0 26px rgba(255,210,122,.7) } }

@@ -3026,6 +3026,7 @@ export function startBattle(stage) {
   { // v3 interactivity: 3D tilt on fighters, ult gauge gradient, hit flash
     const svgNS = 'http://www.w3.org/2000/svg', s = ov.querySelector('.ar-ult svg'); if (s) { const d = document.createElementNS(svgNS, 'defs'); d.innerHTML = '<linearGradient id="v3ug" x1="0" x2="1"><stop offset="0" stop-color="#b98cff"/><stop offset="1" stop-color="#ffd27a"/></linearGradient>'; s.prepend(d) }
     ov.addEventListener('pointermove', e => { const c = e.target.closest && e.target.closest('.ar-active'); if (!c) return; const r = c.getBoundingClientRect(); c.style.transform = 'perspective(900px) rotateX(' + ((e.clientY - r.top) / r.height - .5) * -10 + 'deg) rotateY(' + ((e.clientX - r.left) / r.width - .5) * 12 + 'deg) scale(1.03)' })
+    ov.addEventListener('pointerdown', e => { if (!e.target.closest('button')) return; const r = document.createElement('i'); r.className = 'v3-rip'; r.style.left = e.clientX + 'px'; r.style.top = e.clientY + 'px'; ov.append(r); setTimeout(() => r.remove(), 520) })
     ov.addEventListener('pointerout', e => { const c = e.target.closest && e.target.closest('.ar-active'); if (c && !c.contains(e.relatedTarget)) c.style.transform = '' })
   }
   document.body.append(ov); document.body.classList.add('in-battle'); music(['redzone', 'crucible', 'boss', 'raid'].includes(MODE) ? 'boss' : 'battle')
