@@ -237,3 +237,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Gear Catalog (Armory > PICK EXACT GEAR): buy any specific gear base for 4x its tier box price in gear shards. engine gearBuy accepts {base}; app gearCatalog().
 
 - 2026-11-28 (Claude): +40 more gear (total 128: 45 B, 45 S, 38 G). New Gold fx include pierceSpec, reflect, shield, revive, teamHeal.
+
+- 2026-11-28 (Claude): Too many Devil Fruits: 8 fruit gear renamed + new icons, SAME ids kept so owned items survive: ito_fruit=Lostvayne, goro_fruit=Herritt, hana_fruit=Sharingan, mochi_fruit=Aldan, suna_fruit=Chastiefol, nikyu_fruit=Gideon, hobi_fruit=Rhitta, bomu_fruit=Nidai Kitetsu. gearIcon now adds ?v=2 (bump it when icons change).

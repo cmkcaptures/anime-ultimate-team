@@ -1,5 +1,5 @@
 import { showPatchNotes } from './patch-notes.js?v=24'
-import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear120'
+import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear120b'
 import { homeLife } from './home-life.js?v=claude-home-1'
 import { gearFrameURL, GEAR_CLIP } from './gear-frame.js?v=claude-frame-1'
 import { showArrivals } from './arrivals.js?v=claude-guts-2'

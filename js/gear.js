@@ -80,7 +80,7 @@ export const GEAR_BASES = {
   mera_fruit: { name: "Mera Mera Fruit", t: 'G', main: 'bla', fx: {dmg: 12}, fxText: "+12% damage." },
   gura_fruit: { name: "Gura Gura Fruit", t: 'G', main: 'str', fx: {pierce: 1,dmg: 8}, fxText: "Attacks ignore Guard and deal +8% damage." },
   yami_fruit: { name: "Yami Yami Fruit", t: 'G', main: 'def', fx: {drain: 10,dr: 8}, fxText: "Steals 10% of damage as HP and takes 8% less damage." },
-  ito_fruit: { name: "Ito Ito Fruit", t: 'G', main: 'str', fx: {crit: 15}, fxText: "+15% crit chance." },
+  ito_fruit: { name: "Lostvayne", t: 'G', main: 'str', fx: {crit: 15}, fxText: "+15% crit chance." },
   truth_seeking_ball: { name: "Truth-Seeking Ball", t: 'G', main: 'both', fx: {dr: 12,firstNull: 1}, fxText: "Takes 12% less damage and the first hit never lands." },
   namek_dragon_balls: { name: "Namekian Dragon Balls", t: 'G', main: 'hp', fx: {revive: 1}, fxText: "Comes back once after being knocked out." },
   tree_of_might: { name: "Fruit of the Tree of Might", t: 'G', main: 'hp', fx: {regen: 3,dmg: 5}, fxText: "Heals 3% a turn and deals +5% damage." },
@@ -117,15 +117,15 @@ export const GEAR_BASES = {
   dream_ball: { name: "Dream Ball", t: 'S', main: 'hp' },
   beast_ball: { name: "Beast Ball", t: 'S', main: 'bla' },
   sacred_water: { name: "Sacred Water", t: 'S', main: 'hp' },
-  goro_fruit: { name: "Goro Goro Fruit", t: 'G', main: 'bla', fx: {spec: 12,pierceSpec: 1}, fxText: "+12% Special damage and Specials pierce Guard." },
+  goro_fruit: { name: "Herritt", t: 'G', main: 'bla', fx: {spec: 12,pierceSpec: 1}, fxText: "+12% Special damage and Specials pierce Guard." },
   pika_fruit: { name: "Pika Pika Fruit", t: 'G', main: 'bla', fx: {first: 1,dmg: 6}, fxText: "Always moves first and deals +6% damage." },
   magu_fruit: { name: "Magu Magu Fruit", t: 'G', main: 'str', fx: {dmg: 15}, fxText: "+15% damage." },
-  hana_fruit: { name: "Hana Hana Fruit", t: 'G', main: 'def', fx: {dodge: 12,dr: 6}, fxText: "12% dodge and takes 6% less damage." },
-  mochi_fruit: { name: "Mochi Mochi Fruit", t: 'G', main: 'def', fx: {dr: 10,shield: 15}, fxText: "Takes 10% less damage and starts with a 15% shield." },
-  suna_fruit: { name: "Suna Suna Fruit", t: 'G', main: 'hp', fx: {drain: 12,regen: 2}, fxText: "Steals 12% of damage as HP and heals 2% a turn." },
-  nikyu_fruit: { name: "Nikyu Nikyu Fruit", t: 'G', main: 'def', fx: {reflect: 15}, fxText: "Reflects 15% of damage taken." },
-  hobi_fruit: { name: "Hobi Hobi Fruit", t: 'G', main: 'str', fx: {nullPassive: 1,dmg: 5}, fxText: "Seals the enemy passive and deals +5% damage." },
-  bomu_fruit: { name: "Bomu Bomu Fruit", t: 'G', main: 'bla', fx: {crit: 12,dmg: 4}, fxText: "+12% crit chance and +4% damage." },
+  hana_fruit: { name: "Sharingan", t: 'G', main: 'def', fx: {dodge: 12,dr: 6}, fxText: "12% dodge and takes 6% less damage." },
+  mochi_fruit: { name: "Aldan", t: 'G', main: 'def', fx: {dr: 10,shield: 15}, fxText: "Takes 10% less damage and starts with a 15% shield." },
+  suna_fruit: { name: "Chastiefol", t: 'G', main: 'hp', fx: {drain: 12,regen: 2}, fxText: "Steals 12% of damage as HP and heals 2% a turn." },
+  nikyu_fruit: { name: "Gideon", t: 'G', main: 'def', fx: {reflect: 15}, fxText: "Reflects 15% of damage taken." },
+  hobi_fruit: { name: "Rhitta", t: 'G', main: 'str', fx: {nullPassive: 1,dmg: 5}, fxText: "Seals the enemy passive and deals +5% damage." },
+  bomu_fruit: { name: "Nidai Kitetsu", t: 'G', main: 'bla', fx: {crit: 12,dmg: 4}, fxText: "+12% crit chance and +4% damage." },
   gedo_statue: { name: "Outer Path Statue", t: 'G', main: 'hp', fx: {endure: 1,dr: 6}, fxText: "Survives one KO and takes 6% less damage." },
   angel_halo: { name: "Angel Halo", t: 'G', main: 'both', fx: {revive: 1}, fxText: "Comes back once after being knocked out." },
   rokakaka: { name: "Rokakaka Fruit", t: 'G', main: 'hp', fx: {teamHeal: 2,regen: 2}, fxText: "Heals the team 2% and itself 2% every turn." },
@@ -134,7 +134,7 @@ const MAIN = { B: { str: 1200, bla: 1200, def: 1200, hp: 9000 }, S: { str: 2400,
 export const MAIN_LABEL = { str: 'STRIKE ATK', bla: 'BLAST ATK', def: 'DEFENSE', hp: 'HP' }
 const TAGS = ['Saiyans', 'Swordsmen', 'Heroes', 'Villains', 'Females', 'Demons', 'Monsters', 'Gods & Kings', 'Mentors', 'Protagonist', 'Rival', 'Speedster', 'Berserker', 'Guardian', 'Tactician', 'Blademaster', 'Sovereign', 'Heroine']
 const SUBS = [['dmg', 2, 5, 'Damage'], ['dr', 2, 4, 'Damage taken'], ['crit', 2, 5, 'Crit chance'], ['spec', 3, 7, 'Special damage'], ['strikeBoost', 3, 7, 'Strike damage'], ['tagDmg', 4, 9, 'Damage'], ['tagDr', 3, 7, 'Damage taken']]
-export const gearIcon = b => 'items/gear/' + b + '.webp'
+export const gearIcon = b => 'items/gear/' + b + '.webp?v=2'
 export function rollSub(rnd = Math.random) {
   const [k, a, b] = SUBS[Math.floor(rnd() * SUBS.length)], s = { k, v: Math.round(a + rnd() * (b - a)) }
   if (k.startsWith('tag')) s.tag = TAGS[Math.floor(rnd() * TAGS.length)]
