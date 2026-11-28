@@ -169,3 +169,44 @@
   #arena.v3 .bct-s .battle-status { flex-wrap: nowrap !important; overflow: hidden !important; mask-image: linear-gradient(90deg, #000 85%, transparent) }
   #arena.v3 .bct-vs b { font-size: 34px !important }
 }
+/* ================= v3.1: fighting-game HUD + horizontal lineups ================= */
+@media (min-width: 900px) {
+  /* lineup: horizontal mini-portrait row under each plate */
+  html body #arena#arena.v3 .ar-bench { top: 8px !important; bottom: auto !important; height: auto !important; width: auto !important; flex-direction: row !important; align-items: flex-end !important; gap: 6px !important; padding: 0 !important; background: none !important; box-shadow: none !important; overflow: visible !important }
+  html body #arena#arena.v3 .ar-side.you .ar-bench { left: 24px !important } html body #arena#arena.v3 .ar-side.ai .ar-bench { right: 24px !important }
+  html body #arena#arena.v3 .ar-bench .bslot { width: 52px !important; flex: 0 0 52px !important; border-radius: 4px !important }
+  html body #arena#arena.v3 .ar-bench .bslot img { max-height: none !important; width: 52px !important; height: 72px !important; object-fit: cover !important; object-position: center 18% }
+  html body #arena#arena.v3 .ar-bench::before { position: absolute; bottom: calc(100% + 3px); left: 0; font-size: 8px !important }
+  html body #arena#arena.v3 .ar-side.ai .ar-bench::before { left: auto; right: 0 }
+  html body #arena#arena.v3 .ar-bench.can-swap .bslot:hover { transform: translateY(-6px) scale(1.12) !important }
+  html body #arena#arena.v3 .ar-active img { max-height: calc(100vh - 500px) !important }
+  html body #arena#arena.v3 .ar-side { padding-top: 70px !important }
+  /* HUD: no bar, corner pieces */
+  html body #arena#arena.v3 .ar-ctrl { background: none !important; box-shadow: none !important; backdrop-filter: none !important; grid-template-columns: 360px minmax(0, 1fr) 360px !important; padding: 0 0 12px !important; align-items: end !important }
+  html body #arena#arena.v3 .ar-ctrl::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, #5fd0ff, transparent 30%, transparent 70%, #e2bd73); opacity: .7; pointer-events: none }
+  html body #arena#arena.v3 .ar-ki { justify-self: start; height: 96px !important; width: 340px; padding: 0 42px 0 22px !important; border-radius: 0 !important; justify-content: flex-start !important; gap: 14px !important; background: linear-gradient(90deg, rgba(8,10,22,.95), rgba(8,10,22,.8)) !important; box-shadow: inset 0 -2px 0 #5fd0ff !important; clip-path: polygon(0 0, 100% 0, calc(100% - 34px) 100%, 0 100%); filter: none !important }
+  html body #arena#arena.v3 .ar-ki .kring { flex: 0 0 auto; transform: scale(.82) }
+  html body #arena#arena.v3 .ar-ki .kpips { display: flex !important; gap: 4px !important; flex: 1; transform: skewX(-18deg) }
+  html body #arena#arena.v3 .ar-ki .kpips i { flex: 1; height: 16px !important; width: auto !important; border-radius: 1px !important; background: rgba(255,255,255,.08) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.1) !important }
+  html body #arena#arena.v3 .ar-ki .kpips i.on { background: linear-gradient(180deg, #bff0ff, #5fd0ff 50%, #2a8fd6) !important; box-shadow: 0 0 10px rgba(95,208,255,.7) !important }
+  html body #arena#arena.v3 .ar-hand { align-self: end; padding-bottom: 6px }
+  html body #arena#arena.v3 .ar-btns { justify-self: end; height: 96px !important; width: 360px; padding: 0 18px 0 46px !important; border-radius: 0 !important; justify-content: flex-end !important; gap: 12px !important; background: linear-gradient(270deg, rgba(8,10,22,.95), rgba(8,10,22,.8)) !important; box-shadow: inset 0 -2px 0 #e2bd73 !important; clip-path: polygon(34px 0, 100% 0, 100% 100%, 0 100%) }
+  html body #arena#arena.v3 .ar-ult { transform: scale(.86) }
+  html body #arena#arena.v3 .ar-end { height: 64px !important; min-width: 150px !important; clip-path: polygon(18px 0, 100% 0, calc(100% - 18px) 100%, 0 100%) !important }
+  html body #arena#arena.v3 .ar-trans:not([hidden]) { height: 54px }
+}
+@media (min-width: 900px) {
+  html body #arena#arena.v3 .ar-ki .kpips { flex: 0 0 190px !important; width: 190px !important; min-width: 190px !important }
+  html body #arena#arena.v3 .ar-ki { background: linear-gradient(90deg, rgba(20,40,70,.92), rgba(10,14,30,.88)) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -3px 0 #5fd0ff, inset 0 0 40px rgba(95,208,255,.12) !important }
+  html body #arena#arena.v3 .ar-btns { background: linear-gradient(270deg, rgba(60,44,16,.9), rgba(14,12,22,.88)) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -3px 0 #e2bd73, inset 0 0 40px rgba(226,189,115,.12) !important }
+  html body #arena#arena.v3 .ar-ult { transform: none !important }
+  html body #arena#arena.v3 .ar-ki::before { content: 'ENERGY'; position: absolute; left: 22px; top: 8px; font: 800 8.5px Inter, sans-serif; letter-spacing: .28em; color: #9fe8ff }
+  html body #arena#arena.v3 .ar-btns::before { content: 'COMMANDS'; position: absolute; right: 18px; top: 8px; font: 800 8.5px Inter, sans-serif; letter-spacing: .28em; color: #e2bd73 }
+  html body #arena#arena.v3 .ar-ki, html body #arena#arena.v3 .ar-btns { position: relative }
+}
+@media (min-width: 900px) {
+  html body #arena#arena.v3 .ar-btns { width: 420px !important }
+  html body #arena#arena.v3 .ar-ctrl { grid-template-columns: 360px minmax(0, 1fr) 420px !important }
+  html body #arena#arena.v3 .ar-trans { max-width: 112px !important; flex: 0 0 auto !important }
+  html body #arena#arena.v3 .ar-ult { flex: 0 0 84px !important; width: 84px !important; height: 84px !important }
+}
