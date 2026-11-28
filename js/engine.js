@@ -1661,7 +1661,7 @@ function act(a) {
       return { picked: got, keys, msg: `Wonder Pick: ${cardName(got)}!` }
     }
     case 'showcase': { P.showcase = (a.keys || []).filter(k => own(k)).slice(0, 5); return {} }
-    case 'team': { if (Array.isArray(a.team) && a.team.length === 6) P.team = a.team.map(k => (k && own(k) ? k : null)); return {} }
+    case 'team': { if (Array.isArray(a.team) && a.team.length === 6) { P.team = a.team.map(k => (k && own(k) ? k : null)); const G = gearP(), seen = new Set(); for (const k of P.team) { const arr = k && G.eq[k]; if (!arr) continue; arr.forEach((u, i) => { if (!u) return; if (seen.has(u)) arr[i] = null; else seen.add(u) }) } } return {} }
     case 'watchCard': {
       if (!byKey(a.key) || typeof a.value !== 'boolean') return { error: 'Unknown card.' }
       const watched = new Set(P.watchlist || [])
@@ -1748,7 +1748,9 @@ function act(a) {
       if (a.uid == null) { eq[slot] = null; return {} }
       const it = G.items[a.uid]; if (!it) return { error: 'Gear not found.' }
       if (!gearReqOk(byKey(a.key), it)) return { error: GEAR_BASES[it.b].only ? GEAR_BASES[it.b].name + ' only fits ' + GEAR_BASES[it.b].onlyName + '.' : GEAR_BASES[it.b].name + ' needs a ' + GEAR_REQ[GEAR_BASES[it.b].t].text + ' fighter.' }
-      for (const [k, arr] of Object.entries(G.eq)) arr.forEach((u, i) => { if (u === a.uid) arr[i] = null })
+      // the same gear can sit on cards in DIFFERENT teams; only pull it off cards that share a team with this one
+      const teams = [P.team, ...(P.presets || []).map(p => Array.isArray(p) ? p : p && p.team)].filter(Array.isArray), mate = (x, y) => x === y || teams.some(t => t.includes(x) && t.includes(y))
+      for (const [k, arr] of Object.entries(G.eq)) if (mate(k, a.key)) arr.forEach((u, i) => { if (u === a.uid && !(k === a.key && i === slot)) arr[i] = null })
       eq[slot] = a.uid; return {}
     }
     case 'gearUpgrade': {

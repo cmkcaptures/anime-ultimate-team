@@ -2790,7 +2790,7 @@ function gearPicker(key, slot) {
       const row = h('div', 'gp-row' + (uid === cur ? ' on' : '')), info = h('div', 'gp-info'), nm = h('b')
       nm.textContent = GEAR_BASES[it.b].name + ' +' + (it.lvl || 0); info.append(nm)
       for (const [k, txt] of gearLines(it)) { const l = h('span', 'gl-' + k); l.textContent = txt; info.append(l) }
-      const ow = owner(uid); if (ow && ow !== key) { const n = h('small', 'gp-own'); n.textContent = 'Equipped on ' + (BYKEY[ow]?.name || 'another card'); info.append(n) }
+      const ow = owner(uid); if (ow && ow !== key) { const n = h('small', 'gp-own'); n.textContent = 'Also on ' + (BYKEY[ow]?.name || 'another card') + ' · fine if they’re in different teams'; info.append(n) }
       const ok = gearReqOk(card, it), q = GEAR_BASES[it.b].only ? { text: 'EXCLUSIVE · ' + GEAR_BASES[it.b].onlyName } : GEAR_REQ[GEAR_BASES[it.b].t]
       if (q) { const rq = h('small', 'gp-req' + (ok ? '' : ' no')); rq.textContent = (ok ? '✓ ' : '✗ ') + (GEAR_BASES[it.b].only ? '' : 'Requires ') + q.text; info.append(rq) }
       const btn = h('button', 'btn ' + (uid === cur ? 'dark' : 'gold') + ' sm', uid === cur ? 'UNEQUIP' : 'EQUIP'); if (!ok && uid !== cur) { btn.disabled = true; row.classList.add('locked') }
