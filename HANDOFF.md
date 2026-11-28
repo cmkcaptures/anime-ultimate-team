@@ -229,3 +229,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Team Bonuses panel on the Team page (6 tiles: Leader, Series, Auras, Links, Squad Bond, Multiverse; on/off + how to activate) replaces the old .tm-bond/.tm-links text boxes (hidden via CSS). Glowing animated SVG lines between linked fighters (drawTeamLinks in app.js, drawn via ResizeObserver).
 
 - 2026-11-28 (Claude): Mythic GUTS (guts_black_swordsman, new series BERSERK) = Crucible stage-50 first-clear exclusive. Field crucibleReward:50 on the card; deadZoneReward() returns "crucible" for it so it is locked out of packs/exchange; engine crucibleResult gives it on first stage-50 clear; crucibleReward(50) shows it; arrivals says "Earn it by clearing The Crucible". BERSERK registered in app.js ANIME, cardkit.js, engine ANIME_NAMES, pull FX.
+
+- 2026-11-28 (Claude): +40 gear bases in js/gear.js (14 B, 14 S, 12 G; Gold have fx: first, drain, dodge, pierce+crit, regen, nullPassive, firstNull, endure, ramp, teamHeal, shield, vsHigh). Icons items/gear/<id>.webp (256px squares from fandom stills). Drops pick randomly within tier, so all 48 can drop.
