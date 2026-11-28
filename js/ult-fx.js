@@ -40,3 +40,20 @@ export function victoryPose(mvp) {
     setTimeout(() => { v.onclick = done }, 500); setTimeout(done, 4200)
   })
 }
+
+// TEAM ATTACK: split-screen dual cut-in
+export function teamCut(c1, c2, name, moment) {
+  return new Promise(res => {
+    const o = document.createElement('div'); o.className = 'tcut'
+    o.innerHTML = `<i class="tc-flash"></i><i class="tc-lines"></i>
+      <div class="tc-p l"><i style="background-image:url('${c1.url}');background-position:${pos(c1)}"></i></div>
+      <div class="tc-p r"><i style="background-image:url('${c2.url}');background-position:${pos(c2)}"></i></div>
+      <i class="tc-slash"></i>
+      <div class="tc-txt"><small>TEAM ATTACK</small><b></b><span></span><p class="tc-m"></p></div>`
+    o.querySelector('.tc-txt b').textContent = name
+    o.querySelector('.tc-txt span').textContent = c1.name + '  ×  ' + c2.name; o.querySelector('.tc-m').textContent = moment || ''
+    document.body.append(o)
+    const done = () => { if (!o.isConnected) return; o.classList.add('out'); setTimeout(() => { o.remove(); res() }, 280) }
+    o.onclick = done; setTimeout(done, 2600)
+  })
+}

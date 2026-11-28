@@ -1,6 +1,6 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
 import { chroniclePage } from './chronicle-ui.js?v=claude-chron-5'
-import { ultraCut, victoryPose } from './ult-fx.js?v=claude-ult-3'
+import { ultraCut, victoryPose, teamCut } from './ult-fx.js?v=claude-ta-2'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-gshard'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
@@ -39,6 +39,29 @@ export const TEAM_COMBOS = [
   { a: 'JOTARO', b: 'DIO', n: 'ZA WARUDO CLASH' }, { a: 'SHINRA', b: 'SHO', n: 'KUSAKABE BROTHERS' }, { a: 'MADARA', b: 'OBITO', n: 'EYE OF THE MOON' },
   { a: 'ITACHI', b: 'SASUKE', n: 'UCHIHA BROTHERS' }, { a: 'DENJI', b: 'POWER', n: 'DEVIL DUO' }, { a: 'YAMI', b: 'ASTA', n: 'SURPASS YOUR LIMITS' },
 ]
+// each pair's Team Attack recreates one moment from their story, with its own effect
+// dmg/splash = % max HP to the active enemy / enemy bench; stun = enemy loses a turn; heal = team heal %; buff = team +dmg% for the battle;
+// shred = enemy active -25% DEF; exec = KO the active enemy if below this % HP; gauge = +Ultimate; ki = +Energy
+export const TEAM_MOMENTS = {
+  'NARUTO|SASUKE': { m: 'The Valley of the End: the final clash, this time side by side.', dmg: 40, exec: 25 },
+  'GOKU|VEGETA': { m: 'Final Kamehameha: two Saiyan princes pour everything into one beam.', dmg: 28, splash: 18 },
+  'DEKU|BAKUGO': { m: 'Heroes Rising: One For All passed between rivals for one final punch.', dmg: 30, buff: 15 },
+  'GOJO|GETO': { m: 'The Strongest Duo: the year they were unstoppable together.', dmg: 22, stun: 1 },
+  'GOJO|SUKUNA': { m: 'Shinjuku Showdown: Hollow Purple meets the World-Cutting Slash.', dmg: 45 },
+  'ICHIGO|AIZEN': { m: 'Beyond Transcendence: the power that sealed a god, turned on the enemy.', dmg: 38, shred: 1 },
+  'LUFFY|ZORO': { m: 'The Onigashima Rooftop: captain and first mate against an Emperor.', dmg: 30, buff: 12, gauge: 30 },
+  'GON|KILLUA': { m: 'Jajanken × Godspeed: best friends moving as one.', dmg: 26, stun: 1 },
+  'TANJIRO|ZENITSU': { m: 'Hinokami × Thunderclap: the Kamado squad strikes in a single breath.', dmg: 32, splash: 10 },
+  'ASTA|YUNO': { m: 'Rivals to Wizard King: black and star magic, back to back.', dmg: 30, ki: 3 },
+  'NATSU|GRAY': { m: 'Unison Raid: fire and ice combined into one blast.', dmg: 24, splash: 20 },
+  'ITADORI|TODO': { m: 'Black Flash × Boogie Woogie: brothers in spirit against Mahito.', dmg: 34, stun: 1 },
+  'JOTARO|DIO': { m: 'Za Warudo Clash: time stops for everyone but them.', dmg: 30, stun: 1 },
+  'SHINRA|SHO': { m: 'The Kusakabe Brothers: Adolla Link restores what was lost.', dmg: 28, heal: 15 },
+  'MADARA|OBITO': { m: 'Eye of the Moon: the Infinite Tsukuyomi rises.', dmg: 20, splash: 15, stun: 1 },
+  'ITACHI|SASUKE': { m: 'The Uchiha Brothers vs Kabuto: Izanami, one last time together.', dmg: 26, heal: 12, shred: 1 },
+  'DENJI|POWER': { m: 'The Devil Duo: blood and chainsaws, no plan at all.', dmg: 30, heal: 10 },
+  'YAMI|ASTA': { m: 'Surpass Your Limits: Dark Cloaked Dimension Slash.', dmg: 36, exec: 20 },
+}
 export function combosFor(cards) { const names = new Set(); for (const c of cards) if (c) for (const p of c.name.split(' & ')) names.add(p.trim()); return TEAM_COMBOS.filter(x => names.has(x.a) && names.has(x.b)) }
 // series synergy: 3+ fighters from one series boost the whole team's damage
 export const SYN = { 3: 4, 4: 6, 5: 8, 6: 10 }
@@ -3026,6 +3049,7 @@ export function startBattle(stage) {
   { // v3 interactivity: 3D tilt on fighters, ult gauge gradient, hit flash
     const svgNS = 'http://www.w3.org/2000/svg', s = ov.querySelector('.ar-ult svg'); if (s) { const d = document.createElementNS(svgNS, 'defs'); d.innerHTML = '<linearGradient id="v3ug" x1="0" x2="1"><stop offset="0" stop-color="#b98cff"/><stop offset="1" stop-color="#ffd27a"/></linearGradient>'; s.prepend(d) }
     ov.addEventListener('pointermove', e => { const c = e.target.closest && e.target.closest('.ar-active'); if (!c) return; const r = c.getBoundingClientRect(); c.style.transform = 'perspective(900px) rotateX(' + ((e.clientY - r.top) / r.height - .5) * -10 + 'deg) rotateY(' + ((e.clientX - r.left) / r.width - .5) * 12 + 'deg) scale(1.03)' })
+    setTimeout(() => { try { teamBtn() } catch { } }, 400)
     ov.addEventListener('pointerdown', e => { if (!e.target.closest('button')) return; const r = document.createElement('i'); r.className = 'v3-rip'; r.style.left = e.clientX + 'px'; r.style.top = e.clientY + 'px'; ov.append(r); setTimeout(() => r.remove(), 520) })
     ov.addEventListener('pointerout', e => { const c = e.target.closest && e.target.closest('.ar-active'); if (c && !c.contains(e.relatedTarget)) c.style.transform = '' })
   }
@@ -4170,7 +4194,32 @@ export function startBattle(stage) {
     s.confiscated = 0; sealNow()
     const p = passives(s), a = act(s); if (p.heal && !a.ko) healHP(a, Math.round(a.max * p.heal / 100)); if (p.gauge) s.gauge = Math.min(GAUGE_MAX, s.gauge + p.gauge) }
   function chronHud(left) { let el = $a('.chr-hud'); if (!el) { el = document.createElement('div'); el.className = 'chr-hud'; ($a('.ar-top') || ov).append(el) } el.innerHTML = '<small>' + (stage.limitText || 'TIME UP') + ' IN</small><b>' + Math.max(0, left) + '</b><small>TURNS</small>'; el.classList.toggle('crit', left <= 3) }
+  // ---- TEAM ATTACKS: partner pairs on your team charge a one-time combo strike ----
+  function teamPairs() { const T = B.you.team, out = []; for (const x of TEAM_COMBOS) { if (B.you.taUsed && B.you.taUsed.includes(x.n)) continue; const has = n => T.find(f => !f.ko && f.card.name.split(' & ').map(s => s.trim()).includes(n)); const fa = has(x.a), fb = has(x.b); if (fa && fb && fa !== fb && (act(B.you) === fa || act(B.you) === fb)) out.push({ x, fa, fb }) } return out }
+  function teamBtn() { let btn = $a('.ar-team'); const ok = !B.over && !stage.live && !stage.pvp; if (!ok) return; const pr = teamPairs()[0], ch = Math.min(100, B.you.taCharge || 0)
+    if (!btn) { btn = document.createElement('button'); btn.className = 'ar-team'; btn.onclick = teamAttack; ($a('.ar-btns') || ov).prepend(btn) }
+    btn.hidden = !pr; if (!pr) return; const ready = ch >= 100 && !B.busy
+    btn.classList.toggle('ready', ready); btn.style.setProperty('--tc', ch + '%'); btn.innerHTML = '<small>TEAM ATTACK</small><b>' + pr.x.n + '</b><em>' + (ch >= 100 ? 'READY' : ch + '%') + '</em>' }
+  async function teamAttack() {
+    const pr = teamPairs()[0]; if (!pr || B.busy || B.over || (B.you.taCharge || 0) < 100) return
+    B.busy = true; controls(); B.you.taUsed = [...(B.you.taUsed || []), pr.x.n]; B.you.taCharge = 0
+    const M = TEAM_MOMENTS[pr.x.a + '|' + pr.x.b] || { m: '', dmg: 32, splash: 12 }
+    sfx('bcharge'); await teamCut(pr.fa.card, pr.fb.card, pr.x.n, M.m); sfx('bimpact', true); shake(3)
+    const foe = act(B.ai), main = Math.round(foe.max * (M.dmg || 0) / 100), notes = []; foe.hp = Math.max(0, foe.hp - main); foe.guard = 0
+    let splash = 0; if (M.splash) for (const f of B.ai.team) if (!f.ko && f !== foe) { const d = Math.round(f.max * M.splash / 100); f.hp = Math.max(1, f.hp - d); splash += d }
+    if (M.exec && foe.hp > 0 && foe.hp / foe.max < M.exec / 100) { foe.hp = 0; notes.push('FINISHED OFF') }
+    if (M.stun) { B.ai.skip = 1; notes.push('enemy loses its next turn') }
+    if (M.shred) { foe.def = Math.round(foe.def * .75); notes.push('enemy -25% DEF') }
+    if (M.heal) { for (const f of B.you.team) if (!f.ko) f.hp = Math.min(f.max, f.hp + Math.round(f.max * M.heal / 100)); notes.push('team healed ' + M.heal + '%') }
+    if (M.buff) { for (const f of B.you.team) f.pe = { ...(f.pe || {}), dmg: ((f.pe || {}).dmg || 0) + M.buff }; notes.push('team +' + M.buff + '% damage') }
+    if (M.gauge) { B.you.gauge = Math.min(GAUGE_MAX, B.you.gauge + M.gauge); notes.push('+' + M.gauge + '% Ultimate') }
+    if (M.ki) { B.you.ki = Math.min(KI_MAX, B.you.ki + M.ki); notes.push('+' + M.ki + ' Energy') }
+    log('TEAM ATTACK · ' + pr.x.n + '! ' + main.toLocaleString() + ' damage' + (splash ? ' + ' + splash.toLocaleString() + ' to the bench' : '') + (notes.length ? ' · ' + notes.join(', ') : '') + '.')
+    try { const el = $a('.ar-side.ai .ar-active'); floatTag(el, 'TEAM ATTACK', 'crit'); const [x, y] = ctr(el); FXC.hit(x, y, '#ffd27a', 3) } catch { }
+    B.busy = false; if (sweepKO()) return; draw(); teamBtn()
+  }
   async function chronTurn() {
+    if (!B.over) { B.you.taCharge = Math.min(100, (B.you.taCharge || 0) + 25); teamBtn() }
     if (!stage.chronicle) return false
     if (stage.fury && !B.chFury && B.you.team.some(f => f.ko)) { B.chFury = 1; for (const f of B.you.team) if (!f.ko) f.pe = { ...(f.pe || {}), dmg: ((f.pe || {}).dmg || 0) + 25, typeNeutral: 1 }; ov.classList.add('chr-fury'); turnBanner('SUPER SAIYAN FURY', true); log('SUPER SAIYAN FURY · +25% damage and no type disadvantage.'); sfx('bcharge'); await wait(1000) }
     if (stage.turnLimit) { const left = stage.turnLimit - B.turn + 1; chronHud(left); if (left <= 0) { turnBanner(stage.limitText || 'TIME UP', false); log((stage.limitText || 'TIME UP') + '!'); shake(3); await wait(1200); end(false); return true } if (left <= 3) log('⏳ ' + left + ' turn' + (left > 1 ? 's' : '') + ' left!') }

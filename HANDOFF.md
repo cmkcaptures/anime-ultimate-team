@@ -267,3 +267,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Battle v3 LAYOUT (desktop >=900px): plates spread full width, fight area = 2 equal columns (mat-in grid, tilt removed), fighter cards full size (contain), benches = vertical rosters on screen edges, dock = 3 glass panels. Mobile keeps stacked layout with tighter plates.
 
 - 2026-11-28 (Claude): GEAR RULE: non-Unique gear must NOT grant endure/revive/first/nullPassive/firstNull (character identity). 10 Gold bases re-perked; Gold MAIN +25%, Silver +15%.
+
+- 2026-11-28 (Claude): TEAM ATTACKS in battle.js: TEAM_COMBOS pairs + TEAM_MOMENTS (per-pair moment text + effect: dmg/splash/stun/heal/buff/shred/exec/gauge/ki). Button .ar-team in dock, +25% charge per player turn (chronTurn), once per pair per battle, player only (not PvP). Dual cut-in teamCut() in ult-fx.js.
