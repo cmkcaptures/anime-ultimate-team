@@ -273,3 +273,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Chronicle Break +4 moments (sokyoku, temple, kamino, baki), sim-tuned. 11 new chronicle cards; baki_strongest now chronicleReward (locked from packs). New bossAb: illusion, beastrage, quirksteal, demonback.
 
 - 2026-11-28 (Claude): +50 gear (181 total). Top-tier Gold marked with a star in fxText. gearIcon ?v=3.
+
+- 2026-11-28 (Claude): Ascension added: naruto_sasuke_momoshiki -> THE FINAL BOND.
