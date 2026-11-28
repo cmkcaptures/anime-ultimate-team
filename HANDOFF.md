@@ -225,3 +225,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Team-page gear strip (.tg-slot) uses drawn frames too.
 
 - 2026-11-28 (Claude): Home life — js/home-life.js: LIVE news ticker (banner, new cards, ascensions, top player), auto-rotating featured carousel (banner/ascensions/new arrivals/Dead Zone/Crucible), leader card tilt + breathing + aura motes. CSS "home life" in qol.css.
+
+- 2026-11-28 (Claude): Team Bonuses panel on the Team page (6 tiles: Leader, Series, Auras, Links, Squad Bond, Multiverse; on/off + how to activate) replaces the old .tm-bond/.tm-links text boxes (hidden via CSS). Glowing animated SVG lines between linked fighters (drawTeamLinks in app.js, drawn via ResizeObserver).

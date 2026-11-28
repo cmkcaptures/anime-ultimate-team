@@ -900,6 +900,21 @@ PAGES.team = (el) => {
   if (count) { const bar = h('div', 'tm-boost', `<div><small>TEAM BOOST</small><b>+${avgB}%</b></div><p>${avgB >= 30 ? '🟢 Great fit. Your cards boost each other.' : avgB >= 15 ? '🟡 Decent. Some cards don\'t link up.' : '🔴 Weak links. Cards aren\'t boosting each other.'}</p>`), dt = h('button', 'btn dark sm', TDET ? 'HIDE DETAILS' : 'DETAILS'); dt.onclick = () => { TDET = !TDET; rerender() }; bar.append(dt); el.append(bar)
     { const LA = teamLinks(TC).active; const lr = h('div', 'tm-links', '<b>🔗 LINKS</b>'); if (LA.length) for (const x of LA) lr.append(h('span', 'tl', `${TC[x.i].name.split(' ')[0]} ↔ ${TC[x.j].name.split(' ')[0]} <em>${x.links.map(l => l.n).join(' · ')} +${x.links.reduce((n, l) => n + l.pct, 0)}%</em>`)); else lr.append(h('small', '', 'No links yet. Put characters who belong together next to each other: Goku ↔ Vegeta, Luffy ↔ Zoro, two Swordsmen, same faction…')); el.append(lr) }
     if (TDET) { const t = h('div', 'tm-det', '<div class="tdr th"><span>CARD</span><span>👑 LEADER</span><span>📺 SERIES</span><span>✦ AURA</span><span>🔗 LINK</span><span>TOTAL</span></div>'); TC.forEach((c, i) => { const b = SB[i]; if (!c) return; t.append(h('div', 'tdr', `<span>${c.name}</span><span>+${b.lead}%</span><span>+${b.series}%</span><span title="${(c.aura || []).map(auraTag).join(' · ')}">+${b.aura}%</span><span>+${b.link}%</span><b>+${b.total}%</b>`)) }); t.append(h('small', '', 'Leader: boosts cards sharing its category. Series: 3+ cards from one anime. Aura: tagged recipients gain bonuses from any matching card. Link: neighbours in lineup order (Leader → Main 1 → Main 2 → Sub 1 → Sub 2 → Sub 3) that belong together.')); el.append(t) } }
+  // ---- TEAM BONUSES panel (visual summary of every synergy system) ----
+  if (count) {
+    const syn = synergy(TC), MV = multiverse(TC), BD = squadBond(TC), TL = teamLinks(TC), AB = teamAuras(TC), auraSum = AB.reduce((n, x) => n + (x || 0), 0)
+    const tiles = [
+      ['👑', 'LEADER', LI.lead ? '+' + LI.lead.pct + '%' : 'OFF', LI.lead ? LI.n + '/' + count + ' boosted' : 'Pick a leader', !!LI.lead],
+      ['📺', 'SERIES', syn.bonus ? '+' + syn.bonus + '%' : 'OFF', syn.bonus ? syn.n + ' ' + ANAME(syn.anime) : '3+ from one anime', !!syn.bonus],
+      ['✦', 'AURAS', auraSum ? '+' + Math.round(auraSum / count) + '%' : 'OFF', auraSum ? 'avg per fighter' : 'Match aura tags', !!auraSum],
+      ['🔗', 'LINKS', TL.active.length ? TL.active.length + ' LIVE' : 'OFF', TL.active.length ? TL.active.slice(0, 2).map(x => x.links[0].n).join(' · ') : 'Pair rivals side by side', !!TL.active.length],
+      ['🛡️', 'SQUAD BOND', BD.tier ? '-' + BD.dr + '% DMG' : 'OFF', BD.tier ? BD.n + '/6 ' + auraTag(BD.tag || '') : BD.n + '/6 share a tag (need 4)', !!BD.tier],
+      ['🌌', 'MULTIVERSE', MV.pct ? '+' + MV.pct + '%' : 'OFF', MV.n + ' series' + (MV.pct ? '' : ' (need 3)'), !!MV.pct],
+    ]
+    const on = tiles.filter(t => t[4]).length, tb = h('section', 'tbn')
+    tb.innerHTML = '<header><div><small>チーム · TEAM BONUSES</small><b>' + on + '/6 ACTIVE</b></div><div class="tbn-meter"><i style="width:' + Math.round(on / 6 * 100) + '%"></i></div><em>+' + avgB + '% avg boost</em></header><div class="tbn-grid">' + tiles.map(([ic, n, v, s, ok]) => '<div class="tbn-t' + (ok ? ' on' : '') + '"><i>' + ic + '</i><small>' + n + '</small><b>' + v + '</b><span>' + s + '</span></div>').join('') + '</div>'
+    el.append(tb)
+  }
   // leader + slots
   const main = h('section', 'tm-main'), L = TC[0]
   const lb = h('button', 'tm-lead tap' + (L ? '' : ' empty')); lb.append(h('span', 'tm-tag', 'LEADER'))
@@ -938,6 +953,7 @@ PAGES.team = (el) => {
   right.append(h('div', 'tm-lbl', 'MAIN · FIGHT FIRST')); { const g = h('div', 'tm-mainrow'); g.append(slot(1), slot(2)); right.append(g) }
   right.append(h('div', 'tm-lbl', 'SUB · SWAP IN DURING BATTLE')); { const g = h('div', 'tm-subrow'); g.append(slot(3), slot(4), slot(5)); right.append(g) }
   main.append(right); el.append(main)
+  if (count && window.ResizeObserver) { let lw = 0; const ro = new ResizeObserver(() => { if (!main.isConnected) return ro.disconnect(); const w = main.getBoundingClientRect().width; if (w && Math.abs(w - lw) > 4) { lw = w; drawTeamLinks(main, TC) } }); ro.observe(main) }
   // actions
   const acts = h('div', 'tm-acts')
   const ab = h('button', 'btn gold', 'AUTO BUILD'); ab.onclick = () => { TBX.show = !TBX.show; rerender(); setTimeout(() => document.querySelector('.tbx')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60) }
@@ -947,6 +963,15 @@ PAGES.team = (el) => {
   suggest.onclick = () => auraPlanner(TC)
   acts.append(suggest, ab, dk, cl); el.append(acts)
   if (TBX.show) teamBuilderPanel(el)
+}
+// glowing lines between linked fighters on the Team page
+function drawTeamLinks(main, TC, tries = 0) {
+  const LA = teamLinks(TC).active; if (!LA.length || !main.isConnected) return; main.querySelector('.tm-linkfx')?.remove()
+  const slots = [main.querySelector('.tm-lead'), ...main.querySelectorAll('.tm-right .tm-slot')], R = main.getBoundingClientRect()
+  const ctr = e => { const r = e.getBoundingClientRect(); return [r.left - R.left + r.width / 2, r.top - R.top + r.height / 2] }
+  const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'tm-linkfx'); svg.setAttribute('width', R.width); svg.setAttribute('height', R.height); if (!R.width) return svg.setAttribute('viewBox', '0 0 ' + R.width + ' ' + R.height)
+  for (const x of LA) { const a = slots[x.i], b = slots[x.j]; if (!a || !b) continue; const [x1, y1] = ctr(a), [x2, y2] = ctr(b), p = document.createElementNS(NS, 'path'), mx = (x1 + x2) / 2, my = Math.min(y1, y2) - 30; p.setAttribute('d', 'M' + x1 + ' ' + y1 + ' Q' + mx + ' ' + my + ' ' + x2 + ' ' + y2); svg.append(p) }
+  main.style.position = 'relative'; main.append(svg)
 }
 // ---- TEAM BOOST: leader + series synergy + auras rolled into one number per card ----
 function slotBoosts(TC) {
