@@ -233,3 +233,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): +40 gear bases in js/gear.js (14 B, 14 S, 12 G; Gold have fx: first, drain, dodge, pierce+crit, regen, nullPassive, firstNull, endure, ramp, teamHeal, shield, vsHigh). Icons items/gear/<id>.webp (256px squares from fandom stills). Drops pick randomly within tier, so all 48 can drop.
 
 - 2026-11-28 (Claude): +40 more gear (total 88: 31 B, 31 S, 26 G). New Gold fx use dmg, pierce, drain, dr, crit, firstNull, revive, regen, spec, dodge.
+
+- 2026-11-28 (Claude): Gear Catalog (Armory > PICK EXACT GEAR): buy any specific gear base for 4x its tier box price in gear shards. engine gearBuy accepts {base}; app gearCatalog().

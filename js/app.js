@@ -2813,7 +2813,26 @@ PAGES.armory = el => {
   el.append(grid)
   const ex = h('section', 'arm-ex', '<header><small>交換所 · GEAR EXCHANGE</small><b>Spend gear shards on a random piece</b></header><div class="ex-row"></div>')
   for (const t of ['B', 'S', 'G']) { const b = h('button', 'ex-box g-' + t, '<i class="gt-frame"></i><b>' + GEAR_TIERS[t].name + ' BOX</b><span>◈ ' + GEAR_TIERS[t].box + '</span>'); b.disabled = (G.shards || 0) < GEAR_TIERS[t].box; b.onclick = async () => { const r = await act('gearBuy', { tier: t }); if (!r.error) { rerender(); r.gear && gearDetail(r.gear) } }; ex.querySelector('.ex-row').append(b) }
+  { const pk = h('button', 'btn violet block ex-pick', '🎯 PICK EXACT GEAR<small>Choose any piece · 4× box price</small>'); pk.onclick = () => gearCatalog(); ex.append(pk) }
   el.append(ex)
+}
+function gearCatalog(tf = 'G') {
+  const G = ST.gear
+  openModal(sh => {
+    sh.append(h('h2', '', '🎯 GEAR CATALOG'), h('p', 'muted', 'Buy the exact piece you want with gear shards. You have ◈ ' + (G.shards || 0).toLocaleString() + '. Salvage spare gear for more shards.'))
+    const tabs = h('div', 'mtabs'); for (const t of ['G', 'S', 'B']) { const b = h('button', 'mtab' + (t === tf ? ' on' : ''), GEAR_TIERS[t].name); b.onclick = () => { closeModal(); gearCatalog(t) }; tabs.append(b) } sh.append(tabs)
+    const cost = GEAR_TIERS[tf].box * 4, q = GEAR_REQ[tf], list = h('div', 'gcat')
+    for (const [id, B] of Object.entries(GEAR_BASES).filter(([, B]) => B.t === tf).sort((x, y) => x[1].name.localeCompare(y[1].name))) {
+      const row = h('div', 'gcat-r'), info = h('div', 'gcat-i'), ms = mainStats({ b: id, lvl: 0 })
+      info.append(h('b', '', B.name), h('small', '', Object.entries(ms).map(([k, v]) => '+' + v.toLocaleString() + ' ' + MAIN_LABEL[k]).join(' · ')))
+      if (B.fxText) info.append(h('span', 'gcat-fx', '✦ ' + B.fxText))
+      if (q) info.append(h('em', '', 'Needs a ' + q.text + ' fighter'))
+      const buy = h('button', 'btn gold sm', '◈ ' + cost.toLocaleString()); buy.disabled = (G.shards || 0) < cost
+      buy.onclick = async () => { const r = await act('gearBuy', { base: id }); if (r.error) return; closeModal(); rerender(); r.gear && gearDetail(r.gear) }
+      row.append(gearTile({ b: id, lvl: 0, subs: [] }), info, buy); list.append(row)
+    }
+    sh.append(list)
+  })
 }
 function gearDetail(uid) {
   const G = ST.gear, it = G.items[uid]; if (!it) return

@@ -1740,6 +1740,7 @@ function act(a) {
       return { msg: 'Salvaged for ' + got + ' gear shards.' }
     }
     case 'gearBuy': {
+      if (a.base) { const G = gearP(), B = GEAR_BASES[a.base]; if (!B) return { error: 'Unknown gear.' }; const cost = GEAR_TIERS[B.t].box * 4; if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }; G.shards -= cost; const it = giveGear(B.t, a.base); return { msg: 'Got ' + B.name + '!', gear: it.uid } }
       const G = gearP(), t = a.tier; if (!GEAR_TIERS[t]) return { error: 'Bad box.' }
       const cost = GEAR_TIERS[t].box; if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }
       G.shards -= cost; const it = giveGear(t); return { msg: 'Got ' + GEAR_BASES[it.b].name + '!', gear: it.uid }
