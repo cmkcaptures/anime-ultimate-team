@@ -269,3 +269,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): GEAR RULE: non-Unique gear must NOT grant endure/revive/first/nullPassive/firstNull (character identity). 10 Gold bases re-perked; Gold MAIN +25%, Silver +15%.
 
 - 2026-11-28 (Claude): TEAM ATTACKS in battle.js: TEAM_COMBOS pairs + TEAM_MOMENTS (per-pair moment text + effect: dmg/splash/stun/heal/buff/shred/exec/gauge/ki). Button .ar-team in dock, +25% charge per player turn (chronTurn), once per pair per battle, player only (not PvP). Dual cut-in teamCut() in ult-fx.js.
+
+- 2026-11-28 (Claude): Chronicle Break +4 moments (sokyoku, temple, kamino, baki), sim-tuned. 11 new chronicle cards; baki_strongest now chronicleReward (locked from packs). New bossAb: illusion, beastrage, quirksteal, demonback.

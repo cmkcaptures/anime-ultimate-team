@@ -105,14 +105,123 @@ CHRONICLES.push({
   },
   trueEnding: { id: 'true', name: 'A NIGHT WITHOUT LOSS', text: 'Not one fighter fell. Even the Nine-Tails, sealed and calm, admits it was beaten fair.', reward: { premium: 3, gearShards: 3000, card: 'kurama_unleashed_night' } },
 })
+
+CHRONICLES.push({
+  id: 'sokyoku', anime: 'BLE', era: 'SOUL SOCIETY ARC', name: 'THE SŌKYOKU HILL', title: 'AN EXECUTION INTERRUPTED', bg: 'assets/chronicle/sokyoku.jpg', hero: 'rukia_rescued', villain: 'aizen_betrayal', col: '#c9a7ff', col2: '#5a2bd6',
+  canon: 'Rukia is led to the Sōkyoku for execution. Moments later, Aizen reveals he planned it all, cuts down Ichigo and takes the Hōgyoku from her soul.',
+  nodes: {
+    start: { type: 'choice', title: 'THE DAY OF THE EXECUTION', scene: [
+      ['Narrator', 'The Sōkyoku hill. The execution device burns like a phoenix. Rukia Kuchiki stands at its edge, calm.'],
+      ['rukia_rescued', 'It’s fine. I’ve made my peace with it.'],
+      ['gin_snake', 'Such a sad little ceremony. Ah, but it ain’t really about her, is it, Captain?'],
+      ['aizen_betrayal', 'Everything is proceeding exactly as I planned.'],
+      ['Narrator', 'A rift splits the sky over Soul Society. Your team lands on the hill.'] ],
+      choices: [
+        { id: 'break', tag: 'RESCUE', label: 'BREAK THE EXECUTION', desc: 'Smash the Sōkyoku and fight off the captains guarding it. Rukia lives, but the hill turns on you.', next: 'k1', art: 'rukia_rescued' },
+        { id: 'aizen', tag: 'HARDEST', label: 'STOP AIZEN FIRST', desc: 'He hasn’t revealed himself yet. Strike before he takes the Hōgyoku. Illusions everywhere.', next: 'k2', art: 'aizen_betrayal' },
+        { id: 'hold', tag: 'HOLD-OUT', label: 'HOLD THE HILL', desc: 'Keep everyone off the hill until Ichigo arrives. Survive the captains and the snake.', next: 'k3', art: 'gin_snake' } ] },
+    k1: { type: 'fight', name: 'SHATTER THE SŌKYOKU', enemy: ['byakuya_senbonzakura_senkei', 'TŌSHIRŌ', 'SOI FON'], boost: 2.6, rules: { dmg: 24, dr: 10 }, bossAb: 'illusion', final: 1,
+      brief: ['Three captains guard the execution.', 'Every 3rd turn: KYŌKA SUIGETSU. Without Guard you lose 3 Energy to the illusion.'],
+      scene: [['byakuya_senbonzakura_senkei', 'Interfere with the law of Soul Society and you will be cut down.']], next: 'end_rukia' },
+    k2: { type: 'fight', name: 'THE MAN IN THE ILLUSION', enemy: ['aizen_betrayal', 'gin_snake'], boost: 3.2, rules: { dmg: 32, dr: 12 }, bossAb: 'illusion', turnLimit: 16, limitText: 'AIZEN TAKES THE HŌGYOKU', encounter: 'second-phase', final: 1,
+      brief: ['Beat Aizen and Gin before Aizen takes the Hōgyoku: 16 turns.', 'Every 3rd turn: KYŌKA SUIGETSU. Guard or lose 3 Energy.', 'Aizen returns once at 35% HP with a full Ultimate.'],
+      scene: [['aizen_betrayal', 'When did you believe you weren’t already under my spell?']], next: 'end_gin' },
+    k3: { type: 'fight', name: 'NOBODY TOUCHES HER', enemy: ['gin_snake', 'byakuya_senbonzakura_senkei'], boost: 3.6, rules: { dmg: 45 }, encounter: 'hold-out',
+      brief: ['Survive three enemy turns, or KO them.'], scene: [['gin_snake', 'Ooh, scary. Shoot to kill, Shinsō.']], next: 'end_hold' },
+    end_rukia: { type: 'ending', id: 'rukia', name: 'RUKIA IS SAVED', text: 'The Sōkyoku shatters and Rukia walks off the hill alive. Soul Society will be talking about the strangers for centuries.', reward: { coins: 30000, gearShards: 2000, card: 'rukia_rescued' } },
+    end_gin: { type: 'ending', id: 'gin', name: 'THE SNAKE SHEDS ITS SKIN', text: 'Aizen never takes the Hōgyoku. In the chaos, Gin reveals he was waiting for this exact moment to turn on him.', reward: { coins: 30000, gearShards: 2000, card: 'gin_snake' } },
+    end_hold: { type: 'ending', id: 'hold', name: 'THE HILL HOLDS', text: 'You hold the hill until Ichigo arrives. History bends: everyone who was meant to fall that day walks away.', reward: { coins: 40000, gearShards: 2500, premium: 2 } },
+  },
+  trueEnding: { id: 'true', name: 'NOTHING WAS AN ILLUSION', text: 'Not one fighter fell. For the first time, Aizen admits something happened that he did not plan.', reward: { premium: 3, gearShards: 3000, card: 'aizen_betrayal' } },
+})
+CHRONICLES.push({
+  id: 'temple', anime: 'BC', era: 'UNDERWATER TEMPLE', name: 'THE UNDERWATER TEMPLE', title: 'HIS ARMS WERE NEVER BROKEN', bg: 'assets/chronicle/temple.jpg', hero: 'asta_unbroken', villain: 'vetto_despair', col: '#ff3b3b', col2: '#1d1d1d',
+  canon: 'Vetto of the Eye of the Midnight Sun breaks Asta’s arms and curses them, nearly ending his dream of becoming Wizard King.',
+  nodes: {
+    start: { type: 'choice', title: 'THE BEAST IN THE TEMPLE', scene: [
+      ['Narrator', 'The Underwater Temple. The Black Bulls are down. Vetto stands over Asta.'],
+      ['vetto_despair', 'Hope is just a lie you tell yourself before you break. Let me show you despair.'],
+      ['asta_unbroken', 'I don’t care how strong you are. I’m not giving up!'],
+      ['Narrator', 'A rift opens in the water above the temple. Your team crashes through.'] ],
+      choices: [
+        { id: 'shield', tag: 'PROTECT', label: 'PROTECT ASTA', desc: 'Stand between Asta and Vetto. Keep him standing until his arms are safe.', next: 't1', art: 'asta_unbroken' },
+        { id: 'beast', tag: 'HARDEST', label: 'OVERWHELM THE BEAST', desc: 'Go straight for Vetto. Every hit he takes makes him angrier and stronger.', next: 't2', art: 'vetto_despair' },
+        { id: 'bond', tag: 'DUO', label: 'FIGHT WITH NOELLE', desc: 'Noelle finds her magic. Fight beside the Black Bulls with her shield over you.', next: 't3', art: 'asta_noelle_bond' } ] },
+    t1: { type: 'fight', name: 'HE STAYS STANDING', enemy: ['vetto_despair', 'LICHT'], boost: 3.6, rules: { dmg: 45 }, encounter: 'hold-out', bossAb: 'beastrage',
+      brief: ['Survive three enemy turns, or KO them.', 'Every 3rd turn: BEAST RAGE. Vetto gains +15% damage.'], scene: [['vetto_despair', 'You’re protecting the brat? Then you can break first.']], next: 'end_asta' },
+    t2: { type: 'fight', name: 'DESPAIR UNLEASHED', enemy: ['vetto_despair'], boost: 6.2, rules: { dmg: 56, dr: 24 }, bossAb: 'beastrage', turnLimit: 14, limitText: 'THE TEMPLE COLLAPSES', final: 1,
+      brief: ['A raid boss. Beat Vetto before the temple collapses: 14 turns.', 'Every 3rd turn: BEAST RAGE stacks +15% damage. End it fast.'], scene: [['vetto_despair', 'MORE! Show me more despair!']], next: 'end_vetto' },
+    t3: { type: 'fight', name: 'THE SEA DRAGON’S CRADLE', enemy: ['vetto_despair', 'DANTE ZOGRATIS'], boost: 3.4, rules: { dmg: 32, dr: 12 }, bossAb: 'beastrage', fury: 1, youRules: { dr: 12 }, final: 1,
+      brief: ['Noelle’s water gives your team 12% damage reduction.', 'When your first fighter falls, the Black Bulls rage: +25% damage, no type disadvantage.'], scene: [['asta_noelle_bond', 'Noelle, cover me! I’m going straight in!']], next: 'end_bond' },
+    end_asta: { type: 'ending', id: 'asta', name: 'HIS ARMS ARE SAFE', text: 'Vetto’s curse never lands. Asta keeps both arms, and his dream never even wobbles.', reward: { coins: 30000, gearShards: 2000, card: 'asta_unbroken' } },
+    end_vetto: { type: 'ending', id: 'vetto', name: 'DESPAIR BROKEN', text: 'Vetto falls before he ever touches Asta. The Eye of the Midnight Sun loses its strongest fist.', reward: { coins: 30000, gearShards: 2000, card: 'vetto_despair' } },
+    end_bond: { type: 'ending', id: 'bond', name: 'THE BLACK BULLS STAND', text: 'Noelle’s water and Asta’s swords break the beast together. The Black Bulls go home loud.', reward: { coins: 40000, gearShards: 2500, premium: 2 } },
+  },
+  trueEnding: { id: 'true', name: 'NEVER GIVING UP', text: 'Not one fighter fell. Asta and Noelle watched the whole thing and refused to be left behind next time.', reward: { premium: 3, gearShards: 3000, card: 'asta_noelle_bond' } },
+})
+CHRONICLES.push({
+  id: 'kamino', anime: 'MHA', era: 'KAMINO WARD', name: 'KAMINO WARD', title: 'THE SYMBOL OF PEACE', bg: 'assets/chronicle/kamino.jpg', hero: 'all_might_last_ember', villain: 'afo_kamino', col: '#ffd23a', col2: '#1f4bff',
+  canon: 'All Might uses the last ember of One For All to defeat All For One. He wins, but the Symbol of Peace is gone forever.',
+  nodes: {
+    start: { type: 'choice', title: 'THE LAST EMBER', scene: [
+      ['Narrator', 'Kamino Ward lies in ruins. All Might’s power is flickering out. All For One smiles.'],
+      ['afo_kamino', 'Look at you, All Might. A husk. Shall I tell the boy what you really are?'],
+      ['all_might_last_ember', 'I am here. As long as I’m standing, I am still here.'],
+      ['Narrator', 'A rift tears open above the ward. Your team lands in the rubble.'] ],
+      choices: [
+        { id: 'ember', tag: 'ENDURE', label: 'SAVE THE EMBER', desc: 'Fight for All Might so he never has to burn his last power. Endure the villains’ assault.', next: 'w1', art: 'all_might_last_ember' },
+        { id: 'boss', tag: 'HARDEST', label: 'TAKE ALL FOR ONE HEAD-ON', desc: 'Go straight for All For One. He steals your Ultimate every few turns.', next: 'w2', art: 'afo_kamino' },
+        { id: 'torch', tag: 'DUO', label: 'PASS THE TORCH EARLY', desc: 'Deku and All Might fight together, now. The League of Villains stands in the way.', next: 'w3', art: 'all_might_deku_torch' } ] },
+    w1: { type: 'fight', name: 'HOLD THE SYMBOL', enemy: ['afo_kamino', 'SHIGARAKI'], boost: 3.6, rules: { dmg: 45 }, encounter: 'hold-out', bossAb: 'quirksteal',
+      brief: ['Survive three enemy turns, or KO them.', 'Every 3rd turn: STOLEN QUIRK takes 40% of your Ultimate gauge unless you Guard.'], scene: [['afo_kamino', 'Heroes protecting a hero. How quaint.']], next: 'end_ember' },
+    w2: { type: 'fight', name: 'THE DEMON LORD', enemy: ['afo_kamino'], boost: 4.6, rules: { dmg: 44, dr: 20 }, bossAb: 'quirksteal', turnLimit: 14, limitText: 'ALL MIGHT BURNS OUT', encounter: 'second-phase', final: 1,
+      brief: ['A raid boss. Beat All For One before All Might’s ember burns out: 14 turns.', 'Every 3rd turn: STOLEN QUIRK. Guard or lose 40% Ultimate.', 'He comes back once at 35% HP.'], scene: [['afo_kamino', 'Come, then. I have quirks I’ve been saving for you.']], next: 'end_afo' },
+    w3: { type: 'fight', name: 'THE NEXT SYMBOL', enemy: ['SHIGARAKI', 'DABI', 'HIMIKO TOGA'], boost: 2.9, rules: { dmg: 28, dr: 10 }, fury: 1, youRules: { dmg: 15 }, final: 1,
+      brief: ['Deku and All Might fight with you: your team deals +15% damage.', 'When your first fighter falls, your team gets Plus Ultra: +25% damage, no type disadvantage.'], scene: [['all_might_deku_torch', 'Young Midoriya. It’s your turn now. We go together.']], next: 'end_torch' },
+    end_ember: { type: 'ending', id: 'ember', name: 'THE SYMBOL STANDS', text: 'All Might never has to burn his last ember. The Symbol of Peace keeps standing.', reward: { coins: 30000, gearShards: 2000, card: 'all_might_last_ember' } },
+    end_afo: { type: 'ending', id: 'afo', name: 'THE DEMON LORD FALLS', text: 'All For One is beaten before he can steal anything else. Kamino is the end of him, not of All Might.', reward: { coins: 30000, gearShards: 2000, card: 'afo_kamino' } },
+    end_torch: { type: 'ending', id: 'torch', name: 'THE LEAGUE SCATTERS', text: 'The League of Villains breaks before Kamino ever happens. Deku learns from All Might in the open, side by side.', reward: { coins: 40000, gearShards: 2500, premium: 2 } },
+  },
+  trueEnding: { id: 'true', name: 'YOU ARE NEXT', text: 'Not one fighter fell. All Might passes the torch on his own terms, smiling.', reward: { premium: 3, gearShards: 3000, card: 'all_might_deku_torch' } },
+})
+CHRONICLES.push({
+  id: 'baki', anime: 'BAKI', era: 'FATHER VS SON', name: 'THE GREATEST FATHER-SON FIGHT', title: 'SURPASS THE OGRE', bg: 'assets/chronicle/baki.jpg', hero: 'baki_strongest', villain: 'yujiro_awakened', col: '#ff5a2a', col2: '#6b0d0d',
+  canon: 'Baki and Yujiro’s fight ends without a winner. Yujiro calls his son the strongest, but Baki never truly beats him.',
+  nodes: {
+    start: { type: 'choice', title: 'THE CITY STOPS TO WATCH', scene: [
+      ['Narrator', 'The whole city has come to watch. The strongest father and son in history face each other in the street.'],
+      ['yujiro_awakened', 'Show me, Baki. Show me whether my blood was worth it.'],
+      ['baki_strongest', 'I’m not here to make you proud. I’m here to win.'],
+      ['Narrator', 'A rift opens in the sky. Your team drops into the street between them.'] ],
+      choices: [
+        { id: 'train', tag: 'GAUNTLET', label: 'TRAIN BAKI FOR IT', desc: 'Fight through the strongest grapplers alive so Baki reaches his peak first.', next: 'b1', art: 'baki_strongest' },
+        { id: 'ogre', tag: 'HARDEST', label: 'BREAK THE OGRE', desc: 'Face Yujiro yourself. The demon face on his back ignores your Guard.', next: 'b2', art: 'yujiro_awakened' },
+        { id: 'meal', tag: 'STRANGE', label: 'THE IMAGINARY MEAL', desc: 'Help Baki fight the way he fought his father: with imagination. Your team gets stronger, but so does the Ogre.', next: 'b3', art: 'baki_yujiro_pride' } ] },
+    b1: { type: 'fight', name: 'THE GRAPPLERS', enemy: ['jack_gouha', 'oliva_unchained'], boost: 3.6, rules: { dmg: 32, dr: 15 }, next: 'b1b',
+      brief: ['Jack and Oliva stand in your way.'], scene: [['Narrator', 'The strongest fighters alive line up to test you.']] },
+    b1b: { type: 'fight', name: 'THE PRIMEVAL', enemy: ['PICKLE'], boost: 4.2, rules: { dmg: 40, dr: 18 }, encounter: 'second-phase', final: 1,
+      brief: ['Pickle, the primeval man. He comes back once at 35% HP with a full Ultimate.'], scene: [['Narrator', 'A man from the age of dinosaurs. Survive him and Baki is ready.']], next: 'end_train' },
+    b2: { type: 'fight', name: 'THE OGRE AWAKENS', enemy: ['yujiro_awakened', 'YUJIRO HANMA'], boost: 3.6, rules: { dmg: 36, dr: 15 }, bossAb: 'demonback', turnLimit: 14, limitText: 'THE OGRE WINS', final: 1,
+      brief: ['Beat the Ogre in 14 turns.', 'Every 3rd turn: DEMON BACK. Yujiro gains +20% damage and his hits ignore your Guard.'], scene: [['yujiro_awakened', 'You want my son’s fight? Then earn it.']], next: 'end_ogre' },
+    b3: { type: 'fight', name: 'A MEAL WITH FATHER', enemy: ['YUJIRO HANMA'], boost: 5.4, rules: { dmg: 50, dr: 22 }, youRules: { dmg: 25 }, bossAb: 'demonback', final: 1,
+      brief: ['Your team deals +25% damage from the Imaginary Meal.', 'Every 3rd turn: DEMON BACK. Yujiro grows stronger and ignores Guard.'], scene: [['baki_strongest', 'Dad. Let’s eat together, just once.']], next: 'end_meal' },
+    end_train: { type: 'ending', id: 'train', name: 'BAKI SURPASSES THE OGRE', text: 'Baki reaches his peak and finally beats his father cleanly. The whole city saw it.', reward: { coins: 30000, gearShards: 2000, card: 'baki_strongest' } },
+    end_ogre: { type: 'ending', id: 'ogre', name: 'THE OGRE KNEELS', text: 'Yujiro goes down to a team nobody has ever heard of. He laughs harder than anyone has ever seen.', reward: { coins: 30000, gearShards: 2000, card: 'yujiro_awakened' } },
+    end_meal: { type: 'ending', id: 'meal', name: 'DINNER WITH THE OGRE', text: 'The fight ends at a dinner table. Father and son, finally even.', reward: { coins: 40000, gearShards: 2500, premium: 2 } },
+  },
+  trueEnding: { id: 'true', name: 'A FATHER’S PRIDE', text: 'Not one fighter fell. Yujiro looks at his son and says it out loud: the strongest on Earth.', reward: { premium: 3, gearShards: 3000, card: 'baki_yujiro_pride' } },
+})
 export const BOSS_AB = {
   deathball: { name: 'DEATH BALL', warn: '⚠ DEATH BALL INCOMING · GUARD!' },
   tbb: { name: 'TAILED BEAST BOMB', warn: '⚠ TAILED BEAST BOMB · BENCH TARGETED!' },
   kamui: { name: 'KAMUI', warn: '⚠ KAMUI INCOMING · GUARD OR LOSE A TURN!' },
+  illusion: { name: 'KYŌKA SUIGETSU', warn: '⚠ KYŌKA SUIGETSU · GUARD OR LOSE 3 ENERGY!' },
+  beastrage: { name: 'BEAST RAGE', warn: '⚠ BEAST RAGE · VETTO IS GETTING STRONGER!' },
+  quirksteal: { name: 'STOLEN QUIRK', warn: '⚠ STOLEN QUIRK · GUARD OR LOSE 40% ULTIMATE!' },
+  demonback: { name: 'DEMON BACK', warn: '⚠ DEMON BACK · THE OGRE IGNORES GUARD!' },
 }
 export const COMING = [
   { name: 'MARINEFORD', title: 'FIST OF FIRE', anime: 'OP' }, { name: 'SHIBUYA', title: 'THE SEAL', anime: 'JJK' },
-  { name: 'PLANET VEGETA', title: 'THE SAIYAN PRINCE', anime: 'DBZ' },
 ]
 export const chronById = id => CHRONICLES.find(c => c.id === id)
 export const ENDING_COUNT = c => Object.values(c.nodes).filter(n => n.type === 'ending').length + (c.trueEnding ? 1 : 0)
