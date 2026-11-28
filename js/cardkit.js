@@ -43,6 +43,7 @@ export const ANIME = {
   PKM: { name: 'POKÉMON', tag: 'PKM', type: 'bond' },
   AOT: { name: 'ATTACK ON TITAN', tag: 'AOT', type: 'titan' },
   BAKI: { name: 'BAKI', tag: 'BAKI', type: 'ki' },
+  BERSERK: { name: 'BERSERK', tag: 'BERSERK', type: 'ki' },
 }
 export const TYPE = {
   ki: { c: ['#ff7a00', '#b80018', '#ffd400'], en: 'AURA' },

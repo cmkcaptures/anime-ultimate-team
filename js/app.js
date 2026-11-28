@@ -2,21 +2,21 @@ import { showPatchNotes } from './patch-notes.js?v=24'
 import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear-2'
 import { homeLife } from './home-life.js?v=claude-home-1'
 import { gearFrameURL, GEAR_CLIP } from './gear-frame.js?v=claude-frame-1'
-import { showArrivals } from './arrivals.js?v=claude-arv-4'
+import { showArrivals } from './arrivals.js?v=claude-guts-2'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
-import { deadZoneReward } from './deadzone-rewards.js?v=claude-4'
+import { deadZoneReward } from './deadzone-rewards.js?v=claude-guts-1'
 import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-frame-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-guts-1'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=claude-backup-1'
 import { sfx, sfxOn, music, musicOn } from './sfx.js?v=form-control'
 // ANIME ULTIMATE TEAM — app shell + pages
-import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=claude-stats-1'
+import { TIER, ORDER, ANIME, TYPE, RB, getArt, drawCard, thumbURL, fontsReady, fitFont, DISP, RARITY_MARK, loadImg, gradeOf, GRADE_COL } from './cardkit.js?v=claude-guts-1'
 
 const $ = s => document.querySelector(s)
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
@@ -148,6 +148,7 @@ const PACKLOOK = {
   HXH: { t: ['HUNTER', 'EXAM'], c: ['#c8ff3d', '#2db84a', '#0a4a1c', '#021408', '#7df9ff'], set: 'HX' },
   FT: { t: ['FAIRY', 'TAIL'], c: ['#ffd06a', '#ff5a1a', '#a0101e', '#2a0408', '#ffe06a'], set: 'FT' },
   JJBA: { t: ['BIZARRE', 'STANDS'], c: ['#ffd23a', '#c03dff', '#4a0a8a', '#12042a', '#ff5ad1'], set: 'JJ' },
+  BERSERK: { t: ['BLACK SWORDSMAN', 'STRUGGLER'], c: ['#c81e1e', '#7d8ba3', '#2a0606', '#050407', '#e8d9c0'], set: 'BS' },
   BAKI: { t: ['GRAPPLER', 'STRONGEST'], c: ['#ff3b2f', '#ffb14a', '#5a0c0c', '#160404', '#ffd9a0'], set: 'BK' },
   CSM: { t: ['CHAINSAW', 'DEVILS'], c: ['#ffb000', '#ff3d00', '#7a0a1a', '#1a0408', '#ff3d9a'], set: 'CS' },
   PKM: { t: ['POKÉMON', 'TRAINERS'], c: ['#ffe14a', '#ffcb05', '#2a75bb', '#0a1a3a', '#ff3d3d'], set: 'PK' },
@@ -645,6 +646,7 @@ function unlockRoutes(card) {
   const zoneId = deadZoneReward(card)
   const zone = zoneId && ST.deadzones?.find(z => z.id === zoneId)
   if (zone) return [zone.name + ' · Clear every stage']
+  if (card.crucibleReward) return ['The Crucible · First clear of stage ' + card.crucibleReward]
   if (card.campaignUnlock) return ['Campaign · First clear of ' + card.campaignUnlock]
   if (card.campReward) return ['Campaign · Chapter ' + card.campReward + ' first clear']
   if (card.arcReward) {
@@ -1447,7 +1449,7 @@ const PACK_FX = {
   MHA: ['UNITED STATES OF SMASH', 'impact', '#ffd23a', '#2a7aff'], BC: ['BLACK DIVIDER', 'slash', '#1a1a1a', '#e0ffe0'], PKM: ['I CHOOSE YOU!', 'impact', '#ff3a3a', '#fff'],
   OPM: ['SERIOUS PUNCH', 'impact', '#ffe04a', '#fff'], AOT: ['TITAN SHIFT', 'bolt', '#ffd23a', '#ff8a2a'], SL: ['ARISE', 'spiral', '#7a4aff', '#000'],
   DAN: ['OCCULT AWAKENING', 'spiral', '#ff3d9a', '#7df9ff'], SDS: ['FULL COUNTER', 'slash', '#ffcc33', '#5a0a1a'], FF: ['ADOLLA BURST', 'beam', '#ff7a1a', '#ffe04a'],
-  HXH: ['NEN AWAKENS', 'spiral', '#5aff9a', '#fff'], FT: ['DRAGON SLAYER', 'beam', '#ff5a1a', '#ffd23a'], JJBA: ['ZA WARUDO', 'impact', '#ffd23a', '#7a2aff'], BAKI: ['DEMON BACK', 'impact', '#ff3b2f', '#ffb14a'], YYH: ['SPIRIT GUN', 'beam', '#3affc8', '#fff'],
+  HXH: ['NEN AWAKENS', 'spiral', '#5aff9a', '#fff'], FT: ['DRAGON SLAYER', 'beam', '#ff5a1a', '#ffd23a'], JJBA: ['ZA WARUDO', 'impact', '#ffd23a', '#7a2aff'], BAKI: ['DEMON BACK', 'impact', '#ff3b2f', '#ffb14a'], BERSERK: ['BERSERKER ARMOR', 'impact', '#c81e1e', '#e8d9c0'], YYH: ['SPIRIT GUN', 'beam', '#3affc8', '#fff'],
 }
 async function packIntro(ov, FXC, anime, shake) {
   const F = PACK_FX[anime]; if (!F) return

@@ -1,10 +1,10 @@
 import { PATCH_VERSION } from './patch-notes.js?v=24'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
-import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-gear-1'
+import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-guts-1'
 import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, rollGear, rollSub, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear-2'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-7'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
-import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-4'
+import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-guts-1'
 import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=claude-1'
 import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=claude-dzbal-1'
 import { RIVALRY_TITLE } from './rivalry.js?v=claude-dzbal-1'
@@ -341,7 +341,7 @@ const LOGIN_RW = [{ coins: 3000 }, { coins: 5000 }, { pack: 'silver' }, { shards
 const STREAK_MS = { 7: { coins: 20000, msg: '1-week streak' }, 14: { coins: 40000, shards: 2000, msg: '2-week streak' }, 30: { coins: 100000, shards: 5000, premium: 3, msg: '30-day streak' }, 60: { coins: 200000, shards: 10000, premium: 5, msg: '60-day streak' } }
 function loginP() { const P = S.profile, d = Math.floor(Date.now() / 864e5); if (!P.login) P.login = { last: 0, streak: 0 }; const L = P.login; if (L.last && d - L.last > 1) L.streak = 0; return { L, d, can: L.last !== d, next: L.last !== d ? (L.streak % 7) : ((L.streak - 1) % 7) } }
 // ---------- ACHIEVEMENTS ----------
-const ANIME_NAMES = { BAKI: 'Baki', YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', BOR: 'Boruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', JJBA: 'JoJo', HXH: 'Hunter x Hunter', BLE: 'Bleach', CSM: 'Chainsaw Man', FT: 'Fairy Tail', FF: 'Fire Force', YGO: 'Yu-Gi-Oh!', TG: 'Tokyo Ghoul' }
+const ANIME_NAMES = { BERSERK: 'Berserk', BAKI: 'Baki', YYH: 'Yu Yu Hakusho', SDS: 'Seven Deadly Sins', AOT: 'Attack on Titan', PKM: 'Pokémon', DBZ: 'Dragon Ball', NAR: 'Naruto', BOR: 'Boruto', JJK: 'Jujutsu Kaisen', OP: 'One Piece', MHA: 'Hero Academia', BC: 'Black Clover', DS: 'Demon Slayer', BL: 'Blue Lock', JJBA: 'JoJo', HXH: 'Hunter x Hunter', BLE: 'Bleach', CSM: 'Chainsaw Man', FT: 'Fairy Tail', FF: 'Fire Force', YGO: 'Yu-Gi-Oh!', TG: 'Tokyo Ghoul' }
 function achList() {
   const P = S.profile, own = k => !!P.club.cards[k], C = CARDS.filter(c => !c.season), B = P.battle || {}, n = Object.keys(P.club.cards).filter(k => byKey(k)).length
   const has = r => C.some(c => c.r === r && own(c.key)), cnt = r => C.filter(c => c.r === r && own(c.key)).length
@@ -1525,6 +1525,7 @@ function act(a) {
       if (got.tickets) P.tickets = (P.tickets || 0) + got.tickets
       if (R.item) { const it = run.items, total = it.senzu + it.revive + it.heal; if (total < CRUCIBLE_ITEM_CAP) { const k = ['senzu', 'revive', 'heal'][n / 10 % 3]; it[k]++ } }
       C.best = Math.max(C.best || 0, n)
+      if (n >= CRUCIBLE_STAGES.length && first) { const ex = CARDS.find(c => c.crucibleReward === n); if (ex) { giveCard(ex.key); got.card = ex.name } }
       if (n >= CRUCIBLE_STAGES.length) { C.run = null; C.cleared = (C.cleared || 0) + 1; return { msg: 'THE CRUCIBLE CLEARED!', done: true, got, first } }
       run.stage = n + 1
       return { msg: 'Stage ' + n + ' cleared.', got, first }

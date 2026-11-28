@@ -72,7 +72,7 @@ export function crucibleReward(n) {
   const r = { coins: 2500 + n * 600, shards: 120 + n * 30 }
   if (n % 5 === 0) r.premium = 1
   if (n % 10 === 0) { r.premium = 2 + n / 10; r.tickets = 5 + n / 2; r.shards += 1500 * n / 10; r.item = 1 }
-  if (n === CRUCIBLE_STAGES.length) { r.coins += 100000; r.shards += 10000; r.premium += 3 }
+  if (n === CRUCIBLE_STAGES.length) { r.coins += 100000; r.shards += 10000; r.premium += 3; r.card = 'GUTS · Exclusive Mythic' }
   return r
 }
-export const crucibleRewardText = r => [r.coins && r.coins.toLocaleString() + ' coins', r.shards && '◆' + r.shards.toLocaleString(), r.premium && r.premium + '× Premium', r.tickets && r.tickets + ' Tickets', r.item && '+1 item', r.gear && r.gear + ' (gear)'].filter(Boolean).join(' · ')
+export const crucibleRewardText = r => [r.card && '⚔ ' + r.card, r.coins && r.coins.toLocaleString() + ' coins', r.shards && '◆' + r.shards.toLocaleString(), r.premium && r.premium + '× Premium', r.tickets && r.tickets + ' Tickets', r.item && '+1 item', r.gear && r.gear + ' (gear)'].filter(Boolean).join(' · ')
