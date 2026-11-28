@@ -36,3 +36,18 @@
 @keyframes vpIn { from { opacity: 0 } } @keyframes vpRot { to { transform: translate(-50%, -50%) rotate(360deg) } } @keyframes vpArt { from { transform: translateX(-30%); opacity: 0 } } @keyframes vpZoom { from { transform: scale(1.2) } to { transform: scale(1.04) } } @keyframes vpInfo { from { transform: translateX(40px); opacity: 0 } }
 @keyframes hlBlink { 50% { opacity: .25 } }
 @media (prefers-reduced-motion: reduce) { .uc, .uc *, .vp, .vp * { animation-duration: .01s !important } }
+/* ---- desktop / wide screens: full-body portrait panel instead of cropped strips ---- */
+.uc-port { display: none }
+@media (min-aspect-ratio: 1/1) {
+  .uc-band i, .uc-main i { filter: blur(10px) saturate(1.4) brightness(.55) !important }
+  .uc-main { top: 24%; height: 52% }
+  .uc-port { display: block; position: absolute; z-index: 5; top: 5vh; bottom: 5vh; left: 50%; aspect-ratio: 3 / 4; height: 90vh; transform: translateX(-50%) skewX(-6deg); overflow: hidden; border: 3px solid var(--cc); box-shadow: 0 0 0 1px rgba(255,255,255,.35), 0 0 60px var(--cc), 0 30px 80px rgba(0,0,0,.8); animation: ucPort .45s .12s cubic-bezier(.2,.9,.2,1) both }
+  .uc-port i { position: absolute; inset: 0 -8%; background-size: cover; background-position: center top; transform: skewX(6deg) scale(1.02); animation: ucPZoom 1.7s ease-out forwards; image-rendering: auto }
+  .uc-port span { position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.35) 48%, transparent 60%); background-size: 260% 100%; animation: gSheen 1.2s .3s ease-out both; mix-blend-mode: screen }
+  .uc.foe .uc-port { left: 50%; transform: translateX(-50%) skewX(6deg) } .uc.foe .uc-port i { transform: skewX(-6deg) scale(1.02) }
+  .uc-txt { left: 4%; bottom: 10%; max-width: 30vw } .uc.foe .uc-txt { right: 4% }
+  .uc-txt b { font-size: clamp(40px, 4.6vw, 86px) }
+  .uc-kanji { right: 4%; top: 8%; font-size: min(18vw, 260px) }
+}
+@keyframes ucPort { from { transform: translateX(-50%) skewX(-6deg) translateY(30px) scale(.9); opacity: 0 } }
+@keyframes ucPZoom { from { transform: skewX(6deg) scale(1.12) } to { transform: skewX(6deg) scale(1.02) } }

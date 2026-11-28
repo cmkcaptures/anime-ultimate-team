@@ -8,6 +8,7 @@ export function ultraCut(card, move, col, foe) {
       <div class="uc-band b1"><i style="background-image:url('${card.url}');background-position:${pos(card)}"></i></div>
       <div class="uc-band b2"><i style="background-image:url('${card.url}');background-position:${pos(card)}"></i></div>
       <div class="uc-main"><i style="background-image:url('${card.url}');background-position:${pos(card)}"></i></div>
+      <div class="uc-port"><i style="background-image:url('${card.url}')"></i><span></span></div>
       <b class="uc-kanji">${KANJI[card.role] || '極'}</b>
       <div class="uc-txt"><small>${foe ? 'ENEMY ' : ''}ULTIMATE</small><b></b><span></span></div>`
     c.querySelector('.uc-txt b').textContent = move || 'ULTIMATE'
