@@ -907,7 +907,7 @@ PAGES.team = (el) => {
     const G = ST.gear, eq = (G && G.eq[key]) || [null, null, null], s = h('div', 'tm-gear')
     eq.slice(0, 3).concat([null, null, null]).slice(0, 3).forEach((uid, slot) => {
       const it = uid && G.items[uid], b = h('button', 'tg-slot' + (it ? ' g-' + GEAR_BASES[it.b].t : ''))
-      if (it) { const im = h('img'); im.src = gearIcon(it.b); im.alt = GEAR_BASES[it.b].name; b.append(im, h('b', '', '+' + (it.lvl || 0))) } else b.textContent = '+'
+      if (it) { const im = h('img'); im.src = gearIcon(it.b); im.alt = GEAR_BASES[it.b].name; im.style.clipPath = GEAR_CLIP; const fr = h('img', 'tg-fr'); fr.src = gearFrameURL(GEAR_BASES[it.b].t); fr.alt = ''; b.append(im, fr, h('b', '', '+' + (it.lvl || 0))) } else b.textContent = '+'
       b.onclick = e => { e.stopPropagation(); gearPicker(key, slot) }
       s.append(b)
     })

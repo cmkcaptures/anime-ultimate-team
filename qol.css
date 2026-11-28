@@ -284,3 +284,9 @@ img[data-asc] { animation: ascAura 2.8s ease-in-out infinite; border-radius: 10p
 .g-G.gtile { animation: gAura2 2.6s ease-in-out infinite !important } @keyframes gAura2 { 0%, 100% { filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(255,190,60,.45)) } 50% { filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)) drop-shadow(0 0 18px rgba(255,210,90,.85)) } }
 .g-S.gtile { filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)) drop-shadow(0 0 7px rgba(170,200,255,.35)) }
 .gtile.eqd::after { display: block !important; content: 'EQUIPPED'; position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 4; padding: 1px 6px; border-radius: 3px; background: #9ae4ff; color: #071018; font: 900 8.5px var(--eUI, Inter); letter-spacing: .1em; width: auto; height: auto }
+/* team strip: drawn frames */
+.tg-slot.g-B, .tg-slot.g-S, .tg-slot.g-G { border: 0; background: none; box-shadow: none; overflow: visible; filter: drop-shadow(0 3px 5px rgba(0,0,0,.6)) }
+.tg-slot.g-G { filter: drop-shadow(0 3px 5px rgba(0,0,0,.6)) drop-shadow(0 0 6px rgba(255,190,60,.6)) }
+.tg-slot img { inset: 0; width: 100%; height: 100%; border-radius: 0 }
+.tg-slot .tg-fr { z-index: 1; pointer-events: none }
+.tg-slot b { z-index: 2; right: 14%; bottom: 14% }
