@@ -235,3 +235,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): +40 more gear (total 88: 31 B, 31 S, 26 G). New Gold fx use dmg, pierce, drain, dr, crit, firstNull, revive, regen, spec, dodge.
 
 - 2026-11-28 (Claude): Gear Catalog (Armory > PICK EXACT GEAR): buy any specific gear base for 4x its tier box price in gear shards. engine gearBuy accepts {base}; app gearCatalog().
+
+- 2026-11-28 (Claude): +40 more gear (total 128: 45 B, 45 S, 38 G). New Gold fx include pierceSpec, reflect, shield, revive, teamHeal.
