@@ -263,3 +263,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Nine-Tails simmed (top team auto): m1 win t12 lost 2, s2 win t11/12 lost 3, h1 retuned to boost 5.4 -> win t14/14 lost 4.
 
 - 2026-11-28 (Claude): BATTLE v3 skin: battle-v3.css (scoped #arena.v3 / .bc.v3), class v3 added to arena in battle.js + pointer tilt + ult gauge gradient. Restyles HP bars (.bct-s .bh), buttons (.ar-end/.ar-ult/.ar-trans/top), hides stadium clutter, and all popups (.tban, .mvban, .cut2, .dmg, .ftag, .chainpop, .ar-result). Teko font loaded in index.html.
+
+- 2026-11-28 (Claude): Battle v3 LAYOUT (desktop >=900px): plates spread full width, fight area = 2 equal columns (mat-in grid, tilt removed), fighter cards full size (contain), benches = vertical rosters on screen edges, dock = 3 glass panels. Mobile keeps stacked layout with tighter plates.

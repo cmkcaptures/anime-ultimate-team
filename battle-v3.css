@@ -123,3 +123,49 @@
 #arena.v3 .ar-result .btn:hover { filter: brightness(1.15) } #arena.v3 .ar-result .btn:active { transform: scale(.97) }
 /* objective / ribbons */
 #arena.v3 .battle-objectives, #arena.v3 .transfer-ribbon { border-radius: 4px !important; background: rgba(6,8,18,.82) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.1) !important; backdrop-filter: blur(8px) }
+/* ================= v3 LAYOUT (mockup) ================= */
+@media (min-width: 900px) {
+  #arena.v3 .bct { width: calc(100% - 48px) !important; max-width: none !important; margin: 8px auto 0 !important; display: grid !important; grid-template-columns: minmax(0, 560px) 1fr minmax(0, 560px) !important; gap: 0 !important }
+  #arena.v3 .bct-vs { justify-self: center }
+  #arena.v3 .ar-active { width: min(250px, 17vw) !important; height: auto !important }
+  #arena.v3 .ar-active img { width: 100% !important; height: auto !important; max-height: calc(100vh - 430px) !important; object-fit: contain !important }
+  /* benches -> vertical rosters pinned to the screen edges */
+  #arena.v3 .ar-bench { position: fixed !important; top: 190px !important; bottom: 200px !important; width: 86px !important; height: auto !important; display: flex !important; flex-direction: column !important; justify-content: center !important; gap: 8px !important; padding: 10px 8px !important; border-radius: 6px; background: rgba(9,11,22,.62); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); transform: none !important; z-index: 6; overflow: hidden }
+  #arena.v3 .ar-side.you .ar-bench { left: 20px !important; right: auto !important }
+  #arena.v3 .ar-side.ai .ar-bench { right: 20px !important; left: auto !important }
+  #arena.v3 .ar-bench .bslot { width: 100% !important; height: auto !important; flex: 0 1 auto !important; min-height: 0 !important; margin: 0 !important }
+  #arena.v3 .ar-bench .bslot img { width: 100% !important; height: auto !important; max-height: calc((100vh - 470px) / 5) !important; object-fit: contain !important; display: block }
+  #arena.v3 .ar-bench::before { content: 'BENCH'; display: block; text-align: center; font: 800 8.5px Inter, sans-serif; letter-spacing: .24em; color: #8f97b8 }
+  #arena.v3 .ar-bench.can-swap::before { content: 'TAP TO SWAP'; color: #9fe8ff }
+  #arena.v3 .ar-side.ai .ar-bench::before { content: 'ENEMY' }
+  /* dock: three glass panels */
+  #arena.v3 .ar-ctrl { display: grid !important; grid-template-columns: 170px minmax(0, 1fr) auto !important; align-items: center !important; gap: 16px !important; padding: 10px 24px 14px !important }
+  #arena.v3 .ar-ki, #arena.v3 .ar-btns { height: 118px; padding: 10px 14px; border-radius: 6px; background: rgba(9,11,22,.72); box-shadow: inset 0 0 0 1px rgba(255,255,255,.09), 0 14px 30px rgba(0,0,0,.45); display: flex !important; align-items: center; justify-content: center; gap: 12px }
+  #arena.v3 .ar-hand { justify-content: center !important; gap: 12px !important }
+  #arena.v3 .ar-mid { padding: 0 24px !important }
+}
+@media (min-width: 900px) {
+  body #arena.v3 .mat-in { transform: none !important }
+  body #arena.v3 .bct { width: calc(100vw - 48px) !important; min-width: 0 !important; grid-template-columns: minmax(0, 560px) 1fr minmax(0, 560px) !important }
+  body #arena.v3 .bct-s { width: 100% !important }
+}
+@media (min-width: 900px) {
+  body #arena.v3 .mat-in { position: absolute !important; inset: 0 !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; display: grid !important; grid-template-columns: 1fr 1fr !important; grid-template-rows: 100% !important }
+  body #arena.v3 .ar-side { position: relative !important; width: auto !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; left: auto !important; right: auto !important; top: auto !important; transform: none !important }
+  body #arena.v3 .ar-side.you { grid-column: 1 !important; grid-row: 1 !important }
+  body #arena.v3 .ar-side.ai { grid-column: 2 !important; grid-row: 1 !important }
+  body #arena.v3 .ar-bench { position: absolute !important; top: 14px !important; bottom: 14px !important }
+  body #arena.v3 .ar-bench .bslot img { max-height: calc((100vh - 520px) / 5) !important }
+}
+@media (min-width: 900px) {
+  html body #arena#arena.v3 .mat .mat-in { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; width: 100% !important; max-width: none !important }
+  html body #arena#arena.v3 .mat { width: 100% !important; max-width: none !important }
+}
+@media (max-width: 899px) {
+  #arena.v3 .bct-s { min-width: 0 !important; overflow: hidden !important }
+  #arena.v3 .bct-s .bn { min-width: 0 } #arena.v3 .bct-s .bn b { font-size: 17px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 100% }
+  #arena.v3 .bct-s .bn small { display: none !important }
+  #arena.v3 .bct-s .bh .bnum { font-size: 8.5px !important; right: 4px !important; letter-spacing: -.02em }
+  #arena.v3 .bct-s .battle-status { flex-wrap: nowrap !important; overflow: hidden !important; mask-image: linear-gradient(90deg, #000 85%, transparent) }
+  #arena.v3 .bct-vs b { font-size: 34px !important }
+}
