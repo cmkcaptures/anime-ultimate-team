@@ -104,24 +104,42 @@ let DUCK = false
 export function musicDuck(v) { DUCK = !!v; music() }
 let MG = null, mTimer = null, mTrack = null, mStep = 0, mNext = 0
 const TRACKS = {
-  // chill lobby: Am - F - C - G, laid-back lo-fi groove
-  menu: { bpm: 84, chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], bass: [45, 41, 36, 43], kick: [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0], snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], hat: .55, lead: [0, 2, 4, 2, 7, 4, 2, 0], leadEvery: 4, vol: .5, lp: 1600 },
-  // battle: driving minor, faster, punchy
-  battle: { bpm: 132, chords: [[50, 53, 57], [46, 50, 53], [48, 52, 55], [45, 49, 52]], bass: [38, 34, 36, 33], kick: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0], snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1], hat: .9, lead: [0, 3, 7, 10, 7, 3, 5, 7], leadEvery: 2, vol: .45, lp: 2600 },
+  // anime OP-style lobby theme: bright D major, rock band + strings, a hook that comes in on loop 2
+  menu: { bpm: 118, chords: [[62, 66, 69], [57, 61, 64], [59, 62, 66], [55, 59, 62]], bass: [38, 33, 35, 31],
+    kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0], snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], hat: .7,
+    gtr: [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0], glp: 1400, arp: 2, vol: .42, lp: 2400,
+    mel: [[0, 74, 4], [4, 76, 2], [6, 78, 2], [8, 81, 6], [14, 78, 2], [16, 76, 4], [20, 73, 4], [24, 76, 6], [30, 78, 2], [32, 78, 4], [36, 79, 2], [38, 78, 2], [40, 76, 4], [44, 74, 4], [48, 79, 4], [52, 78, 4], [56, 76, 8]],
+    melB: [[0, 81, 6], [6, 83, 2], [8, 81, 4], [12, 78, 4], [16, 76, 6], [22, 78, 2], [24, 81, 8], [32, 83, 4], [36, 81, 4], [40, 78, 4], [44, 79, 4], [48, 81, 8], [56, 86, 8]] },
+  // battle: hype shonen fight theme, D minor, 150 bpm, chugging guitars
+  battle: { bpm: 150, chords: [[62, 65, 69], [58, 62, 65], [60, 64, 67], [57, 61, 64]], bass: [38, 34, 36, 33],
+    kick: [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0], snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1], hat: .95,
+    gtr: [1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1], glp: 2200, arp: 2, vol: .4, lp: 2800, fill: 1,
+    mel: [[0, 74, 2], [2, 77, 2], [4, 81, 4], [8, 79, 2], [10, 77, 2], [12, 76, 4], [16, 74, 2], [18, 77, 2], [20, 82, 4], [24, 81, 4], [28, 77, 4], [32, 76, 2], [34, 79, 2], [36, 84, 4], [40, 83, 2], [42, 81, 2], [44, 79, 4], [48, 81, 6], [54, 85, 2], [56, 86, 8]],
+    melB: [[0, 86, 4], [4, 84, 2], [6, 82, 2], [8, 81, 4], [12, 77, 4], [16, 82, 4], [20, 81, 2], [22, 79, 2], [24, 77, 8], [32, 79, 4], [36, 81, 4], [40, 84, 4], [44, 83, 4], [48, 81, 4], [52, 79, 4], [56, 81, 8]] },
+  // boss: dark villain theme for Dead Zones / Crucible, E minor, taiko toms
+  boss: { bpm: 160, chords: [[64, 67, 71], [60, 64, 67], [62, 66, 69], [59, 63, 66]], bass: [40, 36, 38, 35],
+    kick: [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0], snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], hat: .8,
+    toms: [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1], gtr: [1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0], glp: 1600, arp: 2, vol: .4, lp: 2000, fill: 1,
+    mel: [[0, 76, 6], [6, 79, 2], [8, 78, 4], [12, 74, 4], [16, 72, 6], [22, 74, 2], [24, 76, 8], [32, 79, 4], [36, 78, 4], [40, 76, 4], [44, 74, 4], [48, 75, 8], [56, 71, 8]],
+    melB: [[0, 83, 8], [8, 81, 4], [12, 79, 4], [16, 79, 4], [20, 78, 4], [24, 76, 8], [32, 84, 4], [36, 83, 4], [40, 81, 4], [44, 79, 4], [48, 78, 8], [56, 75, 8]] },
 }
 function mBus() { if (MG) return MG; MG = A.createGain(); MG.gain.value = 0; MG.connect(OUT); return MG }
 function mTick() {
   const T = TRACKS[mTrack]; if (!T || !A) return
-  const sp = 60 / T.bpm / 4 // 16th notes
+  const sp = 60 / T.bpm / 4, L = T.chords.length
   while (mNext < A.currentTime + .25) {
-    const s = mStep % 16, bar = Math.floor(mStep / 16) % 4, t = mNext, g = MG
-    const ch = T.chords[bar]
-    if (s === 0) { for (const n of ch) for (const dt of [-6, 6]) tone('sawtooth', N(n), t, sp * 15, .016 * T.vol, g, { a: .08, detune: dt, lp: T.lp, q: .4 }) }
-    if (s % 4 === 0) tone('triangle', N(T.bass[bar]), t, sp * 3, .11 * T.vol, g, { lp: 500 })
-    if (T.kick[s]) { tone('sine', 110, t, .22, .3 * T.vol, g, { to: 40, glide: .12 }) }
-    if (T.snare[s]) noise(t, .12, .11 * T.vol, g, { type: 'bandpass', f: 1800, q: .8 })
-    if (s % 2 === 0 || T.hat > .8) noise(t, .03, (s % 4 === 2 ? .05 : .03) * T.hat * T.vol, g, { type: 'highpass', f: 7000 })
-    if (s % T.leadEvery === 0 && Math.floor(mStep / 64) % 2 === 1) { const ln = T.lead[(s / T.leadEvery) % T.lead.length], root = ch[0] + 12; tone('square', N(root + ln), t, sp * T.leadEvery * .9, .018 * T.vol, g, { lp: 2400 }) }
+    const s = mStep % 16, barAbs = Math.floor(mStep / 16), bar = barAbs % L, t = mNext, g = MG, V = T.vol, ch = T.chords[bar], sec = Math.floor(mStep / (16 * L)) % 4
+    if (s === 0) pad(ch.map(n => n + 12), t, sp * 16, .005 * V, g, T.lp)
+    if (T.gtr && T.gtr[s] && sec > 0) for (const n of [ch[0] - 12, ch[0] - 5, ch[0]]) tone('sawtooth', N(n), t, sp * 1.6, .016 * V, g, { lp: T.glp || 1800, q: 2, detune: n % 2 ? 8 : -8 })
+    if (s % 2 === 0) tone('triangle', N(T.bass[bar] + (s % 8 === 6 ? 12 : 0)), t, sp * 1.8, .12 * V, g, { lp: 600 })
+    if (T.arp && s % T.arp === 0 && sec !== 0) tone('square', N(ch[(s / T.arp) % 3] + 24), t, sp * .9, .006 * V, g, { lp: 3000 })
+    if (T.kick[s]) tone('sine', 120, t, .22, .34 * V, g, { to: 40, glide: .12 })
+    if (T.snare[s]) { noise(t, .14, .13 * V, g, { type: 'bandpass', f: 1900, q: .7 }); tone('triangle', 190, t, .08, .05 * V, g) }
+    if (s % 2 === 0 || T.hat > .8) noise(t, .03, (s % 4 === 2 ? .05 : .03) * T.hat * V, g, { type: 'highpass', f: 7500 })
+    if (s === 0 && bar === 0) noise(t, 1.2, .05 * V, g, { type: 'highpass', f: 5000 })
+    if (T.toms && T.toms[s]) tone('sine', 90 + (s % 4) * 18, t, .25, .24 * V, g, { to: 50, glide: .2 })
+    if (T.fill && bar === L - 1 && s >= 12 && barAbs % 8 === 7) noise(t, .08, .1 * V, g, { type: 'bandpass', f: 1200 + s * 200, q: 1 })
+    if (sec > 0) { const M = sec === 2 && T.melB ? T.melB : T.mel, st = (barAbs % 4) * 16 + s; for (const [o, n, l] of M) if (o === st) { tone('square', N(n), t, sp * l * .95, .02 * V, g, { lp: 3200 }); tone('sawtooth', N(n + 12), t, sp * l * .95, .006 * V, g, { lp: 4000, detune: 6 }) } }
     mStep++; mNext += sp
   }
 }
@@ -138,7 +156,19 @@ export function musicOn(v) { if (v !== undefined) { MUS = !!v; try { localStorag
 // start the menu music on the first tap (browsers block audio before that)
 addEventListener('pointerdown', () => { if (!mTimer && MUS && !DUCK) music(document.body.classList.contains('in-battle') ? 'battle' : 'menu') }, { once: true, capture: true })
 
+// ---- anime layer: slashes, shings and booms on top of the base hits ----
+function swish(t, v, d) { noise(t, .16, v, d, { type: 'bandpass', f: 900, to: 5200, q: 2.2 }) }
+function shing(t, v, d) { tone('sine', 2600, t, .35, v * .5, d, { to: 3400, glide: .05 }); tone('sine', 5300, t, .25, v * .25, d) }
+const ANIME_LAYER = {
+  bhit: () => { const t = A.currentTime, d = bus(.1); swish(t, .07, d) },
+  bblast: () => { const t = A.currentTime, d = bus(.25); noise(t, .45, .09, d, { type: 'lowpass', f: 3000, to: 300 }); tone('sawtooth', 220, t, .4, .03, d, { to: 70, glide: .35, lp: 1500 }) },
+  bimpact: big => { const t = A.currentTime, d = bus(.3); boom(t, big ? .22 : .12, d); swish(t, .06, d) },
+  crit: () => { const t = A.currentTime, d = bus(.35); shing(t, .12, d); swish(t + .02, .08, d) },
+  bko: () => { const t = A.currentTime, d = bus(.5); boom(t, .25, d); riser(t, .5, .05, d) },
+  bcharge: () => { const t = A.currentTime, d = bus(.3); riser(t, .55, .05, d) },
+}
 export function sfx(name, ...args) {
+  try { if (ON && A && ANIME_LAYER[name]) ANIME_LAYER[name](...args) } catch { }
   if (!ON) return 0
   const a = ctx(); if (!a || !S[name]) return 0
   if (a.state === 'suspended') a.resume()

@@ -17,7 +17,7 @@ import { fitWarPreset, warCardAllowed, warLineupError, warScore, WAR_REWARD, WAR
 // AUT Battle — turn-based hybrid of DB Legends (Arts cards, Energy, Ultimates, switching) and TCG Pocket (turns, energy, bench).
 // Win by knocking out all 6 enemy fighters. 1 active fighter + 5 on the bench each side.
 import { TIER, TYPE, thumbURL } from './cardkit.js?v=claude-guts-1'
-import { sfx, sfxOn, music } from './sfx.js?v=claude-radio-1'
+import { sfx, sfxOn, music } from './sfx.js?v=claude-music-2'
 import { createFX } from './fx2d.js?v=mobile-render'
 import { nextTransformation, enterTransformation, advanceFormTurn } from './transformations.js?v=fusion-captains-1'
 
@@ -3018,7 +3018,7 @@ export function startBattle(stage) {
     <div class="ar-side you"><div class="ar-hud"></div><button type="button" class="ar-active"></button><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
     <div class="ar-mid"><div class="ar-log" role="status"></div><div class="battle-info-tools"><button type="button" class="battle-art-preview" aria-pressed="false">ART PREVIEW</button><button type="button" class="battle-history">BATTLE LOG</button></div></div>
     <footer class="ar-ctrl" aria-label="Battle commands"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-trans ar-fusion-tag" hidden><b>TAG</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
-  document.body.append(ov); document.body.classList.add('in-battle'); music('battle')
+  document.body.append(ov); document.body.classList.add('in-battle'); music(['redzone', 'crucible', 'boss', 'raid'].includes(MODE) ? 'boss' : 'battle')
   for (const side of [B.you, B.ai]) for (const f of side.team) for (const form of f.card.transformations || []) {
     const image = new Image()
     image.src = form.url

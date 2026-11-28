@@ -245,3 +245,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Gear shards can be bought with coins in the Armory exchange (engine gearShardBuy {i}): 100=2,500c, 500=11,000c, 2000=40,000c.
 
 - 2026-11-28 (Claude): ANIME RADIO (js/radio.js): 📻 button next to music toggle; streams YouTube playlists/videos via the official IFrame API (no audio hosted). Stations saved in localStorage aut-radio; users paste links to add. While radio plays, generated music is ducked (sfx.js musicDuck).
+
+- 2026-11-28 (Claude): New original anime-style music in sfx.js: menu (D major OP-style 118bpm), battle (D minor 150bpm), boss (E minor 160bpm, taiko; used in redzone/crucible/boss/raid). Tracks have mel/melB hooks, gtr stabs, arps, sections. ANIME_LAYER adds swish/shing/boom layers to bhit, bblast, bimpact, crit, bko, bcharge.

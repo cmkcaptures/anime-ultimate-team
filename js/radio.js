@@ -1,6 +1,6 @@
 // ANIME RADIO: streams YouTube playlists/videos through the official embed player (no audio files hosted here).
 // Stations are YouTube links; players can add their own. Saved per device.
-import { musicDuck } from './sfx.js?v=claude-radio-1'
+import { musicDuck } from './sfx.js?v=claude-music-2'
 const KEY = 'aut-radio', DEFAULTS = [
   { name: 'Anime Openings', list: 'PLludvM_XF459EPy3u_40KgOkml7UV3PcE' },
 ]
