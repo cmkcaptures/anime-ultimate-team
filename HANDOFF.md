@@ -223,3 +223,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Gear frames v3 — canvas-drawn tier frames in js/gear-frame.js (gearFrameURL, GEAR_CLIP), used by gearTile in app.js; CSS block "gear frames v3" in qol.css.
 
 - 2026-11-28 (Claude): Team-page gear strip (.tg-slot) uses drawn frames too.
+
+- 2026-11-28 (Claude): Home life — js/home-life.js: LIVE news ticker (banner, new cards, ascensions, top player), auto-rotating featured carousel (banner/ascensions/new arrivals/Dead Zone/Crucible), leader card tilt + breathing + aura motes. CSS "home life" in qol.css.

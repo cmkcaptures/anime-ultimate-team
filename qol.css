@@ -294,3 +294,29 @@ img[data-asc] { animation: ascAura 2.8s ease-in-out infinite; border-radius: 10p
 .gtile .gt-fimg { border-radius: 0 !important; box-shadow: none !important; object-fit: contain }
 .rig-sock { width: 25% } .rig-sock.top { top: 11% } .rig-core { top: 56% }
 .gtile .gt-lv { font-size: 9px; padding: 0 4px }
+/* ---- home life: ticker, featured carousel, living leader ---- */
+.hl-tick { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; height: 26px; border-radius: 4px; background: linear-gradient(90deg, rgba(255,79,216,.12), rgba(154,228,255,.06)); border: 1px solid rgba(154,228,255,.15); overflow: hidden }
+.hl-tick > b { flex: none; height: 100%; display: grid; place-items: center; padding: 0 9px; background: #ff3b5c; color: #fff; font: 900 10px var(--eUI, Inter); letter-spacing: .16em; position: relative }
+.hl-tick > b::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #fff; margin-right: 5px; animation: hlBlink 1.2s infinite }
+.hl-tick > b { display: flex } @keyframes hlBlink { 50% { opacity: .2 } }
+.hl-tr { flex: 1; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent) }
+.hl-run { display: inline-flex; gap: 14px; white-space: nowrap; animation: hlRun var(--d) linear infinite; font: 800 11.5px var(--eUI, Inter); color: #e9e4ff } .hl-run i { color: #ff4fd8; font-style: normal; font-size: 8px; align-self: center }
+@keyframes hlRun { to { transform: translateX(-50%) } }
+.hl-car { position: relative; height: 112px; margin: 10px 0; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); background: #0b0816 }
+.hl-sl { position: absolute; inset: 0; padding: 0; border: 0; text-align: left; cursor: pointer; opacity: 0; transform: translateX(30px); transition: opacity .5s, transform .5s; pointer-events: none; background: linear-gradient(100deg, #0b0816 35%, transparent 75%), color-mix(in srgb, var(--c) 18%, #0b0816) }
+.hl-sl.on { opacity: 1; transform: none; pointer-events: auto }
+.hl-im { position: absolute; right: 0; top: 0; bottom: 0; width: 62%; background: var(--art) center var(--fy) / cover; mask-image: linear-gradient(90deg, transparent, #000 45%); transform: scale(1.08); transition: transform 6s linear }
+.hl-sl.on .hl-im { transform: scale(1.18) translateX(-8px) }
+.hl-sw { position: absolute; inset: 0; background: linear-gradient(110deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%); background-size: 250% 100%; animation: gSheen 4s ease-in-out infinite }
+.hl-sl > span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); display: grid; gap: 2px; max-width: 60%; z-index: 1 }
+.hl-sl small { justify-self: start; padding: 1px 7px; border-radius: 2px; background: var(--c); color: #0b0816; font: 900 9.5px var(--eUI, Inter); letter-spacing: .14em }
+.hl-sl b { font: italic 900 21px/1.05 var(--disp, Inter); color: #fff; text-shadow: 0 2px 10px #000; text-transform: uppercase }
+.hl-sl em { font: 700 11.5px var(--eUI, Inter); color: #d9d2f5; font-style: normal }
+.hl-go { position: absolute; right: 12px; bottom: 10px; z-index: 1; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--c); color: #0b0816; font: 900 18px/1 Inter; font-style: normal }
+.hl-dots { position: absolute; left: 14px; bottom: 8px; display: flex; gap: 5px; z-index: 2 } .hl-dots i { width: 14px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.25); cursor: pointer; transition: width .3s } .hl-dots i.on { width: 26px; background: #fff }
+.lb-feat { transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .25s ease-out }
+.lb-feat .lb-art { animation: hlBreathe 6s ease-in-out infinite } @keyframes hlBreathe { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.045) translateY(-3px) } }
+.hl-motes { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1 }
+.hl-motes b { position: absolute; left: var(--x); bottom: -6px; width: 4px; height: 4px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px 2px rgba(255,210,120,.8); opacity: 0; animation: hlMote var(--d) linear var(--w) infinite }
+@keyframes hlMote { 10% { opacity: .9 } 80% { opacity: .5 } 100% { transform: translate(12px, -260px); opacity: 0 } }
+@media (prefers-reduced-motion: reduce) { .hl-run, .lb-feat .lb-art, .hl-motes b, .hl-sw { animation: none } }

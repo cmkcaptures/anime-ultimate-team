@@ -1,5 +1,6 @@
 import { showPatchNotes } from './patch-notes.js?v=24'
 import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-gear-2'
+import { homeLife } from './home-life.js?v=claude-home-1'
 import { gearFrameURL, GEAR_CLIP } from './gear-frame.js?v=claude-frame-1'
 import { showArrivals } from './arrivals.js?v=claude-arv-4'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
@@ -314,6 +315,7 @@ PAGES.home = (el) => {
   )
   { const L = ST.onb, left = L.filter(x => !x.claimed); if (left.length) el.append(onbBlock(L)) }
   lob.append(fc, mn); el.append(lob)
+  try { homeLife({ el, ST, P, POOL, BYKEY, go, cardDetail, leaderboard: ACC.leaderboard, now }) } catch (e) { console.warn('homeLife', e) }
   // quick strip: free packs, wonder pick, pass, players
   const F = ST.free, W = ST.wonderE, full = F.charges >= F.max, qs = h('div', 'lb-quick')
   const q = (title, jp, sub, fn, hot) => { const b = h('button', 'lb-q' + (hot ? ' hot' : ''), `<small>${jp}</small><b>${title}</b><em>${sub}</em>`); b.onclick = fn; return b }
