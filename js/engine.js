@@ -1774,7 +1774,7 @@ function act(a) {
       const G = gearP(); P.coins -= O[1]; G.shards = (G.shards || 0) + O[0]; return { msg: '+' + O[0] + ' gear shards!' }
     }
     case 'gearBuy': {
-      if (a.base) { const G = gearP(), B = GEAR_BASES[a.base]; if (!B) return { error: 'Unknown gear.' }; const cost = GEAR_TIERS[B.t].box * (B.t === 'U' ? 4 : 4); if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }; G.shards -= cost; const it = giveGear(B.t, a.base); return { msg: 'Got ' + B.name + '!', gear: it.uid } }
+      if (a.base) { const G = gearP(), B = GEAR_BASES[a.base]; if (!B) return { error: 'Unknown gear.' }; if (B.t === 'U' && Object.values(G.items || {}).some(it => it.b === a.base)) return { error: 'You already own ' + B.name + '. Uniques are one per player.' }; const cost = GEAR_TIERS[B.t].box * (B.t === 'U' ? 4 : 4); if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }; G.shards -= cost; const it = giveGear(B.t, a.base); return { msg: 'Got ' + B.name + '!', gear: it.uid } }
       const G = gearP(), t = a.tier; if (!GEAR_TIERS[t]) return { error: 'Bad box.' }
       const cost = GEAR_TIERS[t].box; if ((G.shards || 0) < cost) return { error: 'You need ' + cost + ' gear shards.' }
       G.shards -= cost; const it = giveGear(t); return { msg: 'Got ' + GEAR_BASES[it.b].name + '!', gear: it.uid }

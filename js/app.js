@@ -2831,7 +2831,8 @@ function gearCatalog(tf = 'G') {
       info.append(h('b', '', B.name), h('small', '', Object.entries(ms).map(([k, v]) => '+' + v.toLocaleString() + ' ' + MAIN_LABEL[k]).join(' · ')))
       if (B.fxText) info.append(h('span', 'gcat-fx', '✦ ' + B.fxText))
       if (B.only) info.append(h('em', 'gcat-only', '★ EXCLUSIVE · ' + B.onlyName)); else if (q) info.append(h('em', '', 'Needs a ' + q.text + ' fighter'))
-      const buy = h('button', 'btn gold sm', '◈ ' + cost.toLocaleString()); buy.disabled = (G.shards || 0) < cost
+      const owned = B.t === 'U' && Object.values(G.items || {}).some(it => it.b === id)
+      const buy = h('button', 'btn ' + (owned ? 'dark' : 'gold') + ' sm', owned ? '✓ OWNED' : '◈ ' + cost.toLocaleString()); buy.disabled = owned || (G.shards || 0) < cost
       buy.onclick = async () => { const r = await act('gearBuy', { base: id }); if (r.error) return; closeModal(); rerender(); r.gear && gearDetail(r.gear) }
       row.append(gearTile({ b: id, lvl: 0, subs: [] }), info, buy); list.append(row)
     }
