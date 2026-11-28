@@ -312,7 +312,7 @@ const sig = c => ['g1', c.ascended || 0, c.key, c.url, c.dia || 0, c.lv || 0, c.
 let QUEUE = Promise.resolve()
 const idle = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 120 }) : setTimeout(r, 16)))
 export function thumbURL(c, w = 340, prio) {
-  const bw = bucket(w), art = c.transformations ? '|' + c.url : '', k = 't16|' + sig(c) + art + '|' + bw
+  const bw = bucket(w), art = '|' + c.url, k = 't16|' + sig(c) + art + '|' + bw
   return THUMBS[k] || (THUMBS[k] = (async () => {
     const hit = await idbGet(k)
     if (hit) return URL.createObjectURL(hit)
