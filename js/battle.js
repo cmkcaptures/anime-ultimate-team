@@ -1,4 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
+import { ultraCut, victoryPose } from './ult-fx.js?v=claude-ult-1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-gshard'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'
 import { fusionCaptainSave } from './fusion-captains.js?v=1'
@@ -3629,7 +3630,7 @@ export function startBattle(stage) {
     atk.style.setProperty('--ac', col)
     const [tx, ty] = ctr(tgtEl), [ax, ay] = ctr(atk)
     // 1) wind-up: specials/ultimates gather energy into the card first
-    if (ev.art === 'ultimate') { ov.classList.add('ult'); sfx('bcharge'); atk.classList.add('charging'); FXC.gather(ax, ay, col, .7, 34); FXC.screen(col, .22, .6); if (ev.awakened) { await awakenCut(A.card, ev, col); FXC.rays(ax, ay, col, 24, 1100, 1.8); FXC.screen('#ffffff', .6, .4) } else { cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'ULTIMATE', col, true, ev.ult); await wait(1350) } }
+    if (ev.art === 'ultimate') { ov.classList.add('ult'); sfx('bcharge'); atk.classList.add('charging'); FXC.gather(ax, ay, col, .7, 34); FXC.screen(col, .22, .6); if (ev.awakened) { await awakenCut(A.card, ev, col); FXC.rays(ax, ay, col, 24, 1100, 1.8); FXC.screen('#ffffff', .6, .4) } else if (!window.__SIM && 'MX'.includes(A.card.r)) { await ultraCut(A.card, ev.move, col, side === 'ai') } else { cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'ULTIMATE', col, true, ev.ult); await wait(1350) } }
     else if (big) { sfx('bcharge'); atk.classList.add('charging'); FXC.gather(ax, ay, col, .55, 24); cutin(A.card, ev.move, side === 'ai' ? 'ENEMY' : 'SPECIAL', col); await wait(1000) }
     // 2) the card itself dashes into the target and slams it
     const reach = ev.art === 'blast' ? .42 : .82
@@ -4202,6 +4203,7 @@ export function startBattle(stage) {
     await wait(500)
     if (LV) { try { lvUnsub && lvUnsub(); clearInterval(lvTimer) } catch { } X.ACC.pvpFinish(LV.code, won ? LV.me : LV.oppUid) }
     const mvp = B.you.team.slice().sort((a, b) => b.dealt - a.dealt)[0]
+    if (won && mvp && !window.__SIM && !stage.war) { try { await victoryPose(mvp) } catch { } }
     const recordWar = async () => {
       const result = await X.act('warResult', { ...stage.war, won })
       if (!result.error) recordWarMvp(stage.war, mvp)

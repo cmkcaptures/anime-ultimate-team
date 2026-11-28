@@ -1,7 +1,8 @@
 // Increase this number and update the notes for each player-facing patch.
-export const PATCH_VERSION = 2026112818
+export const PATCH_VERSION = 2026112819
 
 const NOTES = [
+  ['Battle Cinematics', ['Mythic and Rainbow Ultimates now play a full-screen anime cut-in: split art panels, speed lines, screen shake and a giant kanji. Tap to skip.', 'Win a battle and your MVP strikes a Victory Pose: full art, their damage, KOs and HP left, and a signature quote.']],
   ['NEW: Unique Gear', ['A new prismatic tier above Gold. Each Unique fits ONE exact card and brings an older unit back to the meta.', 'First three: Six Eyes Blindfold (Gojo & Sukuna), Blue Spring Bond (Gojo & Geto) and Ninth Vestige Gauntlets (Deku · One For All Unleashed). Damage, always-first, damage reduction and more.', 'New effect, Type Neutral: no penalty when attacking or defending at a type disadvantage.', 'Buy them in Armory > Pick Exact Gear > UNIQUE for 6,000 gear shards.']],
   ['120 New Gear', ['The Armory now has 128 pieces with real icons: Kunai, Poké Balls, Wado Ichimonji, Samehada, Potara, Devil Fruits, Sacred Treasures, Zanpakutō and more.', 'Gold gear has special effects: always move first, lifesteal, dodge, revive, team heal, reflect, seal passives and more.', 'Any gear fits any slot if your fighter meets the rarity: Silver needs Epic+, Gold needs Legendary+.', 'New drawn frames for each tier, and your gear now shows under each card on the Team page.']],
   ['Gear Shards', ['NEW: Pick Exact Gear. Buy the exact piece you want instead of a random box (4x the box price).', 'Buy gear shards with coins in the Armory: 100 for 2,500, 500 for 11,000, 2,000 for 40,000.', 'Gear shards now drop from the Crucible (more every 10 stages), Dead Zone clears and replays, and the Daily Boss.']],

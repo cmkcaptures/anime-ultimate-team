@@ -249,3 +249,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): New original anime-style music in sfx.js: menu (D major OP-style 118bpm), battle (D minor 150bpm), boss (E minor 160bpm, taiko; used in redzone/crucible/boss/raid). Tracks have mel/melB hooks, gtr stabs, arps, sections. ANIME_LAYER adds swish/shing/boom layers to bhit, bblast, bimpact, crit, bko, bcharge.
 
 - 2026-11-28 (Claude): Gear shard income: Crucible (crucibleReward.gearShards = 60+6n, +400 every 10th; replays 30%), Dead Zone first clear 200+25n (+300 final), replays +60, Daily Boss 60-300 by damage. Patch notes PATCH_VERSION 2026112818 cover all of 28 Nov.
+
+- 2026-11-28 (Claude): js/ult-fx.js + ult-fx.css: ultraCut() full-screen cut-in for M/X Ultimates (battle.js ult branch, skipped in __SIM), victoryPose(mvp) after wins (not in war). QUOTES map by first name, ROLEQ fallback.

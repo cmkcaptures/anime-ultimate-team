@@ -1,0 +1,38 @@
+/* ---- full-screen Ultimate cut-in ---- */
+.uc { position: fixed; inset: 0; z-index: 9500; overflow: hidden; pointer-events: auto; animation: ucShake .45s .15s }
+.uc-flash { position: absolute; inset: 0; background: #fff; animation: ucFlash .35s forwards }
+.uc-lines { position: absolute; inset: -20%; background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,.0) 0 4deg, rgba(255,255,255,.18) 4deg 5deg); animation: ucSpin 1.6s linear; mix-blend-mode: screen; z-index: 3 }
+.uc::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--cc) 55%, #000), #050208 70%) }
+.uc-band { position: absolute; left: -10%; right: -10%; height: 22%; overflow: hidden; transform: skewY(-8deg); border-top: 3px solid var(--cc); border-bottom: 3px solid var(--cc); box-shadow: 0 0 30px var(--cc); z-index: 2 }
+.uc-band i, .uc-main i { position: absolute; inset: 0; background-size: cover; transform: skewY(8deg) scale(1.3) }
+.uc-band.b1 { top: 8%; animation: ucIn1 .4s .05s both } .uc-band.b2 { bottom: 8%; animation: ucIn2 .4s .1s both } .uc-band i { filter: saturate(1.3) contrast(1.1) brightness(.8) }
+.uc-main { position: absolute; left: 0; right: 0; top: 30%; height: 40%; overflow: hidden; z-index: 4; clip-path: polygon(0 12%, 100% 0, 100% 88%, 0 100%); animation: ucMain .35s .15s both; box-shadow: 0 0 60px var(--cc) }
+.uc-main i { transform: scale(1.15); animation: ucZoom 1.6s linear forwards; filter: saturate(1.25) contrast(1.1) }
+.uc-kanji { position: absolute; right: 6%; top: 12%; z-index: 5; font: 900 min(26vw, 220px)/1 serif; color: transparent; -webkit-text-stroke: 3px var(--cc); opacity: .85; text-shadow: 0 0 30px var(--cc); animation: ucK .5s .2s both }
+.uc-txt { position: absolute; left: 6%; bottom: 13%; z-index: 6; display: grid; gap: 2px; animation: ucTxt .4s .3s both }
+.uc-txt small { justify-self: start; padding: 2px 10px; background: var(--cc); color: #0b0610; font: 900 12px var(--eUI, Inter); letter-spacing: .3em }
+.uc-txt b { font: italic 900 clamp(28px, 6vw, 64px)/1 var(--disp, Inter); color: #fff; text-transform: uppercase; text-shadow: 3px 3px 0 #000, 0 0 24px var(--cc) }
+.uc-txt span { font: 800 13px var(--eUI, Inter); color: #f1eaff; text-shadow: 0 1px 4px #000 }
+.uc.foe .uc-txt { left: auto; right: 6%; text-align: right } .uc.foe .uc-txt small { justify-self: end } .uc.foe .uc-kanji { right: auto; left: 6% }
+.uc.out { animation: ucOut .26s forwards }
+@keyframes ucFlash { to { opacity: 0 } } @keyframes ucSpin { to { transform: rotate(25deg) scale(1.2) } }
+@keyframes ucIn1 { from { transform: skewY(-8deg) translateX(-110%) } } @keyframes ucIn2 { from { transform: skewY(-8deg) translateX(110%) } }
+@keyframes ucMain { from { transform: scaleY(0) } } @keyframes ucZoom { to { transform: scale(1.32) translateX(-2%) } }
+@keyframes ucK { from { transform: scale(2.2); opacity: 0 } } @keyframes ucTxt { from { transform: translateX(-60px); opacity: 0 } }
+@keyframes ucShake { 20% { transform: translate(-8px, 5px) } 40% { transform: translate(7px, -6px) } 60% { transform: translate(-5px, 4px) } 80% { transform: translate(3px, -2px) } }
+@keyframes ucOut { to { opacity: 0; transform: scale(1.06) } }
+/* ---- victory pose ---- */
+.vp { position: fixed; inset: 0; z-index: 9400; display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; background: radial-gradient(circle at 35% 50%, #3a1a6a, #07040e 70%); overflow: hidden; cursor: pointer; animation: vpIn .4s both }
+.vp-rays { position: absolute; left: 35%; top: 50%; width: 220vmax; height: 220vmax; transform: translate(-50%, -50%); background: repeating-conic-gradient(rgba(255,211,106,.12) 0 6deg, transparent 6deg 18deg); animation: vpRot 18s linear infinite }
+.vp-art { position: relative; height: 100%; overflow: hidden; clip-path: polygon(0 0, 100% 0, 82% 100%, 0 100%); animation: vpArt .7s cubic-bezier(.2,.8,.2,1) both }
+.vp-art i { position: absolute; inset: 0; background-size: cover; animation: vpZoom 4.2s ease-out forwards } .vp-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 60%, rgba(7,4,14,.8)) }
+.vp-info { position: relative; padding: 0 8% 0 4%; display: grid; gap: 6px; animation: vpInfo .6s .25s both }
+.vp-info > small { font: 900 11px var(--eUI, Inter); letter-spacing: .3em; color: #ffd36a } .vp-info > b { font: italic 900 clamp(30px, 5vw, 58px)/1 var(--disp, Inter); color: #fff; text-shadow: 0 0 24px rgba(255,211,106,.5) } .vp-info > em { font: 800 13px var(--eUI, Inter); color: #c9bfff; font-style: normal; letter-spacing: .1em }
+.vp-q { margin: 8px 0; font: italic 700 clamp(15px, 1.8vw, 20px)/1.35 var(--eUI, Inter); color: #fff; border-left: 3px solid #ff4fd8; padding-left: 12px }
+.vp-stats { display: flex; gap: 10px } .vp-stats span { display: grid; padding: 8px 12px; border-radius: 6px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,211,106,.3); font: 800 9.5px var(--eUI, Inter); letter-spacing: .15em; color: #b9b0d8 } .vp-stats b { font: 900 20px 'JetBrains Mono', monospace; color: #ffd36a; letter-spacing: 0 }
+.vp-tap { margin-top: 10px; font: 800 10px var(--eUI, Inter); letter-spacing: .3em; color: #8f86b0; animation: hlBlink 1.4s infinite }
+.vp.out { animation: ucOut .3s forwards }
+@media (max-width: 700px) { .vp { grid-template-columns: 1fr; grid-template-rows: 55% 45% } .vp-art { clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%) } .vp-info { padding: 0 6% } }
+@keyframes vpIn { from { opacity: 0 } } @keyframes vpRot { to { transform: translate(-50%, -50%) rotate(360deg) } } @keyframes vpArt { from { transform: translateX(-30%); opacity: 0 } } @keyframes vpZoom { from { transform: scale(1.2) } to { transform: scale(1.04) } } @keyframes vpInfo { from { transform: translateX(40px); opacity: 0 } }
+@keyframes hlBlink { 50% { opacity: .25 } }
+@media (prefers-reduced-motion: reduce) { .uc, .uc *, .vp, .vp * { animation-duration: .01s !important } }
