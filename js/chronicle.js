@@ -63,9 +63,56 @@ export const CHRONICLES = [
     trueEnding: { id: 'true', name: 'FRIEZA HAS NO FUTURE', text: 'Not one fighter fell. In this timeline, the Emperor of the Universe was erased without a single loss.', reward: { premium: 3, gearShards: 3000, card: 'frieza_full_power_namek' } },
   },
 ]
+CHRONICLES.push({
+  id: 'ninetails', anime: 'NAR', era: 'THE FOURTH HOKAGE', name: 'THE NINE-TAILS NIGHT', title: 'A FATHER’S LAST SEAL', bg: 'assets/chronicle/ninetails.jpg', hero: 'minato_kushina_night', villain: 'kurama_unleashed_night', col: '#ff7a1a', col2: '#c21a2a',
+  canon: 'A masked man rips the Nine-Tails out of Kushina and sets it on the Hidden Leaf. Minato and Kushina die sealing it into their newborn son.',
+  nodes: {
+    start: { type: 'choice', title: 'THE NIGHT IT ALL ENDED',
+      scene: [
+        ['Narrator', 'October 10th. Kushina has just given birth. The seal holding the Nine-Tails is at its weakest.'],
+        ['obito_masked_night', 'Step away from the Jinchūriki, Fourth Hokage. Or your son goes first.'],
+        ['minato_kushina_night', 'Kushina, hold on. I’ll get Naruto somewhere safe.'],
+        ['kurama_unleashed_night', 'FREE. After all these years of darkness... I will crush this village into dust!'],
+        ['Narrator', 'A rift splits the red sky over the Hidden Leaf. Your team steps through into the worst night in its history.'],
+      ],
+      choices: [
+        { id: 'mask', tag: 'DUEL', label: 'STOP THE MASKED MAN', desc: 'Catch him before Kurama is pulled free. Nothing touches him, and every few turns he phases your fighter out of the fight.', next: 'm1', art: 'obito_masked_night' },
+        { id: 'seal', tag: 'CANON+', label: 'PROTECT THE SEALING', desc: 'Let the beast loose, but guard Minato and Kushina while they seal it. If they survive, Naruto grows up with his parents.', next: 's1', art: 'minato_kushina_night' },
+        { id: 'hunt', tag: 'RAID BOSS', label: 'HUNT THE BEAST', desc: 'Go straight for the Nine-Tails before it levels the village. A giant boss and a countdown.', next: 'h1', art: 'kurama_unleashed_night' },
+      ] },
+    m1: { type: 'fight', name: 'THE MAN BEHIND THE MASK', enemy: ['obito_masked_night'], boost: 4.0, rules: { dmg: 40, dr: 15 }, bossAb: 'kamui', encounter: 'second-phase', final: 1,
+      brief: ['The first 3 hits on him pass straight through.', 'Every 3rd turn: KAMUI. Your active fighter loses its next turn unless you Guard.', 'When you first beat him, he returns at 35% HP with a full Ultimate gauge.'],
+      scene: [['obito_masked_night', 'Who are you people? You aren’t from this time.'], ['Narrator', 'He hasn’t touched the seal yet. Break him first.']], next: 'end_mask' },
+    s1: { type: 'fight', name: 'HOLD THE BARRIER', enemy: ['kurama_unleashed_night'], boost: 3.6, rules: { dmg: 45 }, bossAb: 'tbb', encounter: 'hold-out',
+      brief: ['Survive three enemy turns while Minato prepares the seal, or knock the beast down.', 'Every 3rd turn: TAILED BEAST BOMB hits your BENCH, not your active fighter.'],
+      scene: [['minato_kushina_night', 'Kushina, can you still hold it?'], ['minato_kushina_night', 'Leave it to me! Just buy us a few seconds!']], next: 's_ally' },
+    s_ally: { type: 'choice', title: 'THE FOURTH HOKAGE’S PLAN',
+      scene: [['minato_kushina_night', 'Whoever you are, you’ve given us a chance. Let’s finish this together.'], ['Narrator', 'Choose how the Hidden Leaf fights beside you.']],
+      choices: [
+        { id: 'ftg', tag: 'SPEED', label: 'FLYING THUNDER GOD', desc: 'Minato teleports your team out of harm’s way. 15% dodge for every fighter.', next: 's2', youRules: { dodge: 15 }, art: 'minato_kushina_night' },
+        { id: 'chains', tag: 'DEFENSE', label: 'ADAMANTINE CHAINS', desc: 'Kushina binds the beast. Your team takes 18% less damage.', next: 's2', youRules: { dr: 18 }, art: 'minato_kushina_night' },
+        { id: 'leaf', tag: 'OFFENSE', label: 'WILL OF FIRE', desc: 'The Third Hokage leads every shinobi in. Your team deals +20% damage.', next: 's2', youRules: { dmg: 20 }, art: 'minato_kushina_night' },
+      ] },
+    s2: { type: 'fight', name: 'THE EIGHT TRIGRAMS SEAL', enemy: ['kurama_unleashed_night', 'obito_masked_night'], boost: 3.4, rules: { dmg: 32, dr: 12 }, bossAb: 'tbb', turnLimit: 12, limitText: 'THE SEAL FAILS', fury: 1, final: 1,
+      brief: ['The seal completes in 12 turns. Defeat them before it fails.', 'Every 3rd turn: TAILED BEAST BOMB hits your bench for 35%. Guard to cut it.', 'When your first fighter falls, your team gets the Will of Fire: +25% damage and no type disadvantage.'],
+      scene: [['obito_masked_night', 'I won’t let you rewrite this night.'], ['kurama_unleashed_night', 'You insects will not seal me again!']], next: 'end_parents' },
+    h1: { type: 'fight', name: 'NINE-TAILS RAMPAGE', enemy: ['kurama_unleashed_night'], boost: 4.4, rules: { dmg: 42, dr: 18 }, bossAb: 'tbb', turnLimit: 14, limitText: 'KONOHA FALLS', final: 1,
+      brief: ['A raid boss with huge HP. The village falls after 14 turns.', 'Every 3rd turn: TAILED BEAST BOMB smashes your bench.'],
+      scene: [['kurama_unleashed_night', 'Small creatures. You will burn with the rest of them.'], ['Narrator', 'Ten thousand shinobi couldn’t stop it. You have to.']], next: 'end_beast' },
+    end_mask: { type: 'ending', id: 'mask', name: 'THE MASK BREAKS', text: 'The masked man never reaches Kushina. The Nine-Tails stays sealed, and the night of October 10th becomes just another birthday.', reward: { coins: 30000, gearShards: 2000, card: 'obito_masked_night' } },
+    end_parents: { type: 'ending', id: 'parents', name: 'NARUTO’S PARENTS LIVE', text: 'The seal holds, and nobody has to die for it. Naruto grows up with two parents who never stop bragging about him.', reward: { coins: 30000, gearShards: 2000, card: 'minato_kushina_night' } },
+    end_beast: { type: 'ending', id: 'beast', name: 'THE BEAST IS FELLED', text: 'The Nine-Tails falls before it reaches the village. The Hidden Leaf never burns, and the shinobi remember the strangers who fought beside them.', reward: { coins: 40000, gearShards: 2500, premium: 2 } },
+  },
+  trueEnding: { id: 'true', name: 'A NIGHT WITHOUT LOSS', text: 'Not one fighter fell. Even the Nine-Tails, sealed and calm, admits it was beaten fair.', reward: { premium: 3, gearShards: 3000, card: 'kurama_unleashed_night' } },
+})
+export const BOSS_AB = {
+  deathball: { name: 'DEATH BALL', warn: '⚠ DEATH BALL INCOMING · GUARD!' },
+  tbb: { name: 'TAILED BEAST BOMB', warn: '⚠ TAILED BEAST BOMB · BENCH TARGETED!' },
+  kamui: { name: 'KAMUI', warn: '⚠ KAMUI INCOMING · GUARD OR LOSE A TURN!' },
+}
 export const COMING = [
   { name: 'MARINEFORD', title: 'FIST OF FIRE', anime: 'OP' }, { name: 'SHIBUYA', title: 'THE SEAL', anime: 'JJK' },
-  { name: 'THE UCHIHA', title: 'BROTHERS OF THE LEAF', anime: 'NAR' }, { name: 'PLANET VEGETA', title: 'THE SAIYAN PRINCE', anime: 'DBZ' },
+  { name: 'PLANET VEGETA', title: 'THE SAIYAN PRINCE', anime: 'DBZ' },
 ]
 export const chronById = id => CHRONICLES.find(c => c.id === id)
 export const ENDING_COUNT = c => Object.values(c.nodes).filter(n => n.type === 'ending').length + (c.trueEnding ? 1 : 0)

@@ -1,5 +1,5 @@
 // CHRONICLE BREAK UI: hub -> moment -> scene -> choice -> fight briefing -> ending.
-import { CHRONICLES, COMING, chronById, ENDING_COUNT } from './chronicle.js?v=claude-chron-3'
+import { CHRONICLES, COMING, chronById, ENDING_COUNT, BOSS_AB } from './chronicle.js?v=claude-chron-4'
 let SEL = null
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 export function chroniclePage(el, ctx) {
@@ -46,7 +46,7 @@ function momentPage(el, ctx, C, R, card) {
     const row = X.h('div', 'ca-btns'), go = X.h('button', 'chr-go fight', '⚔ FIGHT'), ab = X.h('button', 'chr-ghost', 'ABANDON PATH')
     go.onclick = () => playScene(N.scene, N.name, () => ctx.startBattle({
       mode: 'chronicle', id: 'chron:' + C.id + ':' + R.node, label: 'CHRONICLE BREAK', name: N.name, level: 5, boost: N.boost, team: ctx.campTeam(N.enemy),
-      rules: N.rules || {}, encounter: N.encounter, bossAb: N.bossAb === 'deathball' ? { id: 'deathball', name: 'DEATH BALL' } : null, turnLimit: N.turnLimit, limitText: N.limitText,
+      rules: N.rules || {}, encounter: N.encounter, bossAb: N.bossAb ? { id: N.bossAb, ...BOSS_AB[N.bossAb] } : null, turnLimit: N.turnLimit, limitText: N.limitText,
       fury: N.fury, youRules: R.rules ? { ...R.rules } : null, chronicle: { id: C.id, node: R.node }, bg: C.bg, afterWin: () => X.go('battle'),
     }))
     ab.onclick = async () => { if (!confirm('Abandon this path and return to the start of the moment?')) return; await X.act('chronReset', { id: C.id }); X.go('battle') }

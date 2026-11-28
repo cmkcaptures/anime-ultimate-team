@@ -90,3 +90,6 @@
 .chr-arena::before { display: none }
 .chr-arena .bcs-wall { background-image: linear-gradient(180deg, rgba(10,4,20,.15), rgba(10,4,20,.55)), var(--chr-bg) !important; background-size: cover !important; background-position: center 30% !important; filter: saturate(1.25) }
 .chr-arena .bcs-crowd { opacity: .25 }
+
+.chr-arena .bcs-wall { opacity: 1 !important; filter: saturate(1.3) brightness(1.05) !important; background-image: linear-gradient(180deg, rgba(10,4,20,.05), rgba(10,4,20,.45)), var(--chr-bg) !important }
+.chr-arena .bcs-crowd, .chr-arena .bcs-haze { opacity: .12 !important }

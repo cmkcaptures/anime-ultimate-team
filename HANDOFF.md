@@ -257,3 +257,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): Krillin (Namek) Epic E85 added = "Krillin Lives" ending reward (krillin_namek).
 
 - 2026-11-28 (Claude): FIX: id goku_ssj_namek was already an old Uncommon; Mythic Namek Goku is goku_ssj_namek_legend (chronicle.js refs updated). Always check id collisions before adding cards.
+
+- 2026-11-28 (Claude): Chronicle Break moment 2 "ninetails" (Nine-Tails Night). Cards minato_kushina_night M97 (tag), kurama_unleashed_night M97, obito_masked_night L92. New bossAb tbb (bench 35%/18% guarded) and kamui (skip turn unless guarded); BOSS_AB map in chronicle.js with warn banners. Not simmed: values mirror Namek tuning.

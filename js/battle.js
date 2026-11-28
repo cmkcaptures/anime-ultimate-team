@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
-import { chroniclePage } from './chronicle-ui.js?v=claude-chron-3'
+import { chroniclePage } from './chronicle-ui.js?v=claude-chron-4'
 import { ultraCut, victoryPose } from './ult-fx.js?v=claude-ult-1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-gshard'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'
@@ -3874,6 +3874,8 @@ export function startBattle(stage) {
       else if (ab.id === 'stun') { you.skip = 1; log(`${ab.name}! ${act(you).card.name} is stunned and loses the next turn.`) }
       else if (ab.id === 'burn') { for (const f of you.team) if (!f.ko) { f.burn = 5; f.burnT = 3 } log(`${ab.name}! Your team is burning.`) }
       else if (ab.id === 'drain') { you.ki = Math.max(0, you.ki - 3); you.gauge = Math.max(0, you.gauge - 30); log(`${ab.name}! You lose 3 Energy and Ultimate charge.`) }
+      else if (ab.id === 'tbb') { const g = !!act(you).guard, a0 = act(you); for (const f of you.team) if (!f.ko && f !== a0) f.hp = Math.max(1, f.hp - Math.round(f.max * (g ? .18 : .35))); log(g ? `${ab.name}! Guarded: your bench takes 18%.` : `${ab.name}! Your bench takes 35% damage!`); FXC.screen('#ff7a1a', .5, .6) }
+      else if (ab.id === 'kamui') { if (act(you).guard) log(`${ab.name}! You Guarded and stayed in the fight.`); else { you.skip = 1; log(`${ab.name}! ${act(you).card.name} is pulled into another dimension and loses the next turn.`) } }
       else if (ab.id === 'deathball') { const g = !!act(you).guard; for (const f of you.team) if (!f.ko) f.hp = Math.max(1, f.hp - Math.round(f.max * (g ? .12 : .3))); log(g ? `${ab.name}! You Guarded: your team takes 12% damage.` : `${ab.name}! No Guard: your whole team takes 30% damage!`); FXC.screen('#ff4fd8', .5, .6) }
       else if (ab.id === 'rage') { boss.pwr = Math.round(boss.pwr * 1.15); boss.ki = Math.round(boss.ki * 1.15); log(`${ab.name}! The boss powers up: +15% damage.`) }
       { const [x, y] = ctr($a('.ar-side.you .ar-active')); FXC.hit(x, y, '#ff3b6b', 2) }
@@ -4166,7 +4168,7 @@ export function startBattle(stage) {
     if (!stage.chronicle) return false
     if (stage.fury && !B.chFury && B.you.team.some(f => f.ko)) { B.chFury = 1; for (const f of B.you.team) if (!f.ko) f.pe = { ...(f.pe || {}), dmg: ((f.pe || {}).dmg || 0) + 25, typeNeutral: 1 }; ov.classList.add('chr-fury'); turnBanner('SUPER SAIYAN FURY', true); log('SUPER SAIYAN FURY · +25% damage and no type disadvantage.'); sfx('bcharge'); await wait(1000) }
     if (stage.turnLimit) { const left = stage.turnLimit - B.turn + 1; chronHud(left); if (left <= 0) { turnBanner(stage.limitText || 'TIME UP', false); log((stage.limitText || 'TIME UP') + '!'); shake(3); await wait(1200); end(false); return true } if (left <= 3) log('⏳ ' + left + ' turn' + (left > 1 ? 's' : '') + ' left!') }
-    if (stage.bossAb && stage.bossAb.id === 'deathball' && B.turn % 3 === 0) { turnBanner('⚠ DEATH BALL INCOMING · GUARD!', false); log('⚠ ' + act(B.ai).card.name + ' is charging a DEATH BALL. Guard this turn to cut the damage!'); await wait(900) }
+    if (stage.bossAb && stage.bossAb.warn && B.turn % 3 === 0) { turnBanner(stage.bossAb.warn, false); log(stage.bossAb.warn + ' (' + act(B.ai).card.name + ')'); await wait(900) }
     return false
   }
   async function autoTurn() {
