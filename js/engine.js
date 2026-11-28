@@ -1,4 +1,4 @@
-import { PATCH_VERSION } from './patch-notes.js?v=claude-pn31'
+import { PATCH_VERSION } from './patch-notes.js?v=claude-pn32'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-gshard'
 import { chronById } from './chronicle.js?v=claude-chron-5'
