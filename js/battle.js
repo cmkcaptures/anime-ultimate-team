@@ -1,5 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
-import { chroniclePage } from './chronicle-ui.js?v=claude-chron-7'
+import { chroniclePage } from './chronicle-ui.js?v=claude-mf'
 import { ultraCut, victoryPose, teamCut } from './ult-fx.js?v=claude-ta-2'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-gshard'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'
@@ -3905,6 +3905,7 @@ export function startBattle(stage) {
       else if (ab.id === 'stun') { you.skip = 1; log(`${ab.name}! ${act(you).card.name} is stunned and loses the next turn.`) }
       else if (ab.id === 'burn') { for (const f of you.team) if (!f.ko) { f.burn = 5; f.burnT = 3 } log(`${ab.name}! Your team is burning.`) }
       else if (ab.id === 'drain') { you.ki = Math.max(0, you.ki - 3); you.gauge = Math.max(0, you.gauge - 30); log(`${ab.name}! You lose 3 Energy and Ultimate charge.`) }
+      else if (ab.id === 'magma') { if (act(you).guard) log(`${ab.name}! You Guarded the magma.`); else { for (const f of you.team) if (!f.ko) { f.burn = 6; f.burnT = 3 } log(`${ab.name}! Your whole team is burning.`) } }
       else if (ab.id === 'illusion') { if (act(you).guard) log(`${ab.name}! You Guarded and saw through the illusion.`); else { you.ki = Math.max(0, you.ki - 3); log(`${ab.name}! The illusion drains 3 Energy.`) } }
       else if (ab.id === 'beastrage') { boss.pe = { ...(boss.pe || {}), dmg: ((boss.pe || {}).dmg || 0) + 15 }; log(`${ab.name}! ${boss.card.name} gains +15% damage.`) }
       else if (ab.id === 'quirksteal') { if (act(you).guard) log(`${ab.name}! You Guarded and kept your Ultimate.`); else { const t = Math.min(40, you.gauge); you.gauge -= t; B.ai.gauge = Math.min(GAUGE_MAX, B.ai.gauge + t); log(`${ab.name}! ${boss.card.name} steals ${t}% of your Ultimate.`) } }

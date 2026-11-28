@@ -211,6 +211,32 @@ CHRONICLES.push({
   },
   trueEnding: { id: 'true', name: 'A FATHER’S PRIDE', text: 'Not one fighter fell. Yujiro looks at his son and says it out loud: the strongest on Earth.', reward: { premium: 3, gearShards: 3000, card: 'baki_yujiro_pride' } },
 })
+CHRONICLES.push({
+  id: 'marineford', anime: 'OP', era: 'SUMMIT WAR', name: 'MARINEFORD', title: 'FIST OF FIRE', bg: 'atg/L_akainu_magma_fist.webp', hero: 'ace_fist_of_fire', villain: 'akainu_magma_fist', col: '#ff7a1a', col2: '#b3121f',
+  canon: 'Akainu’s magma fist goes through Ace as he shields Luffy. Whitebeard dies standing, and the war ends in tragedy.',
+  nodes: {
+    start: { type: 'choice', title: 'THE SUMMIT WAR', scene: [
+      ['Narrator', 'Marineford. Ace is free, but Akainu has just insulted Whitebeard, and Ace has turned back.'],
+      ['akainu_magma_fist', 'Whitebeard is a relic of a dead era. Just like you, Fire Fist.'],
+      ['ace_fist_of_fire', 'Take that back!'],
+      ['whitebeard_last_stand', 'Ace! Don’t stop! Run!'],
+      ['Narrator', 'A rift opens over the plaza. Your team lands between the magma and the brothers.'] ],
+      choices: [
+        { id: 'shield', tag: 'HOLD-OUT', label: 'SHIELD ACE', desc: 'Stand in front of the magma fist. Survive Akainu and the Admirals.', next: 'm1', art: 'ace_fist_of_fire' },
+        { id: 'admirals', tag: 'HARDEST', label: 'TAKE THE ADMIRALS HEAD-ON', desc: 'Akainu, Kizaru and Aokiji together. End the war before it ends Whitebeard.', next: 'm2', art: 'akainu_magma_fist' },
+        { id: 'beard', tag: 'RAID', label: 'STOP THE BLACKBEARD AMBUSH', desc: 'Fight beside Whitebeard as Blackbeard and Garp close in.', next: 'm3', art: 'whitebeard_last_stand' } ] },
+    m1: { type: 'fight', name: 'THE MAGMA FIST', enemy: ['akainu_magma_fist', 'kizaru_light_speed_admiral'], boost: 3.6, rules: { dmg: 45 }, bossAb: 'magma', encounter: 'hold-out',
+      brief: ['Survive three enemy turns, or KO them.', 'Every 3rd turn: MAGMA FIST burns your whole team unless you Guard.'], scene: [['akainu_magma_fist', 'Then you die in his place.']], next: 'end_ace' },
+    m2: { type: 'fight', name: 'THREE ADMIRALS', enemy: ['akainu_magma_fist', 'kizaru_light_speed_admiral', 'aokiji_ice_age'], boost: 3.2, rules: { dmg: 30, dr: 12 }, bossAb: 'magma', turnLimit: 15, limitText: 'THE WAR IS LOST', final: 1,
+      brief: ['Beat all three Admirals in 15 turns.', 'Every 3rd turn: MAGMA FIST burns your team unless you Guard.'], scene: [['aokiji_ice_age', 'Sorry. Orders are orders.']], next: 'end_akainu' },
+    m3: { type: 'fight', name: 'THE AMBUSH', enemy: ['blackbeard_darkness', 'garp_galaxy_impact'], boost: 3.3, rules: { dmg: 32, dr: 12 }, fury: 1, youRules: { dmg: 15 }, final: 1,
+      brief: ['Whitebeard fights with you: your team deals +15% damage.', 'When your first fighter falls, the Whitebeard Pirates rage: +25% damage, no type disadvantage.'], scene: [['whitebeard_last_stand', 'Teach. You picked the wrong war.']], next: 'end_beard' },
+    end_ace: { type: 'ending', id: 'ace', name: 'FIRE FIST LIVES', text: 'The magma never reaches Ace. Luffy and his brother walk off Marineford together.', reward: { coins: 30000, gearShards: 2000, card: 'ace_fist_of_fire' } },
+    end_akainu: { type: 'ending', id: 'akainu', name: 'THE ADMIRALS FALL', text: 'Three Admirals beaten in one war. Absolute Justice never recovers.', reward: { coins: 30000, gearShards: 2000, card: 'akainu_magma_fist' } },
+    end_beard: { type: 'ending', id: 'beard', name: 'THE AMBUSH FAILS', text: 'Blackbeard never steals the quake. The Whitebeard Pirates sail home with their father.', reward: { coins: 40000, gearShards: 2500, premium: 2 } },
+  },
+  trueEnding: { id: 'true', name: 'ONE PIECE IS REAL', text: 'Not one fighter fell. Whitebeard lives to see his sons free, and laughs louder than the sea.', reward: { premium: 3, gearShards: 3000, card: 'whitebeard_last_stand' } },
+})
 export const BOSS_AB = {
   deathball: { name: 'DEATH BALL', warn: '⚠ DEATH BALL INCOMING · GUARD!' },
   tbb: { name: 'TAILED BEAST BOMB', warn: '⚠ TAILED BEAST BOMB · BENCH TARGETED!' },
@@ -218,10 +244,11 @@ export const BOSS_AB = {
   illusion: { name: 'KYŌKA SUIGETSU', warn: '⚠ KYŌKA SUIGETSU · GUARD OR LOSE 3 ENERGY!' },
   beastrage: { name: 'BEAST RAGE', warn: '⚠ BEAST RAGE · VETTO IS GETTING STRONGER!' },
   quirksteal: { name: 'STOLEN QUIRK', warn: '⚠ STOLEN QUIRK · GUARD OR LOSE 40% ULTIMATE!' },
+  magma: { name: 'MAGMA FIST', warn: '⚠ MAGMA FIST · GUARD OR YOUR TEAM BURNS!' },
   demonback: { name: 'DEMON BACK', warn: '⚠ DEMON BACK · THE OGRE IGNORES GUARD!' },
 }
 export const COMING = [
-  { name: 'MARINEFORD', title: 'FIST OF FIRE', anime: 'OP' }, { name: 'SHIBUYA', title: 'THE SEAL', anime: 'JJK' },
+{ name: 'SHIBUYA', title: 'THE SEAL', anime: 'JJK' },
 ]
 export const chronById = id => CHRONICLES.find(c => c.id === id)
 export const ENDING_COUNT = c => Object.values(c.nodes).filter(n => n.type === 'ending').length + (c.trueEnding ? 1 : 0)
