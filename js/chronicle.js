@@ -212,7 +212,7 @@ CHRONICLES.push({
   trueEnding: { id: 'true', name: 'A FATHER’S PRIDE', text: 'Not one fighter fell. Yujiro looks at his son and says it out loud: the strongest on Earth.', reward: { premium: 3, gearShards: 3000, card: 'baki_yujiro_pride' } },
 })
 CHRONICLES.push({
-  id: 'marineford', anime: 'OP', era: 'SUMMIT WAR', name: 'MARINEFORD', title: 'FIST OF FIRE', bg: 'atg/L_akainu_magma_fist.webp', hero: 'ace_fist_of_fire', villain: 'akainu_magma_fist', col: '#ff7a1a', col2: '#b3121f',
+  id: 'marineford', anime: 'OP', era: 'SUMMIT WAR', name: 'MARINEFORD', title: 'FIST OF FIRE', bg: 'assets/chronicle/marineford.jpg', hero: 'ace_fist_of_fire', villain: 'akainu_magma_fist', col: '#ff7a1a', col2: '#b3121f',
   canon: 'Akainu’s magma fist goes through Ace as he shields Luffy. Whitebeard dies standing, and the war ends in tragedy.',
   nodes: {
     start: { type: 'choice', title: 'THE SUMMIT WAR', scene: [
