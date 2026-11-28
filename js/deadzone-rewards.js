@@ -12,6 +12,7 @@ const REWARD_IDS = {
 
 export function deadZoneReward(card) {
   if (card?.crucibleReward) return 'crucible'
+  if (card?.chronicleReward) return 'chronicle'
   return card?.r === 'M' ? Object.keys(REWARD_IDS).find(zone => REWARD_IDS[zone] === card.id) : undefined
 }
 

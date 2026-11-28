@@ -1,17 +1,17 @@
-import { showPatchNotes } from './patch-notes.js?v=claude-pn29'
+import { showPatchNotes } from './patch-notes.js?v=claude-pn30'
 import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, MAIN_LABEL, gearIcon, mainStats, subText, applyGear, gearReqOk, GEAR_REQ } from './gear.js?v=claude-unique-1'
 import { radioButton } from './radio.js?v=claude-music-2'
 import { homeLife } from './home-life.js?v=claude-home-1'
 import { gearFrameURL, GEAR_CLIP } from './gear-frame.js?v=claude-unique-1'
-import { showArrivals } from './arrivals.js?v=claude-guts-2'
+import { showArrivals } from './arrivals.js?v=claude-chron-1'
 import { LV_MAX, trainingQuote } from './training.js?v=1'
 import { playerGrantsPage } from './player-grants.js?v=2'
-import { deadZoneReward } from './deadzone-rewards.js?v=claude-guts-1'
+import { deadZoneReward } from './deadzone-rewards.js?v=claude-chron-1'
 import { cardCounterPage } from './card-counter.js?v=counter-1'
 import { matchesCard, spendableCopies, keepReveal } from './qol.js?v=qol-1'
 import { formCard } from './transformations.js?v=fusion-captains-1'
 import { createFX } from './fx2d.js?v=mobile-render'
-import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-ult-1'
+import { initBattle, battlePage, startBattle, synergy, beats, SYN, combosFor, DRAGONS, isDragon, leadHits, leaderInfo, teamAuras, auraHits, AURA_PCT, tagsOf, teamLinks, squadBond, multiverse } from './battle.js?v=claude-chron-2'
 const ARCH_ICON = { Protagonist: '🔥', Rival: '⚡', Mentor: '📖', Sovereign: '👑', Monster: '👹', Blademaster: '⚔️', Tactician: '🧠', Berserker: '💥', Guardian: '🛡️', Heroine: '🌸', Speedster: '💨' }
 const auraTag = t => t.startsWith('ARCH:') ? (ARCH_ICON[t.slice(5)] || '') + ' ' + t.slice(5) : t.startsWith('S:') ? ANAME(t.slice(2)) : t
 import * as ACC from './account.js?v=claude-backup-1'
@@ -647,6 +647,7 @@ function unlockRoutes(card) {
   const zoneId = deadZoneReward(card)
   const zone = zoneId && ST.deadzones?.find(z => z.id === zoneId)
   if (zone) return [zone.name + ' · Clear every stage']
+  if (card.chronicleReward) return ['Chronicle Break · ' + card.chronicleReward.toUpperCase() + ' ending']
   if (card.crucibleReward) return ['The Crucible · First clear of stage ' + card.crucibleReward]
   if (card.campaignUnlock) return ['Campaign · First clear of ' + card.campaignUnlock]
   if (card.campReward) return ['Campaign · Chapter ' + card.campReward + ' first clear']

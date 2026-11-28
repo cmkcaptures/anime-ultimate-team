@@ -1,4 +1,5 @@
 import { batchTax, batchDefense, batchTag, batchSpecial, batchUltimate, rewriteLethalHit, batchSupportSpecial } from './first-batch.js?v=balance-pass-1'
+import { chroniclePage } from './chronicle-ui.js?v=claude-chron-2'
 import { ultraCut, victoryPose } from './ult-fx.js?v=claude-ult-1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEMS, crucibleReward, crucibleRewardText } from './crucible.js?v=claude-gshard'
 import { newGenBalance, newGenIntent, newGenFailed, newGenWarning } from './new-gen-zones.js?v=claude-dz-7'
@@ -1955,12 +1956,12 @@ function eventTeam(pool, difficulty) {
   const start = Math.min(Math.max(0, distinct.length - sizes[difficulty]), [4, 2, 0][difficulty])
   return distinct.slice(start, start + sizes[difficulty]).map(card => card.key)
 }
-const MODES_ON = new Set(['transfer-campaign', 'crucible', 'live', 'redzone', 'arcs', 'boss', 'pass', 'story'])
+const MODES_ON = new Set(['chronicle', 'transfer-campaign', 'crucible', 'live', 'redzone', 'arcs', 'boss', 'pass', 'story'])
 function modeTabs(el) {
   const { h } = X, t = h('div', 'mtabs')
   // Temporarily limited while core modes are being balanced. Re-add ids here to bring modes back.
   if (!MODES_ON.has(MODE)) MODE = 'transfer-campaign'
-  for (const [k, n] of [['transfer-campaign', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['draft', 'DRAFT GAUNTLET'], ['live', '⚔️ LIVE PVP'], ['crucible', '🔥 THE CRUCIBLE'], ['redzone', '💀 DEAD ZONE'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']].filter(([k]) => MODES_ON.has(k))) {
+  for (const [k, n] of [['chronicle', '⏳ CHRONICLE BREAK'], ['transfer-campaign', 'CAMPAIGN'], ['war', 'MULTI-TEAM WAR'], ['draft', 'DRAFT GAUNTLET'], ['live', '⚔️ LIVE PVP'], ['crucible', '🔥 THE CRUCIBLE'], ['redzone', '💀 DEAD ZONE'], ['rift', '🌀 RIFT'], ['raid', 'RAID'], ['ranked', 'RANKED'], ['boss', 'DAILY BOSS'], ['tower', 'TOWER'], ['arcs', 'STORY ARCS'], ['event', 'EVENT'], ['pass', 'SEASON PASS'], ['story', '📖 HOW TO PLAY']].filter(([k]) => MODES_ON.has(k))) {
     const b = h('button', 'mtab' + (MODE === k ? ' on' : ''), n); b.onclick = () => { if (k === 'pass') return X.go('pass'); MODE = k; X.go('battle') }; t.append(b)
   }
   el.append(t)
@@ -2791,6 +2792,7 @@ export function battlePage(el) {
   const prog = (P.battle && P.battle.cleared) || 0
   const team = P.team.filter(Boolean)
   modeTabs(el)
+  if (MODE === 'chronicle') return chroniclePage(el, { X, startBattle, campTeam, scene })
   if (MODE === 'transfer-campaign') return transferCampaignPage(el)
   if (MODE === 'war') return warPage(el)
   if (MODE === 'draft') return draftPage(el, X, run => {
@@ -2898,6 +2900,7 @@ export function startBattle(stage) {
   if (stage.rules) for (const f of B.ai.team) { const r = { ...stage.rules }; f.pe = { ...(f.pe || {}), ...r, dmg: ((f.pe || {}).dmg || 0) + (r.dmg || 0), dodge: Math.min(60, ((f.pe || {}).dodge || 0) + (r.dodge || 0)), regen: ((f.pe || {}).regen || 0) + (r.regen || 0) }; if (r.endure) f.endure = (f.endure || 0) + r.endure }
   if (stage.mode === 'redzone') for (const f of B.ai.team) { f.pe = { ...(f.pe || {}) }; for (const k of ['regen', 'teamHeal', 'koHeal', 'drain', 'bigHitHeal', 'ultHeal']) delete f.pe[k] } // Dead Zones: enemies never heal
   if (stage.rules?.ultStart) B.ai.gauge = Math.max(B.ai.gauge, stage.rules.ultStart)
+  if (stage.youRules) { const yr = stage.youRules; for (const f of B.you.team) { f.pe = { ...(f.pe || {}) }; for (const [k, v] of Object.entries(yr)) if (k !== 'ultStart' && k !== 'teamDmg') f.pe[k] = typeof v === 'number' && typeof f.pe[k] === 'number' ? f.pe[k] + v : v } if (yr.ultStart) B.you.gauge = Math.max(B.you.gauge, yr.ultStart); if (yr.teamDmg) B.you.teamDmg = (B.you.teamDmg || 0) + yr.teamDmg }
   applyLeader(B.you); applyLeader(B.ai); applyAuras(B.you, 3); applyAuras(B.ai, (stage.level || 1) >= 5 ? 5 : 4); applyLinks(B.you); applyLinks(B.ai)
   for (const side of [B.you, B.ai]) {
     const add = (f, dmg, dr) => { f.pe = { ...(f.pe || {}), dmg: ((f.pe || {}).dmg || 0) + dmg, dr: Math.min(70, ((f.pe || {}).dr || 0) + dr) } }
@@ -3019,6 +3022,7 @@ export function startBattle(stage) {
     <div class="ar-side you"><div class="ar-hud"></div><button type="button" class="ar-active"></button><div class="ar-bench"></div></div></div></div><div class="ar-plate you"><span class="pe"></span><span class="pp"></span><span class="pn">YOU</span><span class="pk"></span></div>
     <div class="ar-mid"><div class="ar-log" role="status"></div><div class="battle-info-tools"><button type="button" class="battle-art-preview" aria-pressed="false">ART PREVIEW</button><button type="button" class="battle-history">BATTLE LOG</button></div></div>
     <footer class="ar-ctrl" aria-label="Battle commands"><div class="ar-ki"></div><div class="ar-hand"></div><div class="ar-btns"><button class="ar-trans" hidden><b>TRANSFORM</b><small></small></button><button class="ar-trans ar-fusion-tag" hidden><b>TAG</b><small></small></button><button class="ar-ult"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><b>ULT</b><small></small></button><button class="ar-end"><b>END</b><small>TURN</small></button></div></footer><div class="fxl"></div>`
+  if (stage.bg) { ov.classList.add('chr-arena'); ov.style.setProperty('--chr-bg', `url('${stage.bg}')`) }
   document.body.append(ov); document.body.classList.add('in-battle'); music(['redzone', 'crucible', 'boss', 'raid'].includes(MODE) ? 'boss' : 'battle')
   for (const side of [B.you, B.ai]) for (const f of side.team) for (const form of f.card.transformations || []) {
     const image = new Image()
@@ -3870,6 +3874,7 @@ export function startBattle(stage) {
       else if (ab.id === 'stun') { you.skip = 1; log(`${ab.name}! ${act(you).card.name} is stunned and loses the next turn.`) }
       else if (ab.id === 'burn') { for (const f of you.team) if (!f.ko) { f.burn = 5; f.burnT = 3 } log(`${ab.name}! Your team is burning.`) }
       else if (ab.id === 'drain') { you.ki = Math.max(0, you.ki - 3); you.gauge = Math.max(0, you.gauge - 30); log(`${ab.name}! You lose 3 Energy and Ultimate charge.`) }
+      else if (ab.id === 'deathball') { const g = !!act(you).guard; for (const f of you.team) if (!f.ko) f.hp = Math.max(1, f.hp - Math.round(f.max * (g ? .12 : .3))); log(g ? `${ab.name}! You Guarded: your team takes 12% damage.` : `${ab.name}! No Guard: your whole team takes 30% damage!`); FXC.screen('#ff4fd8', .5, .6) }
       else if (ab.id === 'rage') { boss.pwr = Math.round(boss.pwr * 1.15); boss.ki = Math.round(boss.ki * 1.15); log(`${ab.name}! The boss powers up: +15% damage.`) }
       { const [x, y] = ctr($a('.ar-side.you .ar-active')); FXC.hit(x, y, '#ff3b6b', 2) }
       draw(); await wait(1100)
@@ -3964,6 +3969,7 @@ export function startBattle(stage) {
     B.turn++
     if (B.over || sweepKO()) return
     const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN + (y.kiBonus || 0)); refill(y); y.switched = false; y.seq = []; startTurn(y); if (B.over) return; act(B.ai).fort = 0
+    if (await chronTurn()) return
     B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); flushPas(); if (AUTO) autoTurn()
   }
   function apeStomp(who) {
@@ -4053,6 +4059,7 @@ export function startBattle(stage) {
     if (B.over || sweepKO()) return
     const y = B.you; y.ki = Math.min(KI_MAX, y.ki + KI_PER_TURN + (y.kiBonus || 0)); refill(y); y.switched = false; y.seq = []; startTurn(y); if (B.over) return; act(B.ai).fort = 0
     if (!unwritten(act(y)) && (y.skip || act(y).frozen)) { y.skip = 0; act(y).frozen = 0; log('You lose your turn!'); turnBanner('TIME STOPPED', true); draw(); await wait(900); lvSend({ t: 'end' }); return remotePhase() }
+    if (await chronTurn()) return
     B.busy = false; log('Your turn'); turnBanner('YOUR TURN', true); sfx('bturn'); draw(); myTurnStart()
   }
   function announceChapterRule() {
@@ -4154,6 +4161,14 @@ export function startBattle(stage) {
     if (e.charge && s.lastSkipped) a0.rage = Math.max(a0.rage || 0, e.charge)
     s.confiscated = 0; sealNow()
     const p = passives(s), a = act(s); if (p.heal && !a.ko) healHP(a, Math.round(a.max * p.heal / 100)); if (p.gauge) s.gauge = Math.min(GAUGE_MAX, s.gauge + p.gauge) }
+  function chronHud(left) { let el = $a('.chr-hud'); if (!el) { el = document.createElement('div'); el.className = 'chr-hud'; ($a('.ar-top') || ov).append(el) } el.innerHTML = '<small>' + (stage.limitText || 'TIME UP') + ' IN</small><b>' + Math.max(0, left) + '</b><small>TURNS</small>'; el.classList.toggle('crit', left <= 3) }
+  async function chronTurn() {
+    if (!stage.chronicle) return false
+    if (stage.fury && !B.chFury && B.you.team.some(f => f.ko)) { B.chFury = 1; for (const f of B.you.team) if (!f.ko) f.pe = { ...(f.pe || {}), dmg: ((f.pe || {}).dmg || 0) + 25, typeNeutral: 1 }; ov.classList.add('chr-fury'); turnBanner('SUPER SAIYAN FURY', true); log('SUPER SAIYAN FURY · +25% damage and no type disadvantage.'); sfx('bcharge'); await wait(1000) }
+    if (stage.turnLimit) { const left = stage.turnLimit - B.turn + 1; chronHud(left); if (left <= 0) { turnBanner(stage.limitText || 'TIME UP', false); log((stage.limitText || 'TIME UP') + '!'); shake(3); await wait(1200); end(false); return true } if (left <= 3) log('⏳ ' + left + ' turn' + (left > 1 ? 's' : '') + ' left!') }
+    if (stage.bossAb && stage.bossAb.id === 'deathball' && B.turn % 3 === 0) { turnBanner('⚠ DEATH BALL INCOMING · GUARD!', false); log('⚠ ' + act(B.ai).card.name + ' is charging a DEATH BALL. Guard this turn to cut the damage!'); await wait(900) }
+    return false
+  }
   async function autoTurn() {
     if (!AUTO || B.busy || B.over) return
     B.busy = true; controls(); await wait(350)
@@ -4211,7 +4226,7 @@ export function startBattle(stage) {
     }
     const recordDraft = () => X.act('draftResult', { id: stage.draft.id, round: stage.draft.round, won,
       hp: B.you.team.map(f => f.ko ? 0 : Math.min(1, f.hp / f.max)) })
-    const r = stage.draft ? await recordDraft() : (stage.rivalry || stage.rival) ? await X.act('rivalryResult', { mode: stage.id, rival: stage.rival, won, mastered: B.rivalMastered, survived: B.hakaiSurvived, explosion: B.finalExplosionKO }) : stage.war ? await recordWar() : stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0), ko: B.you.team.filter(f => f.ko).length, turns: B.turn, rescued: stage.chapterRule === 'rescue' ? rescueCards().map((card, i) => B.you.team.some(f => f.key === card.key && !f.ko) ? RESCUE_NAMES[i] : null).filter(Boolean) : undefined } : { stage: stage.n, won })
+    const r = stage.chronicle ? await X.act('chronResult', { ...stage.chronicle, won, lost: B.you.team.filter(f => f.ko).length }) : stage.draft ? await recordDraft() : (stage.rivalry || stage.rival) ? await X.act('rivalryResult', { mode: stage.id, rival: stage.rival, won, mastered: B.rivalMastered, survived: B.hakaiSurvived, explosion: B.finalExplosionKO }) : stage.war ? await recordWar() : stage.pvp ? await X.act('pvp', { won, name: stage.name, uid: stage.uid }) : await X.act('battle', stage.mode ? { mode: stage.mode, id: stage.id, won, dmg: B.you.team.reduce((n, f) => n + f.dealt, 0), ko: B.you.team.filter(f => f.ko).length, turns: B.turn, rescued: stage.chapterRule === 'rescue' ? rescueCards().map((card, i) => B.you.team.some(f => f.key === card.key && !f.ko) ? RESCUE_NAMES[i] : null).filter(Boolean) : undefined } : { stage: stage.n, won })
     if (stage.mode === 'raid' && r && r.raidTotal != null && X.raidPost) { try { await X.raidPost(stage.raidId, r.raidTotal); RAIDCACHE.at = 0 } catch (e) { console.warn('raid post failed', e) } }
     sfx(stage.boss ? 'claim' : won ? 'win' : 'lose')
     const dealt = B.you.team.reduce((n, f) => n + f.dealt, 0), kos = B.you.team.reduce((n, f) => n + f.kos, 0)
@@ -4334,3 +4349,4 @@ export function tutorial(onDone) {
   draw(); document.body.append(ov)
 }
 export const seenTutorial = () => { try { return localStorage.getItem('aut-tut') === '1' } catch { return false } }
+

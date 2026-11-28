@@ -1,10 +1,11 @@
-import { PATCH_VERSION } from './patch-notes.js?v=claude-pn29'
+import { PATCH_VERSION } from './patch-notes.js?v=claude-pn30'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-gshard'
+import { chronById } from './chronicle.js?v=claude-chron-2'
 import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, rollGear, rollSub, gearReqOk, GEAR_REQ } from './gear.js?v=claude-unique-1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-7'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'
-import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-guts-1'
+import { deadZoneReward, deadZoneCleared } from './deadzone-rewards.js?v=claude-chron-1'
 import { campaignMission, campaignRewardUnlocks } from './transfer-campaign.js?v=claude-1'
 import { LAST_DOOR_CHAPTERS, LAST_DOOR_ZONES, LAST_DOOR_ARCS, LAST_DOOR_RIVALS, RESCUE_NAMES } from './last-door.js?v=claude-dzbal-1'
 import { RIVALRY_TITLE } from './rivalry.js?v=claude-dzbal-1'
@@ -1507,6 +1508,33 @@ function act(a) {
       run.saved = JSON.parse(JSON.stringify({ stage: 1, hp: run.hp, gauge: 0, items: run.items }))
       C.run = run; return { msg: 'The Crucible begins.' }
     }
+    case 'chronChoose': case 'chronResult': case 'chronReset': {
+      const C = chronById(a.id); if (!C) return { error: 'Unknown moment.' }
+      const all = P.chron || (P.chron = {}), R = all[a.id] || (all[a.id] = { node: 'start', rules: null, endings: [], runs: 0 })
+      if (a.type === 'chronReset') { R.node = 'start'; R.rules = null; return { msg: 'The timeline resets.' } }
+      const N = C.nodes[R.node]
+      if (a.type === 'chronChoose') {
+        if (!N || N.type !== 'choice') return { error: 'No choice to make here.' }
+        const ch = N.choices.find(x => x.id === a.choice); if (!ch) return { error: 'Bad choice.' }
+        if (R.node === 'start') { R.rules = null; R.runs++ }
+        if (ch.youRules) R.rules = { ...(R.rules || {}), ...ch.youRules }
+        R.node = ch.next; return { node: R.node }
+      }
+      if (!N || N.type !== 'fight' || a.node !== R.node) return { error: 'That fight is not the current one.' }
+      if (!a.won) { addXP(20); return { msg: 'History holds. ' + C.canon + ' Try again, or choose a different path.', lost: true } }
+      addXP(150); P.coins += 3000
+      const got = ['3,000 coins'], grant = (rw, label) => {
+        if (rw.coins) { P.coins += rw.coins; got.push(rw.coins.toLocaleString() + ' coins') }
+        if (rw.gearShards) { const G = gearP(); G.shards = (G.shards || 0) + rw.gearShards; got.push('◈' + rw.gearShards.toLocaleString() + ' gear shards') }
+        if (rw.premium) { P.pending.premium = (P.pending.premium || 0) + rw.premium; got.push(rw.premium + ' Premium Drop' + (rw.premium > 1 ? 's' : '')) }
+        if (rw.card) { const c = CARDS.find(x => x.id === rw.card); if (c) { giveCard(c.key); got.push(c.name + ' · ' + c.ver); return c.key } }
+      }
+      let reward = null, endName = null
+      if (N.final && !(a.lost > 0) && C.trueEnding && !R.endings.includes(C.trueEnding.id)) { R.endings.push(C.trueEnding.id); reward = grant(C.trueEnding.reward) || reward; endName = C.trueEnding.name }
+      R.node = N.next; const E = C.nodes[R.node]
+      if (E && E.type === 'ending') { const first = !R.endings.includes(E.id); if (first) { R.endings.push(E.id); reward = grant(E.reward) || reward } else got.push('(ending already collected)'); endName = endName ? E.name + ' + ' + endName : E.name }
+      return { msg: (endName ? '⏳ TIMELINE REWRITTEN: ' + endName + '! ' : 'History bends. ') + '+' + got.join(', ') + '.', reward, ending: endName }
+    }
     case 'crucibleResult': {
       const C = P.crucible, run = C?.run
       if (!run || a.stage !== run.stage) return { error: 'That stage is not the one you are on.' }
@@ -2146,7 +2174,7 @@ function state() {
     raid: { ...raidNow(), me: raidP() },
     presets: S.profile.presets || [],
     awkT: AWK, awkSh: AWK_SH, tickets: S.profile.tickets || 0, lvNeed: Array.from({ length: 101 }, (_, l) => lvNeed(l)),
-    rift: riftNow(), deadzones: DEADZONES.map(zone => ({ ...zone, rewardKey: CARDS.find(card => deadZoneReward(card) === zone.id)?.key })), rzAll: S.profile.rz || {},
+    chron: S.profile.chron || {}, rift: riftNow(), deadzones: DEADZONES.map(zone => ({ ...zone, rewardKey: CARDS.find(card => deadZoneReward(card) === zone.id)?.key })), rzAll: S.profile.rz || {},
     mastT: MAST, tower: Array.from({ length: 50 }, (_, i) => towerFloor(i + 1)), arcs: ARCS, event: (() => { const E = eventNow(), day = Math.floor(Date.now() / 864e5); return { ...E, done: P.ev && P.ev.day === day ? P.ev.done : {} } })()
   }
   for (const c of cards()) { const e = P.club.cards[c.key]; out.values[c.key] = Math.round(value(c, e ? e.lvl || 0 : 0) * (e ? serMult(c.key) : 1)); if (e) out.quick[c.key] = quickSell(c, e.lvl || 0) }
