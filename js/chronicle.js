@@ -4,20 +4,20 @@
 // fury = your team gains +25% damage + type neutral after your first KO; youRules = buffs for your team (from ally choices).
 export const CHRONICLES = [
   {
-    id: 'namek', anime: 'DBZ', era: 'FRIEZA SAGA', name: 'NAMEK', title: 'THE LEGENDARY SUPER SAIYAN', bg: 'assets/chronicle/namek.jpg', hero: 'goku_ssj_namek', villain: 'frieza_full_power_namek', col: '#ffb020', col2: '#b46bff',
+    id: 'namek', anime: 'DBZ', era: 'FRIEZA SAGA', name: 'NAMEK', title: 'THE LEGENDARY SUPER SAIYAN', bg: 'assets/chronicle/namek.jpg', hero: 'goku_ssj_namek_legend', villain: 'frieza_full_power_namek', col: '#ffb020', col2: '#b46bff',
     canon: 'Frieza kills Krillin in front of Goku. Rage awakens the Legendary Super Saiyan as Namek begins to tear itself apart.',
     nodes: {
       start: { type: 'choice', title: 'THE MOMENT BEFORE',
         scene: [
           ['Narrator', 'Planet Namek. The Dragon Balls are spent, the sky is black, and the strongest beings in the universe are about to collide.'],
           ['frieza_full_power_namek', 'You Saiyans are so very stubborn. Let me show you what happens to those who defy me.'],
-          ['goku_ssj_namek', 'Krillin, stay back. He’s not like anyone we’ve ever fought.'],
+          ['goku_ssj_namek_legend', 'Krillin, stay back. He’s not like anyone we’ve ever fought.'],
           ['Narrator', 'In seconds, Krillin dies and a legend is born. A rift tears open above the battlefield. Your team steps through.'],
           ['frieza_full_power_namek', 'More insects? Where did you come from?'],
         ],
         choices: [
           { id: 'save', tag: 'HARDEST', label: 'SAVE KRILLIN', desc: 'Intercept Frieza’s attack. Krillin lives, but Goku’s rage never awakens. You face Frieza at full power with no legend to save you.', next: 'a1', art: 'frieza_full_power_namek' },
-          { id: 'legend', tag: 'CANON+', label: 'FIGHT BESIDE THE LEGEND', desc: 'Let history happen. Hold Frieza back while Goku awakens, then finish it together before Namek explodes.', next: 'b1', art: 'goku_ssj_namek' },
+          { id: 'legend', tag: 'CANON+', label: 'FIGHT BESIDE THE LEGEND', desc: 'Let history happen. Hold Frieza back while Goku awakens, then finish it together before Namek explodes.', next: 'b1', art: 'goku_ssj_namek_legend' },
           { id: 'ambush', tag: 'GAUNTLET', label: 'STRIKE BEFORE HE TRANSFORMS', desc: 'Hit Frieza before he reaches his final form and break him one form at a time.', next: 'c1', art: 'frieza_third_form_namek' },
         ] },
       // ---- PATH A: Save Krillin ----
@@ -31,15 +31,15 @@ export const CHRONICLES = [
         scene: [['Narrator', 'Krillin falls. Goku’s scream shakes the planet. His power is still climbing.'], ['frieza_full_power_namek', 'What... what is this power?!'], ['Narrator', 'Hold Frieza off until the transformation is complete.']],
         next: 'b_ally' },
       b_ally: { type: 'choice', title: 'THE LEGEND AWAKENS',
-        scene: [['goku_ssj_namek', 'I am the hope of the universe. I am the answer to all living things that cry out for peace.'], ['goku_ssj_namek', 'Whoever you are, you fought for my friend. Stand with me.'], ['Narrator', 'Choose how the Legendary Super Saiyan fights beside you.']],
+        scene: [['goku_ssj_namek_legend', 'I am the hope of the universe. I am the answer to all living things that cry out for peace.'], ['goku_ssj_namek_legend', 'Whoever you are, you fought for my friend. Stand with me.'], ['Narrator', 'Choose how the Legendary Super Saiyan fights beside you.']],
         choices: [
-          { id: 'fury', tag: 'OFFENSE', label: 'SUPER SAIYAN FURY', desc: 'Goku leads the charge. Your whole team deals +20% damage.', next: 'b2', youRules: { dmg: 20 }, art: 'goku_ssj_namek' },
-          { id: 'guard', tag: 'DEFENSE', label: 'SAIYAN PRIDE', desc: 'Goku takes the hits meant for you. Your team takes 18% less damage.', next: 'b2', youRules: { dr: 18 }, art: 'goku_ssj_namek' },
-          { id: 'kamehameha', tag: 'BURST', label: 'FATHER’S KAMEHAMEHA', desc: 'Goku charges your Ultimates. Start with 60% Ultimate gauge and +15% Special damage.', next: 'b2', youRules: { spec: 15, ultStart: 60 }, art: 'goku_ssj_namek' },
+          { id: 'fury', tag: 'OFFENSE', label: 'SUPER SAIYAN FURY', desc: 'Goku leads the charge. Your whole team deals +20% damage.', next: 'b2', youRules: { dmg: 20 }, art: 'goku_ssj_namek_legend' },
+          { id: 'guard', tag: 'DEFENSE', label: 'SAIYAN PRIDE', desc: 'Goku takes the hits meant for you. Your team takes 18% less damage.', next: 'b2', youRules: { dr: 18 }, art: 'goku_ssj_namek_legend' },
+          { id: 'kamehameha', tag: 'BURST', label: 'FATHER’S KAMEHAMEHA', desc: 'Goku charges your Ultimates. Start with 60% Ultimate gauge and +15% Special damage.', next: 'b2', youRules: { spec: 15, ultStart: 60 }, art: 'goku_ssj_namek_legend' },
         ] },
       b2: { type: 'fight', name: 'FIVE MINUTES TO DOOM', enemy: ['frieza_full_power_namek', 'frieza_third_form_namek'], boost: 3.4, rules: { dmg: 32, dr: 12 }, bossAb: 'deathball', turnLimit: 12, limitText: 'NAMEK EXPLODES', fury: 1, final: 1,
         brief: ['Frieza goes 100%. Namek explodes after 12 turns.', 'Every 3rd turn: DEATH BALL. Guard or lose 30% of your team’s HP.', 'When your first fighter falls, your team gets Super Saiyan Fury: +25% damage and no type disadvantage.'],
-        scene: [['frieza_full_power_namek', 'Fine! I’ll destroy this whole planet. Let’s see you survive THAT!'], ['goku_ssj_namek', 'Then we’ll finish this before it ends!']],
+        scene: [['frieza_full_power_namek', 'Fine! I’ll destroy this whole planet. Let’s see you survive THAT!'], ['goku_ssj_namek_legend', 'Then we’ll finish this before it ends!']],
         next: 'end_legend' },
       // ---- PATH C: Ambush ----
       c1: { type: 'fight', name: 'SECOND FORM', enemy: ['frieza_emperor_of_the_universe'], boost: 4.2, rules: { dmg: 36, dr: 15 }, encounter: 'second-phase',
@@ -56,7 +56,7 @@ export const CHRONICLES = [
         next: 'end_early' },
       // ---- ENDINGS ----
       end_krillin: { type: 'ending', id: 'krillin', name: 'KRILLIN LIVES', text: 'Krillin survives. Goku never needed the rage, because someone else stood between Frieza and his friends. This timeline remembers you.', reward: { coins: 40000, gearShards: 2500, premium: 2, card: 'krillin_namek' } },
-      end_legend: { type: 'ending', id: 'legend', name: 'THE LEGEND RISES', text: 'The Legendary Super Saiyan and an unknown team stand together as Namek burns. Frieza falls before the planet does.', reward: { coins: 30000, gearShards: 2000, card: 'goku_ssj_namek' } },
+      end_legend: { type: 'ending', id: 'legend', name: 'THE LEGEND RISES', text: 'The Legendary Super Saiyan and an unknown team stand together as Namek burns. Frieza falls before the planet does.', reward: { coins: 30000, gearShards: 2000, card: 'goku_ssj_namek_legend' } },
       end_early: { type: 'ending', id: 'early', name: 'NIPPED IN THE BUD', text: 'Frieza never reaches 100%. The tyrant is broken form by form, and Namek is never destroyed.', reward: { coins: 30000, gearShards: 2000, card: 'frieza_third_form_namek' } },
     },
     // clear any FINAL fight without losing a fighter

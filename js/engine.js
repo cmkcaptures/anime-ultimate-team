@@ -1,7 +1,7 @@
 import { PATCH_VERSION } from './patch-notes.js?v=claude-pn30'
 import { LV_MAX, lvNeed, trainingQuote } from './training.js?v=1'
 import { CRUCIBLE_STAGES, CRUCIBLE_ITEM_CAP, crucibleReward } from './crucible.js?v=claude-gshard'
-import { chronById } from './chronicle.js?v=claude-chron-2'
+import { chronById } from './chronicle.js?v=claude-chron-3'
 import { GEAR_BASES, TIERS as GEAR_TIERS, SLOT_TIER, rollGear, rollSub, gearReqOk, GEAR_REQ } from './gear.js?v=claude-unique-1'
 import { NEW_GEN_ZONES } from './new-gen-zones.js?v=claude-dz-7'
 import { draftWeek, draftOffers, createDraft, pickDraftCard, draftEnemyTeam, finishDraftRound, DRAFT_REWARDS } from './draft-gauntlet.js?v=1'

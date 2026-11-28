@@ -255,3 +255,5 @@ Every AI adds an entry here at the end of a session (see AGENTS.md).
 - 2026-11-28 (Claude): NEW MODE CHRONICLE BREAK (Battle tab "chronicle"). Data js/chronicle.js (CHRONICLES: nodes choice/fight/ending + trueEnding), UI js/chronicle-ui.js + chronicle.css, engine actions chronChoose/chronResult/chronReset (P.chron[id] = {node, rules, endings}). battle.js: stage.chronicle, turnLimit+limitText (HUD .chr-hud), bossAb deathball (30% team dmg, 12% if Guarded), fury (+25% dmg + typeNeutral after first KO), youRules (ally buffs), bg (arena wall). First moment NAMEK, tuned with sims. New cards (chronicleReward, locked from packs): goku_ssj_namek M98, frieza_full_power_namek M96, frieza_third_form_namek L91. Ending "krillin" reward card krillin_namek NOT YET ADDED (needs art file).
 
 - 2026-11-28 (Claude): Krillin (Namek) Epic E85 added = "Krillin Lives" ending reward (krillin_namek).
+
+- 2026-11-28 (Claude): FIX: id goku_ssj_namek was already an old Uncommon; Mythic Namek Goku is goku_ssj_namek_legend (chronicle.js refs updated). Always check id collisions before adding cards.
