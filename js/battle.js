@@ -3521,7 +3521,8 @@ export function startBattle(stage) {
   function canTransform(f, side) {
     if (stage.storyTeam || !f || f.ko || f.pe.partner) return false
     if (f.card.transformations) return !!nextTransformation(f, side, B.turn)?.ready
-    return !f.transformed && (f.card.ovr || 0) >= 88 && f.hp / f.max < .5
+    // only cards that really have a transformed form can transform (no generic power-up animation on normal cards)
+    return !f.transformed && !!f.card.form && f.hp / f.max < .5
   }
   // In-place transformation: the fighter's own card charges, flips into the new form and bursts. The arena stays visible.
   async function transformFX(who, color, title, sub, kicker) {
